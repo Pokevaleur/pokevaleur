@@ -31,7 +31,7 @@ export default function CataloguePage() {
         .order('name'),
       supabase
         .from('product_price_history')
-        .select('id,product_id,source,price,observed_at,condition_tier')
+        .select('id,product_id,source,price,observed_at,condition_tier,observation_type')
         .order('observed_at', { ascending: true })
     ])
 
@@ -48,7 +48,11 @@ export default function CataloguePage() {
   })
 
   function getStats(productId, tier = 'standard') {
-    const sales = history.filter(item => item.product_id === productId && (item.condition_tier || 'standard') === tier)
+    const sales = history.filter(item =>
+      item.product_id === productId &&
+      (item.condition_tier || 'standard') === tier &&
+      (item.observation_type || 'confirmed_sale') === 'confirmed_sale'
+    )
     const prices = sales.map(item => Number(item.price)).filter(Number.isFinite)
 
     if (!prices.length) return null
@@ -84,6 +88,10 @@ export default function CataloguePage() {
         {filtered.map(product => {
           const stats = getStats(product.id, 'standard')
           const zeroDefectStats = getStats(product.id, 'zero_defect')
+          const observedListings = history.filter(item =>
+            item.product_id === product.id &&
+            item.observation_type === 'observed_listing'
+          )
 
           return (
             <article className="catalogCard" key={product.id}>
@@ -151,8 +159,14 @@ export default function CataloguePage() {
 
               {zeroDefectStats && (
                 <div className="zeroDefectStats">
-                  <span>{zeroDefectStats.count} vente{zeroDefectStats.count > 1 ? 's' : ''} zéro défaut observée{zeroDefectStats.count > 1 ? 's' : ''}</span>
+                  <span>{zeroDefectStats.count} vente{zeroDefectStats.count > 1 ? 's' : ''} zéro défaut confirmée{zeroDefectStats.count > 1 ? 's' : ''}</span>
                   <b>Médiane {zeroDefectStats.median.toFixed(2)} €</b>
+                </div>
+              )}
+
+              {observedListings.length > 0 && (
+                <div className="listingHint">
+                  {observedListings.length} prix observé{observedListings.length > 1 ? 's' : ''} sur des annonces — non inclus dans la cote
                 </div>
               )}
 
@@ -182,9 +196,9 @@ export default function CataloguePage() {
       <section className="panel pricePolicy">
         <h2>Lecture des prix</h2>
         <p>
-          La médiane est privilégiée car elle est moins sensible qu’une moyenne à une vente exceptionnellement
-          basse ou élevée. Le nombre de ventes, le minimum, le maximum et les dernières observations permettent
-          de voir rapidement si la référence repose sur suffisamment de données.
+          La cote est calculée uniquement à partir de ventes confirmées. Les prix vus sur des annonces Voggt,
+          Whatnot, Vinted ou ailleurs peuvent être enregistrés comme indices de marché, mais ils ne sont jamais
+          mélangés aux ventes réellement conclues.
         </p>
       </section>
     </main>
