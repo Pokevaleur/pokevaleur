@@ -32,7 +32,7 @@ export async function POST(request) {
     if (!userResponse.ok) return NextResponse.json({ error: 'Session invalide.' }, { status: 401 })
     const user = await userResponse.json()
 
-    const itemResponse = await supabaseFetch('/rest/v1/collection_items?id=eq.' + encodeURIComponent(itemId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&select=id,custom_name,booster_configuration,variant_note', token)
+    const itemResponse = await supabaseFetch('/rest/v1/collection_items?id=eq.' + encodeURIComponent(itemId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&select=id,custom_name,booster_configuration,variant_note,product_id', token)
     const items = await itemResponse.json()
     if (!itemResponse.ok || !items?.length) return NextResponse.json({ error: 'Produit introuvable.' }, { status: 404 })
 
@@ -65,11 +65,13 @@ export async function POST(request) {
     if (!knownBoosters.length) {
       const extensionPrompt = `Tu analyses plusieurs photos du MÊME coffret Pokémon scellé.
 Ta seule mission est d'identifier les EXTENSIONS/SÉRIES des boosters visibles, PAS les artworks.
+Composition catalogue attendue : ${expectedBoosterSummary}
 
 Règles:
 - Ignore complètement le Pokémon illustré sauf s'il aide à lire/reconnaître le design de la série.
 - Base-toi d'abord sur le logo/nom de l'extension, la typographie, la mise en page du booster, les couleurs de fond et le design global.
 - Plusieurs boosters peuvent appartenir à la même extension : conserve les doublons.
+- Si la composition catalogue attendue est connue, respecte exactement ces quantités et utilise la photo seulement pour attribuer chaque série à une position.
 - Ne cherche PAS encore le nom de l'artwork.
 - Donne exactement une ligne par booster visible, avec sa position.
 - Si une extension est partiellement masquée, propose la meilleure lecture avec confidence medium plutôt que d'inventer une autre série.
@@ -111,6 +113,16 @@ Règles:
     }
 
         const item = items[0]
+
+    let expectedProductContents = []
+    if (item.product_id) {
+      const expectedResponse = await supabaseFetch('/rest/v1/product_contents?product_id=eq.' + encodeURIComponent(item.product_id) + '&content_type=eq.booster&select=item_name,quantity,source_label,confidence', token)
+      expectedProductContents = expectedResponse.ok ? await expectedResponse.json() : []
+    }
+
+    const expectedBoosterSummary = expectedProductContents.length
+      ? expectedProductContents.map(x => `${x.quantity} × ${x.item_name}`).join(' | ')
+      : 'Aucune composition catalogue connue.'
     const knownComposition = knownBoosters.length
       ? knownBoosters.map(b => {
           const allowed = referenceBoosters
@@ -122,6 +134,7 @@ Règles:
 
     const instructions = `Tu analyses des photos d'un exemplaire Pokémon scellé afin d'identifier les boosters visibles à l'intérieur.
 Toutes les images montrent LE MÊME exemplaire sous plusieurs angles.
+Composition catalogue attendue pour ce produit : ${expectedBoosterSummary}
 Nom saisi: ${item.custom_name || 'inconnu'}.
 Composition déjà renseignée: ${item.booster_configuration || 'aucune'}.
 Note variante: ${item.variant_note || 'aucune'}.
@@ -129,6 +142,7 @@ Composition déjà connue par position:
 ${knownComposition}
 
 Règles impératives:
+- Si une composition catalogue attendue est fournie, elle est PRIORITAIRE pour les séries et les quantités. L'analyse visuelle doit répartir ces séries entre les positions visibles, pas inventer d'autres extensions.
 - Une extension déjà renseignée pour une position est VERROUILLÉE : ne la remplace jamais par une autre extension.
 - Si ces extensions viennent de la première passe, considère-les comme la base de travail et cherche seulement l'artwork à l'intérieur de chacune.
 - Une ligne confirmée par l'utilisateur est verrouillée : ne change ni son extension ni son artwork.
