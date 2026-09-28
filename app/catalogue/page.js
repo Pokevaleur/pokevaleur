@@ -59,7 +59,7 @@ export default function CataloguePage() {
     const [{ data: productData }, { data: historyData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
+        .select('id,name,series,category,product_type,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
         .eq('is_public', true)
         .order('name'),
       supabase
@@ -73,21 +73,65 @@ export default function CataloguePage() {
   }
 
   const filtered = products.filter(product => {
-    const normalizedQuery = query.trim().toLowerCase()
+    const normalizedQuery = query
+      .trim()
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
 
     if (!normalizedQuery) return true
 
     const aliases = {
-      etb: ['coffret dresseur d’élite', 'coffret dresseur d elite', 'elite trainer box']
+      etb: ['coffret dresseur elite', 'elite trainer box', 'etb'],
+      'elite trainer box': ['coffret dresseur elite', 'etb'],
+      'coffret dresseur': ['coffret dresseur elite', 'etb'],
+      display: ['display', 'boite de boosters', 'booster box'],
+      'booster box': ['display', 'boite de boosters'],
+      bundle: ['booster bundle', 'lot de 6 boosters', 'bundle'],
+      'booster bundle': ['lot de 6 boosters', 'bundle'],
+      tripack: ['tripack', 'tripack blister', 'blister 3 boosters', '3 boosters'],
+      blister: ['blister', 'tripack'],
+      pokebox: ['pokebox', 'poke box', 'tin', 'boite'],
+      tin: ['tin', 'pokebox', 'poke box', 'boite'],
+      minitin: ['mini tin', 'mini-boite', 'mini boite'],
+      'mini tin': ['mini tin', 'mini-boite', 'mini boite'],
+      upc: ['ultra-premium collection', 'collection ultra-premium', 'upc'],
+      'ultra premium': ['ultra-premium collection', 'collection ultra-premium', 'upc'],
+      valisette: ['valisette', 'coffre de collection', 'collector chest'],
+      coffre: ['coffre de collection', 'valisette', 'collector chest'],
+      'pin box': ['collection pins', 'collection pin', 'coffret pins', 'pin box'],
+      'pins box': ['collection pins', 'collection pin', 'coffret pins', 'pin box'],
+      coffret: ['coffret', 'collection'],
+      premium: ['collection premium', 'premium'],
+      poster: ['collection poster', 'poster'],
+      classeur: ['collection classeur', 'classeur', 'binder collection'],
+      binder: ['collection classeur', 'classeur', 'binder collection']
     }
 
-    const searchTerms = aliases[normalizedQuery] || [normalizedQuery]
-    const haystack = [product.name, product.series, product.category]
+    const expandedTerms = new Set([normalizedQuery])
+    Object.entries(aliases).forEach(([alias, terms]) => {
+      if (normalizedQuery.includes(alias) || alias.includes(normalizedQuery)) {
+        terms.forEach(term => expandedTerms.add(term))
+      }
+    })
+
+    const haystack = [
+      product.name,
+      product.series,
+      product.category,
+      product.product_type
+    ]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
 
-    return searchTerms.some(term => haystack.includes(term))
+    return [...expandedTerms].some(term =>
+      haystack.includes(
+        term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      )
+    )
   })
 
   function getStats(productId, tier = 'standard') {
