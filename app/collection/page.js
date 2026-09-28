@@ -31,6 +31,7 @@ export default function CollectionPage() {
   const [photoFiles, setPhotoFiles] = useState([])
   const [editPhotoFiles, setEditPhotoFiles] = useState([])
   const [photoUrls, setPhotoUrls] = useState({})
+  const [photoStepDone, setPhotoStepDone] = useState(false)
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -195,6 +196,7 @@ export default function CollectionPage() {
 
     setForm(emptyForm)
     setPhotoFiles([])
+    setPhotoStepDone(false)
     setMessage('Produit ajouté à ta collection.')
     await load()
   }
@@ -560,7 +562,10 @@ export default function CollectionPage() {
                   capture="environment"
                   onChange={e => {
                     const file = e.target.files?.[0]
-                    if (file) setPhotoFiles(prev => [...prev, file])
+                    if (file) {
+                      setPhotoFiles(prev => [...prev, file])
+                      setPhotoStepDone(false)
+                    }
                     e.target.value = ''
                   }}
                 />
@@ -579,7 +584,10 @@ export default function CollectionPage() {
                   multiple
                   onChange={e => {
                     const files = [...(e.target.files || [])]
-                    if (files.length) setPhotoFiles(prev => [...prev, ...files])
+                    if (files.length) {
+                      setPhotoFiles(prev => [...prev, ...files])
+                      setPhotoStepDone(false)
+                    }
                     e.target.value = ''
                   }}
                 />
@@ -591,9 +599,45 @@ export default function CollectionPage() {
               </label>
             </div>
             {photoFiles.length > 0 && (
-              <div className="pendingPhotos">
-                <small className="muted">{photoFiles.length} photo{photoFiles.length > 1 ? 's' : ''} prête{photoFiles.length > 1 ? 's' : ''}</small>
-                <button type="button" className="miniBtn" onClick={() => setPhotoFiles([])}>Effacer la sélection</button>
+              <div className="photoCaptureConfirmation">
+                <div className="photoSuccess">✓ {photoFiles.length} photo{photoFiles.length > 1 ? 's' : ''} ajoutée{photoFiles.length > 1 ? 's' : ''}</div>
+                <div className="pendingPhotoGrid">
+                  {photoFiles.map((file, index) => (
+                    <div className="pendingPhotoThumb" key={`${file.name}-${file.lastModified}-${index}`}>
+                      <img src={URL.createObjectURL(file)} alt={`Photo ${index + 1}`} />
+                      <button
+                        type="button"
+                        aria-label={`Supprimer la photo ${index + 1}`}
+                        onClick={() => setPhotoFiles(prev => prev.filter((_, i) => i !== index))}
+                      >×</button>
+                    </div>
+                  ))}
+                </div>
+                {!photoStepDone ? (
+                  <div className="photoNextActions">
+                    <label className="miniBtn primaryMini photoMoreButton">
+                      <input
+                        className="photoInput"
+                        type="file"
+                        accept="image/*"
+                        capture="environment"
+                        onChange={e => {
+                          const file = e.target.files?.[0]
+                          if (file) setPhotoFiles(prev => [...prev, file])
+                          e.target.value = ''
+                        }}
+                      />
+                      📷 Prendre une autre photo
+                    </label>
+                    <button type="button" className="miniBtn" onClick={() => setPhotoStepDone(true)}>Terminer</button>
+                  </div>
+                ) : (
+                  <div className="photoDoneLine">
+                    <span>✓ Photos prêtes à être enregistrées avec le produit.</span>
+                    <button type="button" className="miniBtn" onClick={() => setPhotoStepDone(false)}>Ajouter une photo</button>
+                  </div>
+                )}
+                <button type="button" className="photoClearLink" onClick={() => { setPhotoFiles([]); setPhotoStepDone(false) }}>Effacer les photos</button>
               </div>
             )}
 
