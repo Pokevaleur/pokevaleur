@@ -21,6 +21,8 @@ export default function CollectionItemDetailPage() {
   const [expectedBoosters, setExpectedBoosters] = useState([])
   const [referenceContributions, setReferenceContributions] = useState([])
   const [referenceMessage, setReferenceMessage] = useState('')
+  const [productInfo, setProductInfo] = useState(null)
+  const [priceHistory, setPriceHistory] = useState([])
 
   useEffect(() => {
     if (params?.id) load()
@@ -44,14 +46,32 @@ export default function CollectionItemDetailPage() {
     setItem(itemData || null)
 
     if (itemData?.product_id) {
-      const { data: expected } = await supabase
-        .from('product_contents')
-        .select('item_name,quantity,confidence')
-        .eq('product_id', itemData.product_id)
-        .eq('content_type', 'booster')
+      const [{ data: expected }, { data: product }, { data: history }] = await Promise.all([
+        supabase
+          .from('product_contents')
+          .select('item_name,quantity,confidence')
+          .eq('product_id', itemData.product_id)
+          .eq('content_type', 'booster'),
+        supabase
+          .from('products')
+          .select('id,name,series,product_type,release_date,current_value,zero_defect_value,currency,price_source,price_updated_at')
+          .eq('id', itemData.product_id)
+          .single(),
+        supabase
+          .from('product_price_history')
+          .select('price,observed_at,source,condition_tier,observation_type')
+          .eq('product_id', itemData.product_id)
+          .eq('observation_type', 'confirmed_sale')
+          .order('observed_at', { ascending: true })
+          .limit(60)
+      ])
       setExpectedBoosters(expected || [])
+      setProductInfo(product || null)
+      setPriceHistory(history || [])
     } else {
       setExpectedBoosters([])
+      setProductInfo(null)
+      setPriceHistory([])
     }
 
     const signed = await Promise.all((photoData || []).map(async photo => {
@@ -235,6 +255,34 @@ export default function CollectionItemDetailPage() {
     }
   }
 
+  function formatEuro(value) {
+    if (value == null || Number.isNaN(Number(value))) return '—'
+    return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(value))
+  }
+
+  function getMarketValue() {
+    if (item?.current_value_override != null) return Number(item.current_value_override)
+    if (item?.sealed_condition === 'zero_defect' && productInfo?.zero_defect_value != null) return Number(productInfo.zero_defect_value)
+    if (productInfo?.current_value != null) return Number(productInfo.current_value)
+    return null
+  }
+
+  function getPriceChartPoints() {
+    const values = priceHistory
+      .filter(x => x.price != null)
+      .map(x => ({ price: Number(x.price), date: x.observed_at }))
+    if (values.length < 2) return ''
+    const prices = values.map(x => x.price)
+    const min = Math.min(...prices)
+    const max = Math.max(...prices)
+    const range = Math.max(1, max - min)
+    return values.map((point, index) => {
+      const x = values.length === 1 ? 50 : (index / (values.length - 1)) * 100
+      const y = 42 - ((point.price - min) / range) * 34
+      return `${x.toFixed(1)},${y.toFixed(1)}`
+    }).join(' ')
+  }
+
   function normalizeExpansionName(value) {
     return String(value || '')
       .toLowerCase()
@@ -304,6 +352,80 @@ export default function CollectionItemDetailPage() {
             {item.purchase_date ? ` • acheté le ${new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR')}` : ''}
             {item.purchase_place ? ` • ${item.purchase_place}` : ''}
           </p>
+        </div>
+
+        <div className="itemValueDashboard">
+          <div className="itemValueTop">
+            <div>
+              <span className="eyebrow dark">Valeur de mon exemplaire</span>
+              {productInfo?.series && <p className="muted itemSeriesLine">{productInfo.series}{productInfo.product_type ? ` • ${productInfo.product_type}` : ''}</p>}
+            </div>
+            {productInfo?.release_date && (
+              <div className="itemReleaseBadge">
+                <small>Sortie</small>
+                <strong>{new Date(productInfo.release_date + 'T00:00:00').toLocaleDateString('fr-FR')}</strong>
+              </div>
+            )}
+          </div>
+
+          <div className="itemValueStats">
+            <div>
+              <span>Prix d’achat</span>
+              <strong>{formatEuro(item.purchase_price)}</strong>
+            </div>
+            <div>
+              <span>Valeur actuelle</span>
+              <strong>{formatEuro(getMarketValue())}</strong>
+            </div>
+            <div>
+              <span>Zéro défaut</span>
+              <strong>{formatEuro(productInfo?.zero_defect_value)}</strong>
+            </div>
+            <div className={getMarketValue() != null && item.purchase_price != null && getMarketValue() >= Number(item.purchase_price) ? 'positive' : 'negative'}>
+              <span>Évolution depuis achat</span>
+              <strong>
+                {getMarketValue() != null && item.purchase_price != null
+                  ? `${getMarketValue() - Number(item.purchase_price) >= 0 ? '+' : ''}${formatEuro(getMarketValue() - Number(item.purchase_price))}`
+                  : '—'}
+              </strong>
+              {getMarketValue() != null && item.purchase_price != null && Number(item.purchase_price) > 0 && (
+                <small>
+                  {((getMarketValue() - Number(item.purchase_price)) / Number(item.purchase_price) * 100) >= 0 ? '+' : ''}
+                  {((getMarketValue() - Number(item.purchase_price)) / Number(item.purchase_price) * 100).toFixed(1)} %
+                </small>
+              )}
+            </div>
+          </div>
+
+          <div className="itemPriceChartCard">
+            <div className="itemPriceChartHead">
+              <div>
+                <h2>Évolution du prix</h2>
+                <p className="muted">Ventes confirmées utilisées pour la cote.</p>
+              </div>
+              {productInfo?.price_updated_at && <small>Mis à jour le {new Date(productInfo.price_updated_at).toLocaleDateString('fr-FR')}</small>}
+            </div>
+
+            {priceHistory.length >= 2 ? (
+              <>
+                <div className="miniPriceChart" aria-label="Courbe d'évolution du prix">
+                  <svg viewBox="0 0 100 50" preserveAspectRatio="none" role="img">
+                    <polyline points={getPriceChartPoints()} fill="none" vectorEffect="non-scaling-stroke" />
+                  </svg>
+                </div>
+                <div className="itemPriceChartFoot">
+                  <span>{new Date(priceHistory[0].observed_at).toLocaleDateString('fr-FR')}</span>
+                  <strong>{priceHistory.length} ventes confirmées</strong>
+                  <span>{new Date(priceHistory[priceHistory.length - 1].observed_at).toLocaleDateString('fr-FR')}</span>
+                </div>
+              </>
+            ) : (
+              <div className="emptyPriceChart">
+                <strong>Historique en construction</strong>
+                <span>Le graphique apparaîtra dès que plusieurs ventes confirmées seront disponibles.</span>
+              </div>
+            )}
+          </div>
         </div>
 
         {photos.length > 0 && (
