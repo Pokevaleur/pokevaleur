@@ -30,7 +30,7 @@ export default function ProductDetailPage() {
     const [{ data: productData }, { data: historyData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
+        .select('id,name,series,category,product_type,release_date,release_period,official_source_url,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
         .eq('id', params.id)
         .single(),
       supabase
@@ -99,6 +99,14 @@ export default function ProductDetailPage() {
           </span>
           <h1>{product.name}</h1>
           <p className="muted">{product.series || 'Série non renseignée'}</p>
+          <div className="detailReleaseDate">
+            <span>Date de sortie officielle</span>
+            <strong>
+              {product.release_date
+                ? new Date(product.release_date + 'T00:00:00').toLocaleDateString('fr-FR')
+                : product.release_period || 'À renseigner'}
+            </strong>
+          </div>
           {product.image_url && product.image_credit && (
             <small className="imageCredit">Visuel : {product.image_credit}</small>
           )}
@@ -212,7 +220,11 @@ export default function ProductDetailPage() {
       </section>
 
       <section className="panel sourcePanel">
-        <h2>Source de la cote</h2>
+        <h2>Sources</h2>
+        {product.official_source_url && (
+          <p><a className="detailLink" href={product.official_source_url} target="_blank" rel="noreferrer">Voir la source officielle du produit →</a></p>
+        )}
+        <h3>Source de la cote</h3>
         <p>
           {product.price_source || 'Aucune source de prix renseignée pour le moment.'}
         </p>
