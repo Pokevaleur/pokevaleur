@@ -47,6 +47,25 @@ export default function CollectionItemDetailPage() {
     setLoading(false)
   }
 
+  async function compressDetailPhoto(file) {
+    if (!file?.type?.startsWith('image/')) throw new Error('Le fichier choisi doit être une image.')
+    const bitmap = await createImageBitmap(file)
+    const maxSide = 2200
+    const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height))
+    const width = Math.max(1, Math.round(bitmap.width * scale))
+    const height = Math.max(1, Math.round(bitmap.height * scale))
+    const canvas = document.createElement('canvas')
+    canvas.width = width
+    canvas.height = height
+    const ctx = canvas.getContext('2d')
+    ctx.drawImage(bitmap, 0, 0, width, height)
+    bitmap.close?.()
+    const blob = await new Promise((resolve, reject) => {
+      canvas.toBlob(output => output ? resolve(output) : reject(new Error('Impossible de préparer la photo.')), 'image/jpeg', 0.82)
+    })
+    return new File([blob], 'photo.jpg', { type: 'image/jpeg' })
+  }
+
   async function addDetailPhotos(fileList) {
     const files = Array.from(fileList || [])
     if (!files.length) return
@@ -58,12 +77,10 @@ export default function CollectionItemDetailPage() {
       if (!user) throw new Error('Ta session a expiré.')
       const { count } = await supabase.from('collection_item_photos').select('id', { count: 'exact', head: true }).eq('collection_item_id', params.id)
       for (let index = 0; index < files.length; index++) {
-        const file = files[index]
-        if (!file.type?.startsWith('image/')) throw new Error('Le fichier choisi doit être une image.')
-        if (file.size > 20 * 1024 * 1024) throw new Error('Une photo dépasse 20 Mo.')
-        const extension = (file.name.split('.').pop() || file.type.split('/').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-        const path = `${user.id}/${crypto.randomUUID()}.${extension || 'jpg'}`
-        const { data, error } = await supabase.storage.from('collection-images').upload(path, file, { cacheControl: '3600', contentType: file.type || 'image/jpeg', upsert: false })
+        const file = await compressDetailPhoto(files[index])
+        if (file.size > 8 * 1024 * 1024) throw new Error('Une photo reste trop volumineuse après compression.')
+        const path = `${user.id}/${crypto.randomUUID()}.jpg`
+        const { data, error } = await supabase.storage.from('collection-images').upload(path, file, { cacheControl: '3600', contentType: 'image/jpeg', upsert: false })
         if (error || !data?.path) throw new Error(error?.message || 'Envoi impossible.')
         uploaded.push(data.path)
         const { error: linkError } = await supabase.from('collection_item_photos').insert({
@@ -225,8 +242,8 @@ export default function CollectionItemDetailPage() {
               <input type="file" accept="image/*" multiple hidden disabled={photoUploading} onChange={e => { addDetailPhotos(e.target.files); e.target.value = '' }} />
             </label>
           </div>
-          {boosters.some(b => !b.confirmed || b.confidence === 'low' || b.confidence === 'medium') && (
-            <p style={{marginBottom: 0}}><strong>Photo complémentaire conseillée :</strong> rapproche-toi des boosters encore partiellement masqués et change légèrement l’angle pour éviter les reflets.</p>
+          {boosters.some(b => !b.confirmed || b.confidence === 'low') && (
+            <p style={{marginBottom: 0}}><strong>Si nécessaire :</strong> une photo complémentaire peut aider à départager deux illustrations très proches, mais l’analyse doit d’abord exploiter les portions déjà visibles.</p>
           )}
           {photoMessage && <div className={photoMessage.startsWith('❌') ? 'photoImmediateStatus error' : 'photoImmediateStatus success'} role="status">{photoMessage}</div>}
           {photos.length > 0 && (
