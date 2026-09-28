@@ -473,15 +473,26 @@ export default function CollectionPage() {
               />
             </label>
 
-            <label>
-              Photo de ton exemplaire (facultatif)
-              <input
-                type="file"
-                accept="image/*"
-                onChange={e => setPhotoFile(e.target.files?.[0] || null)}
-              />
-            </label>
-            {photoFile && <small className="muted">Photo sélectionnée : {photoFile.name}</small>}
+            <div className="photoChoice">
+              <label>
+                Prendre une photo
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={e => setPhotoFile(e.target.files?.[0] || null)}
+                />
+              </label>
+              <label>
+                Choisir une photo existante
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={e => setPhotoFile(e.target.files?.[0] || null)}
+                />
+              </label>
+            </div>
+            {photoFile && <small className="muted">Photo prête : {photoFile.name}</small>}
 
             <small className="muted">
               Si deux exemplaires du même coffret n’ont pas les mêmes boosters, ajoute-les séparément (quantité 1) afin de conserver leur composition exacte.
@@ -561,14 +572,25 @@ export default function CollectionPage() {
                           Particularité de l’exemplaire
                           <input value={editForm.variant_note} onChange={e => setEditForm({ ...editForm, variant_note: e.target.value })} />
                         </label>
-                        <label>
-                          Remplacer / ajouter la photo
-                          <input
-                            type="file"
-                            accept="image/*"
-                            onChange={e => setEditPhotoFile(e.target.files?.[0] || null)}
-                          />
-                        </label>
+                        <div className="photoChoice">
+                          <label>
+                            Prendre une nouvelle photo
+                            <input
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              onChange={e => setEditPhotoFile(e.target.files?.[0] || null)}
+                            />
+                          </label>
+                          <label>
+                            Choisir une photo existante
+                            <input
+                              type="file"
+                              accept="image/*"
+                              onChange={e => setEditPhotoFile(e.target.files?.[0] || null)}
+                            />
+                          </label>
+                        </div>
                       </div>
                       <div className="rowActions">
                         <button className="miniBtn primaryMini" onClick={() => saveEdit(item.id)}>Enregistrer</button>
