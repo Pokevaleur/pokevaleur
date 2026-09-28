@@ -35,7 +35,7 @@ export default function ProductDetailPage() {
         .single(),
       supabase
         .from('product_price_history')
-        .select('id,source,price,observed_at,condition_tier')
+        .select('id,source,price,observed_at,condition_tier,observation_type')
         .eq('product_id', params.id)
         .order('observed_at', { ascending: true })
     ])
@@ -53,8 +53,10 @@ export default function ProductDetailPage() {
     return <main><section className="panel"><h1>Produit introuvable</h1></section></main>
   }
 
-  const standardHistory = history.filter(item => (item.condition_tier || 'standard') === 'standard')
-  const zeroDefectHistory = history.filter(item => item.condition_tier === 'zero_defect')
+  const confirmedSales = history.filter(item => (item.observation_type || 'confirmed_sale') === 'confirmed_sale')
+  const observedListings = history.filter(item => item.observation_type === 'observed_listing')
+  const standardHistory = confirmedSales.filter(item => (item.condition_tier || 'standard') === 'standard')
+  const zeroDefectHistory = confirmedSales.filter(item => item.condition_tier === 'zero_defect')
   const prices = standardHistory.map(item => Number(item.price)).filter(Number.isFinite)
   const zeroDefectPrices = zeroDefectHistory.map(item => Number(item.price)).filter(Number.isFinite)
   const stats = prices.length ? {
@@ -148,7 +150,11 @@ export default function ProductDetailPage() {
               {[...history].reverse().map(sale => (
                 <div className="saleTableRow" key={sale.id}>
                   <span>{new Date(sale.observed_at).toLocaleDateString('fr-FR')}</span>
-                  <span>{sale.source}{sale.condition_tier === 'zero_defect' ? ' • zéro défaut' : ''}</span>
+                  <span>
+                    {sale.source}
+                    {sale.condition_tier === 'zero_defect' ? ' • zéro défaut' : ''}
+                    {sale.observation_type === 'observed_listing' ? ' • annonce observée' : ' • vente confirmée'}
+                  </span>
                   <strong>{Number(sale.price).toFixed(2)} €</strong>
                 </div>
               ))}
@@ -158,6 +164,23 @@ export default function ProductDetailPage() {
       ) : (
         <section className="panel">
           <p>Pas encore de ventes enregistrées pour ce produit.</p>
+        </section>
+      )}
+
+      {observedListings.length > 0 && (
+        <section className="panel listingPanel">
+          <h2>Prix observés sur les annonces</h2>
+          <p className="muted">
+            Ces montants donnent une indication du marché demandé, mais ne sont pas utilisés pour calculer la cote tant que la vente n’est pas confirmée.
+          </p>
+          <div className="listingRows">
+            {[...observedListings].reverse().map(item => (
+              <div key={item.id}>
+                <span>{new Date(item.observed_at).toLocaleDateString('fr-FR')} • {item.source}</span>
+                <strong>{Number(item.price).toFixed(2)} €</strong>
+              </div>
+            ))}
+          </div>
         </section>
       )}
 
