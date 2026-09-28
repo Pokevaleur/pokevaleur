@@ -218,6 +218,46 @@ export default function CollectionPage() {
     setMessage('')
   }
 
+  async function addPhotosImmediately(id, files) {
+    if (!files?.length) return
+    setMessage('Envoi de la photo...')
+
+    let paths = []
+    try {
+      paths = await uploadCollectionPhotos(files)
+
+      const currentItem = items.find(item => item.id === id)
+      const { count } = await supabase
+        .from('collection_item_photos')
+        .select('id', { count: 'exact', head: true })
+        .eq('collection_item_id', id)
+
+      const { error: insertError } = await supabase.from('collection_item_photos').insert(
+        paths.map((path, index) => ({
+          collection_item_id: id,
+          user_id: user.id,
+          photo_path: path,
+          sort_order: (count || 0) + index
+        }))
+      )
+      if (insertError) throw insertError
+
+      if (!currentItem?.photo_path && paths[0]) {
+        const { error: updateError } = await supabase
+          .from('collection_items')
+          .update({ photo_path: paths[0] })
+          .eq('id', id)
+        if (updateError) throw updateError
+      }
+
+      setMessage(`${files.length} photo${files.length > 1 ? 's' : ''} enregistrée${files.length > 1 ? 's' : ''}.`)
+      await load()
+    } catch (error) {
+      if (paths.length) await supabase.storage.from('collection-images').remove(paths)
+      setMessage(error.message || 'Impossible d’enregistrer la photo.')
+    }
+  }
+
   async function saveEdit(id) {
     const currentItem = items.find(item => item.id === id)
     let newPhotoPaths = []
@@ -631,9 +671,9 @@ export default function CollectionPage() {
                               type="file"
                               accept="image/*"
                               capture="environment"
-                              onChange={e => {
+                              onChange={async e => {
                                 const file = e.target.files?.[0]
-                                if (file) setEditPhotoFiles(prev => [...prev, file])
+                                if (file) await addPhotosImmediately(item.id, [file])
                                 e.target.value = ''
                               }}
                             />
@@ -644,9 +684,9 @@ export default function CollectionPage() {
                               type="file"
                               accept="image/*"
                               multiple
-                              onChange={e => {
+                              onChange={async e => {
                                 const files = [...(e.target.files || [])]
-                                if (files.length) setEditPhotoFiles(prev => [...prev, ...files])
+                                if (files.length) await addPhotosImmediately(item.id, files)
                                 e.target.value = ''
                               }}
                             />
