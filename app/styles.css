@@ -203,3 +203,9 @@ img,video,canvas,svg{max-width:100%;height:auto}
   .referencePhotoGrid{grid-template-columns:1fr!important}
   .referencePhotoCard img{height:140px!important;max-height:140px!important}
 }
+
+/* Prevent late-loaded gallery content from widening the mobile layout */
+.personalGallery{grid-template-columns:minmax(0,1fr)!important}
+.referenceContribution{width:100%;max-width:100%;min-width:0;overflow:hidden}
+.referencePhotoGrid{width:100%;max-width:100%;min-width:0}
+.referencePhotoCard{min-width:0!important;overflow:hidden}
