@@ -478,7 +478,10 @@ export default function CollectionPage() {
           <h1>Ma collection</h1>
           <p className="muted">{user.email}</p>
         </div>
-        <button className="btn ghost dangerGhost" onClick={signOut}>Se déconnecter</button>
+        <div className="collectionHeaderActions">
+          <a className="btn" href="/collection/statistiques">📊 Statistiques</a>
+          <button className="btn ghost dangerGhost" onClick={signOut}>Se déconnecter</button>
+        </div>
       </div>
 
       <section className="stats">
