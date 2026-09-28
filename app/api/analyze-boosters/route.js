@@ -77,6 +77,8 @@ export async function POST(request) {
       : expectedSeriesDefaults.length
         ? expectedSeriesDefaults.map(x => `${x.expected_quantity ? x.expected_quantity + ' × ' : ''}${x.series_name}`).join(' | ')
         : 'Aucune composition catalogue connue.'
+    const hasExactCatalogueComposition = expectedProductContents.length > 0 &&
+      expectedProductContents.every(x => Number(x.quantity) > 0)
 
     // FIRST PASS EXTENSIONS ONLY:
     // If this item has no booster series yet, identify the visible series first and lock them
@@ -170,50 +172,68 @@ Règles impératives:
 - Réponds uniquement avec du JSON valide, sans markdown, sous la forme:
 {"boosters":[{"position":1,"expansion_name":"... ou null","artwork_name":"... ou null","confidence":"high|medium|low","evidence":"indice visuel bref, et alternative éventuelle","candidates":[{"expansion_name":"...","artwork_name":"...","confidence":"high|medium|low"}]}],"needs_additional_photo":true,"photo_instruction":"... ou null"}`
 
-    const openaiResponse = await fetch('https://api.openai.com/v1/responses', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + process.env.OPENAI_API_KEY, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        model: 'gpt-5.6-luna',
-        input: [{ role: 'user', content: [{ type: 'input_text', text: instructions }, ...images] }],
-        text: { format: { type: 'json_object' } }
-      })
-    })
-    const ai = await openaiResponse.json()
-    if (!openaiResponse.ok) return NextResponse.json({ error: ai?.error?.message || 'Erreur du moteur IA.' }, { status: 502 })
-    const outputText = ai.output?.flatMap(o => o.content || []).find(c => c.type === 'output_text')?.text
-    if (!outputText) return NextResponse.json({ error: 'L’analyse n’a retourné aucun résultat.' }, { status: 502 })
-    const result = JSON.parse(outputText)
-    result.boosters = Array.isArray(result.boosters) ? result.boosters.map((b, i) => ({
-      position: Number(b.position) || i + 1,
-      expansion_name: b.expansion_name || null,
-      artwork_name: b.artwork_name || null,
-      confidence: ['high','medium','low'].includes(b.confidence) ? b.confidence : 'low',
-      evidence: b.evidence || knownBoosters.find(k => Number(k.position) === (Number(b.position) || i + 1))?.evidence || null,
-      candidates: Array.isArray(b.candidates) ? b.candidates.slice(0, 3).map(candidate => ({
-        expansion_name: candidate.expansion_name || null,
-        artwork_name: candidate.artwork_name || null,
-        confidence: ['high','medium','low'].includes(candidate.confidence) ? candidate.confidence : 'low'
-      })) : []
-    })) : []
+    let result
 
-    // Enforce the extension map produced by the first pass / catalogue context.
-    // The artwork pass is never allowed to drift to another set.
-    result.boosters = result.boosters.map((booster, index) => {
-      const position = Number(booster.position) || index + 1
-      const lockedKnown = knownBoosters.find(k => Number(k.position) === position)
-      if (!lockedKnown?.expansion_name) return booster
-      return {
-        ...booster,
-        position,
-        expansion_name: lockedKnown.expansion_name,
-        artwork_name: lockedKnown.confirmed && lockedKnown.artwork_name
-          ? lockedKnown.artwork_name
-          : booster.artwork_name,
-        confidence: lockedKnown.confirmed ? 'high' : booster.confidence
+    if (hasExactCatalogueComposition && knownBoosters.length) {
+      // We already know the exact booster series mix from the catalogue and the first pass
+      // has assigned those series to positions. Skip the redundant general vision pass.
+      result = {
+        boosters: knownBoosters.map((b, i) => ({
+          position: Number(b.position) || i + 1,
+          expansion_name: b.expansion_name || null,
+          artwork_name: b.artwork_name || null,
+          confidence: b.confidence || 'medium',
+          evidence: b.evidence || 'Série attribuée à partir de la composition catalogue et de la position visible.',
+          candidates: []
+        })),
+        needs_additional_photo: false,
+        photo_instruction: null
       }
-    })
+    } else {
+      const openaiResponse = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + process.env.OPENAI_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-5.6-luna',
+          input: [{ role: 'user', content: [{ type: 'input_text', text: instructions }, ...images] }],
+          text: { format: { type: 'json_object' } }
+        })
+      })
+      const ai = await openaiResponse.json()
+      if (!openaiResponse.ok) return NextResponse.json({ error: ai?.error?.message || 'Erreur du moteur IA.' }, { status: 502 })
+      const outputText = ai.output?.flatMap(o => o.content || []).find(c => c.type === 'output_text')?.text
+      if (!outputText) return NextResponse.json({ error: 'L’analyse n’a retourné aucun résultat.' }, { status: 502 })
+      result = JSON.parse(outputText)
+      result.boosters = Array.isArray(result.boosters) ? result.boosters.map((b, i) => ({
+        position: Number(b.position) || i + 1,
+        expansion_name: b.expansion_name || null,
+        artwork_name: b.artwork_name || null,
+        confidence: ['high','medium','low'].includes(b.confidence) ? b.confidence : 'low',
+        evidence: b.evidence || knownBoosters.find(k => Number(k.position) === (Number(b.position) || i + 1))?.evidence || null,
+        candidates: Array.isArray(b.candidates) ? b.candidates.slice(0, 3).map(candidate => ({
+          expansion_name: candidate.expansion_name || null,
+          artwork_name: candidate.artwork_name || null,
+          confidence: ['high','medium','low'].includes(candidate.confidence) ? candidate.confidence : 'low'
+        })) : []
+      })) : []
 
+      // Enforce the extension map produced by the first pass / catalogue context.
+      // The artwork pass is never allowed to drift to another set.
+      result.boosters = result.boosters.map((booster, index) => {
+        const position = Number(booster.position) || index + 1
+        const lockedKnown = knownBoosters.find(k => Number(k.position) === position)
+        if (!lockedKnown?.expansion_name) return booster
+        return {
+          ...booster,
+          position,
+          expansion_name: lockedKnown.expansion_name,
+          artwork_name: lockedKnown.confirmed && lockedKnown.artwork_name
+            ? lockedKnown.artwork_name
+            : booster.artwork_name,
+          confidence: lockedKnown.confirmed ? 'high' : booster.confidence
+        }
+      })
+    }
     // SECOND PASS TARGETED ARTWORK: inspect each unresolved position separately.
     // One request per slot gives the model a narrower visual task and avoids cross-position swaps.
     const unresolved = result.boosters.filter(b => {
