@@ -115,14 +115,22 @@ Règles:
         const item = items[0]
 
     let expectedProductContents = []
+    let expectedSeriesDefaults = []
+
     if (item.product_id) {
-      const expectedResponse = await supabaseFetch('/rest/v1/product_contents?product_id=eq.' + encodeURIComponent(item.product_id) + '&content_type=eq.booster&select=item_name,quantity,source_label,confidence', token)
+      const [expectedResponse, defaultsResponse] = await Promise.all([
+        supabaseFetch('/rest/v1/product_contents?product_id=eq.' + encodeURIComponent(item.product_id) + '&content_type=eq.booster&select=item_name,quantity,source_label,confidence', token),
+        supabaseFetch('/rest/v1/product_expected_booster_series?product_id=eq.' + encodeURIComponent(item.product_id) + '&select=series_name,expected_quantity,source_label,confidence', token)
+      ])
       expectedProductContents = expectedResponse.ok ? await expectedResponse.json() : []
+      expectedSeriesDefaults = defaultsResponse.ok ? await defaultsResponse.json() : []
     }
 
     const expectedBoosterSummary = expectedProductContents.length
       ? expectedProductContents.map(x => `${x.quantity} × ${x.item_name}`).join(' | ')
-      : 'Aucune composition catalogue connue.'
+      : expectedSeriesDefaults.length
+        ? expectedSeriesDefaults.map(x => `${x.expected_quantity ? x.expected_quantity + ' × ' : ''}${x.series_name}`).join(' | ')
+        : 'Aucune composition catalogue connue.'
     const knownComposition = knownBoosters.length
       ? knownBoosters.map(b => {
           const allowed = referenceBoosters
