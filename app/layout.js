@@ -13,6 +13,7 @@ export default function RootLayout({ children }) {
           <a className="brand" href="/">PokéValeur</a>
           <nav>
             <a href="/">Accueil</a>
+            <a href="/catalogue">Catalogue</a>
             <a href="/collection">Ma collection</a>
             <a href="/login" className="btn small">Connexion</a>
           </nav>
