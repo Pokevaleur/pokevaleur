@@ -158,39 +158,6 @@ export default function CollectionItemDetailPage() {
     }
   }
 
-  async function contributeReference(photo, scope) {
-    setReferenceMessage('')
-    try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) throw new Error('Ta session a expiré.')
-
-      const already = referenceContributions.find(c =>
-        c.collection_item_photo_id === photo.id && c.reference_scope === scope
-      )
-      if (already) {
-        setReferenceMessage('✓ Cette photo est déjà proposée comme référence.')
-        return
-      }
-
-      const firstConfirmed = boosters.find(b => b.confirmed && b.expansion_name && b.artwork_name)
-      const { error } = await supabase.from('booster_reference_contributions').insert({
-        user_id: user.id,
-        collection_item_photo_id: photo.id,
-        collection_item_id: params.id,
-        expansion_name: firstConfirmed?.expansion_name || null,
-        artwork_name: firstConfirmed?.artwork_name || null,
-        reference_scope: scope
-      })
-      if (error) throw error
-
-      setReferenceMessage(scope === 'recognition_only'
-        ? '✓ Merci. Cette photo pourra servir à améliorer la reconnaissance, sans affichage public.'
-        : '✓ Merci. Cette photo pourra servir à la reconnaissance et, après validation, à une vignette publique.')
-      await load()
-    } catch (error) {
-      setReferenceMessage('❌ ' + (error.message || 'Impossible d’enregistrer cette autorisation.'))
-    }
-  }
 
   async function analyzePhotos() {
     if (!photos.length) return setAnalysisMessage('Ajoute au moins une photo avant l’analyse.')
@@ -354,7 +321,7 @@ export default function CollectionItemDetailPage() {
             <small className="muted">Touchez une miniature pour afficher la photo en grand.</small>
 
             <div className="referenceContribution">
-              <h3>Aider PokéValeur à reconnaître les boosters</h3>
+              <h3>Autorisation d’utilisation des photos</h3>
               <p className="muted">Tes photos sont déjà dans la galerie ci-dessus. Ici, tu choisis seulement si tu autorises PokéValeur à les utiliser comme références visuelles.</p>
               <div className="referenceConsentActions">
                 <button type="button" className="secondaryButton" onClick={() => contributeAllReferences('recognition_only')}>
