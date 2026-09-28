@@ -43,14 +43,26 @@ export async function POST(request) {
     }
     if (!images.length) return NextResponse.json({ error: 'Les photos n’ont pas pu être lues.' }, { status: 400 })
 
+    const boosterResponse = await supabaseFetch('/rest/v1/collection_item_boosters?collection_item_id=eq.' + encodeURIComponent(itemId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&select=position,expansion_name,artwork_name,confirmed&order=position.asc', token)
+    const knownBoosters = boosterResponse.ok ? await boosterResponse.json() : []
+
     const item = items[0]
+    const knownComposition = knownBoosters.length
+      ? knownBoosters.map(b => `Position ${b.position}: extension=${b.expansion_name || 'inconnue'}, artwork=${b.artwork_name || 'inconnu'}, confirmé=${b.confirmed ? 'oui' : 'non'}`).join('\n')
+      : 'Aucune position déjà enregistrée.'
+
     const instructions = `Tu analyses des photos d'un exemplaire Pokémon scellé afin d'identifier les boosters visibles à l'intérieur.
 Toutes les images montrent LE MÊME exemplaire sous plusieurs angles.
 Nom saisi: ${item.custom_name || 'inconnu'}.
 Composition déjà renseignée: ${item.booster_configuration || 'aucune'}.
 Note variante: ${item.variant_note || 'aucune'}.
+Composition déjà connue par position:
+${knownComposition}
 
 Règles impératives:
+- Une extension déjà renseignée pour une position est une contrainte forte : ne la remplace jamais par une autre extension.
+- Une ligne confirmée par l'utilisateur est verrouillée : ne change ni son extension ni son artwork.
+- Si l'extension est connue mais l'artwork manque, identifie uniquement l'artwork parmi ceux de CETTE extension.
 - Le but est d'identifier les boosters même lorsqu'ils ne sont visibles qu'en partie derrière la fenêtre du coffret.
 - Ne demande pas systématiquement une photo complète de chaque booster. Exploite les fragments visibles : palette de couleurs, silhouette ou morceau du Pokémon, fond, bordure, logo d'extension, typographie, position dans le coffret et correspondances entre plusieurs angles.
 - Une petite portion distinctive peut suffire à proposer un artwork avec une confiance medium ou high si elle permet de le distinguer raisonnablement des autres artworks plausibles.
