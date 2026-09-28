@@ -116,7 +116,11 @@ export default function CataloguePage() {
       ko: ['collection k.o.', 'collection ko'],
       'collection ko': ['collection k.o.', 'collection ko'],
       'collection k.o.': ['collection k.o.', 'collection ko'],
-      evoli: ['évoli', 'evoli']
+      evoli: ['évoli', 'evoli'],
+      phyllali: ['phyllali', 'leafeon'],
+      leafeon: ['phyllali', 'leafeon'],
+      vstar: ['vstar', 'v star'],
+      'collection speciale': ['collection spéciale', 'collection speciale', 'coffret']
     }
 
     const expandedTerms = new Set([normalizedQuery])
