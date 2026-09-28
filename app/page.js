@@ -1,46 +1,146 @@
 export default function Home() {
   return (
-    <main>
-      <section className="hero">
-        <div className="heroText">
-          <span className="eyebrow">Suivez • Estimez • Collectionnez</span>
-          <h1>Combien vaut vraiment ta collection&nbsp;?</h1>
-          <p>Centralise tes achats, suis la valeur de tes cartes et produits scellés, et vois immédiatement ton investissement, ta valeur actuelle et ton évolution.</p>
-          <div className="actions">
-            <a className="btn" href="/login">Créer mon compte gratuitement</a>
-            <a className="btn ghost" href="/collection">Voir l’espace collection</a>
+    <main className="homePage">
+      <section className="homeHero">
+        <div className="homeHeroCopy">
+          <span className="homePill">PokéValeur • Collection scellée & cartes</span>
+          <h1>Ta collection Pokémon, enfin suivie comme une vraie collection.</h1>
+          <p>
+            Catalogue, valeur, doublons, artsets, watchlist, alertes de prix, trades et historique :
+            PokéValeur rassemble tout dans un seul espace pensé pour les collectionneurs.
+          </p>
+          <div className="homeHeroActions">
+            <a className="btn homePrimary" href="/login">Créer mon compte</a>
+            <a className="btn ghost" href="/catalogue">Explorer le catalogue</a>
           </div>
-          <div className="ticks"><span>✓ Gratuit au démarrage</span><span>✓ Données privées par défaut</span><span>✓ Pensé pour les collectionneurs français</span></div>
+          <div className="homeTrustRow">
+            <span>✓ Collection privée</span>
+            <span>✓ Cotes suivies</span>
+            <span>✓ Pensé mobile</span>
+          </div>
         </div>
-        <div className="dashboardCard">
-          <div className="metric"><span>Montant investi</span><strong>3 185 €</strong></div>
-          <div className="metric"><span>Valeur actuelle</span><strong>4 620 €</strong></div>
-          <div className="metric positive"><span>Évolution</span><strong>+45 %</strong></div>
-          <div className="spark"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
-          <small>Exemple d’affichage</small>
+
+        <div className="homeHeroShowcase">
+          <div className="homeMascotPlaceholder">
+            <div className="homeMascotGlow"></div>
+            <div className="homeMascotBadge">Lukulu</div>
+            <strong>Le compagnon de ta collection</strong>
+            <p>Le visuel officiel de Lukulu prendra place ici.</p>
+          </div>
+          <div className="homeMiniCard top">
+            <span>Watchlist</span>
+            <b>3 opportunités</b>
+          </div>
+          <div className="homeMiniCard bottom">
+            <span>Artsets</span>
+            <b>7 complets</b>
+          </div>
         </div>
       </section>
 
-      <section className="features">
-        <article><b>📦 Fiches produits</b><p>ETB, coffrets, Pokébox, valisettes, cartes et accessoires.</p></article>
-        <article><b>📈 Suivi de valeur</b><p>Compare prix d’achat, valeur actuelle, plus-value et perte.</p></article>
-        <article><b>🔎 Recherche</b><p>Retrouve rapidement un produit ou une série.</p></article>
-        <article><b>🔔 Alertes</b><p>Prévu pour une prochaine version : alertes de prix et disponibilité.</p></article>
+      <section className="homeQuickStats">
+        <article>
+          <span>Catalogue</span>
+          <strong>600+ produits</strong>
+          <small>ETB, displays, cases, boosters, coffrets…</small>
+        </article>
+        <article>
+          <span>Suivi intelligent</span>
+          <strong>Valeur & historique</strong>
+          <small>Prix d’achat, cote, évolution et ventes observées.</small>
+        </article>
+        <article>
+          <span>Collectionneur</span>
+          <strong>Artsets & doublons</strong>
+          <small>Repère ce qui manque et ce que tu peux revendre.</small>
+        </article>
+        <article>
+          <span>Communauté</span>
+          <strong>Trades entre membres</strong>
+          <small>Mise en relation simple, sans intermédiaire financier.</small>
+        </article>
       </section>
 
-      <section className="contentGrid">
-        <div className="panel">
-          <h2>Ta collection en un coup d’œil</h2>
-          <div className="sampleRows">
-            <div><span>Valisette Arceus</span><b>88 € → 112 €</b></div>
-            <div><span>ETB Célébrations</span><b>120 € → 168 €</b></div>
-            <div><span>Coffret 30 ans</span><b>85 € → 92 €</b></div>
+      <section className="homeSection">
+        <div className="homeSectionHead">
+          <span className="eyebrow dark">Tout au même endroit</span>
+          <h2>Un vrai tableau de bord de collectionneur</h2>
+          <p>Pas seulement “combien ça vaut”, mais aussi quoi conserver, quoi vendre, quoi chercher et comment ta collection évolue.</p>
+        </div>
+
+        <div className="homeFeatureGrid">
+          <article className="homeFeatureCard featured">
+            <div className="homeFeatureIcon">📦</div>
+            <h3>Ma collection</h3>
+            <p>Photos, prix d’achat, état, variantes, compositions et valeur actuelle.</p>
+            <a href="/collection">Ouvrir ma collection →</a>
+          </article>
+          <article className="homeFeatureCard">
+            <div className="homeFeatureIcon">🎯</div>
+            <h3>Watchlist & alertes</h3>
+            <p>Fixe un prix objectif et repère les offres intéressantes lorsqu’elles apparaissent.</p>
+            <a href="/opportunites">Voir les opportunités →</a>
+          </article>
+          <article className="homeFeatureCard">
+            <div className="homeFeatureIcon">♻️</div>
+            <h3>Doublons</h3>
+            <p>Identifie instantanément les exemplaires en surplus et leur valeur potentielle.</p>
+            <a href="/opportunites">Voir mes doublons →</a>
+          </article>
+          <article className="homeFeatureCard">
+            <div className="homeFeatureIcon">🧩</div>
+            <h3>Artsets</h3>
+            <p>Suis chaque artwork de booster ou solo blister et visualise ce qu’il te manque.</p>
+            <span className="homeSoon">En cours d’enrichissement</span>
+          </article>
+          <article className="homeFeatureCard">
+            <div className="homeFeatureIcon">🔁</div>
+            <h3>Trades</h3>
+            <p>Propose tes doublons et échange directement avec d’autres collectionneurs.</p>
+            <a href="/trades">Découvrir les trades →</a>
+          </article>
+          <article className="homeFeatureCard">
+            <div className="homeFeatureIcon">💬</div>
+            <h3>Communauté</h3>
+            <p>Échange avec des membres actifs dans un espace modéré et réservé aux comptes.</p>
+            <a href="/communaute">Entrer dans la communauté →</a>
+          </article>
+        </div>
+      </section>
+
+      <section className="homeSplit">
+        <div className="homeStoryCard dark">
+          <span className="homePill mutedPill">Le principe PokéValeur</span>
+          <h2>Tu sais exactement ce que tu possèdes.</h2>
+          <p>
+            Chaque produit peut devenir une vraie fiche de collection : photos, origine, prix d’achat,
+            état du scellé, boosters visibles, historique et valeur.
+          </p>
+          <div className="homeChecklist">
+            <span>✓ Fiche détaillée</span>
+            <span>✓ Historique de valeur</span>
+            <span>✓ Photos personnelles</span>
+            <span>✓ Recherche rapide</span>
           </div>
         </div>
-        <div className="panel accent">
-          <h2>Pourquoi PokéValeur ?</h2>
-          <p>Parce qu’un collectionneur veut savoir ce qu’il possède, combien il a investi et comment sa collection évolue, sans passer par plusieurs tableaux ou applications.</p>
+
+        <div className="homeStoryCard gold">
+          <span className="homePill">Assistant collectionneur</span>
+          <h2>PokéValeur t’aide à décider, sans décider à ta place.</h2>
+          <p>
+            Doublons, watchlist, objectifs de prix, artsets incomplets et trades potentiels :
+            l’information utile remonte au bon moment.
+          </p>
+          <a className="btn" href="/opportunites">Voir mon tableau de bord</a>
         </div>
+      </section>
+
+      <section className="homeFinalCta">
+        <div>
+          <span className="eyebrow">Ta collection mérite mieux qu’un tableau Excel</span>
+          <h2>Commence à construire ton PokéValeur.</h2>
+        </div>
+        <a className="btn" href="/login">Créer mon espace gratuitement</a>
       </section>
     </main>
   )
