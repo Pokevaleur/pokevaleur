@@ -20,6 +20,30 @@ export default function CataloguePage() {
   const [user, setUser] = useState(null)
   const [suggestion, setSuggestion] = useState({ name:'', series:'', category:'sealed', notes:'' })
   const [suggestionMessage, setSuggestionMessage] = useState('')
+  const [voiceListening, setVoiceListening] = useState(false)
+
+  function startVoiceSearch(onResult, setListening) {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!Recognition) {
+      window.alert('La recherche vocale n’est pas disponible sur ce navigateur.')
+      return
+    }
+
+    const recognition = new Recognition()
+    recognition.lang = 'fr-FR'
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+
+    recognition.onstart = () => setListening(true)
+    recognition.onend = () => setListening(false)
+    recognition.onerror = () => setListening(false)
+    recognition.onresult = event => {
+      const spoken = event.results?.[0]?.[0]?.transcript?.trim()
+      if (spoken) onResult(spoken)
+    }
+
+    recognition.start()
+  }
 
   useEffect(() => {
     loadProducts()
@@ -183,12 +207,23 @@ export default function CataloguePage() {
           <span>produit{products.length > 1 ? 's' : ''} recensé{products.length > 1 ? 's' : ''}</span>
           {query && <small>{filtered.length} résultat{filtered.length > 1 ? 's' : ''} pour ta recherche</small>}
         </div>
-        <input
-          className="catalogSearch"
-          value={query}
-          onChange={e => setQuery(e.target.value)}
-          placeholder="Rechercher un produit ou une série..."
-        />
+        <div className="voiceSearchWrap">
+          <input
+            className="catalogSearch"
+            value={query}
+            onChange={e => setQuery(e.target.value)}
+            placeholder="Rechercher un produit ou une série..."
+          />
+          <button
+            type="button"
+            className={voiceListening ? 'voiceSearchButton listening' : 'voiceSearchButton'}
+            aria-label="Rechercher à la voix"
+            title="Recherche vocale"
+            onClick={() => startVoiceSearch(setQuery, setVoiceListening)}
+          >
+            {voiceListening ? '🎙️' : '🎤'}
+          </button>
+        </div>
       </section>
 
       <section className="catalogGrid">
