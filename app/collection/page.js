@@ -11,7 +11,8 @@ const emptyForm = {
   purchase_place: '',
   seller_name: '',
   product_id: '',
-  current_value_override: ''
+  current_value_override: '',
+  sealed_condition: 'standard'
 }
 
 export default function CollectionPage() {
@@ -48,7 +49,7 @@ export default function CollectionPage() {
   async function loadCatalog() {
     const { data, error } = await supabase
       .from('products')
-      .select('id,name,series,category,current_value')
+      .select('id,name,series,category,current_value,zero_defect_value')
       .eq('is_public', true)
       .order('name')
 
@@ -67,7 +68,17 @@ export default function CollectionPage() {
 
   function getCatalogValue(item) {
     const product = catalog.find(p => p.id === item.product_id)
-    return product?.current_value !== null && product?.current_value !== undefined
+    if (!product) return null
+
+    if (
+      item.sealed_condition === 'zero_defect' &&
+      product.zero_defect_value !== null &&
+      product.zero_defect_value !== undefined
+    ) {
+      return Number(product.zero_defect_value)
+    }
+
+    return product.current_value !== null && product.current_value !== undefined
       ? Number(product.current_value)
       : null
   }
@@ -96,7 +107,8 @@ export default function CollectionPage() {
       purchase_date: form.purchase_date || null,
       purchase_place: form.purchase_place.trim() || null,
       seller_name: form.seller_name.trim() || null,
-      current_value_override: form.current_value_override ? Number(form.current_value_override) : null
+      current_value_override: form.current_value_override ? Number(form.current_value_override) : null,
+      sealed_condition: form.sealed_condition || 'standard'
     }
 
     const { error } = await supabase.from('collection_items').insert(payload)
@@ -117,7 +129,8 @@ export default function CollectionPage() {
       purchase_place: item.purchase_place || '',
       seller_name: item.seller_name || '',
       product_id: item.product_id || '',
-      current_value_override: item.current_value_override ?? ''
+      current_value_override: item.current_value_override ?? '',
+      sealed_condition: item.sealed_condition || 'standard'
     })
     setMessage('')
   }
@@ -131,7 +144,8 @@ export default function CollectionPage() {
       purchase_date: editForm.purchase_date || null,
       purchase_place: editForm.purchase_place.trim() || null,
       seller_name: editForm.seller_name.trim() || null,
-      current_value_override: editForm.current_value_override === '' ? null : Number(editForm.current_value_override)
+      current_value_override: editForm.current_value_override === '' ? null : Number(editForm.current_value_override),
+      sealed_condition: editForm.sealed_condition || 'standard'
     }
 
     const { error } = await supabase
@@ -295,6 +309,17 @@ export default function CollectionPage() {
             </label>
 
             <label>
+              État du produit scellé
+              <select
+                value={form.sealed_condition}
+                onChange={e => setForm({ ...form, sealed_condition: e.target.value })}
+              >
+                <option value="standard">Marché standard</option>
+                <option value="zero_defect">Zéro défaut</option>
+              </select>
+            </label>
+
+            <label>
               Prix d’achat (€)
               <input
                 type="number"
@@ -384,6 +409,13 @@ export default function CollectionPage() {
                           <input type="number" min="1" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} />
                         </label>
                         <label>
+                          État du scellé
+                          <select value={editForm.sealed_condition} onChange={e => setEditForm({ ...editForm, sealed_condition: e.target.value })}>
+                            <option value="standard">Marché standard</option>
+                            <option value="zero_defect">Zéro défaut</option>
+                          </select>
+                        </label>
+                        <label>
                           Achat (€)
                           <input type="number" min="0" step="0.01" value={editForm.purchase_price} onChange={e => setEditForm({ ...editForm, purchase_price: e.target.value })} />
                         </label>
@@ -422,12 +454,13 @@ export default function CollectionPage() {
                           {item.purchase_date ? ` • acheté le ${new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR')}` : ''}
                           {item.purchase_place ? ` • ${item.purchase_place}` : ''}
                           {item.seller_name ? ` • vendeur : ${item.seller_name}` : ''}
+                          {item.sealed_condition === 'zero_defect' ? ' • zéro défaut' : ''}
                         </p>
                       </div>
                       <div className="productValues">
                         <b>{buy.toFixed(2)} € → {value.toFixed(2)} €</b>
                         {item.current_value_override === null && getCatalogValue(item) !== null
-                          ? <small className="muted">Cote PokéValeur</small>
+                          ? <small className="muted">{item.sealed_condition === 'zero_defect' ? 'Cote PokéValeur zéro défaut' : 'Cote PokéValeur standard'}</small>
                           : item.current_value_override !== null
                             ? <small className="muted">Valeur manuelle</small>
                             : null}
