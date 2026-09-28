@@ -58,6 +58,26 @@ export async function POST(request) {
     const refsResponseBefore = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status,visual_cues', token)
     const referenceBoosters = refsResponseBefore.ok ? await refsResponseBefore.json() : []
 
+    const item = items[0]
+
+    let expectedProductContents = []
+    let expectedSeriesDefaults = []
+
+    if (item.product_id) {
+      const [expectedResponse, defaultsResponse] = await Promise.all([
+        supabaseFetch('/rest/v1/product_contents?product_id=eq.' + encodeURIComponent(item.product_id) + '&content_type=eq.booster&select=item_name,quantity,source_label,confidence', token),
+        supabaseFetch('/rest/v1/product_expected_booster_series?product_id=eq.' + encodeURIComponent(item.product_id) + '&select=series_name,expected_quantity,source_label,confidence', token)
+      ])
+      expectedProductContents = expectedResponse.ok ? await expectedResponse.json() : []
+      expectedSeriesDefaults = defaultsResponse.ok ? await defaultsResponse.json() : []
+    }
+
+    const expectedBoosterSummary = expectedProductContents.length
+      ? expectedProductContents.map(x => `${x.quantity} × ${x.item_name}`).join(' | ')
+      : expectedSeriesDefaults.length
+        ? expectedSeriesDefaults.map(x => `${x.expected_quantity ? x.expected_quantity + ' × ' : ''}${x.series_name}`).join(' | ')
+        : 'Aucune composition catalogue connue.'
+
     // FIRST PASS EXTENSIONS ONLY:
     // If this item has no booster series yet, identify the visible series first and lock them
     // before attempting any artwork recognition. This prevents artwork guesses from dragging
@@ -112,25 +132,6 @@ Règles:
       }
     }
 
-        const item = items[0]
-
-    let expectedProductContents = []
-    let expectedSeriesDefaults = []
-
-    if (item.product_id) {
-      const [expectedResponse, defaultsResponse] = await Promise.all([
-        supabaseFetch('/rest/v1/product_contents?product_id=eq.' + encodeURIComponent(item.product_id) + '&content_type=eq.booster&select=item_name,quantity,source_label,confidence', token),
-        supabaseFetch('/rest/v1/product_expected_booster_series?product_id=eq.' + encodeURIComponent(item.product_id) + '&select=series_name,expected_quantity,source_label,confidence', token)
-      ])
-      expectedProductContents = expectedResponse.ok ? await expectedResponse.json() : []
-      expectedSeriesDefaults = defaultsResponse.ok ? await defaultsResponse.json() : []
-    }
-
-    const expectedBoosterSummary = expectedProductContents.length
-      ? expectedProductContents.map(x => `${x.quantity} × ${x.item_name}`).join(' | ')
-      : expectedSeriesDefaults.length
-        ? expectedSeriesDefaults.map(x => `${x.expected_quantity ? x.expected_quantity + ' × ' : ''}${x.series_name}`).join(' | ')
-        : 'Aucune composition catalogue connue.'
     const knownComposition = knownBoosters.length
       ? knownBoosters.map(b => {
           const allowed = referenceBoosters
