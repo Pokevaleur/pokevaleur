@@ -11,6 +11,15 @@ async function supabaseFetch(path, token) {
   })
 }
 
+function normalizeExpansion(value) {
+  return String(value || '')
+    .toLowerCase()
+    .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+    .replace(/^eb\s*\d+\s*[—-]?\s*/i, '')
+    .replace(/^epee et bouclier\s*[—-]\s*/i, '')
+    .trim()
+}
+
 export async function POST(request) {
   try {
     if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: 'OPENAI_API_KEY absente sur le serveur.' }, { status: 503 })
@@ -46,9 +55,17 @@ export async function POST(request) {
     const boosterResponse = await supabaseFetch('/rest/v1/collection_item_boosters?collection_item_id=eq.' + encodeURIComponent(itemId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&select=position,expansion_name,artwork_name,confirmed&order=position.asc', token)
     const knownBoosters = boosterResponse.ok ? await boosterResponse.json() : []
 
+    const refsResponseBefore = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status', token)
+    const referenceBoosters = refsResponseBefore.ok ? await refsResponseBefore.json() : []
+
     const item = items[0]
     const knownComposition = knownBoosters.length
-      ? knownBoosters.map(b => `Position ${b.position}: extension=${b.expansion_name || 'inconnue'}, artwork=${b.artwork_name || 'inconnu'}, confirmé=${b.confirmed ? 'oui' : 'non'}`).join('\n')
+      ? knownBoosters.map(b => {
+          const allowed = referenceBoosters
+            .filter(r => normalizeExpansion(r.expansion_name) === normalizeExpansion(b.expansion_name))
+            .map(r => r.artwork_name)
+          return `Position ${b.position}: extension=${b.expansion_name || 'inconnue'}, artwork=${b.artwork_name || 'inconnu'}, confirmé=${b.confirmed ? 'oui' : 'non'}, artworks possibles=${allowed.length ? allowed.join(' | ') : 'non référencés'}`
+        }).join('\n')
       : 'Aucune position déjà enregistrée.'
 
     const instructions = `Tu analyses des photos d'un exemplaire Pokémon scellé afin d'identifier les boosters visibles à l'intérieur.
@@ -104,7 +121,77 @@ Règles impératives:
       })) : []
     })) : []
 
-    const candidatePairs = result.boosters.flatMap(b => b.candidates || []).filter(c => c.expansion_name && c.artwork_name)
+    // SECOND PASS TARGETED ARTWORK: for unresolved/low-confidence positions, analyze again
+    // with the extension locked and only its known pack artworks as candidates.
+    const unresolved = result.boosters.filter(b => {
+      const known = knownBoosters.find(k => Number(k.position) === Number(b.position))
+      if (known?.confirmed) return false
+      return !b.artwork_name || b.confidence === 'low'
+    })
+
+    const unresolvedWithChoices = unresolved.map(b => {
+      const known = knownBoosters.find(k => Number(k.position) === Number(b.position))
+      const expansion = known?.expansion_name || b.expansion_name
+      const choices = referenceBoosters
+        .filter(r => normalizeExpansion(r.expansion_name) === normalizeExpansion(expansion))
+        .map(r => r.artwork_name)
+      return { position: b.position, expansion, choices }
+    }).filter(x => x.expansion && x.choices.length)
+
+    if (unresolvedWithChoices.length) {
+      const secondPassPrompt = `Fais une seconde inspection VISUELLE, plus fine, des mêmes photos.
+Chaque ligne ci-dessous a une extension verrouillée. Tu dois seulement choisir l'artwork parmi la liste autorisée pour cette position.
+Observe les petits fragments visibles: couleurs, silhouette, orientation du Pokémon, fond, zones sombres/claires, bordures, éléments distinctifs. Croise toutes les photos.
+Ne change jamais l'extension. Si tu hésites entre deux artworks, donne le meilleur candidat avec confidence medium et une courte evidence.
+
+Positions à résoudre:
+${unresolvedWithChoices.map(x => `Position ${x.position} — extension: ${x.expansion} — choix autorisés: ${x.choices.join(' | ')}`).join('\n')}
+
+Réponds uniquement en JSON:
+{"boosters":[{"position":1,"artwork_name":"...","confidence":"high|medium|low","evidence":"..."}]}`
+
+      const secondResponse = await fetch('https://api.openai.com/v1/responses', {
+        method: 'POST',
+        headers: { Authorization: 'Bearer ' + process.env.OPENAI_API_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          model: 'gpt-5.6-luna',
+          input: [{ role: 'user', content: [{ type: 'input_text', text: secondPassPrompt }, ...images] }],
+          text: { format: { type: 'json_object' } }
+        })
+      })
+
+      if (secondResponse.ok) {
+        const secondAi = await secondResponse.json()
+        const secondText = secondAi.output?.flatMap(o => o.content || []).find(x => x.type === 'output_text')?.text
+        if (secondText) {
+          const refined = JSON.parse(secondText)
+          const refinedBoosters = Array.isArray(refined.boosters) ? refined.boosters : []
+          result.boosters = result.boosters.map(b => {
+            const known = knownBoosters.find(k => Number(k.position) === Number(b.position))
+            if (known?.confirmed) return b
+            const r = refinedBoosters.find(x => Number(x.position) === Number(b.position))
+            if (!r?.artwork_name) return b
+
+            const expansion = known?.expansion_name || b.expansion_name
+            const allowed = referenceBoosters
+              .filter(ref => normalizeExpansion(ref.expansion_name) === normalizeExpansion(expansion))
+              .map(ref => ref.artwork_name.toLowerCase())
+
+            if (!allowed.includes(String(r.artwork_name).toLowerCase())) return b
+
+            return {
+              ...b,
+              expansion_name: known?.expansion_name || b.expansion_name,
+              artwork_name: r.artwork_name,
+              confidence: ['high','medium','low'].includes(r.confidence) ? r.confidence : 'medium',
+              evidence: r.evidence || b.evidence
+            }
+          })
+        }
+      }
+    }
+
+        const candidatePairs = result.boosters.flatMap(b => b.candidates || []).filter(c => c.expansion_name && c.artwork_name)
     if (candidatePairs.length) {
       const refsResponse = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status', token)
       const refs = refsResponse.ok ? await refsResponse.json() : []
