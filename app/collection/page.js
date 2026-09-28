@@ -28,8 +28,8 @@ export default function CollectionPage() {
   const [query, setQuery] = useState('')
   const [catalog, setCatalog] = useState([])
   const [catalogQuery, setCatalogQuery] = useState('')
-  const [photoFile, setPhotoFile] = useState(null)
-  const [editPhotoFile, setEditPhotoFile] = useState(null)
+  const [photoFiles, setPhotoFiles] = useState([])
+  const [editPhotoFiles, setEditPhotoFiles] = useState([])
   const [photoUrls, setPhotoUrls] = useState({})
 
   async function load() {
@@ -132,14 +132,22 @@ export default function CollectionPage() {
     return path
   }
 
+  async function uploadCollectionPhotos(files) {
+    const paths = []
+    for (const file of files) {
+      paths.push(await uploadCollectionPhoto(file))
+    }
+    return paths
+  }
+
   async function addItem(e) {
     e.preventDefault()
     if (!user) return setMessage('Connecte-toi d’abord.')
 
-    let uploadedPhotoPath = null
+    let uploadedPhotoPaths = []
 
     try {
-      uploadedPhotoPath = await uploadCollectionPhoto(photoFile)
+      uploadedPhotoPaths = await uploadCollectionPhotos(photoFiles)
     } catch (error) {
       return setMessage(error.message)
     }
@@ -157,19 +165,36 @@ export default function CollectionPage() {
       sealed_condition: form.sealed_condition || 'standard',
       booster_configuration: form.booster_configuration.trim() || null,
       variant_note: form.variant_note.trim() || null,
-      photo_path: uploadedPhotoPath
+      photo_path: uploadedPhotoPaths[0] || null
     }
 
-    const { error } = await supabase.from('collection_items').insert(payload)
+    const { data: insertedItem, error } = await supabase
+      .from('collection_items')
+      .insert(payload)
+      .select('id')
+      .single()
+
     if (error) {
-      if (uploadedPhotoPath) {
-        await supabase.storage.from('collection-images').remove([uploadedPhotoPath])
+      if (uploadedPhotoPaths.length) {
+        await supabase.storage.from('collection-images').remove(uploadedPhotoPaths)
       }
       return setMessage(error.message)
     }
 
+    if (uploadedPhotoPaths.length) {
+      const { error: photoError } = await supabase.from('collection_item_photos').insert(
+        uploadedPhotoPaths.map((path, index) => ({
+          collection_item_id: insertedItem.id,
+          user_id: user.id,
+          photo_path: path,
+          sort_order: index
+        }))
+      )
+      if (photoError) setMessage('Produit ajouté, mais certaines photos n’ont pas pu être enregistrées.')
+    }
+
     setForm(emptyForm)
-    setPhotoFile(null)
+    setPhotoFiles([])
     setMessage('Produit ajouté à ta collection.')
     await load()
   }
@@ -189,16 +214,16 @@ export default function CollectionPage() {
       booster_configuration: item.booster_configuration || '',
       variant_note: item.variant_note || ''
     })
-    setEditPhotoFile(null)
+    setEditPhotoFiles([])
     setMessage('')
   }
 
   async function saveEdit(id) {
     const currentItem = items.find(item => item.id === id)
-    let newPhotoPath = null
+    let newPhotoPaths = []
 
     try {
-      newPhotoPath = await uploadCollectionPhoto(editPhotoFile)
+      newPhotoPaths = await uploadCollectionPhotos(editPhotoFiles)
     } catch (error) {
       return setMessage(error.message)
     }
@@ -217,7 +242,7 @@ export default function CollectionPage() {
       variant_note: editForm.variant_note.trim() || null
     }
 
-    if (newPhotoPath) payload.photo_path = newPhotoPath
+    if (newPhotoPaths.length && !currentItem?.photo_path) payload.photo_path = newPhotoPaths[0]
 
     const { error } = await supabase
       .from('collection_items')
@@ -225,18 +250,31 @@ export default function CollectionPage() {
       .eq('id', id)
 
     if (error) {
-      if (newPhotoPath) {
-        await supabase.storage.from('collection-images').remove([newPhotoPath])
+      if (newPhotoPaths.length) {
+        await supabase.storage.from('collection-images').remove(newPhotoPaths)
       }
       return setMessage(error.message)
     }
 
-    if (newPhotoPath && currentItem?.photo_path) {
-      await supabase.storage.from('collection-images').remove([currentItem.photo_path])
+    if (newPhotoPaths.length) {
+      const { count } = await supabase
+        .from('collection_item_photos')
+        .select('id', { count: 'exact', head: true })
+        .eq('collection_item_id', id)
+
+      const { error: photoError } = await supabase.from('collection_item_photos').insert(
+        newPhotoPaths.map((path, index) => ({
+          collection_item_id: id,
+          user_id: user.id,
+          photo_path: path,
+          sort_order: (count || 0) + index
+        }))
+      )
+      if (photoError) setMessage('Modifications enregistrées, mais certaines photos n’ont pas pu être ajoutées.')
     }
 
     setEditingId(null)
-    setEditPhotoFile(null)
+    setEditPhotoFiles([])
     setMessage('Produit modifié.')
     await load()
   }
@@ -480,19 +518,33 @@ export default function CollectionPage() {
                   type="file"
                   accept="image/*"
                   capture="environment"
-                  onChange={e => setPhotoFile(e.target.files?.[0] || null)}
+                  onChange={e => {
+                    const file = e.target.files?.[0]
+                    if (file) setPhotoFiles(prev => [...prev, file])
+                    e.target.value = ''
+                  }}
                 />
               </label>
               <label>
-                Choisir une photo existante
+                Choisir plusieurs photos
                 <input
                   type="file"
                   accept="image/*"
-                  onChange={e => setPhotoFile(e.target.files?.[0] || null)}
+                  multiple
+                  onChange={e => {
+                    const files = [...(e.target.files || [])]
+                    if (files.length) setPhotoFiles(prev => [...prev, ...files])
+                    e.target.value = ''
+                  }}
                 />
               </label>
             </div>
-            {photoFile && <small className="muted">Photo prête : {photoFile.name}</small>}
+            {photoFiles.length > 0 && (
+              <div className="pendingPhotos">
+                <small className="muted">{photoFiles.length} photo{photoFiles.length > 1 ? 's' : ''} prête{photoFiles.length > 1 ? 's' : ''}</small>
+                <button type="button" className="miniBtn" onClick={() => setPhotoFiles([])}>Effacer la sélection</button>
+              </div>
+            )}
 
             <small className="muted">
               Si deux exemplaires du même coffret n’ont pas les mêmes boosters, ajoute-les séparément (quantité 1) afin de conserver leur composition exacte.
@@ -579,15 +631,24 @@ export default function CollectionPage() {
                               type="file"
                               accept="image/*"
                               capture="environment"
-                              onChange={e => setEditPhotoFile(e.target.files?.[0] || null)}
+                              onChange={e => {
+                                const file = e.target.files?.[0]
+                                if (file) setEditPhotoFiles(prev => [...prev, file])
+                                e.target.value = ''
+                              }}
                             />
                           </label>
                           <label>
-                            Choisir une photo existante
+                            Ajouter plusieurs photos
                             <input
                               type="file"
                               accept="image/*"
-                              onChange={e => setEditPhotoFile(e.target.files?.[0] || null)}
+                              multiple
+                              onChange={e => {
+                                const files = [...(e.target.files || [])]
+                                if (files.length) setEditPhotoFiles(prev => [...prev, ...files])
+                                e.target.value = ''
+                              }}
                             />
                           </label>
                         </div>
@@ -638,6 +699,7 @@ export default function CollectionPage() {
                       </div>
                     </div>
                     <div className="rowActions">
+                      <a className="miniBtn" href={`/collection/${item.id}`}>Voir la fiche</a>
                       <button className="miniBtn" onClick={() => startEdit(item)}>Modifier</button>
                       <button className="miniBtn dangerMini" onClick={() => deleteItem(item)}>Supprimer</button>
                     </div>
