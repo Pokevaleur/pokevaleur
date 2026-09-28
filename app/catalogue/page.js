@@ -108,7 +108,11 @@ export default function CataloguePage() {
       premium: ['collection premium', 'premium'],
       poster: ['collection poster', 'poster'],
       classeur: ['collection classeur', 'classeur', 'binder collection'],
-      binder: ['collection classeur', 'classeur', 'binder collection']
+      binder: ['collection classeur', 'classeur', 'binder collection'],
+      journee: ['journee pokemon', 'pokemon day', 'journee pokemon 2026'],
+      'journee pokemon': ['pokemon day', 'journee pokemon 2026'],
+      'pokemon day': ['journee pokemon', 'journee pokemon 2026'],
+      '30 ans': ['journee pokemon 2026', '30e anniversaire', '30eme anniversaire']
     }
 
     const expandedTerms = new Set([normalizedQuery])
