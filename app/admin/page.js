@@ -141,45 +141,10 @@ export default function AdminPage() {
 
     if (error) return setMessage(error.message)
 
-    if (observation.observation_type === 'confirmed_sale') {
-      const { data: sales } = await supabase
-        .from('product_price_history')
-        .select('price,source,observed_at')
-        .eq('product_id', observation.product_id)
-        .eq('condition_tier', observation.condition_tier)
-        .eq('observation_type', 'confirmed_sale')
-        .order('observed_at', { ascending: true })
-
-      const values = (sales || []).map(item => Number(item.price)).filter(Number.isFinite)
-      const marketMedian = median(values)
-
-      if (marketMedian !== null) {
-        if (observation.condition_tier === 'zero_defect') {
-          await supabase
-            .from('products')
-            .update({
-              zero_defect_value: marketMedian,
-              zero_defect_source: `Médiane de ${values.length} ventes confirmées`,
-              zero_defect_updated_at: observedAt
-            })
-            .eq('id', observation.product_id)
-        } else if (observation.condition_tier === 'standard') {
-          await supabase
-            .from('products')
-            .update({
-              current_value: marketMedian,
-              price_source: `Médiane de ${values.length} ventes confirmées`,
-              price_updated_at: observedAt
-            })
-            .eq('id', observation.product_id)
-        }
-      }
-    }
-
     setObservation(emptyObservation)
     setMessage(
       observation.observation_type === 'confirmed_sale'
-        ? 'Vente enregistrée et cote recalculée.'
+        ? 'Vente enregistrée. La cote a été recalculée automatiquement.'
         : 'Prix d’annonce enregistré sans modifier la cote.'
     )
     await load()
