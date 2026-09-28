@@ -209,3 +209,9 @@ img,video,canvas,svg{max-width:100%;height:auto}
 .referenceContribution{width:100%;max-width:100%;min-width:0;overflow:hidden}
 .referencePhotoGrid{width:100%;max-width:100%;min-width:0}
 .referencePhotoCard{min-width:0!important;overflow:hidden}
+
+.referenceConsentActions{display:flex;gap:10px;flex-wrap:wrap;margin:10px 0}
+@media(max-width:700px){
+  .referenceConsentActions{flex-direction:column;align-items:stretch}
+  .referenceConsentActions>*{width:100%}
+}
