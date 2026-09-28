@@ -552,9 +552,9 @@ export default function CollectionPage() {
             </label>
 
             <div className="photoChoice">
-              <label>
-                Prendre une photo
+              <label className="photoAction">
                 <input
+                  className="photoInput"
                   type="file"
                   accept="image/*"
                   capture="environment"
@@ -564,10 +564,16 @@ export default function CollectionPage() {
                     e.target.value = ''
                   }}
                 />
+                <span className="photoActionIcon">📷</span>
+                <span>
+                  <b>Prendre une photo</b>
+                  <small>Ouvre directement l’appareil photo</small>
+                </span>
               </label>
-              <label>
-                Choisir plusieurs photos
+
+              <label className="photoAction">
                 <input
+                  className="photoInput"
                   type="file"
                   accept="image/*"
                   multiple
@@ -577,6 +583,11 @@ export default function CollectionPage() {
                     e.target.value = ''
                   }}
                 />
+                <span className="photoActionIcon">🖼️</span>
+                <span>
+                  <b>Choisir des photos</b>
+                  <small>Depuis la galerie du téléphone</small>
+                </span>
               </label>
             </div>
             {photoFiles.length > 0 && (
@@ -665,9 +676,9 @@ export default function CollectionPage() {
                           <input value={editForm.variant_note} onChange={e => setEditForm({ ...editForm, variant_note: e.target.value })} />
                         </label>
                         <div className="photoChoice">
-                          <label>
-                            Prendre une nouvelle photo
+                          <label className="photoAction">
                             <input
+                              className="photoInput"
                               type="file"
                               accept="image/*"
                               capture="environment"
@@ -677,10 +688,16 @@ export default function CollectionPage() {
                                 e.target.value = ''
                               }}
                             />
+                            <span className="photoActionIcon">📷</span>
+                            <span>
+                              <b>Prendre une photo</b>
+                              <small>Ajoutée immédiatement à cette fiche</small>
+                            </span>
                           </label>
-                          <label>
-                            Ajouter plusieurs photos
+
+                          <label className="photoAction">
                             <input
+                              className="photoInput"
                               type="file"
                               accept="image/*"
                               multiple
@@ -690,6 +707,11 @@ export default function CollectionPage() {
                                 e.target.value = ''
                               }}
                             />
+                            <span className="photoActionIcon">🖼️</span>
+                            <span>
+                              <b>Ajouter des photos</b>
+                              <small>Choisis une ou plusieurs images</small>
+                            </span>
                           </label>
                         </div>
                       </div>
