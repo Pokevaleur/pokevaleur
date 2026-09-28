@@ -154,6 +154,7 @@ export default function CollectionItemDetailPage() {
             confidence: sameKnownExpansion && (proposal.artwork_name || proposal.expansion_name)
               ? (proposal.confidence || existing?.confidence || 'low')
               : (existing?.confidence || 'low'),
+            evidence: proposal.evidence || existing?.evidence || '',
             confirmed: false
           }
         })
@@ -297,6 +298,7 @@ export default function CollectionItemDetailPage() {
               {boosters.map((booster, index) => (
                 <div key={booster.id || index} style={{padding: '10px 0', borderBottom: index < boosters.length - 1 ? '1px solid #eadfc8' : 'none'}}>
                   <strong>Booster {index + 1}</strong> — {booster.expansion_name || 'Extension à confirmer'}{booster.artwork_name ? ` — ${booster.artwork_name}` : ''}
+                  {booster.evidence && <div className="boosterEvidence">Pourquoi : {booster.evidence}</div>}
                   {(analysisCandidates[index + 1] || []).length > 0 && (
                     <div className="candidateGrid">
                       {(analysisCandidates[index + 1] || []).map((candidate, candidateIndex) => (
@@ -326,6 +328,7 @@ export default function CollectionItemDetailPage() {
                           <span>
                             <b>{candidate.artwork_name || 'Artwork à confirmer'}</b>
                             <small>{candidate.expansion_name || 'Extension à confirmer'} • {candidate.confidence === 'high' ? 'confiance élevée' : candidate.confidence === 'medium' ? 'confiance moyenne' : 'à vérifier'}</small>
+                            {candidate.visual_cues && <em>{candidate.visual_cues}</em>}
                           </span>
                         </button>
                       ))}
