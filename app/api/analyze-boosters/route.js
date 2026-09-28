@@ -55,7 +55,7 @@ export async function POST(request) {
     const boosterResponse = await supabaseFetch('/rest/v1/collection_item_boosters?collection_item_id=eq.' + encodeURIComponent(itemId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&select=position,expansion_name,artwork_name,confirmed&order=position.asc', token)
     const knownBoosters = boosterResponse.ok ? await boosterResponse.json() : []
 
-    const refsResponseBefore = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status', token)
+    const refsResponseBefore = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status,visual_cues', token)
     const referenceBoosters = refsResponseBefore.ok ? await refsResponseBefore.json() : []
 
     const item = items[0]
@@ -63,7 +63,7 @@ export async function POST(request) {
       ? knownBoosters.map(b => {
           const allowed = referenceBoosters
             .filter(r => normalizeExpansion(r.expansion_name) === normalizeExpansion(b.expansion_name))
-            .map(r => r.artwork_name)
+            .map(r => r.artwork_name + (r.visual_cues ? ' [' + r.visual_cues + ']' : ''))
           return `Position ${b.position}: extension=${b.expansion_name || 'inconnue'}, artwork=${b.artwork_name || 'inconnu'}, confirmé=${b.confirmed ? 'oui' : 'non'}, artworks possibles=${allowed.length ? allowed.join(' | ') : 'non référencés'}`
         }).join('\n')
       : 'Aucune position déjà enregistrée.'
@@ -141,7 +141,10 @@ Règles impératives:
       const expansion = known?.expansion_name || booster.expansion_name
       const choices = referenceBoosters
         .filter(r => normalizeExpansion(r.expansion_name) === normalizeExpansion(expansion))
-        .map(r => r.artwork_name)
+        .map(r => ({
+          artwork_name: r.artwork_name,
+          visual_cues: r.visual_cues || ''
+        }))
 
       if (!expansion || !choices.length) continue
 
@@ -150,7 +153,8 @@ Règles impératives:
 Emplacement à examiner : ${slot} (position ${booster.position}).
 Extension VERROUILLÉE : ${expansion}.
 Tu n'as pas le droit de changer l'extension.
-Artworks autorisés : ${choices.join(' | ')}.
+Artworks autorisés et indices discriminants :
+${choices.map(x => '- ' + x.artwork_name + ': ' + (x.visual_cues || 'aucun indice spécifique')).join('\n')}.
 
 Inspecte très précisément les fragments visibles sur TOUTES les photos : couleurs dominantes, silhouette, tête/corps du Pokémon, orientation, fond, lignes graphiques, zones claires/sombres, bordures et éléments distinctifs.
 Ignore les autres boosters sauf pour te repérer spatialement.
@@ -177,7 +181,7 @@ Réponds uniquement en JSON :
       try { refined = JSON.parse(text2) } catch { continue }
       if (!refined?.artwork_name) continue
 
-      const allowedLower = choices.map(x => x.toLowerCase())
+      const allowedLower = choices.map(x => x.artwork_name.toLowerCase())
       if (!allowedLower.includes(String(refined.artwork_name).toLowerCase())) continue
 
       const target = result.boosters.find(x => Number(x.position) === Number(booster.position))
@@ -201,8 +205,7 @@ Réponds uniquement en JSON :
 
     const candidatePairs = result.boosters.flatMap(b => b.candidates || []).filter(c => c.expansion_name && c.artwork_name)
     if (candidatePairs.length) {
-      const refsResponse = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status', token)
-      const refs = refsResponse.ok ? await refsResponse.json() : []
+      const refs = referenceBoosters
       result.boosters = result.boosters.map(booster => ({
         ...booster,
         candidates: (booster.candidates || []).map(candidate => {
@@ -213,7 +216,8 @@ Réponds uniquement en JSON :
           return {
             ...candidate,
             image_url: ref?.image_url || null,
-            source_url: ref?.source_url || null
+            source_url: ref?.source_url || null,
+            visual_cues: ref?.visual_cues || null
           }
         })
       }))
