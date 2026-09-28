@@ -18,6 +18,7 @@ export default function ProductDetailPage() {
   const supabase = useMemo(() => createClient(), [])
   const [product, setProduct] = useState(null)
   const [history, setHistory] = useState([])
+  const [contents, setContents] = useState([])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -27,7 +28,7 @@ export default function ProductDetailPage() {
   async function load() {
     setLoading(true)
 
-    const [{ data: productData }, { data: historyData }] = await Promise.all([
+    const [{ data: productData }, { data: historyData }, { data: contentData }] = await Promise.all([
       supabase
         .from('products')
         .select('id,name,series,category,product_type,release_date,release_period,official_source_url,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
@@ -37,11 +38,17 @@ export default function ProductDetailPage() {
         .from('product_price_history')
         .select('id,source,price,observed_at,condition_tier,observation_type')
         .eq('product_id', params.id)
-        .order('observed_at', { ascending: true })
+        .order('observed_at', { ascending: true }),
+      supabase
+        .from('product_contents')
+        .select('id,content_type,item_name,quantity,source_label,source_url,confidence')
+        .eq('product_id', params.id)
+        .order('content_type')
     ])
 
     setProduct(productData || null)
     setHistory(historyData || [])
+    setContents(contentData || [])
     setLoading(false)
   }
 
@@ -127,6 +134,20 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </section>
+
+      {contents.length > 0 && (
+        <section className="panel productContentsPanel">
+          <h2>Contenu du coffret</h2>
+          <div className="productContentsList">
+            {contents.map(item => (
+              <div key={item.id} className="productContentRow">
+                <span>{item.quantity} × {item.item_name}</span>
+                <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {stats ? (
         <>
