@@ -25,12 +25,29 @@ export async function POST(request) {
     if (!process.env.OPENAI_API_KEY) return NextResponse.json({ error: 'OPENAI_API_KEY absente sur le serveur.' }, { status: 503 })
     const token = request.headers.get('authorization')?.replace(/^Bearer\s+/i, '')
     if (!token) return NextResponse.json({ error: 'Session requise.' }, { status: 401 })
+    const contentLength = Number(request.headers.get('content-length') || 0)
+    if (contentLength > 16 * 1024) return NextResponse.json({ error: 'Requête trop volumineuse.' }, { status: 413 })
     const { itemId } = await request.json()
     if (!itemId) return NextResponse.json({ error: 'Produit manquant.' }, { status: 400 })
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(itemId)) {
+      return NextResponse.json({ error: 'Identifiant produit invalide.' }, { status: 400 })
+    }
 
     const userResponse = await supabaseFetch('/auth/v1/user', token)
     if (!userResponse.ok) return NextResponse.json({ error: 'Session invalide.' }, { status: 401 })
     const user = await userResponse.json()
+
+    const rateResponse = await fetch(SUPABASE_URL + '/rest/v1/rpc/check_api_rate_limit', {
+      method: 'POST',
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        Authorization: 'Bearer ' + token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ p_route: 'analyze-boosters', p_limit: 6, p_window_seconds: 3600 })
+    })
+    const rateAllowed = rateResponse.ok ? await rateResponse.json() : false
+    if (!rateAllowed) return NextResponse.json({ error: 'Limite d’analyse atteinte. Réessaie plus tard.' }, { status: 429 })
 
     const itemResponse = await supabaseFetch('/rest/v1/collection_items?id=eq.' + encodeURIComponent(itemId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&select=id,custom_name,booster_configuration,variant_note,product_id', token)
     const items = await itemResponse.json()
