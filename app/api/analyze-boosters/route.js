@@ -136,7 +136,7 @@ Règles impératives:
       4: 'bas droite'
     }
 
-    for (const booster of unresolved) {
+    const refinements = await Promise.all(unresolved.map(async booster => {
       const known = knownBoosters.find(k => Number(k.position) === Number(booster.position))
       const expansion = known?.expansion_name || booster.expansion_name
       const choices = referenceBoosters
@@ -146,7 +146,7 @@ Règles impératives:
           visual_cues: r.visual_cues || ''
         }))
 
-      if (!expansion || !choices.length) continue
+      if (!expansion || !choices.length) return null
 
       const slot = slotNames[Number(booster.position)] || ('position ' + booster.position)
       const prompt = `Tu dois identifier UN SEUL booster visible dans un coffret Pokémon.
@@ -162,23 +162,30 @@ Choisis l'artwork le plus probable parmi la liste autorisée. Si deux restent po
 Réponds uniquement en JSON :
 {"position":${booster.position},"artwork_name":"...","confidence":"high|medium|low","evidence":"...","candidates":[{"artwork_name":"...","confidence":"high|medium|low"}]}`
 
-      const response = await fetch('https://api.openai.com/v1/responses', {
-        method: 'POST',
-        headers: { Authorization: 'Bearer ' + process.env.OPENAI_API_KEY, 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'gpt-5.6-luna',
-          input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }, ...images] }],
-          text: { format: { type: 'json_object' } }
+      try {
+        const response = await fetch('https://api.openai.com/v1/responses', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + process.env.OPENAI_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'gpt-5.6-luna',
+            input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }, ...images] }],
+            text: { format: { type: 'json_object' } }
+          })
         })
-      })
+        if (!response.ok) return null
+        const ai2 = await response.json()
+        const text2 = ai2.output?.flatMap(o => o.content || []).find(x => x.type === 'output_text')?.text
+        if (!text2) return null
+        const refined = JSON.parse(text2)
+        return { booster, known, expansion, choices, refined }
+      } catch {
+        return null
+      }
+    }))
 
-      if (!response.ok) continue
-      const ai2 = await response.json()
-      const text2 = ai2.output?.flatMap(o => o.content || []).find(x => x.type === 'output_text')?.text
-      if (!text2) continue
-
-      let refined
-      try { refined = JSON.parse(text2) } catch { continue }
+    for (const refinement of refinements) {
+      if (!refinement) continue
+      const { booster, known, expansion, choices, refined } = refinement
       if (!refined?.artwork_name) continue
 
       const allowedLower = choices.map(x => x.artwork_name.toLowerCase())
