@@ -97,14 +97,27 @@ export default function CollectionItemDetailPage() {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Analyse impossible.')
-      setBoosters((result.boosters || []).map((booster, index) => ({
-        id: null,
-        position: booster.position || index + 1,
-        expansion_name: booster.expansion_name || '',
-        artwork_name: booster.artwork_name || '',
-        confidence: booster.confidence || 'low',
-        confirmed: false
-      })))
+      setBoosters(current => {
+        const proposals = result.boosters || []
+        const positions = new Set([...current.map(b => Number(b.position)), ...proposals.map((b, i) => Number(b.position) || i + 1)])
+        return [...positions].sort((a, b) => a - b).map(position => {
+          const existing = current.find(b => Number(b.position) === position)
+          const proposal = proposals.find((b, i) => (Number(b.position) || i + 1) === position)
+          if (!proposal) return existing
+          return {
+            id: existing?.id || null,
+            position,
+            // L'IA ne doit jamais effacer une information déjà connue avec une valeur vide/incertaine.
+            expansion_name: proposal.expansion_name || existing?.expansion_name || '',
+            artwork_name: proposal.artwork_name || existing?.artwork_name || '',
+            confidence: proposal.artwork_name || proposal.expansion_name
+              ? (proposal.confidence || existing?.confidence || 'low')
+              : (existing?.confidence || 'low'),
+            // Une analyse IA ne confirme jamais automatiquement une donnée.
+            confirmed: existing?.confirmed || false
+          }
+        })
+      })
       setAnalysisMessage(result.needs_additional_photo
         ? `⚠️ ${result.photo_instruction || 'Une photo complémentaire est conseillée pour confirmer certains boosters.'}`
         : '✓ Analyse terminée. Vérifie les propositions puis coche « Confirmé » avant d’enregistrer.')
