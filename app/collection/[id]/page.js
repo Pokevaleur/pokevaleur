@@ -19,6 +19,8 @@ export default function CollectionItemDetailPage() {
   const [analysisMessage, setAnalysisMessage] = useState('')
   const [analysisCandidates, setAnalysisCandidates] = useState({})
   const [expectedBoosters, setExpectedBoosters] = useState([])
+  const [referenceContributions, setReferenceContributions] = useState([])
+  const [referenceMessage, setReferenceMessage] = useState('')
 
   useEffect(() => {
     if (params?.id) load()
@@ -32,10 +34,11 @@ export default function CollectionItemDetailPage() {
       return
     }
 
-    const [{ data: itemData }, { data: photoData }, { data: boosterData }] = await Promise.all([
+    const [{ data: itemData }, { data: photoData }, { data: boosterData }, { data: contributionData }] = await Promise.all([
       supabase.from('collection_items').select('*').eq('id', params.id).eq('user_id', user.id).single(),
       supabase.from('collection_item_photos').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('sort_order'),
-      supabase.from('collection_item_boosters').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('position')
+      supabase.from('collection_item_boosters').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('position'),
+      supabase.from('booster_reference_contributions').select('*').eq('collection_item_id', params.id).eq('user_id', user.id)
     ])
 
     setItem(itemData || null)
@@ -57,6 +60,7 @@ export default function CollectionItemDetailPage() {
     }))
     setPhotos(signed.filter(photo => photo.url))
     setBoosters(boosterData || [])
+    setReferenceContributions(contributionData || [])
     setLoading(false)
   }
 
@@ -110,6 +114,40 @@ export default function CollectionItemDetailPage() {
       setPhotoMessage('❌ ' + (error.message || 'Impossible d’enregistrer la photo.'))
     } finally {
       setPhotoUploading(false)
+    }
+  }
+
+  async function contributeReference(photo, scope) {
+    setReferenceMessage('')
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Ta session a expiré.')
+
+      const already = referenceContributions.find(c =>
+        c.collection_item_photo_id === photo.id && c.reference_scope === scope
+      )
+      if (already) {
+        setReferenceMessage('✓ Cette photo est déjà proposée comme référence.')
+        return
+      }
+
+      const firstConfirmed = boosters.find(b => b.confirmed && b.expansion_name && b.artwork_name)
+      const { error } = await supabase.from('booster_reference_contributions').insert({
+        user_id: user.id,
+        collection_item_photo_id: photo.id,
+        collection_item_id: params.id,
+        expansion_name: firstConfirmed?.expansion_name || null,
+        artwork_name: firstConfirmed?.artwork_name || null,
+        reference_scope: scope
+      })
+      if (error) throw error
+
+      setReferenceMessage(scope === 'recognition_only'
+        ? '✓ Merci. Cette photo pourra servir à améliorer la reconnaissance, sans affichage public.'
+        : '✓ Merci. Cette photo pourra servir à la reconnaissance et, après validation, à une vignette publique.')
+      await load()
+    } catch (error) {
+      setReferenceMessage('❌ ' + (error.message || 'Impossible d’enregistrer cette autorisation.'))
     }
   }
 
@@ -273,6 +311,31 @@ export default function CollectionItemDetailPage() {
               ))}
             </div>
             <small className="muted">Touchez une miniature pour afficher la photo en grand.</small>
+
+            <div className="referenceContribution">
+              <h3>Aider PokéValeur à reconnaître les boosters</h3>
+              <p className="muted">Tes photos restent privées par défaut. Tu peux autoriser séparément leur utilisation comme référence visuelle. Une contribution est vérifiée avant d’être intégrée à la base.</p>
+              <div className="referencePhotoGrid">
+                {photos.map((photo, index) => {
+                  const recognitionGiven = referenceContributions.some(c => c.collection_item_photo_id === photo.id && c.reference_scope === 'recognition_only')
+                  const publicGiven = referenceContributions.some(c => c.collection_item_photo_id === photo.id && c.reference_scope === 'recognition_and_public')
+                  return (
+                    <div className="referencePhotoCard" key={photo.id}>
+                      <img src={photo.url} alt={`Photo ${index + 1}`} />
+                      <strong>Photo {index + 1}</strong>
+                      <button type="button" className="secondaryButton" disabled={recognitionGiven || publicGiven} onClick={() => contributeReference(photo, 'recognition_only')}>
+                        {recognitionGiven || publicGiven ? '✓ Référence IA autorisée' : 'Autoriser pour la reconnaissance'}
+                      </button>
+                      <button type="button" className="textButton" disabled={publicGiven} onClick={() => contributeReference(photo, 'recognition_and_public')}>
+                        {publicGiven ? '✓ Vignette publique autorisée' : 'Autoriser aussi une vignette publique'}
+                      </button>
+                    </div>
+                  )
+                })}
+              </div>
+              <small className="muted">L’autorisation « reconnaissance » n’autorise pas l’affichage public. L’autorisation « vignette publique » est distincte et explicite.</small>
+              {referenceMessage && <div className={referenceMessage.startsWith('❌') ? 'photoImmediateStatus error' : 'photoImmediateStatus success'}>{referenceMessage}</div>}
+            </div>
           </div>
         )}
 
