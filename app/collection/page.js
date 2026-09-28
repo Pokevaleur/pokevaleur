@@ -397,6 +397,80 @@ export default function CollectionPage() {
     await load()
   }
 
+  function exportCollection(includePrices) {
+    const escapeCsv = value => {
+      const text = String(value ?? '').replace(/"/g, '""')
+      return `"${text}"`
+    }
+
+    const headers = [
+      'Produit',
+      'Quantité',
+      'Série',
+      'Type',
+      'Date d’achat',
+      'Lieu d’achat',
+      'Vendeur',
+      'État',
+      'Composition boosters',
+      'Particularité',
+      'Notes'
+    ]
+
+    if (includePrices) {
+      headers.splice(4, 0, 'Prix d’achat unitaire', 'Valeur actuelle unitaire', 'Valeur totale', 'Plus-value')
+    }
+
+    const rows = items.map(item => {
+      const product = catalog.find(p => p.id === item.product_id) || {}
+      const quantity = item.quantity || 1
+      const currentValue = getCurrentValue(item)
+      const purchasePrice = Number(item.purchase_price) || 0
+      const row = [
+        item.custom_name || product.name || '',
+        quantity,
+        product.series || '',
+        product.category || '',
+        item.purchase_date || '',
+        item.purchase_place || '',
+        item.seller_name || '',
+        item.sealed_condition === 'zero_defect' ? 'Zéro défaut' : 'Standard',
+        item.booster_configuration || '',
+        item.variant_note || '',
+        item.notes || ''
+      ]
+
+      if (includePrices) {
+        row.splice(
+          4,
+          0,
+          purchasePrice.toFixed(2),
+          Number(currentValue || 0).toFixed(2),
+          Number((currentValue || 0) * quantity).toFixed(2),
+          Number(((currentValue || 0) - purchasePrice) * quantity).toFixed(2)
+        )
+      }
+
+      return row
+    })
+
+    const csv = [
+      headers.map(escapeCsv).join(';'),
+      ...rows.map(row => row.map(escapeCsv).join(';'))
+    ].join('\n')
+
+    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    const date = new Date().toISOString().slice(0, 10)
+    link.href = url
+    link.download = `pokevaleur-collection-${includePrices ? 'avec-prix' : 'sans-prix'}-${date}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   async function signOut() {
     await supabase.auth.signOut()
     window.location.href = '/'
@@ -480,6 +554,10 @@ export default function CollectionPage() {
         </div>
         <div className="collectionHeaderActions">
           <a className="btn" href="/collection/statistiques">📊 Statistiques</a>
+          <div className="exportCollectionActions">
+            <button className="btn ghost" type="button" onClick={() => exportCollection(true)}>⬇ Exporter avec prix</button>
+            <button className="btn ghost" type="button" onClick={() => exportCollection(false)}>⬇ Exporter sans prix</button>
+          </div>
           <button className="btn ghost dangerGhost" onClick={signOut}>Se déconnecter</button>
         </div>
       </div>
