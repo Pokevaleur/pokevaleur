@@ -166,6 +166,11 @@ export default function CataloguePage() {
           Les valeurs sont basées sur des observations enregistrées avec leur source et leur date.
           PokéValeur distingue toujours le prix d’achat personnel de la valeur de référence du marché.
         </p>
+        <div className="catalogCount">
+          <strong>{products.length}</strong>
+          <span>produit{products.length > 1 ? 's' : ''} recensé{products.length > 1 ? 's' : ''}</span>
+          {query && <small>{filtered.length} résultat{filtered.length > 1 ? 's' : ''} pour ta recherche</small>}
+        </div>
         <input
           className="catalogSearch"
           value={query}
