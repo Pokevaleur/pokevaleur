@@ -17,10 +17,43 @@ export default function CataloguePage() {
   const [products, setProducts] = useState([])
   const [history, setHistory] = useState([])
   const [query, setQuery] = useState('')
+  const [user, setUser] = useState(null)
+  const [suggestion, setSuggestion] = useState({ name:'', series:'', category:'sealed', notes:'' })
+  const [suggestionMessage, setSuggestionMessage] = useState('')
 
   useEffect(() => {
     loadProducts()
+    loadUser()
   }, [])
+
+  async function loadUser() {
+    const { data: { user } } = await supabase.auth.getUser()
+    setUser(user)
+  }
+
+  async function submitSuggestion(e) {
+    e.preventDefault()
+    if (!user) {
+      setSuggestionMessage('Connecte-toi pour proposer un produit.')
+      return
+    }
+
+    const { error } = await supabase.from('product_suggestions').insert({
+      user_id: user.id,
+      name: suggestion.name.trim(),
+      series: suggestion.series.trim() || null,
+      category: suggestion.category,
+      notes: suggestion.notes.trim() || null
+    })
+
+    if (error) {
+      setSuggestionMessage(error.message)
+      return
+    }
+
+    setSuggestion({ name:'', series:'', category:'sealed', notes:'' })
+    setSuggestionMessage('Merci, ta proposition a bien été enregistrée.')
+  }
 
   async function loadProducts() {
     const [{ data: productData }, { data: historyData }] = await Promise.all([
@@ -192,6 +225,64 @@ export default function CataloguePage() {
           <p>Aucun produit trouvé pour cette recherche.</p>
         </section>
       )}
+
+      <section className="panel suggestionPanel">
+        <h2>Produit absent du catalogue ?</h2>
+        <p className="muted">
+          Les membres connectés peuvent proposer une référence à ajouter.
+        </p>
+
+        {user ? (
+          <form className="suggestionForm" onSubmit={submitSuggestion}>
+            <label>
+              Nom du produit
+              <input
+                required
+                value={suggestion.name}
+                onChange={e => setSuggestion({ ...suggestion, name:e.target.value })}
+                placeholder="Ex. Coffret Nymphali 30 ans"
+              />
+            </label>
+
+            <label>
+              Série / extension
+              <input
+                value={suggestion.series}
+                onChange={e => setSuggestion({ ...suggestion, series:e.target.value })}
+                placeholder="Facultatif"
+              />
+            </label>
+
+            <label>
+              Type
+              <select
+                value={suggestion.category}
+                onChange={e => setSuggestion({ ...suggestion, category:e.target.value })}
+              >
+                <option value="sealed">Produit scellé</option>
+                <option value="card">Carte</option>
+                <option value="accessory">Accessoire</option>
+                <option value="other">Autre</option>
+              </select>
+            </label>
+
+            <label>
+              Précisions
+              <input
+                value={suggestion.notes}
+                onChange={e => setSuggestion({ ...suggestion, notes:e.target.value })}
+                placeholder="Langue, édition, format..."
+              />
+            </label>
+
+            <button className="btn" type="submit">Proposer ce produit</button>
+          </form>
+        ) : (
+          <a className="btn" href="/login">Se connecter pour proposer</a>
+        )}
+
+        {suggestionMessage && <p className="message">{suggestionMessage}</p>}
+      </section>
 
       <section className="panel pricePolicy">
         <h2>Lecture des prix</h2>
