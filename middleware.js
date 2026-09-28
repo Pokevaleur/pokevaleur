@@ -23,7 +23,7 @@ export async function middleware(request) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  const protectedPrefixes = ['/collection', '/communaute', '/opportunites', '/admin']
+  const protectedPrefixes = ['/collection', '/communaute', '/opportunites', '/trades', '/admin']
   const needsAuth = protectedPrefixes.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
 
   if (needsAuth && !user) {
@@ -52,6 +52,7 @@ export const config = {
     '/collection/:path*',
     '/communaute/:path*',
     '/opportunites/:path*',
+    '/trades/:path*',
     '/admin/:path*'
   ]
 }
