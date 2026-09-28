@@ -20,7 +20,7 @@ export default function RootLayout({ children }) {
           <nav>
             <a href="/">Accueil</a>
             <a href="/catalogue">Catalogue</a>
-            <a href="/collection">Ma collection</a>
+            <a href="/collection">Ma collection</a>\n            <a href="/opportunites">Watchlist</a>
             <a href="/communaute">Communauté</a>
             <a href="/admin">Admin</a>
             <a href="/login" className="btn small">Connexion</a>
