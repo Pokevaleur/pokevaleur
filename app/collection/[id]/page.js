@@ -17,6 +17,7 @@ export default function CollectionItemDetailPage() {
   const [photoUploading, setPhotoUploading] = useState(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisMessage, setAnalysisMessage] = useState('')
+  const [analysisCandidates, setAnalysisCandidates] = useState({})
 
   useEffect(() => {
     if (params?.id) load()
@@ -114,6 +115,9 @@ export default function CollectionItemDetailPage() {
       })
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Analyse impossible.')
+      setAnalysisCandidates(Object.fromEntries(
+        (result.boosters || []).map((b, i) => [Number(b.position) || i + 1, b.candidates || []])
+      ))
       setBoosters(current => {
         const proposals = result.boosters || []
         const positions = new Set([...current.map(b => Number(b.position)), ...proposals.map((b, i) => Number(b.position) || i + 1)])
@@ -263,8 +267,34 @@ export default function CollectionItemDetailPage() {
           ) : (
             <div>
               {boosters.map((booster, index) => (
-                <div key={booster.id || index} style={{padding: '7px 0', borderBottom: index < boosters.length - 1 ? '1px solid #eadfc8' : 'none'}}>
+                <div key={booster.id || index} style={{padding: '10px 0', borderBottom: index < boosters.length - 1 ? '1px solid #eadfc8' : 'none'}}>
                   <strong>Booster {index + 1}</strong> — {booster.expansion_name || 'Extension à confirmer'}{booster.artwork_name ? ` — ${booster.artwork_name}` : ''}
+                  {(analysisCandidates[index + 1] || []).length > 0 && (
+                    <div className="candidateGrid">
+                      {(analysisCandidates[index + 1] || []).map((candidate, candidateIndex) => (
+                        <button
+                          type="button"
+                          className="candidateCard"
+                          key={candidateIndex}
+                          onClick={() => {
+                            updateBooster(index, 'expansion_name', candidate.expansion_name || '')
+                            updateBooster(index, 'artwork_name', candidate.artwork_name || '')
+                            updateBooster(index, 'confidence', candidate.confidence || 'low')
+                          }}
+                        >
+                          {candidate.image_url ? (
+                            <img src={candidate.image_url} alt={candidate.artwork_name || candidate.expansion_name || 'Booster candidat'} />
+                          ) : (
+                            <div className="candidatePlaceholder">Visuel de référence à venir</div>
+                          )}
+                          <span>
+                            <b>{candidate.artwork_name || 'Artwork à confirmer'}</b>
+                            <small>{candidate.expansion_name || 'Extension à confirmer'} • {candidate.confidence === 'high' ? 'confiance élevée' : candidate.confidence === 'medium' ? 'confiance moyenne' : 'à vérifier'}</small>
+                          </span>
+                        </button>
+                      ))}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>
