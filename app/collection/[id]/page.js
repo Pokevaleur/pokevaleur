@@ -116,7 +116,17 @@ export default function CollectionItemDetailPage() {
       const result = await response.json()
       if (!response.ok) throw new Error(result.error || 'Analyse impossible.')
       setAnalysisCandidates(Object.fromEntries(
-        (result.boosters || []).map((b, i) => [Number(b.position) || i + 1, b.candidates || []])
+        (result.boosters || []).map((b, i) => {
+          const position = Number(b.position) || i + 1
+          const existing = boosters.find(x => Number(x.position) === position)
+          const knownExpansion = existing?.expansion_name || ''
+          const candidates = (b.candidates || []).filter(candidate =>
+            !knownExpansion ||
+            !candidate.expansion_name ||
+            normalizeExpansionName(candidate.expansion_name) === normalizeExpansionName(knownExpansion)
+          )
+          return [position, candidates]
+        })
       ))
       setBoosters(current => {
         const proposals = result.boosters || []
@@ -125,17 +135,26 @@ export default function CollectionItemDetailPage() {
           const existing = current.find(b => Number(b.position) === position)
           const proposal = proposals.find((b, i) => (Number(b.position) || i + 1) === position)
           if (!proposal) return existing
+          if (existing?.confirmed) return existing
+
+          const existingExpansion = existing?.expansion_name || ''
+          const proposalExpansion = proposal.expansion_name || ''
+          const sameKnownExpansion = !existingExpansion || !proposalExpansion ||
+            normalizeExpansionName(existingExpansion) === normalizeExpansionName(proposalExpansion)
+
           return {
             id: existing?.id || null,
             position,
-            // L'IA ne doit jamais effacer une information déjà connue avec une valeur vide/incertaine.
-            expansion_name: proposal.expansion_name || existing?.expansion_name || '',
-            artwork_name: proposal.artwork_name || existing?.artwork_name || '',
-            confidence: proposal.artwork_name || proposal.expansion_name
+            // Une extension déjà connue est verrouillée et ne peut pas être remplacée par l'IA.
+            expansion_name: existingExpansion || proposalExpansion || '',
+            // L'IA peut seulement compléter l'artwork dans l'extension déjà connue.
+            artwork_name: sameKnownExpansion
+              ? (proposal.artwork_name || existing?.artwork_name || '')
+              : (existing?.artwork_name || ''),
+            confidence: sameKnownExpansion && (proposal.artwork_name || proposal.expansion_name)
               ? (proposal.confidence || existing?.confidence || 'low')
               : (existing?.confidence || 'low'),
-            // Une analyse IA ne confirme jamais automatiquement une donnée.
-            confirmed: existing?.confirmed || false
+            confirmed: false
           }
         })
       })
@@ -147,6 +166,15 @@ export default function CollectionItemDetailPage() {
     } finally {
       setAnalyzing(false)
     }
+  }
+
+  function normalizeExpansionName(value) {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+      .replace(/^eb\s*\d+\s*[—-]?\s*/i, '')
+      .replace(/^epee et bouclier\s*[—-]\s*/i, '')
+      .trim()
   }
 
   function updateBooster(index, field, value) {
@@ -277,7 +305,15 @@ export default function CollectionItemDetailPage() {
                           className="candidateCard"
                           key={candidateIndex}
                           onClick={() => {
-                            updateBooster(index, 'expansion_name', candidate.expansion_name || '')
+                            if (booster.confirmed) return
+                            if (
+                              booster.expansion_name &&
+                              candidate.expansion_name &&
+                              normalizeExpansionName(booster.expansion_name) !== normalizeExpansionName(candidate.expansion_name)
+                            ) return
+                            if (!booster.expansion_name && candidate.expansion_name) {
+                              updateBooster(index, 'expansion_name', candidate.expansion_name)
+                            }
                             updateBooster(index, 'artwork_name', candidate.artwork_name || '')
                             updateBooster(index, 'confidence', candidate.confidence || 'low')
                           }}
