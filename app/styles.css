@@ -391,3 +391,23 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
   .homeChecklist{grid-template-columns:1fr}
   .homeFinalCta{align-items:flex-start;flex-direction:column;padding:26px 20px}
 }
+
+
+/* Mobile navigation and collection action cleanup */
+@media(max-width:700px){
+  .topbar{position:static;display:block;padding:14px 18px}
+  .topbar .brand{display:block;margin-bottom:12px;font-size:25px}
+  .topbar nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;width:100%;font-size:15px}
+  .topbar nav a{display:flex;align-items:center;justify-content:center;min-height:42px;padding:9px 8px;border-radius:10px;text-align:center}
+  .topbar nav .btn.small{padding:9px 8px}
+  main{padding:24px 16px}
+  .collectionHeader{gap:16px;margin-bottom:18px}
+  .collectionHeader h1{font-size:42px;line-height:1.05}
+  .collectionHeaderActions{display:grid!important;grid-template-columns:1fr!important;gap:10px;width:100%}
+  .collectionHeaderActions>.btn{width:100%;text-align:center}
+  .exportCollectionActions{display:grid;grid-template-columns:1fr 1fr;width:100%;gap:10px}
+  .exportCollectionActions .btn{width:100%;padding:12px 10px}
+}
+@media(max-width:440px){
+  .exportCollectionActions{grid-template-columns:1fr}
+}
