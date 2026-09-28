@@ -73,11 +73,21 @@ export default function CataloguePage() {
   }
 
   const filtered = products.filter(product => {
+    const normalizedQuery = query.trim().toLowerCase()
+
+    if (!normalizedQuery) return true
+
+    const aliases = {
+      etb: ['coffret dresseur d’élite', 'coffret dresseur d elite', 'elite trainer box']
+    }
+
+    const searchTerms = aliases[normalizedQuery] || [normalizedQuery]
     const haystack = [product.name, product.series, product.category]
       .filter(Boolean)
       .join(' ')
       .toLowerCase()
-    return haystack.includes(query.toLowerCase())
+
+    return searchTerms.some(term => haystack.includes(term))
   })
 
   function getStats(productId, tier = 'standard') {
