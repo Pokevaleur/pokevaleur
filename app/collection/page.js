@@ -280,7 +280,7 @@ export default function CollectionPage() {
         ...prev,
         [id]: {
           status: 'success',
-          text: `✓ ${files.length} photo${files.length > 1 ? 's' : ''} enregistrée${files.length > 1 ? 's' : ''}. Tu peux en ajouter une autre.`
+          text: `✓ ${files.length > 1 ? 'Photos enregistrées automatiquement' : 'Photo enregistrée automatiquement'} — tu peux quitter la fiche${files.length > 1 ? '' : ' ou en ajouter une autre'}.`
         }
       }))
       await load()
