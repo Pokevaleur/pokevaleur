@@ -33,6 +33,7 @@ export default function CollectionPage() {
   const [photoUrls, setPhotoUrls] = useState({})
   const [photoStepDone, setPhotoStepDone] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [photoUploadState, setPhotoUploadState] = useState({})
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -245,7 +246,7 @@ export default function CollectionPage() {
 
   async function addPhotosImmediately(id, files) {
     if (!files?.length) return
-    setMessage('Envoi de la photo...')
+    setPhotoUploadState(prev => ({ ...prev, [id]: { status: 'uploading', text: files.length > 1 ? 'Envoi des photos…' : 'Envoi de la photo…' } }))
 
     let paths = []
     try {
@@ -275,11 +276,20 @@ export default function CollectionPage() {
         if (updateError) throw updateError
       }
 
-      setMessage(`${files.length} photo${files.length > 1 ? 's' : ''} enregistrée${files.length > 1 ? 's' : ''}.`)
+      setPhotoUploadState(prev => ({
+        ...prev,
+        [id]: {
+          status: 'success',
+          text: `✓ ${files.length} photo${files.length > 1 ? 's' : ''} enregistrée${files.length > 1 ? 's' : ''}. Tu peux en ajouter une autre.`
+        }
+      }))
       await load()
     } catch (error) {
       if (paths.length) await supabase.storage.from('collection-images').remove(paths)
-      setMessage(error.message || 'Impossible d’enregistrer la photo.')
+      setPhotoUploadState(prev => ({
+        ...prev,
+        [id]: { status: 'error', text: `❌ ${error.message || 'Impossible d’enregistrer la photo.'}` }
+      }))
     }
   }
 
@@ -742,6 +752,11 @@ export default function CollectionPage() {
                           Particularité de l’exemplaire
                           <input value={editForm.variant_note} onChange={e => setEditForm({ ...editForm, variant_note: e.target.value })} />
                         </label>
+                        {photoUploadState[item.id] && (
+                          <div className={`photoImmediateStatus ${photoUploadState[item.id].status}`} role="status">
+                            {photoUploadState[item.id].text}
+                          </div>
+                        )}
                         <div className="photoChoice">
                           <label className="photoAction">
                             <input
