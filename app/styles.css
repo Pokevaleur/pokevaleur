@@ -89,3 +89,33 @@
 .communityMessage p{margin:5px 0 0;white-space:pre-wrap}
 .communityComposer{display:grid;gap:10px}
 .communityComposer textarea{width:100%;resize:vertical}
+
+/* Mobile stability fixes: prevent personal collection cards/photos from overflowing the viewport */
+.personalDetail,.personalDetail>*{min-width:0;max-width:100%}
+.personalDetail h1{max-width:100%;overflow-wrap:anywhere;word-break:normal}
+.personalDetail .muted{max-width:100%;overflow-wrap:anywhere}
+.personalGallery{width:100%;min-width:0;overflow:hidden}
+.personalMainPhoto{display:block;width:100%;max-width:100%;min-width:0}
+.personalMainPhoto img{display:block;width:100%;max-width:100%;height:auto;max-height:560px;object-fit:contain}
+.personalThumbs{max-width:100%;min-width:0}
+.referencePhotoGrid{min-width:0}
+.referencePhotoCard{min-width:0;max-width:100%}
+.referencePhotoCard img{max-width:100%}
+@media(max-width:700px){
+  body{overflow-x:hidden}
+  main{width:100%;max-width:100%;padding:24px 14px}
+  .panel{width:100%;max-width:100%;padding:18px}
+  .personalDetail{gap:16px}
+  .personalDetail h1{font-size:clamp(30px,10vw,42px);line-height:1.05;margin:8px 0 12px}
+  .personalMainPhoto{max-height:none;border-radius:12px}
+  .personalMainPhoto img{width:100%;height:auto;max-height:70vh}
+  .personalThumbs button{width:72px;height:72px;flex-basis:72px}
+  .referencePhotoGrid{grid-template-columns:1fr}
+}
+@media(max-width:560px){
+  .topbar{display:block;padding:16px 18px}
+  .topbar .brand{display:block;margin-bottom:14px}
+  .topbar nav{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px 14px;width:100%;justify-content:stretch}
+  .topbar nav a{min-width:0;text-align:center;overflow-wrap:anywhere}
+  .topbar nav .btn.small{width:100%;padding:10px 8px}
+}
