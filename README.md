@@ -15,4 +15,6 @@ Première version publique d'un outil de suivi de collection.
 ## Déploiement
 Compatible Vercel avec Supabase.
 
+Déploiement production déclenché depuis la branche main.
+
 PokéValeur est un service indépendant, non affilié à The Pokémon Company, Nintendo, Creatures ou GAME FREAK.
