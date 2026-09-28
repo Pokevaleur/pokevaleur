@@ -15,7 +15,7 @@ export default function CataloguePage() {
   async function loadProducts() {
     const { data } = await supabase
       .from('products')
-      .select('id,name,series,category,current_value')
+      .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at')
       .eq('is_public', true)
       .order('name')
 
@@ -36,8 +36,8 @@ export default function CataloguePage() {
         <span className="eyebrow dark">Catalogue PokéValeur</span>
         <h1>Retrouve rapidement un produit</h1>
         <p className="muted">
-          Le catalogue va servir de base commune pour éviter de ressaisir les mêmes produits
-          et, plus tard, pour suivre automatiquement leur valeur.
+          Le catalogue sert de base commune pour éviter de ressaisir les mêmes produits.
+          Les valeurs de marché n’apparaissent que lorsqu’une source et une date de mise à jour sont renseignées.
         </p>
         <input
           className="catalogSearch"
@@ -53,6 +53,7 @@ export default function CataloguePage() {
             <span className="catalogBadge">{product.category === 'sealed' ? 'Scellé' : product.category}</span>
             <h2>{product.name}</h2>
             <p>{product.series || 'Série non renseignée'}</p>
+
             <div className="catalogValue">
               <span>Valeur de référence</span>
               <strong>
@@ -60,6 +61,17 @@ export default function CataloguePage() {
                   ? Number(product.current_value).toFixed(2) + ' €'
                   : 'À renseigner'}
               </strong>
+            </div>
+
+            <div className="priceMeta">
+              <span>
+                Source : {product.price_source || 'non renseignée'}
+              </span>
+              <span>
+                Mise à jour : {product.price_updated_at
+                  ? new Date(product.price_updated_at).toLocaleDateString('fr-FR')
+                  : 'non renseignée'}
+              </span>
             </div>
           </article>
         ))}
@@ -70,6 +82,14 @@ export default function CataloguePage() {
           <p>Aucun produit trouvé pour cette recherche.</p>
         </section>
       )}
+
+      <section className="panel pricePolicy">
+        <h2>Comment seront calculées les valeurs ?</h2>
+        <p>
+          PokéValeur séparera toujours le prix saisi par le collectionneur de la valeur de référence du marché.
+          Une valeur de référence devra être accompagnée de sa source et de sa date d’observation.
+        </p>
+      </section>
     </main>
   )
 }
