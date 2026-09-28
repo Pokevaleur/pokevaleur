@@ -12,7 +12,9 @@ const emptyForm = {
   seller_name: '',
   product_id: '',
   current_value_override: '',
-  sealed_condition: 'standard'
+  sealed_condition: 'standard',
+  booster_configuration: '',
+  variant_note: ''
 }
 
 export default function CollectionPage() {
@@ -108,7 +110,9 @@ export default function CollectionPage() {
       purchase_place: form.purchase_place.trim() || null,
       seller_name: form.seller_name.trim() || null,
       current_value_override: form.current_value_override ? Number(form.current_value_override) : null,
-      sealed_condition: form.sealed_condition || 'standard'
+      sealed_condition: form.sealed_condition || 'standard',
+      booster_configuration: form.booster_configuration.trim() || null,
+      variant_note: form.variant_note.trim() || null
     }
 
     const { error } = await supabase.from('collection_items').insert(payload)
@@ -130,7 +134,9 @@ export default function CollectionPage() {
       seller_name: item.seller_name || '',
       product_id: item.product_id || '',
       current_value_override: item.current_value_override ?? '',
-      sealed_condition: item.sealed_condition || 'standard'
+      sealed_condition: item.sealed_condition || 'standard',
+      booster_configuration: item.booster_configuration || '',
+      variant_note: item.variant_note || ''
     })
     setMessage('')
   }
@@ -145,7 +151,9 @@ export default function CollectionPage() {
       purchase_place: editForm.purchase_place.trim() || null,
       seller_name: editForm.seller_name.trim() || null,
       current_value_override: editForm.current_value_override === '' ? null : Number(editForm.current_value_override),
-      sealed_condition: editForm.sealed_condition || 'standard'
+      sealed_condition: editForm.sealed_condition || 'standard',
+      booster_configuration: editForm.booster_configuration.trim() || null,
+      variant_note: editForm.variant_note.trim() || null
     }
 
     const { error } = await supabase
@@ -369,6 +377,29 @@ export default function CollectionPage() {
               />
             </label>
 
+            <label>
+              Composition exacte des boosters (facultatif)
+              <textarea
+                value={form.booster_configuration}
+                onChange={e => setForm({ ...form, booster_configuration: e.target.value })}
+                placeholder="Ex. EB03 Ténèbres Embrasées – Eternatos ×1 | EB05 Styles de Combat – Tyranocif ×1 | EB08 Poing de Fusion – Ectoplasma ×1 | EB08 Poing de Fusion – Fulgudog ×1"
+                rows="4"
+              />
+            </label>
+
+            <label>
+              Particularité de cet exemplaire (facultatif)
+              <input
+                value={form.variant_note}
+                onChange={e => setForm({ ...form, variant_note: e.target.value })}
+                placeholder="Ex. 3 boosters avec la même illustration / booster Dracaufeu visible"
+              />
+            </label>
+
+            <small className="muted">
+              Si deux exemplaires du même coffret n’ont pas les mêmes boosters, ajoute-les séparément (quantité 1) afin de conserver leur composition exacte.
+            </small>
+
             <button className="btn" type="submit">Ajouter à ma collection</button>
           </form>
 
@@ -435,6 +466,14 @@ export default function CollectionPage() {
                           Vendeur (facultatif)
                           <input value={editForm.seller_name} onChange={e => setEditForm({ ...editForm, seller_name: e.target.value })} />
                         </label>
+                        <label>
+                          Composition exacte des boosters
+                          <textarea rows="4" value={editForm.booster_configuration} onChange={e => setEditForm({ ...editForm, booster_configuration: e.target.value })} />
+                        </label>
+                        <label>
+                          Particularité de l’exemplaire
+                          <input value={editForm.variant_note} onChange={e => setEditForm({ ...editForm, variant_note: e.target.value })} />
+                        </label>
                       </div>
                       <div className="rowActions">
                         <button className="miniBtn primaryMini" onClick={() => saveEdit(item.id)}>Enregistrer</button>
@@ -456,6 +495,12 @@ export default function CollectionPage() {
                           {item.seller_name ? ` • vendeur : ${item.seller_name}` : ''}
                           {item.sealed_condition === 'zero_defect' ? ' • zéro défaut' : ''}
                         </p>
+                        {item.booster_configuration && (
+                          <p className="itemComposition"><b>Boosters :</b> {item.booster_configuration}</p>
+                        )}
+                        {item.variant_note && (
+                          <p className="itemVariantNote"><b>Particularité :</b> {item.variant_note}</p>
+                        )}
                       </div>
                       <div className="productValues">
                         <b>{buy.toFixed(2)} € → {value.toFixed(2)} €</b>
