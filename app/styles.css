@@ -119,3 +119,44 @@
   .topbar nav a{min-width:0;text-align:center;overflow-wrap:anywhere}
   .topbar nav .btn.small{width:100%;padding:10px 8px}
 }
+
+/* Hard mobile containment for collection detail */
+html,body{max-width:100%;overflow-x:hidden}
+img,video,canvas,svg{max-width:100%;height:auto}
+.personalDetail{width:100%;max-width:100%;overflow:hidden}
+.personalDetail>div,.personalDetail>section{width:100%;max-width:100%;min-width:0}
+.personalDetail h1,.personalDetail p,.personalDetail strong,.personalDetail span{
+  white-space:normal!important;
+  overflow-wrap:anywhere;
+  word-break:normal;
+}
+.personalGallery,.personalMainPhoto{
+  width:100%!important;
+  max-width:100%!important;
+  min-width:0!important;
+}
+.personalMainPhoto{
+  display:flex!important;
+  align-items:center;
+  justify-content:center;
+  overflow:hidden!important;
+}
+.personalMainPhoto img{
+  display:block!important;
+  width:auto!important;
+  max-width:100%!important;
+  height:auto!important;
+  max-height:70vh!important;
+  margin:0 auto!important;
+  object-fit:contain!important;
+  object-position:center center!important;
+}
+@media(max-width:700px){
+  .personalDetail{padding:16px!important}
+  .personalDetail h1{
+    font-size:clamp(28px,8.5vw,38px)!important;
+    line-height:1.08!important;
+    letter-spacing:-.02em;
+  }
+  .personalDetail>div:first-child p{font-size:16px!important}
+}
