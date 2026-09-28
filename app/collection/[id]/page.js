@@ -13,6 +13,8 @@ export default function CollectionItemDetailPage() {
   const [loading, setLoading] = useState(true)
   const [boosters, setBoosters] = useState([])
   const [boosterMessage, setBoosterMessage] = useState('')
+  const [photoMessage, setPhotoMessage] = useState('')
+  const [photoUploading, setPhotoUploading] = useState(false)
 
   useEffect(() => {
     if (params?.id) load()
@@ -41,6 +43,42 @@ export default function CollectionItemDetailPage() {
     setPhotos(signed.filter(photo => photo.url))
     setBoosters(boosterData || [])
     setLoading(false)
+  }
+
+  async function addDetailPhotos(fileList) {
+    const files = Array.from(fileList || [])
+    if (!files.length) return
+    setPhotoUploading(true)
+    setPhotoMessage(files.length > 1 ? 'Envoi des photos…' : 'Envoi de la photo…')
+    const uploaded = []
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Ta session a expiré.')
+      const { count } = await supabase.from('collection_item_photos').select('id', { count: 'exact', head: true }).eq('collection_item_id', params.id)
+      for (let index = 0; index < files.length; index++) {
+        const file = files[index]
+        if (!file.type?.startsWith('image/')) throw new Error('Le fichier choisi doit être une image.')
+        if (file.size > 20 * 1024 * 1024) throw new Error('Une photo dépasse 20 Mo.')
+        const extension = (file.name.split('.').pop() || file.type.split('/').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
+        const path = `${user.id}/${crypto.randomUUID()}.${extension || 'jpg'}`
+        const { data, error } = await supabase.storage.from('collection-images').upload(path, file, { cacheControl: '3600', contentType: file.type || 'image/jpeg', upsert: false })
+        if (error || !data?.path) throw new Error(error?.message || 'Envoi impossible.')
+        uploaded.push(data.path)
+        const { error: linkError } = await supabase.from('collection_item_photos').insert({
+          collection_item_id: params.id, user_id: user.id, photo_path: data.path, sort_order: (count || 0) + index
+        })
+        if (linkError) throw linkError
+      }
+      if (!item.photo_path && uploaded[0]) {
+        await supabase.from('collection_items').update({ photo_path: uploaded[0] }).eq('id', params.id).eq('user_id', user.id)
+      }
+      setPhotoMessage(`✓ ${files.length} photo${files.length > 1 ? 's' : ''} enregistrée${files.length > 1 ? 's' : ''}. Elles serviront ensemble à affiner l’identification.`)
+      await load()
+    } catch (error) {
+      setPhotoMessage('❌ ' + (error.message || 'Impossible d’enregistrer la photo.'))
+    } finally {
+      setPhotoUploading(false)
+    }
   }
 
   function updateBooster(index, field, value) {
@@ -125,6 +163,25 @@ export default function CollectionItemDetailPage() {
           <div><span>Prix d’achat</span><strong>{item.purchase_price != null ? Number(item.purchase_price).toFixed(2) + ' €' : 'Non renseigné'}</strong></div>
           <div><span>État</span><strong>{item.sealed_condition === 'zero_defect' ? 'Zéro défaut' : 'Standard'}</strong></div>
           <div><span>Vendeur</span><strong>{item.seller_name || 'Non renseigné'}</strong></div>
+        </div>
+
+        <div style={{marginTop: '18px', padding: '16px', border: '1px solid #ddd', borderRadius: '12px'}}>
+          <h2 style={{margin: '0 0 6px'}}>Photos pour identifier les boosters</h2>
+          <p className="muted" style={{marginTop: 0}}>Ajoute plusieurs angles si certains boosters sont cachés ou difficiles à distinguer. Toutes les photos restent liées à cet exemplaire.</p>
+          <div style={{display: 'flex', gap: '10px', flexWrap: 'wrap'}}>
+            <label className="primaryButton" style={{cursor: photoUploading ? 'wait' : 'pointer'}}>
+              📷 Prendre une photo
+              <input type="file" accept="image/*" capture="environment" hidden disabled={photoUploading} onChange={e => { addDetailPhotos(e.target.files); e.target.value = '' }} />
+            </label>
+            <label className="secondaryButton" style={{cursor: photoUploading ? 'wait' : 'pointer'}}>
+              🖼️ Ajouter des photos
+              <input type="file" accept="image/*" multiple hidden disabled={photoUploading} onChange={e => { addDetailPhotos(e.target.files); e.target.value = '' }} />
+            </label>
+          </div>
+          {boosters.some(b => !b.confirmed || b.confidence === 'low' || b.confidence === 'medium') && (
+            <p style={{marginBottom: 0}}><strong>Photo complémentaire conseillée :</strong> rapproche-toi des boosters encore partiellement masqués et change légèrement l’angle pour éviter les reflets.</p>
+          )}
+          {photoMessage && <div className={photoMessage.startsWith('❌') ? 'photoImmediateStatus error' : 'photoImmediateStatus success'} role="status">{photoMessage}</div>}
         </div>
 
         <div style={{marginTop: '18px', padding: '16px', border: '2px solid #f59e0b', borderRadius: '12px', background: '#fffaf0'}}>
