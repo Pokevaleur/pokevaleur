@@ -112,7 +112,11 @@ export default function CataloguePage() {
       journee: ['journee pokemon', 'pokemon day', 'journee pokemon 2026'],
       'journee pokemon': ['pokemon day', 'journee pokemon 2026'],
       'pokemon day': ['journee pokemon', 'journee pokemon 2026'],
-      '30 ans': ['journee pokemon 2026', '30e anniversaire', '30eme anniversaire']
+      '30 ans': ['journee pokemon 2026', '30e anniversaire', '30eme anniversaire', 'collection k.o.', 'collection ko'],
+      ko: ['collection k.o.', 'collection ko'],
+      'collection ko': ['collection k.o.', 'collection ko'],
+      'collection k.o.': ['collection k.o.', 'collection ko'],
+      evoli: ['évoli', 'evoli']
     }
 
     const expandedTerms = new Set([normalizedQuery])
