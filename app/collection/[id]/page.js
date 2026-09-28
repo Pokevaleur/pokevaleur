@@ -113,7 +113,15 @@ export default function CollectionItemDetailPage() {
         headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
         body: JSON.stringify({ itemId: params.id })
       })
-      const result = await response.json()
+      const raw = await response.text()
+      let result
+      try {
+        result = JSON.parse(raw)
+      } catch {
+        throw new Error(response.ok
+          ? 'Réponse d’analyse invalide. Réessaie dans quelques secondes.'
+          : 'Le serveur d’analyse a interrompu la requête. Réessaie.')
+      }
       if (!response.ok) throw new Error(result.error || 'Analyse impossible.')
       setAnalysisCandidates(Object.fromEntries(
         (result.boosters || []).map((b, i) => {
