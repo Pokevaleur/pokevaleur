@@ -65,3 +65,9 @@
 .photoDoneLine{justify-content:space-between;font-size:13px;color:#276348;font-weight:700}
 .photoClearLink{justify-self:start;border:0;background:transparent;color:var(--red);padding:2px 0;text-decoration:underline;cursor:pointer;font-size:12px}
 @media(max-width:650px){.pendingPhotoGrid{grid-template-columns:repeat(3,minmax(0,1fr))}.photoNextActions>*{flex:1;text-align:center}.photoDoneLine{align-items:stretch;flex-direction:column}}
+
+
+.photoImmediateStatus{grid-column:1/-1;padding:12px 14px;border-radius:12px;font-weight:700;margin-bottom:4px}
+.photoImmediateStatus.uploading{background:#fff7df;color:#7a5400}
+.photoImmediateStatus.success{background:#e9f8ef;color:#176b3a}
+.photoImmediateStatus.error{background:#fff0f0;color:#a12626}
