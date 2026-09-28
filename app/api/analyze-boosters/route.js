@@ -197,6 +197,23 @@ Règles impératives:
       })) : []
     })) : []
 
+    // Enforce the extension map produced by the first pass / catalogue context.
+    // The artwork pass is never allowed to drift to another set.
+    result.boosters = result.boosters.map((booster, index) => {
+      const position = Number(booster.position) || index + 1
+      const lockedKnown = knownBoosters.find(k => Number(k.position) === position)
+      if (!lockedKnown?.expansion_name) return booster
+      return {
+        ...booster,
+        position,
+        expansion_name: lockedKnown.expansion_name,
+        artwork_name: lockedKnown.confirmed && lockedKnown.artwork_name
+          ? lockedKnown.artwork_name
+          : booster.artwork_name,
+        confidence: lockedKnown.confirmed ? 'high' : booster.confidence
+      }
+    })
+
     // SECOND PASS TARGETED ARTWORK: inspect each unresolved position separately.
     // One request per slot gives the model a narrower visual task and avoids cross-position swaps.
     const unresolved = result.boosters.filter(b => {
