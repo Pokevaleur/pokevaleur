@@ -32,6 +32,7 @@ export default function CollectionPage() {
   const [editPhotoFiles, setEditPhotoFiles] = useState([])
   const [photoUrls, setPhotoUrls] = useState({})
   const [photoStepDone, setPhotoStepDone] = useState(false)
+  const [isSaving, setIsSaving] = useState(false)
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -120,17 +121,30 @@ export default function CollectionPage() {
   async function uploadCollectionPhoto(file) {
     if (!file) return null
     if (!file.type?.startsWith('image/')) throw new Error('Le fichier choisi doit être une image.')
-    if (file.size > 8 * 1024 * 1024) throw new Error('La photo ne doit pas dépasser 8 Mo.')
+    if (file.size > 20 * 1024 * 1024) throw new Error('La photo est trop volumineuse (maximum 20 Mo).')
 
-    const extension = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '')
-    const path = `${user.id}/${crypto.randomUUID()}.${extension || 'jpg'}`
+    const { data: { user: freshUser }, error: userError } = await supabase.auth.getUser()
+    if (userError || !freshUser) throw new Error('Ta session a expiré. Reconnecte-toi avant d’envoyer la photo.')
 
-    const { error } = await supabase.storage
+    const extension = (file.name.split('.').pop() || file.type.split('/').pop() || 'jpg')
+      .toLowerCase().replace(/[^a-z0-9]/g, '')
+    const path = `${freshUser.id}/${crypto.randomUUID()}.${extension || 'jpg'}`
+
+    const { data, error } = await supabase.storage
       .from('collection-images')
-      .upload(path, file, { cacheControl: '3600', upsert: false })
+      .upload(path, file, {
+        cacheControl: '3600',
+        contentType: file.type || 'image/jpeg',
+        upsert: false
+      })
 
-    if (error) throw error
-    return path
+    if (error) {
+      console.error('Erreur upload photo Supabase', error)
+      throw new Error(`Envoi de la photo impossible : ${error.message || 'erreur Supabase'}`)
+    }
+    if (!data?.path) throw new Error('Supabase n’a pas confirmé l’enregistrement de la photo.')
+
+    return data.path
   }
 
   async function uploadCollectionPhotos(files) {
@@ -146,11 +160,15 @@ export default function CollectionPage() {
     if (!user) return setMessage('Connecte-toi d’abord.')
 
     let uploadedPhotoPaths = []
+    setIsSaving(true)
+    setMessage(photoFiles.length ? `Envoi de ${photoFiles.length} photo${photoFiles.length > 1 ? 's' : ''} vers le stockage…` : 'Enregistrement du produit…')
 
     try {
       uploadedPhotoPaths = await uploadCollectionPhotos(photoFiles)
     } catch (error) {
-      return setMessage(error.message)
+      setIsSaving(false)
+      setMessage(`❌ ${error.message}`)
+      return
     }
 
     const payload = {
@@ -179,7 +197,8 @@ export default function CollectionPage() {
       if (uploadedPhotoPaths.length) {
         await supabase.storage.from('collection-images').remove(uploadedPhotoPaths)
       }
-      return setMessage(error.message)
+      setIsSaving(false)
+      return setMessage(`❌ ${error.message}`)
     }
 
     if (uploadedPhotoPaths.length) {
@@ -191,13 +210,17 @@ export default function CollectionPage() {
           sort_order: index
         }))
       )
-      if (photoError) setMessage('Produit ajouté, mais certaines photos n’ont pas pu être enregistrées.')
+      if (photoError) {
+        setIsSaving(false)
+        return setMessage(`⚠️ Produit ajouté et fichier photo envoyé, mais liaison de la photo impossible : ${photoError.message}`)
+      }
     }
 
     setForm(emptyForm)
     setPhotoFiles([])
     setPhotoStepDone(false)
-    setMessage('Produit ajouté à ta collection.')
+    setIsSaving(false)
+    setMessage(uploadedPhotoPaths.length ? `✓ Produit ajouté et ${uploadedPhotoPaths.length} photo${uploadedPhotoPaths.length > 1 ? 's' : ''} enregistrée${uploadedPhotoPaths.length > 1 ? 's' : ''}.` : '✓ Produit ajouté à ta collection.')
     await load()
   }
 
@@ -645,7 +668,7 @@ export default function CollectionPage() {
               Si deux exemplaires du même coffret n’ont pas les mêmes boosters, ajoute-les séparément (quantité 1) afin de conserver leur composition exacte.
             </small>
 
-            <button className="btn" type="submit">Ajouter à ma collection</button>
+            <button className="btn" type="submit" disabled={isSaving}>{isSaving ? 'Enregistrement en cours…' : 'Ajouter à ma collection'}</button>
           </form>
 
           {message && <p className="message">{message}</p>}
