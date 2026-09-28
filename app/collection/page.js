@@ -10,6 +10,7 @@ const emptyForm = {
   purchase_date: '',
   purchase_place: '',
   seller_name: '',
+  product_id: '',
   current_value_override: ''
 }
 
@@ -22,6 +23,8 @@ export default function CollectionPage() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState(emptyForm)
   const [query, setQuery] = useState('')
+  const [catalog, setCatalog] = useState([])
+  const [catalogQuery, setCatalogQuery] = useState('')
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -39,7 +42,31 @@ export default function CollectionPage() {
 
   useEffect(() => {
     load()
+    loadCatalog()
   }, [])
+
+  async function loadCatalog() {
+    const { data, error } = await supabase
+      .from('products')
+      .select('id,name,series,category,current_value')
+      .eq('is_public', true)
+      .order('name')
+
+    if (!error) setCatalog(data || [])
+  }
+
+  function chooseCatalogProduct(product) {
+    setForm({
+      ...form,
+      product_id: product.id,
+      custom_name: product.name,
+      current_value_override:
+        product.current_value !== null && product.current_value !== undefined
+          ? String(product.current_value)
+          : form.current_value_override
+    })
+    setCatalogQuery(product.name)
+  }
 
   async function addItem(e) {
     e.preventDefault()
@@ -47,6 +74,7 @@ export default function CollectionPage() {
 
     const payload = {
       user_id: user.id,
+      product_id: form.product_id || null,
       custom_name: form.custom_name.trim(),
       quantity: Number(form.quantity || 1),
       purchase_price: form.purchase_price ? Number(form.purchase_price) : null,
@@ -73,6 +101,7 @@ export default function CollectionPage() {
       purchase_date: item.purchase_date || '',
       purchase_place: item.purchase_place || '',
       seller_name: item.seller_name || '',
+      product_id: item.product_id || '',
       current_value_override: item.current_value_override ?? ''
     })
     setMessage('')
@@ -80,6 +109,7 @@ export default function CollectionPage() {
 
   async function saveEdit(id) {
     const payload = {
+      product_id: editForm.product_id || null,
       custom_name: editForm.custom_name.trim(),
       quantity: Number(editForm.quantity || 1),
       purchase_price: editForm.purchase_price === '' ? null : Number(editForm.purchase_price),
@@ -142,6 +172,16 @@ export default function CollectionPage() {
     (item.custom_name || '').toLowerCase().includes(query.toLowerCase())
   )
 
+  const catalogMatches = catalog
+    .filter(product =>
+      catalogQuery.trim().length >= 2 &&
+      (
+        product.name.toLowerCase().includes(catalogQuery.toLowerCase()) ||
+        (product.series || '').toLowerCase().includes(catalogQuery.toLowerCase())
+      )
+    )
+    .slice(0, 6)
+
   if (!user) {
     return (
       <main className="narrow">
@@ -191,6 +231,37 @@ export default function CollectionPage() {
         <div className="panel">
           <h2>Ajouter un produit</h2>
           <form onSubmit={addItem} className="formGrid">
+            <div className="catalogPicker">
+              <label>
+                Rechercher dans le catalogue
+                <input
+                  value={catalogQuery}
+                  onChange={e => {
+                    setCatalogQuery(e.target.value)
+                    setForm({ ...form, product_id: '' })
+                  }}
+                  placeholder="Ex. 151, Arceus, Célébrations..."
+                />
+              </label>
+              {catalogMatches.length > 0 && (
+                <div className="catalogSuggestions">
+                  {catalogMatches.map(product => (
+                    <button
+                      type="button"
+                      key={product.id}
+                      onClick={() => chooseCatalogProduct(product)}
+                    >
+                      <b>{product.name}</b>
+                      <span>{product.series || 'Série non renseignée'}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
+              <small className="muted">
+                Tu peux choisir un produit du catalogue ou saisir librement un produit ci-dessous.
+              </small>
+            </div>
+
             <label>
               Nom du produit
               <input
