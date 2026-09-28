@@ -263,3 +263,46 @@ img,video,canvas,svg{max-width:100%;height:auto}
   .collectionVoiceSearch{width:100%}
   .voiceSearchButton{flex-basis:42px;width:42px;height:42px}
 }
+
+.collectionHeaderActions{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.statsHero{margin-bottom:18px}
+.collectionStatsCards{margin-bottom:18px}
+.statsTrendPanel{margin-bottom:18px}
+.statsSectionHead{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.statsSectionHead h2{margin:0 0 4px}
+.statsSectionHead p{margin:0}
+.statsSectionHead>strong{font-size:28px}
+.collectionTrendChart{height:220px;margin-top:14px;padding:10px 6px;background:linear-gradient(180deg,#f4fff9,#fff);border-radius:14px}
+.collectionTrendChart svg{width:100%;height:100%;display:block}
+.collectionTrendChart polyline{stroke:var(--green);stroke-width:3;stroke-linecap:round;stroke-linejoin:round}
+.trendDates{display:flex;justify-content:space-between;gap:12px;color:var(--muted);font-size:12px;margin-top:8px}
+.statsDashboardGrid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-bottom:18px}
+.statsDashboardGrid .panel h2{margin-top:0}
+.statsBars{display:grid;gap:13px}
+.statsBarRow>div{display:flex;justify-content:space-between;gap:12px;font-size:13px;margin-bottom:5px}
+.statsBarRow>div span{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.statsBarRow i{display:block;height:9px;background:#edf1f5;border-radius:999px;overflow:hidden}
+.statsBarRow i b{display:block;height:100%;background:var(--gold);border-radius:999px}
+.statsRanking{display:grid}
+.statsRanking a{display:flex;justify-content:space-between;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid var(--border)}
+.statsRanking a:last-child{border-bottom:0}
+.statsRanking a>span{display:flex;gap:9px;align-items:center;min-width:0}
+.statsRanking a>span b{display:inline-flex;align-items:center;justify-content:center;min-width:25px;height:25px;border-radius:50%;background:#f3f6fa;font-size:12px}
+.statsRanking a>strong{text-align:right;white-space:nowrap}
+.statsRanking small{font-size:11px}
+.statsQualityPanel{display:flex;flex-direction:column;justify-content:center}
+.qualityBig{display:flex;align-items:baseline;gap:9px}
+.qualityBig strong{font-size:44px;color:var(--navy)}
+.qualityBig span{font-weight:800}
+.qualityGauge{height:12px;background:#edf1f5;border-radius:999px;overflow:hidden;margin-top:8px}
+.qualityGauge i{display:block;height:100%;background:var(--green);border-radius:999px}
+@media(max-width:850px){
+  .statsDashboardGrid{grid-template-columns:1fr}
+  .collectionHeaderActions{width:100%}
+}
+@media(max-width:560px){
+  .collectionHeaderActions{display:grid;grid-template-columns:1fr 1fr}
+  .collectionHeaderActions .btn{width:100%;text-align:center}
+  .statsSectionHead{flex-direction:column}
+  .collectionTrendChart{height:160px}
+}
