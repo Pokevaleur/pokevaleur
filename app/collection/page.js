@@ -392,9 +392,37 @@ export default function CollectionPage() {
   const percent = invested > 0 ? (difference / invested) * 100 : 0
   const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0)
 
-  const filteredItems = items.filter(item =>
-    (item.custom_name || '').toLowerCase().includes(query.toLowerCase())
-  )
+  function normalizeSearch(value) {
+    return String(value || '')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .trim()
+  }
+
+  const filteredItems = items.filter(item => {
+    const needle = normalizeSearch(query)
+    if (!needle) return true
+
+    const product = catalog.find(p => p.id === item.product_id)
+    const haystack = [
+      item.custom_name,
+      item.purchase_place,
+      item.seller_name,
+      item.booster_configuration,
+      item.variant_note,
+      item.notes,
+      item.purchase_date,
+      item.sealed_condition === 'zero_defect' ? 'zero defaut parfait' : 'standard',
+      product?.name,
+      product?.series,
+      product?.category
+    ]
+      .map(normalizeSearch)
+      .join(' ')
+
+    return haystack.includes(needle)
+  })
 
   const catalogMatches = catalog
     .filter(product =>
@@ -689,7 +717,7 @@ export default function CollectionPage() {
             <h2>Mes produits</h2>
             <input
               className="searchInput"
-              placeholder="Rechercher..."
+              placeholder="Rechercher produit, série, vendeur, lieu, booster, note..."
               value={query}
               onChange={e => setQuery(e.target.value)}
             />
