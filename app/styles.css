@@ -71,3 +71,5 @@
 .photoImmediateStatus.uploading{background:#fff7df;color:#7a5400}
 .photoImmediateStatus.success{background:#e9f8ef;color:#176b3a}
 .photoImmediateStatus.error{background:#fff0f0;color:#a12626}
+
+.boosterCompositionEditor{margin-top:22px;padding-top:20px;border-top:1px solid #e7e7e7}.boosterCompositionHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px}.boosterCompositionHead h2{margin:0 0 5px}.boosterRow{display:grid;grid-template-columns:auto 1fr 1fr auto auto auto;gap:9px;align-items:center;padding:10px 0;border-bottom:1px solid #eee}.boosterRow input,.boosterRow select{min-width:0;padding:10px;border:1px solid #d7d7d7;border-radius:9px;background:#fff}.boosterConfirmed{display:flex;gap:6px;align-items:center;white-space:nowrap}.textButton{border:0;background:transparent;text-decoration:underline;cursor:pointer}.boosterCompositionEditor>.primaryButton{margin-top:14px}@media(max-width:760px){.boosterCompositionHead{display:block}.boosterCompositionHead .secondaryButton{margin-top:10px}.boosterRow{grid-template-columns:1fr}.boosterRow strong{margin-top:5px}.boosterRow input,.boosterRow select{width:100%}}
