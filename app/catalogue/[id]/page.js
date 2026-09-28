@@ -30,12 +30,12 @@ export default function ProductDetailPage() {
     const [{ data: productData }, { data: historyData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at')
+        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at')
         .eq('id', params.id)
         .single(),
       supabase
         .from('product_price_history')
-        .select('id,source,price,observed_at')
+        .select('id,source,price,observed_at,condition_tier')
         .eq('product_id', params.id)
         .order('observed_at', { ascending: true })
     ])
@@ -53,12 +53,22 @@ export default function ProductDetailPage() {
     return <main><section className="panel"><h1>Produit introuvable</h1></section></main>
   }
 
-  const prices = history.map(item => Number(item.price)).filter(Number.isFinite)
+  const standardHistory = history.filter(item => (item.condition_tier || 'standard') === 'standard')
+  const zeroDefectHistory = history.filter(item => item.condition_tier === 'zero_defect')
+  const prices = standardHistory.map(item => Number(item.price)).filter(Number.isFinite)
+  const zeroDefectPrices = zeroDefectHistory.map(item => Number(item.price)).filter(Number.isFinite)
   const stats = prices.length ? {
     count: prices.length,
     min: Math.min(...prices),
     max: Math.max(...prices),
     median: median(prices)
+  } : null
+
+  const zeroDefectStats = zeroDefectPrices.length ? {
+    count: zeroDefectPrices.length,
+    min: Math.min(...zeroDefectPrices),
+    max: Math.max(...zeroDefectPrices),
+    median: median(zeroDefectPrices)
   } : null
 
   const minPrice = prices.length ? Math.min(...prices) : 0
@@ -79,12 +89,18 @@ export default function ProductDetailPage() {
         </div>
 
         <div className="referenceValue">
-          <span>Valeur de référence</span>
+          <span>Marché standard</span>
           <strong>
             {product.current_value !== null && product.current_value !== undefined
               ? Number(product.current_value).toFixed(2) + ' €'
               : 'À renseigner'}
           </strong>
+          <div className="zeroDefectHeroValue">
+            <span>Zéro défaut</span>
+            <b>{product.zero_defect_value !== null && product.zero_defect_value !== undefined
+              ? Number(product.zero_defect_value).toFixed(2) + ' €'
+              : 'Pas assez de données'}</b>
+          </div>
         </div>
       </section>
 
@@ -106,7 +122,7 @@ export default function ProductDetailPage() {
             </div>
 
             <div className="priceChart">
-              {history.map((sale, index) => {
+              {standardHistory.map((sale, index) => {
                 const price = Number(sale.price)
                 const height = 22 + ((price - minPrice) / spread) * 78
                 return (
@@ -132,7 +148,7 @@ export default function ProductDetailPage() {
               {[...history].reverse().map(sale => (
                 <div className="saleTableRow" key={sale.id}>
                   <span>{new Date(sale.observed_at).toLocaleDateString('fr-FR')}</span>
-                  <span>{sale.source}</span>
+                  <span>{sale.source}{sale.condition_tier === 'zero_defect' ? ' • zéro défaut' : ''}</span>
                   <strong>{Number(sale.price).toFixed(2)} €</strong>
                 </div>
               ))}
@@ -144,6 +160,19 @@ export default function ProductDetailPage() {
           <p>Pas encore de ventes enregistrées pour ce produit.</p>
         </section>
       )}
+
+      <section className="panel conditionInfo">
+        <h2>Cote “zéro défaut”</h2>
+        <p>
+          Cette cote concerne uniquement les produits scellés dont l’état est explicitement documenté comme impeccable :
+          film propre, boîte non enfoncée, angles et arêtes nets, sans déchirure ni défaut notable.
+        </p>
+        <p className="muted">
+          {zeroDefectStats
+            ? `${zeroDefectStats.count} vente(s) qualifiée(s), médiane ${zeroDefectStats.median.toFixed(2)} €.`
+            : 'Aucune vente suffisamment documentée n’est encore classée zéro défaut pour ce produit.'}
+        </p>
+      </section>
 
       <section className="panel sourcePanel">
         <h2>Source de la cote</h2>
