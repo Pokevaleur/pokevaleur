@@ -160,3 +160,46 @@ img,video,canvas,svg{max-width:100%;height:auto}
   }
   .personalDetail>div:first-child p{font-size:16px!important}
 }
+
+/* Compact community-reference previews */
+.referencePhotoGrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(180px,240px));
+  justify-content:start;
+  align-items:start;
+}
+.referencePhotoCard{
+  width:100%;
+  max-width:240px;
+}
+.referencePhotoCard img{
+  width:100%!important;
+  height:150px!important;
+  max-height:150px!important;
+  aspect-ratio:auto!important;
+  object-fit:cover!important;
+}
+@media(max-width:700px){
+  .referencePhotoGrid{
+    grid-template-columns:repeat(2,minmax(0,1fr))!important;
+    gap:10px!important;
+  }
+  .referencePhotoCard{
+    max-width:none!important;
+    padding:8px!important;
+  }
+  .referencePhotoCard img{
+    height:110px!important;
+    max-height:110px!important;
+  }
+  .referencePhotoCard .secondaryButton,
+  .referencePhotoCard .textButton{
+    font-size:12px!important;
+    line-height:1.25!important;
+    padding:8px!important;
+  }
+}
+@media(max-width:420px){
+  .referencePhotoGrid{grid-template-columns:1fr!important}
+  .referencePhotoCard img{height:140px!important;max-height:140px!important}
+}
