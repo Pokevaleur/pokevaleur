@@ -251,3 +251,15 @@ img,video,canvas,svg{max-width:100%;height:auto}
   .itemValueStats strong{font-size:18px}
   .itemPriceChartFoot strong{display:none}
 }
+
+.voiceSearchWrap{display:flex;align-items:center;gap:8px;width:100%;max-width:620px}
+.voiceSearchWrap .catalogSearch,.voiceSearchWrap .searchInput{flex:1;min-width:0;max-width:none;margin-top:0}
+.voiceSearchButton{display:inline-flex;align-items:center;justify-content:center;flex:0 0 44px;width:44px;height:44px;border-radius:50%;border:1px solid var(--border);background:#fff;cursor:pointer;font-size:20px;box-shadow:0 2px 8px rgba(15,23,42,.06)}
+.voiceSearchButton.listening{background:#fff1f0;border-color:#ef9a9a;animation:voicePulse 1.1s infinite}
+@keyframes voicePulse{0%,100%{transform:scale(1)}50%{transform:scale(1.08)}}
+.collectionVoiceSearch{max-width:420px}
+@media(max-width:700px){
+  .voiceSearchWrap{max-width:none}
+  .collectionVoiceSearch{width:100%}
+  .voiceSearchButton{flex-basis:42px;width:42px;height:42px}
+}
