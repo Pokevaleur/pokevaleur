@@ -26,6 +26,7 @@ export default function OpportunitiesPage() {
   const [products, setProducts] = useState([])
   const [watchlist, setWatchlist] = useState([])
   const [history, setHistory] = useState([])
+  const [offers, setOffers] = useState([])
   const [query, setQuery] = useState('')
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [targetPrice, setTargetPrice] = useState('')
@@ -46,18 +47,20 @@ export default function OpportunitiesPage() {
       return
     }
 
-    const [itemsRes, productsRes, watchRes, historyRes, prefsRes] = await Promise.all([
+    const [itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes] = await Promise.all([
       supabase.from('collection_items').select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date').eq('user_id', user.id),
       supabase.from('products').select('id,name,series,product_type,current_value,zero_defect_value,price_updated_at').eq('is_public', true).order('name'),
       supabase.from('product_watchlist').select('id,product_id,target_price,max_price,notes,active,created_at').eq('user_id', user.id).eq('active', true).order('created_at', { ascending:false }),
       supabase.from('product_price_history').select('product_id,price,observed_at,condition_tier,observation_type').eq('observation_type','confirmed_sale').order('observed_at', { ascending:true }),
-      supabase.from('notification_preferences').select('email_enabled,email_address,sms_enabled,phone_e164,alert_watchlist_price').eq('user_id', user.id).maybeSingle()
+      supabase.from('notification_preferences').select('email_enabled,email_address,sms_enabled,phone_e164,alert_watchlist_price').eq('user_id', user.id).maybeSingle(),
+      supabase.from('market_offers').select('id,product_id,source,seller_name,seller_type,seller_rating,price,shipping_price,total_price,currency,condition_note,language,offer_url,observed_at').eq('active', true).order('observed_at', { ascending:false })
     ])
 
     setItems(itemsRes.data || [])
     setProducts(productsRes.data || [])
     setWatchlist(watchRes.data || [])
     setHistory(historyRes.data || [])
+    setOffers(offersRes.data || [])
     setNotificationPrefs({
       email_enabled:prefsRes.data?.email_enabled ?? true,
       email_address:prefsRes.data?.email_address || user.email || '',
@@ -124,8 +127,13 @@ export default function OpportunitiesPage() {
     const prices30 = last30.map(s => Number(s.price)).filter(Number.isFinite)
     const market = product?.current_value != null ? Number(product.current_value) : null
     const target = w.target_price != null ? Number(w.target_price) : null
-    const opportunity = target != null && market != null && market <= target
-    const discountToTarget = target && market != null ? ((target - market) / target) * 100 : null
+    const productOffers = offers.filter(o => o.product_id === w.product_id)
+    const bestOffer = productOffers.length
+      ? [...productOffers].sort((a,b) => Number(a.total_price ?? a.price) - Number(b.total_price ?? b.price))[0]
+      : null
+    const effectivePrice = bestOffer ? Number(bestOffer.total_price ?? bestOffer.price) : market
+    const opportunity = target != null && effectivePrice != null && effectivePrice <= target
+    const discountToTarget = target && effectivePrice != null ? ((target - effectivePrice) / target) * 100 : null
 
     return {
       ...w,
@@ -136,9 +144,11 @@ export default function OpportunitiesPage() {
       discountToTarget,
       median90: median(prices90),
       low30: prices30.length ? Math.min(...prices30) : null,
-      sales90: prices90.length
+      sales90: prices90.length,
+      bestOffer,
+      effectivePrice
     }
-  }).sort((a,b) => Number(b.opportunity) - Number(a.opportunity)), [watchlist, productById, history])
+  }).sort((a,b) => Number(b.opportunity) - Number(a.opportunity)), [watchlist, productById, history, offers])
 
   const searchMatches = useMemo(() => {
     const n = normalize(query)
@@ -320,7 +330,10 @@ export default function OpportunitiesPage() {
                     <p>{w.product?.series || ''}{w.notes ? ` • ${w.notes}` : ''}</p>
                   </div>
                   <div className="productValues">
-                    <b>{euro(w.market)}</b>
+                    <b>{euro(w.effectivePrice)}</b>
+                    {w.bestOffer
+                      ? <small className="muted">Meilleure offre repérée</small>
+                      : <small className="muted">Cote PokéValeur</small>}
                     {w.target != null && <small className="muted">Objectif : {euro(w.target)}</small>}
                   </div>
                 </div>
@@ -331,6 +344,21 @@ export default function OpportunitiesPage() {
                   <div><span>Médiane 90 j</span><strong>{euro(w.median90)}</strong></div>
                   <div><span>Ventes 90 j</span><strong>{w.sales90}</strong></div>
                 </div>
+
+                {w.bestOffer && (
+                  <div className="message" style={{marginTop:'12px'}}>
+                    <b>{w.bestOffer.source}</b>
+                    {w.bestOffer.seller_name ? ` • vendeur : ${w.bestOffer.seller_name}` : ''}
+                    {w.bestOffer.seller_type ? ` • ${w.bestOffer.seller_type}` : ''}
+                    {w.bestOffer.seller_rating != null ? ` • note ${w.bestOffer.seller_rating}` : ''}
+                    <br />
+                    Prix : {euro(w.bestOffer.price)}
+                    {w.bestOffer.shipping_price != null ? ` + port ${euro(w.bestOffer.shipping_price)}` : ''}
+                    {' • '}Total : {euro(w.bestOffer.total_price ?? w.bestOffer.price)}
+                    {w.bestOffer.language ? ` • ${w.bestOffer.language}` : ''}
+                    {w.bestOffer.condition_note ? ` • ${w.bestOffer.condition_note}` : ''}
+                  </div>
+                )}
 
                 <div className="rowActions">
                   <label style={{display:'flex',alignItems:'center',gap:'8px'}}>
@@ -345,6 +373,7 @@ export default function OpportunitiesPage() {
                     />
                   </label>
                   <a className="miniBtn" href={`/catalogue/${w.product_id}`}>Voir la fiche</a>
+                  {w.bestOffer?.offer_url && <a className="miniBtn primaryMini" href={w.bestOffer.offer_url} target="_blank" rel="noreferrer">Voir l’offre</a>}
                   <button className="miniBtn dangerMini" type="button" onClick={() => removeWatch(w.id)}>Retirer</button>
                 </div>
               </article>
