@@ -121,77 +121,85 @@ Règles impératives:
       })) : []
     })) : []
 
-    // SECOND PASS TARGETED ARTWORK: for unresolved/low-confidence positions, analyze again
-    // with the extension locked and only its known pack artworks as candidates.
+    // SECOND PASS TARGETED ARTWORK: inspect each unresolved position separately.
+    // One request per slot gives the model a narrower visual task and avoids cross-position swaps.
     const unresolved = result.boosters.filter(b => {
       const known = knownBoosters.find(k => Number(k.position) === Number(b.position))
       if (known?.confirmed) return false
-      return !b.artwork_name || b.confidence === 'low'
+      return !b.artwork_name || b.confidence === 'low' || b.confidence === 'medium'
     })
 
-    const unresolvedWithChoices = unresolved.map(b => {
-      const known = knownBoosters.find(k => Number(k.position) === Number(b.position))
-      const expansion = known?.expansion_name || b.expansion_name
+    const slotNames = {
+      1: 'haut gauche',
+      2: 'haut droite',
+      3: 'bas gauche',
+      4: 'bas droite'
+    }
+
+    for (const booster of unresolved) {
+      const known = knownBoosters.find(k => Number(k.position) === Number(booster.position))
+      const expansion = known?.expansion_name || booster.expansion_name
       const choices = referenceBoosters
         .filter(r => normalizeExpansion(r.expansion_name) === normalizeExpansion(expansion))
         .map(r => r.artwork_name)
-      return { position: b.position, expansion, choices }
-    }).filter(x => x.expansion && x.choices.length)
 
-    if (unresolvedWithChoices.length) {
-      const secondPassPrompt = `Fais une seconde inspection VISUELLE, plus fine, des mêmes photos.
-Chaque ligne ci-dessous a une extension verrouillée. Tu dois seulement choisir l'artwork parmi la liste autorisée pour cette position.
-Observe les petits fragments visibles: couleurs, silhouette, orientation du Pokémon, fond, zones sombres/claires, bordures, éléments distinctifs. Croise toutes les photos.
-Ne change jamais l'extension. Si tu hésites entre deux artworks, donne le meilleur candidat avec confidence medium et une courte evidence.
+      if (!expansion || !choices.length) continue
 
-Positions à résoudre:
-${unresolvedWithChoices.map(x => `Position ${x.position} — extension: ${x.expansion} — choix autorisés: ${x.choices.join(' | ')}`).join('\n')}
+      const slot = slotNames[Number(booster.position)] || ('position ' + booster.position)
+      const prompt = `Tu dois identifier UN SEUL booster visible dans un coffret Pokémon.
+Emplacement à examiner : ${slot} (position ${booster.position}).
+Extension VERROUILLÉE : ${expansion}.
+Tu n'as pas le droit de changer l'extension.
+Artworks autorisés : ${choices.join(' | ')}.
 
-Réponds uniquement en JSON:
-{"boosters":[{"position":1,"artwork_name":"...","confidence":"high|medium|low","evidence":"..."}]}`
+Inspecte très précisément les fragments visibles sur TOUTES les photos : couleurs dominantes, silhouette, tête/corps du Pokémon, orientation, fond, lignes graphiques, zones claires/sombres, bordures et éléments distinctifs.
+Ignore les autres boosters sauf pour te repérer spatialement.
+Choisis l'artwork le plus probable parmi la liste autorisée. Si deux restent possibles, donne le meilleur candidat en confidence medium et indique l'alternative dans evidence.
+Réponds uniquement en JSON :
+{"position":${booster.position},"artwork_name":"...","confidence":"high|medium|low","evidence":"...","candidates":[{"artwork_name":"...","confidence":"high|medium|low"}]}`
 
-      const secondResponse = await fetch('https://api.openai.com/v1/responses', {
+      const response = await fetch('https://api.openai.com/v1/responses', {
         method: 'POST',
         headers: { Authorization: 'Bearer ' + process.env.OPENAI_API_KEY, 'Content-Type': 'application/json' },
         body: JSON.stringify({
           model: 'gpt-5.6-luna',
-          input: [{ role: 'user', content: [{ type: 'input_text', text: secondPassPrompt }, ...images] }],
+          input: [{ role: 'user', content: [{ type: 'input_text', text: prompt }, ...images] }],
           text: { format: { type: 'json_object' } }
         })
       })
 
-      if (secondResponse.ok) {
-        const secondAi = await secondResponse.json()
-        const secondText = secondAi.output?.flatMap(o => o.content || []).find(x => x.type === 'output_text')?.text
-        if (secondText) {
-          const refined = JSON.parse(secondText)
-          const refinedBoosters = Array.isArray(refined.boosters) ? refined.boosters : []
-          result.boosters = result.boosters.map(b => {
-            const known = knownBoosters.find(k => Number(k.position) === Number(b.position))
-            if (known?.confirmed) return b
-            const r = refinedBoosters.find(x => Number(x.position) === Number(b.position))
-            if (!r?.artwork_name) return b
+      if (!response.ok) continue
+      const ai2 = await response.json()
+      const text2 = ai2.output?.flatMap(o => o.content || []).find(x => x.type === 'output_text')?.text
+      if (!text2) continue
 
-            const expansion = known?.expansion_name || b.expansion_name
-            const allowed = referenceBoosters
-              .filter(ref => normalizeExpansion(ref.expansion_name) === normalizeExpansion(expansion))
-              .map(ref => ref.artwork_name.toLowerCase())
+      let refined
+      try { refined = JSON.parse(text2) } catch { continue }
+      if (!refined?.artwork_name) continue
 
-            if (!allowed.includes(String(r.artwork_name).toLowerCase())) return b
+      const allowedLower = choices.map(x => x.toLowerCase())
+      if (!allowedLower.includes(String(refined.artwork_name).toLowerCase())) continue
 
-            return {
-              ...b,
-              expansion_name: known?.expansion_name || b.expansion_name,
-              artwork_name: r.artwork_name,
-              confidence: ['high','medium','low'].includes(r.confidence) ? r.confidence : 'medium',
-              evidence: r.evidence || b.evidence
-            }
-          })
-        }
-      }
+      const target = result.boosters.find(x => Number(x.position) === Number(booster.position))
+      if (!target) continue
+
+      target.expansion_name = known?.expansion_name || target.expansion_name
+      target.artwork_name = refined.artwork_name
+      target.confidence = ['high','medium','low'].includes(refined.confidence) ? refined.confidence : 'medium'
+      target.evidence = refined.evidence || target.evidence
+      target.candidates = Array.isArray(refined.candidates)
+        ? refined.candidates
+            .filter(x => x?.artwork_name && allowedLower.includes(String(x.artwork_name).toLowerCase()))
+            .slice(0,3)
+            .map(x => ({
+              expansion_name: known?.expansion_name || expansion,
+              artwork_name: x.artwork_name,
+              confidence: ['high','medium','low'].includes(x.confidence) ? x.confidence : 'low'
+            }))
+        : target.candidates
     }
 
-        const candidatePairs = result.boosters.flatMap(b => b.candidates || []).filter(c => c.expansion_name && c.artwork_name)
+    const candidatePairs = result.boosters.flatMap(b => b.candidates || []).filter(c => c.expansion_name && c.artwork_name)
     if (candidatePairs.length) {
       const refsResponse = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status', token)
       const refs = refsResponse.ok ? await refsResponse.json() : []
