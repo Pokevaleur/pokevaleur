@@ -51,13 +51,17 @@ Composition déjà renseignée: ${item.booster_configuration || 'aucune'}.
 Note variante: ${item.variant_note || 'aucune'}.
 
 Règles impératives:
-- N'invente jamais un artwork. Si le fragment visible est insuffisant, artwork_name doit être null et confidence low.
-- Utilise d'abord les indices visibles: logo/nom d'extension, couleurs, Pokémon/artwork, position et fragments.
-- Plusieurs photos doivent être croisées pour une même position.
-- confirmed n'est jamais décidé par l'IA: l'utilisateur validera ensuite.
-- Si une autre photo aiderait, needs_additional_photo=true et photo_instruction explique précisément quelle zone/quel angle photographier.
+- Le but est d'identifier les boosters même lorsqu'ils ne sont visibles qu'en partie derrière la fenêtre du coffret.
+- Ne demande pas systématiquement une photo complète de chaque booster. Exploite les fragments visibles : palette de couleurs, silhouette ou morceau du Pokémon, fond, bordure, logo d'extension, typographie, position dans le coffret et correspondances entre plusieurs angles.
+- Une petite portion distinctive peut suffire à proposer un artwork avec une confiance medium ou high si elle permet de le distinguer raisonnablement des autres artworks plausibles.
+- Utilise le nom du produit comme contexte pour réduire l'ensemble des extensions plausibles, sans supposer que deux exemplaires du même coffret ont la même composition.
+- Croise toutes les photos du même exemplaire avant de conclure pour chaque position.
+- Si plusieurs candidats restent plausibles, propose le meilleur candidat avec confidence low ou medium et indique brièvement l'alternative dans evidence, au lieu de laisser systématiquement artwork_name à null.
+- Mets expansion_name ou artwork_name à null seulement si aucun candidat raisonnable ne peut être proposé à partir des indices visibles.
+- confirmed n'est jamais décidé par l'IA : l'utilisateur validera ensuite.
+- needs_additional_photo=true uniquement lorsqu'une nouvelle photo est réellement nécessaire pour départager des candidats plausibles. Dans ce cas, demande une zone précise, pas de photographier chaque booster séparément.
 - Réponds uniquement avec du JSON valide, sans markdown, sous la forme:
-{"boosters":[{"position":1,"expansion_name":"... ou null","artwork_name":"... ou null","confidence":"high|medium|low","evidence":"indice visuel bref"}],"needs_additional_photo":true,"photo_instruction":"... ou null"}`
+{"boosters":[{"position":1,"expansion_name":"... ou null","artwork_name":"... ou null","confidence":"high|medium|low","evidence":"indice visuel bref, et alternative éventuelle"}],"needs_additional_photo":true,"photo_instruction":"... ou null"}`
 
     const openaiResponse = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
