@@ -74,3 +74,18 @@
 
 .boosterCompositionEditor{margin-top:22px;padding-top:20px;border-top:1px solid #e7e7e7}.boosterCompositionHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;margin-bottom:14px}.boosterCompositionHead h2{margin:0 0 5px}.boosterRow{display:grid;grid-template-columns:auto 1fr 1fr auto auto auto;gap:9px;align-items:center;padding:10px 0;border-bottom:1px solid #eee}.boosterRow input,.boosterRow select{min-width:0;padding:10px;border:1px solid #d7d7d7;border-radius:9px;background:#fff}.boosterConfirmed{display:flex;gap:6px;align-items:center;white-space:nowrap}.textButton{border:0;background:transparent;text-decoration:underline;cursor:pointer}.boosterCompositionEditor>.primaryButton{margin-top:14px}@media(max-width:760px){.boosterCompositionHead{display:block}.boosterCompositionHead .secondaryButton{margin-top:10px}.boosterRow{grid-template-columns:1fr}.boosterRow strong{margin-top:5px}.boosterRow input,.boosterRow select{width:100%}}
 .candidateGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-top:10px}.candidateCard{display:grid;grid-template-rows:120px auto;gap:8px;text-align:left;border:1px solid var(--border);border-radius:12px;background:#fff;overflow:hidden;padding:0;cursor:pointer}.candidateCard img{width:100%;height:120px;object-fit:contain;background:#fff}.candidatePlaceholder{display:flex;align-items:center;justify-content:center;height:120px;padding:12px;text-align:center;background:#f4f6f8;color:var(--muted);font-size:12px}.candidateCard span{display:grid;gap:3px;padding:0 10px 10px}.candidateCard b{font-size:13px}.candidateCard small{font-size:11px;color:var(--muted);line-height:1.3}.boosterEvidence{margin-top:5px;font-size:12px;color:var(--muted);font-style:italic}.candidateCard em{font-size:10px;line-height:1.35;color:var(--muted);font-style:normal}
+.referenceContribution{margin-top:18px;padding-top:16px;border-top:1px solid #e5e7eb}
+.referenceContribution h3{margin:0 0 6px}
+.referencePhotoGrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin:12px 0}
+.referencePhotoCard{display:flex;flex-direction:column;gap:8px;padding:10px;border:1px solid #e5e7eb;border-radius:12px;background:#fff}
+.referencePhotoCard img{width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:8px}
+.referencePhotoCard .secondaryButton,.referencePhotoCard .textButton{width:100%}
+.communityChat{display:grid;gap:14px}
+.communityMessages{min-height:320px;max-height:60vh;overflow:auto;padding:12px;border:1px solid #e5e7eb;border-radius:14px;background:#fff}
+.communityMessage{padding:10px 0;border-bottom:1px solid #eee}
+.communityMessage:last-child{border-bottom:0}
+.communityMessage>div{display:flex;justify-content:space-between;gap:12px}
+.communityMessage small{color:var(--muted)}
+.communityMessage p{margin:5px 0 0;white-space:pre-wrap}
+.communityComposer{display:grid;gap:10px}
+.communityComposer textarea{width:100%;resize:vertical}
