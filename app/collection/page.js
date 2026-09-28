@@ -9,6 +9,7 @@ const emptyForm = {
   purchase_price: '',
   purchase_date: '',
   purchase_place: '',
+  seller_name: '',
   current_value_override: ''
 }
 
@@ -51,6 +52,7 @@ export default function CollectionPage() {
       purchase_price: form.purchase_price ? Number(form.purchase_price) : null,
       purchase_date: form.purchase_date || null,
       purchase_place: form.purchase_place.trim() || null,
+      seller_name: form.seller_name.trim() || null,
       current_value_override: form.current_value_override ? Number(form.current_value_override) : null
     }
 
@@ -70,6 +72,7 @@ export default function CollectionPage() {
       purchase_price: item.purchase_price ?? '',
       purchase_date: item.purchase_date || '',
       purchase_place: item.purchase_place || '',
+      seller_name: item.seller_name || '',
       current_value_override: item.current_value_override ?? ''
     })
     setMessage('')
@@ -82,6 +85,7 @@ export default function CollectionPage() {
       purchase_price: editForm.purchase_price === '' ? null : Number(editForm.purchase_price),
       purchase_date: editForm.purchase_date || null,
       purchase_place: editForm.purchase_place.trim() || null,
+      seller_name: editForm.seller_name.trim() || null,
       current_value_override: editForm.current_value_override === '' ? null : Number(editForm.current_value_override)
     }
 
@@ -248,6 +252,15 @@ export default function CollectionPage() {
               />
             </label>
 
+            <label>
+              Nom du vendeur (facultatif)
+              <input
+                value={form.seller_name}
+                onChange={e => setForm({ ...form, seller_name: e.target.value })}
+                placeholder="Ex. Ultimate Collectors, vendeur Vinted..."
+              />
+            </label>
+
             <button className="btn" type="submit">Ajouter à ma collection</button>
           </form>
 
@@ -303,6 +316,10 @@ export default function CollectionPage() {
                           Lieu
                           <input value={editForm.purchase_place} onChange={e => setEditForm({ ...editForm, purchase_place: e.target.value })} />
                         </label>
+                        <label>
+                          Vendeur (facultatif)
+                          <input value={editForm.seller_name} onChange={e => setEditForm({ ...editForm, seller_name: e.target.value })} />
+                        </label>
                       </div>
                       <div className="rowActions">
                         <button className="miniBtn primaryMini" onClick={() => saveEdit(item.id)}>Enregistrer</button>
@@ -321,6 +338,7 @@ export default function CollectionPage() {
                           Qté {item.quantity}
                           {item.purchase_date ? ` • acheté le ${new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR')}` : ''}
                           {item.purchase_place ? ` • ${item.purchase_place}` : ''}
+                          {item.seller_name ? ` • vendeur : ${item.seller_name}` : ''}
                         </p>
                       </div>
                       <div className="productValues">
