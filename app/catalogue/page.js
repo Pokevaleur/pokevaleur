@@ -26,12 +26,12 @@ export default function CataloguePage() {
     const [{ data: productData }, { data: historyData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at')
+        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at')
         .eq('is_public', true)
         .order('name'),
       supabase
         .from('product_price_history')
-        .select('id,product_id,source,price,observed_at')
+        .select('id,product_id,source,price,observed_at,condition_tier')
         .order('observed_at', { ascending: true })
     ])
 
@@ -47,8 +47,8 @@ export default function CataloguePage() {
     return haystack.includes(query.toLowerCase())
   })
 
-  function getStats(productId) {
-    const sales = history.filter(item => item.product_id === productId)
+  function getStats(productId, tier = 'standard') {
+    const sales = history.filter(item => item.product_id === productId && (item.condition_tier || 'standard') === tier)
     const prices = sales.map(item => Number(item.price)).filter(Number.isFinite)
 
     if (!prices.length) return null
@@ -82,7 +82,8 @@ export default function CataloguePage() {
 
       <section className="catalogGrid">
         {filtered.map(product => {
-          const stats = getStats(product.id)
+          const stats = getStats(product.id, 'standard')
+          const zeroDefectStats = getStats(product.id, 'zero_defect')
 
           return (
             <article className="catalogCard" key={product.id}>
@@ -94,11 +95,20 @@ export default function CataloguePage() {
               <p>{product.series || 'Série non renseignée'}</p>
 
               <div className="catalogValue">
-                <span>Valeur de référence</span>
+                <span>Marché standard</span>
                 <strong>
                   {product.current_value !== null && product.current_value !== undefined
                     ? Number(product.current_value).toFixed(2) + ' €'
                     : 'À renseigner'}
+                </strong>
+              </div>
+
+              <div className="zeroDefectValue">
+                <span>Produit zéro défaut</span>
+                <strong>
+                  {product.zero_defect_value !== null && product.zero_defect_value !== undefined
+                    ? Number(product.zero_defect_value).toFixed(2) + ' €'
+                    : 'Pas assez de données'}
                 </strong>
               </div>
 
@@ -137,6 +147,13 @@ export default function CataloguePage() {
                 </>
               ) : (
                 <div className="noHistory">Pas encore d’historique de ventes enregistré.</div>
+              )}
+
+              {zeroDefectStats && (
+                <div className="zeroDefectStats">
+                  <span>{zeroDefectStats.count} vente{zeroDefectStats.count > 1 ? 's' : ''} zéro défaut observée{zeroDefectStats.count > 1 ? 's' : ''}</span>
+                  <b>Médiane {zeroDefectStats.median.toFixed(2)} €</b>
+                </div>
               )}
 
               <div className="priceMeta">
