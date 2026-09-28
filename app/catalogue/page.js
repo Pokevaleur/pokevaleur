@@ -147,6 +147,10 @@ export default function CataloguePage() {
                     : 'non renseignée'}
                 </span>
               </div>
+
+              <a className="detailLink" href={`/catalogue/${product.id}`}>
+                Voir la fiche détaillée →
+              </a>
             </article>
           )
         })}
