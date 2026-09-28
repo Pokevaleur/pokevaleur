@@ -53,12 +53,64 @@ export async function POST(request) {
     if (!images.length) return NextResponse.json({ error: 'Les photos n’ont pas pu être lues.' }, { status: 400 })
 
     const boosterResponse = await supabaseFetch('/rest/v1/collection_item_boosters?collection_item_id=eq.' + encodeURIComponent(itemId) + '&user_id=eq.' + encodeURIComponent(user.id) + '&select=position,expansion_name,artwork_name,confirmed&order=position.asc', token)
-    const knownBoosters = boosterResponse.ok ? await boosterResponse.json() : []
+    let knownBoosters = boosterResponse.ok ? await boosterResponse.json() : []
 
     const refsResponseBefore = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status,visual_cues', token)
     const referenceBoosters = refsResponseBefore.ok ? await refsResponseBefore.json() : []
 
-    const item = items[0]
+    // FIRST PASS EXTENSIONS ONLY:
+    // If this item has no booster series yet, identify the visible series first and lock them
+    // before attempting any artwork recognition. This prevents artwork guesses from dragging
+    // the model into the wrong expansion.
+    if (!knownBoosters.length) {
+      const extensionPrompt = `Tu analyses plusieurs photos du MÊME coffret Pokémon scellé.
+Ta seule mission est d'identifier les EXTENSIONS/SÉRIES des boosters visibles, PAS les artworks.
+
+Règles:
+- Ignore complètement le Pokémon illustré sauf s'il aide à lire/reconnaître le design de la série.
+- Base-toi d'abord sur le logo/nom de l'extension, la typographie, la mise en page du booster, les couleurs de fond et le design global.
+- Plusieurs boosters peuvent appartenir à la même extension : conserve les doublons.
+- Ne cherche PAS encore le nom de l'artwork.
+- Donne exactement une ligne par booster visible, avec sa position.
+- Si une extension est partiellement masquée, propose la meilleure lecture avec confidence medium plutôt que d'inventer une autre série.
+- Réponds uniquement en JSON valide:
+{"boosters":[{"position":1,"expansion_name":"...","confidence":"high|medium|low","evidence":"indice visuel de série"}]}`
+
+      try {
+        const extensionResponse = await fetch('https://api.openai.com/v1/responses', {
+          method: 'POST',
+          headers: { Authorization: 'Bearer ' + process.env.OPENAI_API_KEY, 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            model: 'gpt-5.6-luna',
+            input: [{ role: 'user', content: [{ type: 'input_text', text: extensionPrompt }, ...images] }],
+            text: { format: { type: 'json_object' } }
+          })
+        })
+        if (extensionResponse.ok) {
+          const extAi = await extensionResponse.json()
+          const extText = extAi.output?.flatMap(o => o.content || []).find(x => x.type === 'output_text')?.text
+          if (extText) {
+            const extResult = JSON.parse(extText)
+            if (Array.isArray(extResult.boosters)) {
+              knownBoosters = extResult.boosters
+                .filter(b => b?.expansion_name)
+                .map((b, i) => ({
+                  position: Number(b.position) || i + 1,
+                  expansion_name: b.expansion_name,
+                  artwork_name: null,
+                  confirmed: false,
+                  confidence: ['high','medium','low'].includes(b.confidence) ? b.confidence : 'low',
+                  evidence: b.evidence || null
+                }))
+            }
+          }
+        }
+      } catch {
+        // Fall back to the general pass below if extension-only analysis fails.
+      }
+    }
+
+        const item = items[0]
     const knownComposition = knownBoosters.length
       ? knownBoosters.map(b => {
           const allowed = referenceBoosters
@@ -77,7 +129,8 @@ Composition déjà connue par position:
 ${knownComposition}
 
 Règles impératives:
-- Une extension déjà renseignée pour une position est une contrainte forte : ne la remplace jamais par une autre extension.
+- Une extension déjà renseignée pour une position est VERROUILLÉE : ne la remplace jamais par une autre extension.
+- Si ces extensions viennent de la première passe, considère-les comme la base de travail et cherche seulement l'artwork à l'intérieur de chacune.
 - Une ligne confirmée par l'utilisateur est verrouillée : ne change ni son extension ni son artwork.
 - Si l'extension est connue mais l'artwork manque, identifie uniquement l'artwork parmi ceux de CETTE extension.
 - Le but est d'identifier les boosters même lorsqu'ils ne sont visibles qu'en partie derrière la fenêtre du coffret.
@@ -113,7 +166,7 @@ Règles impératives:
       expansion_name: b.expansion_name || null,
       artwork_name: b.artwork_name || null,
       confidence: ['high','medium','low'].includes(b.confidence) ? b.confidence : 'low',
-      evidence: b.evidence || null,
+      evidence: b.evidence || knownBoosters.find(k => Number(k.position) === (Number(b.position) || i + 1))?.evidence || null,
       candidates: Array.isArray(b.candidates) ? b.candidates.slice(0, 3).map(candidate => ({
         expansion_name: candidate.expansion_name || null,
         artwork_name: candidate.artwork_name || null,
