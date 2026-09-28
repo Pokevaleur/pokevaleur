@@ -1,5 +1,11 @@
 import './styles.css'
 
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1
+}
+
 export const metadata = {
   title: 'PokéValeur',
   description: 'Suivez, estimez et organisez votre collection de cartes et produits scellés.'
