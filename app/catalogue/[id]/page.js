@@ -30,7 +30,7 @@ export default function ProductDetailPage() {
     const [{ data: productData }, { data: historyData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at')
+        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
         .eq('id', params.id)
         .single(),
       supabase
@@ -82,12 +82,26 @@ export default function ProductDetailPage() {
       <a href="/catalogue" className="backLink">← Retour au catalogue</a>
 
       <section className="productDetailHero">
-        <div>
+        <div className="detailProductVisual">
+          {product.image_url ? (
+            <img src={product.image_url} alt={product.name} />
+          ) : (
+            <div className="productVisualPlaceholder large">
+              <span>PokéValeur</span>
+              <b>Visuel produit à venir</b>
+            </div>
+          )}
+        </div>
+
+        <div className="detailProductIdentity">
           <span className="catalogBadge">
             {product.category === 'sealed' ? 'Scellé' : product.category}
           </span>
           <h1>{product.name}</h1>
           <p className="muted">{product.series || 'Série non renseignée'}</p>
+          {product.image_url && product.image_credit && (
+            <small className="imageCredit">Visuel : {product.image_credit}</small>
+          )}
         </div>
 
         <div className="referenceValue">
