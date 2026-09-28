@@ -59,7 +59,7 @@ export default function CataloguePage() {
     const [{ data: productData }, { data: historyData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at')
+        .select('id,name,series,category,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
         .eq('is_public', true)
         .order('name'),
       supabase
@@ -128,6 +128,17 @@ export default function CataloguePage() {
 
           return (
             <article className="catalogCard" key={product.id}>
+              <div className="productVisual">
+                {product.image_url ? (
+                  <img src={product.image_url} alt={product.name} loading="lazy" />
+                ) : (
+                  <div className="productVisualPlaceholder">
+                    <span>PokéValeur</span>
+                    <b>{product.category === 'sealed' ? 'Produit scellé' : 'Visuel à venir'}</b>
+                  </div>
+                )}
+              </div>
+
               <span className="catalogBadge">
                 {product.category === 'sealed' ? 'Scellé' : product.category}
               </span>
