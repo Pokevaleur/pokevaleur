@@ -31,6 +31,8 @@ export default function OpportunitiesPage() {
   const [targetPrice, setTargetPrice] = useState('')
   const [notes, setNotes] = useState('')
   const [message, setMessage] = useState('')
+  const [notificationPrefs, setNotificationPrefs] = useState({ email_enabled:true, email_address:'', sms_enabled:false, phone_e164:'', alert_watchlist_price:true })
+  const [notificationMessage, setNotificationMessage] = useState('')
   const [loading, setLoading] = useState(true)
 
   useEffect(() => { load() }, [])
@@ -44,17 +46,25 @@ export default function OpportunitiesPage() {
       return
     }
 
-    const [itemsRes, productsRes, watchRes, historyRes] = await Promise.all([
+    const [itemsRes, productsRes, watchRes, historyRes, prefsRes] = await Promise.all([
       supabase.from('collection_items').select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date').eq('user_id', user.id),
       supabase.from('products').select('id,name,series,product_type,current_value,zero_defect_value,price_updated_at').eq('is_public', true).order('name'),
       supabase.from('product_watchlist').select('id,product_id,target_price,max_price,notes,active,created_at').eq('user_id', user.id).eq('active', true).order('created_at', { ascending:false }),
-      supabase.from('product_price_history').select('product_id,price,observed_at,condition_tier,observation_type').eq('observation_type','confirmed_sale').order('observed_at', { ascending:true })
+      supabase.from('product_price_history').select('product_id,price,observed_at,condition_tier,observation_type').eq('observation_type','confirmed_sale').order('observed_at', { ascending:true }),
+      supabase.from('notification_preferences').select('email_enabled,email_address,sms_enabled,phone_e164,alert_watchlist_price').eq('user_id', user.id).maybeSingle()
     ])
 
     setItems(itemsRes.data || [])
     setProducts(productsRes.data || [])
     setWatchlist(watchRes.data || [])
     setHistory(historyRes.data || [])
+    setNotificationPrefs({
+      email_enabled:prefsRes.data?.email_enabled ?? true,
+      email_address:prefsRes.data?.email_address || user.email || '',
+      sms_enabled:prefsRes.data?.sms_enabled ?? false,
+      phone_e164:prefsRes.data?.phone_e164 || '',
+      alert_watchlist_price:prefsRes.data?.alert_watchlist_price ?? true
+    })
     setLoading(false)
   }
 
@@ -171,6 +181,23 @@ export default function OpportunitiesPage() {
     }).eq('id',id)
     if (error) return setMessage('❌ ' + error.message)
     await load()
+  }
+
+  async function saveNotificationPreferences(e) {
+    e.preventDefault()
+    if (!user) return
+    setNotificationMessage('Enregistrement…')
+    const { error } = await supabase.from('notification_preferences').upsert({
+      user_id:user.id,
+      email_enabled:Boolean(notificationPrefs.email_enabled),
+      email_address:notificationPrefs.email_address.trim() || null,
+      sms_enabled:Boolean(notificationPrefs.sms_enabled),
+      phone_e164:notificationPrefs.phone_e164.trim() || null,
+      alert_watchlist_price:Boolean(notificationPrefs.alert_watchlist_price),
+      updated_at:new Date().toISOString()
+    }, { onConflict:'user_id' })
+    if (error) return setNotificationMessage('❌ ' + error.message)
+    setNotificationMessage('✓ Préférences d’alerte enregistrées.')
   }
 
   if (loading) return <main><section className="panel"><p>Chargement du tableau de bord…</p></section></main>
@@ -324,6 +351,36 @@ export default function OpportunitiesPage() {
             ))}
           </div>
         </section>
+      </section>
+
+      <section className="panel" style={{marginTop:'18px'}}>
+        <h2>🔔 Mes alertes</h2>
+        <p className="muted">Choisis comment recevoir une alerte lorsqu’un produit de ta watchlist atteint ton prix objectif.</p>
+        <form onSubmit={saveNotificationPreferences} className="formGrid">
+          <label style={{display:'flex',alignItems:'center',gap:'10px'}}>
+            <input type="checkbox" checked={notificationPrefs.email_enabled} onChange={e => setNotificationPrefs({...notificationPrefs,email_enabled:e.target.checked})} />
+            Alerte par e-mail
+          </label>
+          <label>
+            Adresse e-mail
+            <input type="email" value={notificationPrefs.email_address} onChange={e => setNotificationPrefs({...notificationPrefs,email_address:e.target.value})} placeholder={user.email || 'adresse@email.fr'} />
+          </label>
+          <label style={{display:'flex',alignItems:'center',gap:'10px'}}>
+            <input type="checkbox" checked={notificationPrefs.sms_enabled} onChange={e => setNotificationPrefs({...notificationPrefs,sms_enabled:e.target.checked})} />
+            Alerte par SMS
+          </label>
+          <label>
+            Numéro de mobile
+            <input value={notificationPrefs.phone_e164} onChange={e => setNotificationPrefs({...notificationPrefs,phone_e164:e.target.value})} placeholder="+33612345678" />
+          </label>
+          <label style={{display:'flex',alignItems:'center',gap:'10px'}}>
+            <input type="checkbox" checked={notificationPrefs.alert_watchlist_price} onChange={e => setNotificationPrefs({...notificationPrefs,alert_watchlist_price:e.target.checked})} />
+            M’alerter lorsqu’un prix objectif est atteint
+          </label>
+          <button className="btn" type="submit">Enregistrer mes alertes</button>
+        </form>
+        {notificationMessage && <p className="message">{notificationMessage}</p>}
+        <p className="muted"><small>L’e-mail et le SMS sont préparés côté compte. L’envoi automatique sera activé dès que le service de notification externe sera branché.</small></p>
       </section>
 
       <section className="panel" style={{marginTop:'18px'}}>
