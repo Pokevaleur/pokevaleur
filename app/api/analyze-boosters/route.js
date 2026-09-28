@@ -60,8 +60,10 @@ Règles impératives:
 - Mets expansion_name ou artwork_name à null seulement si aucun candidat raisonnable ne peut être proposé à partir des indices visibles.
 - confirmed n'est jamais décidé par l'IA : l'utilisateur validera ensuite.
 - needs_additional_photo=true uniquement lorsqu'une nouvelle photo est réellement nécessaire pour départager des candidats plausibles. Dans ce cas, demande une zone précise, pas de photographier chaque booster séparément.
+- Pour chaque booster incertain, renvoie aussi jusqu'à 3 candidats plausibles classés du plus probable au moins probable.
+- Chaque candidat contient expansion_name, artwork_name et confidence.
 - Réponds uniquement avec du JSON valide, sans markdown, sous la forme:
-{"boosters":[{"position":1,"expansion_name":"... ou null","artwork_name":"... ou null","confidence":"high|medium|low","evidence":"indice visuel bref, et alternative éventuelle"}],"needs_additional_photo":true,"photo_instruction":"... ou null"}`
+{"boosters":[{"position":1,"expansion_name":"... ou null","artwork_name":"... ou null","confidence":"high|medium|low","evidence":"indice visuel bref, et alternative éventuelle","candidates":[{"expansion_name":"...","artwork_name":"...","confidence":"high|medium|low"}]}],"needs_additional_photo":true,"photo_instruction":"... ou null"}`
 
     const openaiResponse = await fetch('https://api.openai.com/v1/responses', {
       method: 'POST',
@@ -82,8 +84,33 @@ Règles impératives:
       expansion_name: b.expansion_name || null,
       artwork_name: b.artwork_name || null,
       confidence: ['high','medium','low'].includes(b.confidence) ? b.confidence : 'low',
-      evidence: b.evidence || null
+      evidence: b.evidence || null,
+      candidates: Array.isArray(b.candidates) ? b.candidates.slice(0, 3).map(candidate => ({
+        expansion_name: candidate.expansion_name || null,
+        artwork_name: candidate.artwork_name || null,
+        confidence: ['high','medium','low'].includes(candidate.confidence) ? candidate.confidence : 'low'
+      })) : []
     })) : []
+
+    const candidatePairs = result.boosters.flatMap(b => b.candidates || []).filter(c => c.expansion_name && c.artwork_name)
+    if (candidatePairs.length) {
+      const refsResponse = await supabaseFetch('/rest/v1/booster_reference_images?select=expansion_name,artwork_name,image_url,source_url,image_usage_status', token)
+      const refs = refsResponse.ok ? await refsResponse.json() : []
+      result.boosters = result.boosters.map(booster => ({
+        ...booster,
+        candidates: (booster.candidates || []).map(candidate => {
+          const ref = refs.find(r =>
+            String(r.expansion_name || '').toLowerCase() === String(candidate.expansion_name || '').toLowerCase() &&
+            String(r.artwork_name || '').toLowerCase() === String(candidate.artwork_name || '').toLowerCase()
+          )
+          return {
+            ...candidate,
+            image_url: ref?.image_url || null,
+            source_url: ref?.source_url || null
+          }
+        })
+      }))
+    }
     return NextResponse.json(result)
   } catch (error) {
     console.error('analyze-boosters', error)
