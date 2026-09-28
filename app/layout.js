@@ -15,6 +15,7 @@ export default function RootLayout({ children }) {
             <a href="/">Accueil</a>
             <a href="/catalogue">Catalogue</a>
             <a href="/collection">Ma collection</a>
+            <a href="/admin">Admin</a>
             <a href="/login" className="btn small">Connexion</a>
           </nav>
         </header>
