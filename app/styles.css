@@ -215,3 +215,39 @@ img,video,canvas,svg{max-width:100%;height:auto}
   .referenceConsentActions{flex-direction:column;align-items:stretch}
   .referenceConsentActions>*{width:100%}
 }
+
+.itemValueDashboard{display:grid;gap:16px;padding:18px;border:1px solid #e4e9f0;border-radius:18px;background:linear-gradient(180deg,#fff,#fbfcfe)}
+.itemValueTop{display:flex;justify-content:space-between;gap:16px;align-items:flex-start}
+.itemSeriesLine{margin:5px 0 0!important}
+.itemReleaseBadge{display:grid;gap:3px;text-align:right;padding:8px 10px;border-radius:10px;background:#fff6d8;border:1px solid #f2db8d}
+.itemReleaseBadge small{color:#7a6220}
+.itemValueStats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+.itemValueStats>div{padding:13px;border:1px solid var(--border);border-radius:13px;background:#fff;min-width:0}
+.itemValueStats span{display:block;color:var(--muted);font-size:12px;margin-bottom:6px}
+.itemValueStats strong{display:block;font-size:20px;line-height:1.1}
+.itemValueStats small{display:block;margin-top:4px;font-size:12px}
+.itemValueStats .positive strong,.itemValueStats .positive small{color:var(--green)}
+.itemValueStats .negative strong,.itemValueStats .negative small{color:var(--red)}
+.itemPriceChartCard{padding:15px;border-radius:14px;background:#fff;border:1px solid var(--border)}
+.itemPriceChartHead{display:flex;justify-content:space-between;gap:14px;align-items:flex-start}
+.itemPriceChartHead h2{margin:0 0 2px;font-size:18px}
+.itemPriceChartHead p{margin:0!important;font-size:12px}
+.itemPriceChartHead>small{color:var(--muted);font-size:11px}
+.miniPriceChart{height:150px;margin-top:12px;padding:8px 6px;background:linear-gradient(180deg,#f6fffb,#fff);border-radius:12px;overflow:hidden}
+.miniPriceChart svg{display:block;width:100%;height:100%}
+.miniPriceChart polyline{stroke:#0aa56e;stroke-width:2.5;stroke-linecap:round;stroke-linejoin:round}
+.itemPriceChartFoot{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-top:7px;font-size:11px;color:var(--muted)}
+.itemPriceChartFoot strong{color:var(--text)}
+.emptyPriceChart{min-height:110px;margin-top:12px;border-radius:12px;background:#f7f9fc;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:18px;color:var(--muted)}
+.emptyPriceChart strong{color:var(--text);margin-bottom:5px}
+@media(max-width:760px){
+  .itemValueStats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .itemValueTop{align-items:stretch;flex-direction:column}
+  .itemReleaseBadge{text-align:left;justify-self:start}
+  .miniPriceChart{height:125px}
+}
+@media(max-width:420px){
+  .itemValueStats{grid-template-columns:1fr 1fr}
+  .itemValueStats strong{font-size:18px}
+  .itemPriceChartFoot strong{display:none}
+}
