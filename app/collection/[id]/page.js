@@ -15,6 +15,8 @@ export default function CollectionItemDetailPage() {
   const [boosterMessage, setBoosterMessage] = useState('')
   const [photoMessage, setPhotoMessage] = useState('')
   const [photoUploading, setPhotoUploading] = useState(false)
+  const [analyzing, setAnalyzing] = useState(false)
+  const [analysisMessage, setAnalysisMessage] = useState('')
 
   useEffect(() => {
     if (params?.id) load()
@@ -78,6 +80,38 @@ export default function CollectionItemDetailPage() {
       setPhotoMessage('❌ ' + (error.message || 'Impossible d’enregistrer la photo.'))
     } finally {
       setPhotoUploading(false)
+    }
+  }
+
+  async function analyzePhotos() {
+    if (!photos.length) return setAnalysisMessage('Ajoute au moins une photo avant l’analyse.')
+    setAnalyzing(true)
+    setAnalysisMessage('Analyse des photos en cours…')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session?.access_token) throw new Error('Ta session a expiré.')
+      const response = await fetch('/api/analyze-boosters', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session.access_token}` },
+        body: JSON.stringify({ itemId: params.id })
+      })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || 'Analyse impossible.')
+      setBoosters((result.boosters || []).map((booster, index) => ({
+        id: null,
+        position: booster.position || index + 1,
+        expansion_name: booster.expansion_name || '',
+        artwork_name: booster.artwork_name || '',
+        confidence: booster.confidence || 'low',
+        confirmed: false
+      })))
+      setAnalysisMessage(result.needs_additional_photo
+        ? `⚠️ ${result.photo_instruction || 'Une photo complémentaire est conseillée pour confirmer certains boosters.'}`
+        : '✓ Analyse terminée. Vérifie les propositions puis coche « Confirmé » avant d’enregistrer.')
+    } catch (error) {
+      setAnalysisMessage('❌ ' + (error.message || 'Analyse impossible.'))
+    } finally {
+      setAnalyzing(false)
     }
   }
 
@@ -182,6 +216,14 @@ export default function CollectionItemDetailPage() {
             <p style={{marginBottom: 0}}><strong>Photo complémentaire conseillée :</strong> rapproche-toi des boosters encore partiellement masqués et change légèrement l’angle pour éviter les reflets.</p>
           )}
           {photoMessage && <div className={photoMessage.startsWith('❌') ? 'photoImmediateStatus error' : 'photoImmediateStatus success'} role="status">{photoMessage}</div>}
+          {photos.length > 0 && (
+            <div style={{marginTop: '14px'}}>
+              <button type="button" className="primaryButton" disabled={analyzing || photoUploading} onClick={analyzePhotos}>
+                {analyzing ? '🔍 Analyse en cours…' : `🔍 Analyser mes ${photos.length} photo${photos.length > 1 ? 's' : ''}`}
+              </button>
+              {analysisMessage && <div className={analysisMessage.startsWith('❌') ? 'photoImmediateStatus error' : 'photoImmediateStatus success'} role="status">{analysisMessage}</div>}
+            </div>
+          )}
         </div>
 
         <div style={{marginTop: '18px', padding: '16px', border: '2px solid #f59e0b', borderRadius: '12px', background: '#fffaf0'}}>
