@@ -306,3 +306,12 @@ img,video,canvas,svg{max-width:100%;height:auto}
   .statsSectionHead{flex-direction:column}
   .collectionTrendChart{height:160px}
 }
+
+.exportCollectionActions{display:flex;gap:8px;flex-wrap:wrap}
+@media(max-width:760px){
+  .exportCollectionActions{display:grid;grid-template-columns:1fr 1fr;width:100%}
+  .exportCollectionActions .btn{width:100%;text-align:center}
+}
+@media(max-width:440px){
+  .exportCollectionActions{grid-template-columns:1fr}
+}
