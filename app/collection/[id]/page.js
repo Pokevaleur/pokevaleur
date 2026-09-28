@@ -321,8 +321,7 @@ export default function CollectionItemDetailPage() {
                   const publicGiven = referenceContributions.some(c => c.collection_item_photo_id === photo.id && c.reference_scope === 'recognition_and_public')
                   return (
                     <div className="referencePhotoCard" key={photo.id}>
-                      <img src={photo.url} alt={`Photo ${index + 1}`} />
-                      <strong>Photo {index + 1}</strong>
+                      <strong>📷 Photo {index + 1}</strong>
                       <button type="button" className="secondaryButton" disabled={recognitionGiven || publicGiven} onClick={() => contributeReference(photo, 'recognition_only')}>
                         {recognitionGiven || publicGiven ? '✓ Référence IA autorisée' : 'Autoriser pour la reconnaissance'}
                       </button>
