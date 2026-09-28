@@ -34,6 +34,7 @@ export default function CollectionPage() {
   const [photoStepDone, setPhotoStepDone] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [photoUploadState, setPhotoUploadState] = useState({})
+  const [collectionVoiceListening, setCollectionVoiceListening] = useState(false)
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
@@ -64,6 +65,29 @@ export default function CollectionPage() {
 
       setPhotoUrls(Object.fromEntries(signedEntries.filter(([, url]) => url)))
     }
+  }
+
+  function startVoiceSearch(onResult, setListening) {
+    const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
+    if (!Recognition) {
+      window.alert('La recherche vocale n’est pas disponible sur ce navigateur.')
+      return
+    }
+
+    const recognition = new Recognition()
+    recognition.lang = 'fr-FR'
+    recognition.interimResults = false
+    recognition.maxAlternatives = 1
+
+    recognition.onstart = () => setListening(true)
+    recognition.onend = () => setListening(false)
+    recognition.onerror = () => setListening(false)
+    recognition.onresult = event => {
+      const spoken = event.results?.[0]?.[0]?.transcript?.trim()
+      if (spoken) onResult(spoken)
+    }
+
+    recognition.start()
   }
 
   useEffect(() => {
@@ -715,12 +739,23 @@ export default function CollectionPage() {
         <div className="panel">
           <div className="listHeader">
             <h2>Mes produits</h2>
-            <input
-              className="searchInput"
-              placeholder="Rechercher produit, série, vendeur, lieu, booster, note..."
-              value={query}
-              onChange={e => setQuery(e.target.value)}
-            />
+            <div className="voiceSearchWrap collectionVoiceSearch">
+              <input
+                className="searchInput"
+                placeholder="Rechercher produit, série, vendeur, lieu, booster, note..."
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+              />
+              <button
+                type="button"
+                className={collectionVoiceListening ? 'voiceSearchButton listening' : 'voiceSearchButton'}
+                aria-label="Rechercher à la voix"
+                title="Recherche vocale"
+                onClick={() => startVoiceSearch(setQuery, setCollectionVoiceListening)}
+              >
+                {collectionVoiceListening ? '🎙️' : '🎤'}
+              </button>
+            </div>
           </div>
 
           <div className="productList">
