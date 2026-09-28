@@ -18,6 +18,7 @@ export default function CollectionItemDetailPage() {
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisMessage, setAnalysisMessage] = useState('')
   const [analysisCandidates, setAnalysisCandidates] = useState({})
+  const [expectedBoosters, setExpectedBoosters] = useState([])
 
   useEffect(() => {
     if (params?.id) load()
@@ -38,6 +39,17 @@ export default function CollectionItemDetailPage() {
     ])
 
     setItem(itemData || null)
+
+    if (itemData?.product_id) {
+      const { data: expected } = await supabase
+        .from('product_contents')
+        .select('item_name,quantity,confidence')
+        .eq('product_id', itemData.product_id)
+        .eq('content_type', 'booster')
+      setExpectedBoosters(expected || [])
+    } else {
+      setExpectedBoosters([])
+    }
 
     const signed = await Promise.all((photoData || []).map(async photo => {
       const { data } = await supabase.storage.from('collection-images').createSignedUrl(photo.photo_path, 3600)
@@ -299,6 +311,14 @@ export default function CollectionItemDetailPage() {
 
         <div style={{marginTop: '18px', padding: '16px', border: '2px solid #f59e0b', borderRadius: '12px', background: '#fffaf0'}}>
           <h2 style={{margin: '0 0 10px'}}>Composition des boosters</h2>
+          {expectedBoosters.length > 0 && (
+            <div style={{marginBottom:'12px', padding:'10px 12px', background:'#fff', borderRadius:'10px', border:'1px solid #eadfc8'}}>
+              <strong>Composition catalogue :</strong>{' '}
+              {expectedBoosters.map((b, i) => (
+                <span key={i}>{i ? ' • ' : ''}{b.quantity} × {b.item_name}</span>
+              ))}
+            </div>
+          )}
           {boosters.length === 0 ? (
             <p style={{margin: 0}}>Aucun booster identifié pour le moment.</p>
           ) : (
