@@ -60,12 +60,27 @@ export default function CollectionPage() {
       ...form,
       product_id: product.id,
       custom_name: product.name,
-      current_value_override:
-        product.current_value !== null && product.current_value !== undefined
-          ? String(product.current_value)
-          : form.current_value_override
+      current_value_override: ''
     })
     setCatalogQuery(product.name)
+  }
+
+  function getCatalogValue(item) {
+    const product = catalog.find(p => p.id === item.product_id)
+    return product?.current_value !== null && product?.current_value !== undefined
+      ? Number(product.current_value)
+      : null
+  }
+
+  function getCurrentValue(item) {
+    if (item.current_value_override !== null && item.current_value_override !== undefined) {
+      return Number(item.current_value_override)
+    }
+
+    const marketValue = getCatalogValue(item)
+    if (marketValue !== null) return marketValue
+
+    return Number(item.purchase_price) || 0
   }
 
   async function addItem(e) {
@@ -157,10 +172,7 @@ export default function CollectionPage() {
   )
 
   const current = items.reduce(
-    (sum, item) =>
-      sum +
-      (Number(item.current_value_override) || Number(item.purchase_price) || 0) *
-        (item.quantity || 1),
+    (sum, item) => sum + getCurrentValue(item) * (item.quantity || 1),
     0
   )
 
@@ -294,14 +306,14 @@ export default function CollectionPage() {
             </label>
 
             <label>
-              Valeur actuelle (€)
+              Valeur actuelle manuelle (€) — facultatif
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.current_value_override}
                 onChange={e => setForm({ ...form, current_value_override: e.target.value })}
-                placeholder="Peut être renseignée plus tard"
+                placeholder="Laisser vide pour utiliser la cote PokéValeur"
               />
             </label>
 
@@ -355,7 +367,7 @@ export default function CollectionPage() {
             ) : (
               filteredItems.map(item => {
                 const buy = Number(item.purchase_price) || 0
-                const value = Number(item.current_value_override ?? item.purchase_price ?? 0)
+                const value = getCurrentValue(item)
                 const diff = value - buy
                 const pct = buy > 0 ? (diff / buy) * 100 : 0
 
@@ -376,8 +388,8 @@ export default function CollectionPage() {
                           <input type="number" min="0" step="0.01" value={editForm.purchase_price} onChange={e => setEditForm({ ...editForm, purchase_price: e.target.value })} />
                         </label>
                         <label>
-                          Valeur (€)
-                          <input type="number" min="0" step="0.01" value={editForm.current_value_override} onChange={e => setEditForm({ ...editForm, current_value_override: e.target.value })} />
+                          Valeur manuelle (€)
+                          <input type="number" min="0" step="0.01" value={editForm.current_value_override} onChange={e => setEditForm({ ...editForm, current_value_override: e.target.value })} placeholder="Vide = cote PokéValeur" />
                         </label>
                         <label>
                           Date
@@ -414,6 +426,11 @@ export default function CollectionPage() {
                       </div>
                       <div className="productValues">
                         <b>{buy.toFixed(2)} € → {value.toFixed(2)} €</b>
+                        {item.current_value_override === null && getCatalogValue(item) !== null
+                          ? <small className="muted">Cote PokéValeur</small>
+                          : item.current_value_override !== null
+                            ? <small className="muted">Valeur manuelle</small>
+                            : null}
                         <span className={diff >= 0 ? 'gain' : 'loss'}>
                           {diff >= 0 ? '+' : ''}{diff.toFixed(2)} €
                           {buy > 0 ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)} %)` : ''}
