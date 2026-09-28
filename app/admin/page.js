@@ -29,6 +29,9 @@ export default function AdminPage() {
   const [observation, setObservation] = useState(emptyObservation)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [reports, setReports] = useState([])
+  const [reportedMessages, setReportedMessages] = useState([])
+  const [communityStatuses, setCommunityStatuses] = useState([])
 
   useEffect(() => {
     load()
@@ -55,7 +58,7 @@ export default function AdminPage() {
     setIsAdmin(admin)
 
     if (admin) {
-      const [{ data: suggestionData }, { data: productData }, { data: historyData }] = await Promise.all([
+      const [{ data: suggestionData }, { data: productData }, { data: historyData }, { data: reportData }, { data: statusData }] = await Promise.all([
         supabase.from('product_suggestions').select('*').order('created_at', { ascending: false }),
         supabase
           .from('products')
@@ -65,12 +68,33 @@ export default function AdminPage() {
         supabase
           .from('product_price_history')
           .select('id,product_id,source,price,observed_at,condition_tier,observation_type')
-          .order('observed_at', { ascending: false })
+          .order('observed_at', { ascending: false }),
+        supabase
+          .from('community_reports')
+          .select('id,reporter_id,message_id,reason,status,created_at')
+          .order('created_at', { ascending:false }),
+        supabase
+          .from('community_user_status')
+          .select('user_id,suspended_until,reason,updated_at')
+          .order('updated_at', { ascending:false })
       ])
 
       setSuggestions(suggestionData || [])
       setProducts(productData || [])
       setHistory(historyData || [])
+      const reportRows = reportData || []
+      setReports(reportRows)
+      setCommunityStatuses(statusData || [])
+      if (reportRows.length) {
+        const ids = [...new Set(reportRows.map(r => r.message_id))]
+        const { data: messageRows } = await supabase
+          .from('community_messages')
+          .select('id,user_id,author_name,body,created_at,is_hidden')
+          .in('id', ids)
+        setReportedMessages(messageRows || [])
+      } else {
+        setReportedMessages([])
+      }
     }
 
     setLoading(false)
@@ -111,6 +135,52 @@ export default function AdminPage() {
     if (error) return setMessage(error.message)
 
     setMessage('Proposition refusée.')
+    await load()
+  }
+
+  async function moderateMessage(messageId, hide) {
+    const { error } = await supabase
+      .from('community_messages')
+      .update({ is_hidden: hide })
+      .eq('id', messageId)
+    if (error) return setMessage(error.message)
+    setMessage(hide ? 'Message masqué.' : 'Message rétabli.')
+    await load()
+  }
+
+  async function deleteCommunityMessage(messageId) {
+    if (!window.confirm('Supprimer définitivement ce message ?')) return
+    const { error } = await supabase.from('community_messages').delete().eq('id', messageId)
+    if (error) return setMessage(error.message)
+    setMessage('Message supprimé.')
+    await load()
+  }
+
+  async function updateReportStatus(reportId, status) {
+    const { error } = await supabase
+      .from('community_reports')
+      .update({ status })
+      .eq('id', reportId)
+    if (error) return setMessage(error.message)
+    setMessage(status === 'reviewed' ? 'Signalement traité.' : 'Signalement classé.')
+    await load()
+  }
+
+  async function suspendCommunityUser(userId, duration) {
+    let suspendedUntil = null
+    let reason = 'Suspension communautaire'
+    if (duration === '24h') suspendedUntil = new Date(Date.now() + 24*60*60*1000).toISOString()
+    if (duration === '7d') suspendedUntil = new Date(Date.now() + 7*24*60*60*1000).toISOString()
+    if (duration === 'permanent') suspendedUntil = '9999-12-31T23:59:59.000Z'
+
+    const { error } = await supabase.from('community_user_status').upsert({
+      user_id:userId,
+      suspended_until:suspendedUntil,
+      reason,
+      updated_at:new Date().toISOString()
+    }, { onConflict:'user_id' })
+    if (error) return setMessage(error.message)
+    setMessage(duration ? 'Accès communautaire suspendu.' : 'Suspension communautaire levée.')
     await load()
   }
 
@@ -178,6 +248,8 @@ export default function AdminPage() {
   }
 
   const pending = suggestions.filter(item => item.status === 'pending')
+  const pendingReports = reports.filter(r => r.status === 'pending')
+  const reportedById = Object.fromEntries(reportedMessages.map(m => [m.id,m]))
   const treated = suggestions.filter(item => item.status !== 'pending')
   const noPrice = products.filter(product => product.current_value === null)
   const staleLimit = Date.now() - 30 * 24 * 60 * 60 * 1000
@@ -203,6 +275,7 @@ export default function AdminPage() {
         <div><span>Sans cote</span><strong>{noPrice.length}</strong></div>
         <div><span>Cote &gt; 30 jours</span><strong>{stale.length}</strong></div>
         <div><span>Propositions</span><strong>{pending.length}</strong></div>
+        <div><span>Signalements</span><strong>{pendingReports.length}</strong></div>
       </section>
 
       <section className="panel adminPricePanel">
@@ -344,6 +417,69 @@ export default function AdminPage() {
                 <button className="miniBtn dangerMini" onClick={() => reject(item.id)}>Refuser</button>
               </div>
             </article>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel">
+        <div className="listHeader">
+          <h2>Modération communauté</h2>
+          <span className="adminCount">{pendingReports.length}</span>
+        </div>
+
+        <div className="adminSuggestionList">
+          {pendingReports.length === 0 ? (
+            <p>Aucun signalement en attente.</p>
+          ) : pendingReports.map(report => {
+            const msg = reportedById[report.message_id]
+            return (
+              <article className="adminSuggestionCard" key={report.id}>
+                <div>
+                  <span className="catalogBadge">Signalement</span>
+                  <h3>{msg?.author_name || 'Collectionneur'}</h3>
+                  <p>{msg?.body || 'Message indisponible ou déjà supprimé.'}</p>
+                  <p className="muted"><b>Motif :</b> {report.reason || 'Non précisé'}</p>
+                  <small className="muted">
+                    Signalé le {new Date(report.created_at).toLocaleString('fr-FR')}
+                  </small>
+                </div>
+
+                <div className="adminActions">
+                  {msg && (
+                    <>
+                      <button className="miniBtn" onClick={() => moderateMessage(msg.id, !msg.is_hidden)}>
+                        {msg.is_hidden ? 'Rétablir' : 'Masquer'}
+                      </button>
+                      <button className="miniBtn dangerMini" onClick={() => deleteCommunityMessage(msg.id)}>Supprimer</button>
+                      <button className="miniBtn" onClick={() => suspendCommunityUser(msg.user_id,'24h')}>Suspendre 24 h</button>
+                      <button className="miniBtn" onClick={() => suspendCommunityUser(msg.user_id,'7d')}>Suspendre 7 jours</button>
+                      <button className="miniBtn dangerMini" onClick={() => suspendCommunityUser(msg.user_id,'permanent')}>Suspendre définitivement</button>
+                      <button className="miniBtn" onClick={() => suspendCommunityUser(msg.user_id,null)}>Lever suspension</button>
+                    </>
+                  )}
+                  <button className="miniBtn primaryMini" onClick={() => updateReportStatus(report.id,'reviewed')}>Traité</button>
+                  <button className="miniBtn" onClick={() => updateReportStatus(report.id,'dismissed')}>Classer</button>
+                </div>
+              </article>
+            )
+          })}
+        </div>
+      </section>
+
+      <section className="panel">
+        <h2>Suspensions communautaires</h2>
+        <div className="historyRows">
+          {communityStatuses.length === 0 ? <p>Aucune suspension enregistrée.</p> : communityStatuses.map(status => (
+            <div key={status.user_id}>
+              <span>{status.user_id.slice(0,8)}…</span>
+              <b>
+                {status.suspended_until
+                  ? new Date(status.suspended_until).getFullYear() >= 9999
+                    ? 'Définitive'
+                    : `Jusqu’au ${new Date(status.suspended_until).toLocaleString('fr-FR')}`
+                  : 'Aucune suspension'}
+              </b>
+            </div>
           ))}
         </div>
       </section>
