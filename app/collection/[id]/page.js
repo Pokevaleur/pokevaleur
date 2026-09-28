@@ -127,6 +127,21 @@ export default function CollectionItemDetailPage() {
           <div><span>Vendeur</span><strong>{item.seller_name || 'Non renseigné'}</strong></div>
         </div>
 
+        <div style={{marginTop: '18px', padding: '16px', border: '2px solid #f59e0b', borderRadius: '12px', background: '#fffaf0'}}>
+          <h2 style={{margin: '0 0 10px'}}>Composition des boosters</h2>
+          {boosters.length === 0 ? (
+            <p style={{margin: 0}}>Aucun booster identifié pour le moment.</p>
+          ) : (
+            <div>
+              {boosters.map((booster, index) => (
+                <div key={booster.id || index} style={{padding: '7px 0', borderBottom: index < boosters.length - 1 ? '1px solid #eadfc8' : 'none'}}>
+                  <strong>Booster {index + 1}</strong> — {booster.expansion_name || 'Extension à confirmer'}{booster.artwork_name ? ` — ${booster.artwork_name}` : ''}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
         {item.booster_configuration && (
           <div className="itemComposition"><b>Boosters :</b> {item.booster_configuration}</div>
         )}
