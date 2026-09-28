@@ -117,6 +117,47 @@ export default function CollectionItemDetailPage() {
     }
   }
 
+  async function contributeAllReferences(scope) {
+    setReferenceMessage('')
+    try {
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) throw new Error('Ta session a expiré.')
+
+      const existingPhotoIds = new Set(
+        referenceContributions
+          .filter(c => c.reference_scope === scope || (scope === 'recognition_only' && c.reference_scope === 'recognition_and_public'))
+          .map(c => c.collection_item_photo_id)
+      )
+
+      const firstConfirmed = boosters.find(b => b.confirmed && b.expansion_name && b.artwork_name)
+      const rows = photos
+        .filter(photo => !existingPhotoIds.has(photo.id))
+        .map(photo => ({
+          user_id: user.id,
+          collection_item_photo_id: photo.id,
+          collection_item_id: params.id,
+          expansion_name: firstConfirmed?.expansion_name || null,
+          artwork_name: firstConfirmed?.artwork_name || null,
+          reference_scope: scope
+        }))
+
+      if (!rows.length) {
+        setReferenceMessage('✓ Tes photos sont déjà autorisées pour cet usage.')
+        return
+      }
+
+      const { error } = await supabase.from('booster_reference_contributions').insert(rows)
+      if (error) throw error
+
+      setReferenceMessage(scope === 'recognition_only'
+        ? '✓ Merci. Tes photos pourront servir à améliorer la reconnaissance, sans affichage public.'
+        : '✓ Merci. Tes photos pourront servir à la reconnaissance et, après validation, à des vignettes publiques.')
+      await load()
+    } catch (error) {
+      setReferenceMessage('❌ ' + (error.message || 'Impossible d’enregistrer cette autorisation.'))
+    }
+  }
+
   async function contributeReference(photo, scope) {
     setReferenceMessage('')
     try {
@@ -314,25 +355,16 @@ export default function CollectionItemDetailPage() {
 
             <div className="referenceContribution">
               <h3>Aider PokéValeur à reconnaître les boosters</h3>
-              <p className="muted">Tes photos restent privées par défaut. Tu peux autoriser séparément leur utilisation comme référence visuelle. Une contribution est vérifiée avant d’être intégrée à la base.</p>
-              <div className="referencePhotoGrid">
-                {photos.map((photo, index) => {
-                  const recognitionGiven = referenceContributions.some(c => c.collection_item_photo_id === photo.id && c.reference_scope === 'recognition_only')
-                  const publicGiven = referenceContributions.some(c => c.collection_item_photo_id === photo.id && c.reference_scope === 'recognition_and_public')
-                  return (
-                    <div className="referencePhotoCard" key={photo.id}>
-                      <strong>📷 Photo {index + 1}</strong>
-                      <button type="button" className="secondaryButton" disabled={recognitionGiven || publicGiven} onClick={() => contributeReference(photo, 'recognition_only')}>
-                        {recognitionGiven || publicGiven ? '✓ Référence IA autorisée' : 'Autoriser pour la reconnaissance'}
-                      </button>
-                      <button type="button" className="textButton" disabled={publicGiven} onClick={() => contributeReference(photo, 'recognition_and_public')}>
-                        {publicGiven ? '✓ Vignette publique autorisée' : 'Autoriser aussi une vignette publique'}
-                      </button>
-                    </div>
-                  )
-                })}
+              <p className="muted">Tes photos sont déjà dans la galerie ci-dessus. Ici, tu choisis seulement si tu autorises PokéValeur à les utiliser comme références visuelles.</p>
+              <div className="referenceConsentActions">
+                <button type="button" className="secondaryButton" onClick={() => contributeAllReferences('recognition_only')}>
+                  Autoriser mes photos pour la reconnaissance
+                </button>
+                <button type="button" className="textButton" onClick={() => contributeAllReferences('recognition_and_public')}>
+                  Autoriser aussi leur usage en vignette publique
+                </button>
               </div>
-              <small className="muted">L’autorisation « reconnaissance » n’autorise pas l’affichage public. L’autorisation « vignette publique » est distincte et explicite.</small>
+              <small className="muted">Les photos restent privées par défaut. L’autorisation d’affichage public est distincte.</small>
               {referenceMessage && <div className={referenceMessage.startsWith('❌') ? 'photoImmediateStatus error' : 'photoImmediateStatus success'}>{referenceMessage}</div>}
             </div>
           </div>
