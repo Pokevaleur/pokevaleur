@@ -59,7 +59,7 @@ export default function CataloguePage() {
     const [{ data: productData }, { data: historyData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id,name,series,category,product_type,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
+        .select('id,name,series,category,product_type,release_date,release_period,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
         .eq('is_public', true)
         .order('name'),
       supabase
@@ -199,6 +199,14 @@ export default function CataloguePage() {
 
               <h2>{product.name}</h2>
               <p>{product.series || 'Série non renseignée'}</p>
+              <div className="releaseMeta">
+                <span>Date de sortie officielle</span>
+                <b>
+                  {product.release_date
+                    ? new Date(product.release_date + 'T00:00:00').toLocaleDateString('fr-FR')
+                    : product.release_period || 'À renseigner'}
+                </b>
+              </div>
 
               <div className="catalogValue">
                 <span>Marché standard</span>
