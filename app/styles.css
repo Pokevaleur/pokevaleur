@@ -673,3 +673,5 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .badgeGrid .badgeLocked{opacity:.52;filter:saturate(.45)}.badgeGrid .badgeEarned{background:#fff2c8;border:1px solid #f0d47b;box-shadow:0 5px 16px rgba(180,130,20,.10)}.badgeGrid .badgeEarned strong{color:#7f5900}
 
 .memberStats{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:24px}.memberStats>div{background:#082744;color:white;border-radius:18px;padding:18px;text-align:center;display:flex;flex-direction:column}.memberStats b{font-size:28px;color:#ffc431}.memberStats span{font-size:12px;color:#d7e4ee;margin-top:3px}@media(max-width:760px){.memberStats{grid-template-columns:1fr 1fr}.memberStats>div{padding:15px}}
+
+.xpJournal{margin-top:24px;background:#fff;border:1px solid #dce4eb;border-radius:24px;padding:28px}.xpJournalList{display:grid;gap:8px}.xpJournalList>div{display:grid;grid-template-columns:36px 1fr auto;align-items:center;gap:10px;padding:11px 13px;background:#f6f8fa;border-radius:13px}.xpJournalList b{color:#946500}.xpJournalList strong{font-size:14px}@media(max-width:760px){.xpJournal{padding:22px}}
