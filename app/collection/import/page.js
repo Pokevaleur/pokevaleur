@@ -171,6 +171,7 @@ export default function ImportCollectionPage() {
 
   async function handleFile(file){
     if(!file) return
+    if(file.size > 10 * 1024 * 1024) return setMessage('❌ Fichier trop volumineux (maximum 10 Mo).')
     setMessage('Lecture du fichier…')
     try{
       const buffer = await file.arrayBuffer()
