@@ -39,11 +39,13 @@ export default function CoffrePage(){
   }
   load()
  },[day])
- function openChest(){
+ async function openChest(){
   if(member){
-    // The secure server award endpoint will persist this opening and any real reward.
-    // Until that endpoint is enabled, authenticated members keep the visual opening locally too.
-    localStorage.setItem("lukulu-chest-day",String(day))
+    const supabase=createClient()
+    const type=surprise.xp?"xp":surprise.badge?"badge":surprise.partner?"partner":"tip"
+    const key=(surprise.type+"-"+surprise.title).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")
+    const {error}=await supabase.rpc("open_daily_chest",{p_reward_key:key,p_reward_type:type})
+    if(error){console.error(error);return}
   } else localStorage.setItem("lukulu-chest-day",String(day))
   setOpened(true)
 }
