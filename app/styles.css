@@ -714,3 +714,26 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .previewStage .lukuluReaction>span{max-width:165px!important;margin:0 auto -2px!important;font-size:11px!important;line-height:1.25!important}
  .previewStage .treasureChest{align-self:end!important;margin:0!important}
 }
+
+/* Mobile chest hero v2: show Lukulu + chest in the first viewport */
+@media(max-width:700px){
+ .chestPage{padding-top:14px!important}
+ .chestHero{display:flex!important;flex-direction:column!important;padding:22px 20px 18px!important;border-radius:28px!important;min-height:0!important}
+ .chestCopy h1{font-size:36px!important;line-height:.98!important;margin:8px 0 12px!important}
+ .chestCopy>p{font-size:15px!important;line-height:1.4!important;margin:0 0 12px!important}
+ .chestEyebrow{font-size:11px!important}
+ .chestRule{padding:10px 13px!important;margin-top:10px!important;font-size:12px!important;line-height:1.25!important}
+ .chestRarity{font-size:12px!important;line-height:1.25!important;margin-top:10px!important}
+ .chestLoginHint{font-size:11px!important;line-height:1.25!important;margin-top:8px!important;padding:8px 10px!important}
+ .chestScene{order:2!important;width:100%!important;min-height:0!important;height:205px!important;margin-top:4px!important;padding:0!important;grid-template-columns:1fr 1fr!important;align-items:end!important;overflow:visible!important}
+ .chestScene .chestLukulu{height:145px!important;width:auto!important}
+ .chestScene .lukuluReaction>span{max-width:145px!important;font-size:10px!important;padding:6px 8px!important}
+ .chestScene .treasureChest{transform:scale(.78)!important;transform-origin:50% 100%!important}
+ .chestScene .treasureChest.open{transform:scale(.78)!important}
+}
+@media(max-width:390px){
+ .chestCopy h1{font-size:33px!important}
+ .chestScene{height:190px!important}
+ .chestScene .chestLukulu{height:132px!important}
+ .chestScene .treasureChest,.chestScene .treasureChest.open{transform:scale(.72)!important}
+}
