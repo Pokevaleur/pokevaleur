@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { createClient } from "../../lib/supabase-browser"
 
 const surprises=[
  {icon:"🎁",type:"Cadeau partenaire",title:"Un cadeau offert par un partenaire",text:"Certains coffres pourront contenir un bon d’achat ou un avantage offert par une boutique partenaire. La récompense indiquera clairement le partenaire, sa durée de validité et ses conditions.",rare:true,partner:true},
@@ -19,15 +20,36 @@ function dayNumber(){const d=new Date();return Math.floor(Date.UTC(d.getFullYear
 export default function CoffrePage(){
  const [opened,setOpened]=useState(false)
  const [ready,setReady]=useState(false)
+ const [member,setMember]=useState(false)
  const day=dayNumber()
  const partnerDay = day % 31 === 0
  const rareDay = !partnerDay && day % 17 === 0
  const surprise=useMemo(()=>partnerDay?surprises[0]:rareDay?surprises[1]:surprises[2+(day%(surprises.length-2))],[day,rareDay,partnerDay])
- useEffect(()=>{setOpened(localStorage.getItem("lukulu-chest-day")===String(day));setReady(true)},[day])
- function openChest(){localStorage.setItem("lukulu-chest-day",String(day));setOpened(true)}
+ useEffect(()=>{
+  const supabase=createClient()
+  async function load(){
+    const {data:{user}}=await supabase.auth.getUser()
+    setMember(!!user)
+    if(user){
+      const d=new Date(), today=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
+      const {data}=await supabase.from("chest_openings").select("opened_on").eq("user_id",user.id).eq("opened_on",today).maybeSingle()
+      setOpened(!!data)
+    }else setOpened(localStorage.getItem("lukulu-chest-day")===String(day))
+    setReady(true)
+  }
+  load()
+ },[day])
+ function openChest(){
+  if(member){
+    // The secure server award endpoint will persist this opening and any real reward.
+    // Until that endpoint is enabled, authenticated members keep the visual opening locally too.
+    localStorage.setItem("lukulu-chest-day",String(day))
+  } else localStorage.setItem("lukulu-chest-day",String(day))
+  setOpened(true)
+}
  return <main className="chestPage">
   <section className="chestHero">
-   <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Une surprise t'attend chaque jour.</h1><p>Conseil, découverte, petit défi ou bonus : Lukulu garde chaque jour quelque chose pour les collectionneurs curieux.</p><div className="chestRule">✦ Un seul coffre par jour • Une nouvelle surprise demain</div><div className="chestRarity">Certains jours, le coffre peut être <b>doré</b>… et cacher un vrai cadeau. 👀</div></div>
+   <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Une surprise t'attend chaque jour.</h1><p>Conseil, découverte, petit défi ou bonus : Lukulu garde chaque jour quelque chose pour les collectionneurs curieux.</p><div className="chestRule">✦ Un seul coffre par jour • Une nouvelle surprise demain</div>{!member&&ready&&<div className="chestLoginHint">Connecte-toi pour que ton historique et tes futures récompenses soient liés à ton compte.</div>}<div className="chestRarity">Certains jours, le coffre peut être <b>doré</b>… et cacher un vrai cadeau. 👀</div></div>
    <div className="chestScene">
     <img src="/Lukulu-1.png" alt="Lukulu" className="chestLukulu"/>
     <button className={"treasureChest "+(opened?"open ":"")+((rareDay||partnerDay)?"golden":"")+(partnerDay?" partner":"")} onClick={openChest} disabled={!ready||opened} aria-label="Ouvrir le coffre de Lukulu"><span className="chestGlow">✦</span><span className="chestLid"></span><span className="chestBody"><i>◆</i></span></button>
