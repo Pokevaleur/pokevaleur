@@ -25,7 +25,7 @@ export default function Home() {
 
         <div className="homeHeroShowcase">
           <div className="homeMascotVisual">
-            <img src="/Lukulu-home.png" alt="Lukulu, le gardien des trésors de collection PokéValeur" />
+            <img src={lukuluSrc} alt="Lukulu, le gardien des trésors de collection PokéValeur" />
           </div>
           <div className="homeMiniCard top">
             <span>Watchlist</span>
