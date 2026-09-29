@@ -1,6 +1,7 @@
 "use client"
 
 import { useEffect, useMemo, useState } from "react"
+import { createClient } from "../../lib/supabase-browser"
 
 const ranks=[["Curieux",0,"✦"],["Chercheur",100,"✧"],["Collectionneur",300,"◆"],["Connaisseur",700,"◇"],["Expert",1400,"✦"],["Gardien",2500,"💎"],["Grand Gardien",4500,"👑"]]
 const badges=[["🧩","Maître des artsets","Compléter plusieurs artsets"],["🕰️","Chasseur de vintage","Ajouter des pièces anciennes"],["✨","30 jours avec Lukulu","Revenir régulièrement"],["🤝","Main tendue","Contribuer utilement à la communauté"],["📚","Archiviste","Enrichir des fiches du catalogue"],["🔎","Œil de Lukulu","Signaler une correction validée"]]
@@ -8,7 +9,16 @@ const actions=[["Ajouter un produit correctement renseigné","+5 XP"],["Ajouter 
 
 export default function ProgressionPage(){
  const [xp,setXp]=useState(0)
- useEffect(()=>setXp(Number(localStorage.getItem("pokevaleur-demo-xp")||0)),[])
+ useEffect(()=>{
+  const supabase=createClient()
+  async function load(){
+    const {data:{user}}=await supabase.auth.getUser()
+    if(!user){setXp(Number(localStorage.getItem("pokevaleur-demo-xp")||0));return}
+    const {data}=await supabase.from("member_progress").select("xp").eq("user_id",user.id).maybeSingle()
+    if(data) setXp(data.xp||0)
+  }
+  load()
+ },[])
  const index=useMemo(()=>{let n=0;ranks.forEach((r,i)=>{if(xp>=r[1])n=i});return n},[xp])
  const current=ranks[index], next=ranks[index+1]
  const progress=next?Math.min(100,((xp-current[1])/(next[1]-current[1]))*100):100
