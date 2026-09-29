@@ -1,4 +1,18 @@
+"use client"
+
+import { useEffect, useState } from "react"
+
 export default function Home() {
+  const [lukuluDay, setLukuluDay] = useState(1)
+
+  useEffect(() => {
+    const now = new Date()
+    const dayKey = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000)
+    setLukuluDay((dayKey % 4) + 1)
+  }, [])
+
+  const lukuluSrc = `/Lukulu-${lukuluDay}.png`
+
   return (
     <main className="homePage">
       <section className="homeHero">
@@ -24,7 +38,7 @@ export default function Home() {
         </div>
 
         <div className="homeHeroShowcase">
-          <div className="homeMascotVisual">
+          <div className={`homeMascotVisual lukulu-${lukuluDay}`}>
             <img src={lukuluSrc} alt="Lukulu, le gardien des trésors de collection PokéValeur" />
           </div>
           <div className="homeMiniCard top">
