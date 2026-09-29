@@ -22,6 +22,9 @@ export default function CoffrePage(){
  const [ready,setReady]=useState(false)
  const [member,setMember]=useState(false)
  const [serverReward,setServerReward]=useState(null)
+ const [voucher,setVoucher]=useState(null)
+ const [claiming,setClaiming]=useState(false)
+ const [claimError,setClaimError]=useState("")
  const day=dayNumber()
  const partnerDay = day % 31 === 0
  const rareDay = !partnerDay && day % 17 === 0
@@ -44,6 +47,14 @@ export default function CoffrePage(){
   }
   load()
  },[day])
+ async function claimVoucher(){
+  if(!member||claiming)return
+  setClaiming(true);setClaimError("")
+  const supabase=createClient()
+  const {data,error}=await supabase.rpc("claim_partner_voucher")
+  if(error){setClaimError("Le cadeau n’est pas disponible pour le moment.");setClaiming(false);return}
+  setVoucher(data);setClaiming(false)
+ }
  async function openChest(){
   if(member){
     const supabase=createClient()
@@ -64,7 +75,7 @@ export default function CoffrePage(){
   </section>
   <section className={"dailyReveal "+(opened?"revealed ":"")+((rareDay||partnerDay)?"rareReveal":"")+(partnerDay?" partnerReveal":"")}>
    {!opened?<div className="chestWaiting"><span>🔒</span><h2>Le coffre est encore fermé</h2><p>Touche le coffre pour découvrir la surprise de Lukulu.</p></div>:
-   <article className="surpriseCard"><span className="surpriseIcon">{shown.icon}</span><div><small>{shown.type}</small><h2>{shown.title}</h2><p>{shown.text}</p>{shown.xp>0&&<b className="xpReward">+{shown.xp} XP</b>}{shown.badge&&<b className="badgeReward">🏅 Badge débloqué</b>}{shown.partner&&<div className="partnerReward"><b>🎟️ Récompense partenaire</b><span>Le bouton de réclamation apparaîtra ici lorsqu’un partenaire sera actif.</span></div>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
+   <article className="surpriseCard"><span className="surpriseIcon">{shown.icon}</span><div><small>{shown.type}</small><h2>{shown.title}</h2><p>{shown.text}</p>{shown.xp>0&&<b className="xpReward">+{shown.xp} XP</b>}{shown.badge&&<b className="badgeReward">🏅 Badge débloqué</b>}{shown.partner&&<div className="partnerReward"><b>🎟️ Récompense partenaire</b>{!voucher?<><span>Ton cadeau est réservé. Réclame-le pour afficher ton code personnel.</span><button type="button" className="claimRewardBtn" onClick={claimVoucher} disabled={claiming}>{claiming?"Attribution en cours…":"Réclamer mon cadeau"}</button>{claimError&&<small className="claimError">{claimError}</small>}</>:<div className="voucherCard"><small>OFFERT PAR</small><strong>{voucher.partner}</strong><h3>{voucher.title}</h3>{voucher.description&&<p>{voucher.description}</p>}<div className="voucherCode"><span>TON CODE</span><b>{voucher.code}</b></div>{voucher.valid_until&&<small>Valable jusqu’au {new Date(voucher.valid_until).toLocaleDateString("fr-FR")}</small>}{voucher.terms&&<small className="voucherTerms">{voucher.terms}</small>}</div>}</div>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
   </section>
   <section className="chestFooter"><h2>Les surprises peuvent venir de toutes les générations.</h2><p>Le coffre pourra bientôt contenir des actualités, anecdotes, défis, découvertes du catalogue, badges rares et petites récompenses de progression.</p><a href="/progression" className="btn">Voir mon grade</a></section>
  </main>
