@@ -19,6 +19,7 @@ const navLinks = [
   ['/communaute', 'Communauté'],
   ['/trades', 'Trades'],
   ['/progression', 'Mon grade'],
+  ['/coffre', 'Coffre de Lukulu'],
   ['/admin', 'Admin']
 ]
 
