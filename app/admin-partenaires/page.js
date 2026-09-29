@@ -1,0 +1,17 @@
+"use client"
+import {useEffect,useState} from "react"
+import {createClient} from "../../lib/supabase-browser"
+
+export default function PartnerAdmin(){
+ const [campaigns,setCampaigns]=useState([]),[error,setError]=useState(""),[form,setForm]=useState({partner:"",title:"",description:"",terms:"",from:"",until:""}),[codes,setCodes]=useState({}),[busy,setBusy]=useState(false)
+ const supabase=createClient()
+ async function load(){const {data,error}=await supabase.rpc("admin_partner_dashboard");if(error){setError("Accès administrateur requis.");return}setCampaigns(data||[]);setError("")}
+ useEffect(()=>{load()},[])
+ async function create(e){e.preventDefault();setBusy(true);const {error}=await supabase.rpc("admin_create_partner_campaign",{p_partner_name:form.partner,p_title:form.title,p_description:form.description||null,p_terms:form.terms||null,p_valid_from:form.from||null,p_valid_until:form.until||null});setBusy(false);if(error){setError(error.message);return}setForm({partner:"",title:"",description:"",terms:"",from:"",until:""});load()}
+ async function addCodes(id){const list=(codes[id]||"").split(/[\n,;]+/).map(x=>x.trim()).filter(Boolean);if(!list.length)return;const {error}=await supabase.rpc("admin_add_partner_codes",{p_campaign:id,p_codes:list});if(error){setError(error.message);return}setCodes({...codes,[id]:""});load()}
+ async function toggle(c){const {error}=await supabase.rpc("admin_set_partner_campaign_active",{p_campaign:c.id,p_active:!c.active});if(error){setError(error.message);return}load()}
+ return <main className="partnerAdmin"><div className="progressTitle"><span>ADMINISTRATION</span><h1>Partenaires & cadeaux Lukulu</h1><p>Crée une campagne, charge les codes fournis par le partenaire puis active-la lorsqu’elle est prête.</p></div>
+ {error&&<div className="adminError">{error}</div>}
+ {!error&&<><form className="partnerForm" onSubmit={create}><input required placeholder="Nom du partenaire" value={form.partner} onChange={e=>setForm({...form,partner:e.target.value})}/><input required placeholder="Nom du cadeau" value={form.title} onChange={e=>setForm({...form,title:e.target.value})}/><textarea placeholder="Description" value={form.description} onChange={e=>setForm({...form,description:e.target.value})}/><textarea placeholder="Conditions d’utilisation" value={form.terms} onChange={e=>setForm({...form,terms:e.target.value})}/><label>Début<input type="datetime-local" value={form.from} onChange={e=>setForm({...form,from:e.target.value})}/></label><label>Fin<input type="datetime-local" value={form.until} onChange={e=>setForm({...form,until:e.target.value})}/></label><button className="btn" disabled={busy}>{busy?"Création…":"Créer la campagne"}</button></form>
+ <section className="campaignGrid">{campaigns.map(c=><article key={c.id} className={c.active?"campaign active":"campaign"}><div><small>{c.active?"● ACTIVE":"○ INACTIVE"}</small><h2>{c.partner_name}</h2><strong>{c.title}</strong></div><div className="campaignStats"><span><b>{c.total_codes}</b> codes</span><span><b>{c.available_codes}</b> disponibles</span><span><b>{c.claimed_codes}</b> attribués</span></div><textarea placeholder={"COLLECTOR10\nCOLLECTOR11\nCOLLECTOR12"} value={codes[c.id]||""} onChange={e=>setCodes({...codes,[c.id]:e.target.value})}/><div className="campaignActions"><button onClick={()=>addCodes(c.id)}>Ajouter les codes</button><button onClick={()=>toggle(c)}>{c.active?"Désactiver":"Activer"}</button></div></article>)}</section></>}</main>
+}
