@@ -561,3 +561,41 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
     font-size:12px;
   }
 }
+
+
+/* Collection import */
+.importDrop{border:1px dashed #d8c16f;background:linear-gradient(160deg,#fffdf7,#fff)}
+.importFileButton{display:inline-flex;cursor:pointer}
+.importFileButton input{position:absolute;opacity:0;pointer-events:none}
+.importFileButton span{display:inline-flex;align-items:center;justify-content:center;min-height:48px;padding:12px 18px;border-radius:12px;background:var(--navy);color:#fff;font-weight:900}
+.importMappingGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.importMappingGrid label{display:grid;gap:7px;font-weight:800}
+.importMappingGrid select{width:100%}
+.importReviewList{display:grid;gap:12px;margin-top:16px}
+.importRow{border:1px solid var(--border);border-radius:16px;padding:16px;background:#fff}
+.importRow.import-identified{border-left:5px solid #2b9c61}
+.importRow.import-review{border-left:5px solid #d5a018}
+.importRow.import-unknown{border-left:5px solid #d77c16}
+.importRow.import-error{border-left:5px solid #c94a4a}
+.importRow.import-imported{opacity:.65;border-left:5px solid #8090a0}
+.importRowTop{display:flex;align-items:flex-start;gap:12px}
+.importCheck{padding-top:4px}
+.importCheck input{width:18px;height:18px}
+.importRowMain{min-width:0;flex:1}
+.importRowMain h3{margin:3px 0 5px;font-size:18px}
+.importRowMain p{margin:0;color:var(--muted)}
+.importStatus{font-size:12px;font-weight:900;text-transform:uppercase;letter-spacing:.04em}
+.importWarning{margin-top:7px!important;color:#996b00!important;font-weight:700}
+.importError{margin-top:7px!important;color:#b42318!important;font-weight:700}
+.importMatches{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;padding-left:30px}
+.importMatch{display:grid;gap:3px;text-align:left;min-width:180px;max-width:320px;padding:10px 12px;border:1px solid var(--border);border-radius:12px;background:#f8fafc;cursor:pointer}
+.importMatch small{color:var(--muted)}
+.importMatch.selected{border-color:#d4a017;background:#fff8dc;box-shadow:0 0 0 2px rgba(212,160,23,.12)}
+.importStats strong{font-variant-numeric:tabular-nums}
+@media(max-width:700px){
+  .importMappingGrid{grid-template-columns:1fr}
+  .importMatches{padding-left:0;display:grid}
+  .importMatch{max-width:none;width:100%}
+  .importRow{padding:14px}
+  .importReviewList{gap:10px}
+}
