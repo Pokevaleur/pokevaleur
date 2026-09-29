@@ -21,6 +21,7 @@ export default function CoffrePage(){
  const [opened,setOpened]=useState(false)
  const [ready,setReady]=useState(false)
  const [member,setMember]=useState(false)
+ const [serverReward,setServerReward]=useState(null)
  const day=dayNumber()
  const partnerDay = day % 31 === 0
  const rareDay = !partnerDay && day % 17 === 0
@@ -33,6 +34,10 @@ export default function CoffrePage(){
     if(user){
       const d=new Date(), today=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
       const {data}=await supabase.from("chest_openings").select("opened_on").eq("user_id",user.id).eq("opened_on",today).maybeSingle()
+      if(data){
+        const {data:reward}=await supabase.rpc("open_daily_chest")
+        if(reward) setServerReward(reward)
+      }
       setOpened(!!data)
     }else setOpened(localStorage.getItem("lukulu-chest-day")===String(day))
     setReady(true)
@@ -42,13 +47,13 @@ export default function CoffrePage(){
  async function openChest(){
   if(member){
     const supabase=createClient()
-    const type=surprise.xp?"xp":surprise.badge?"badge":surprise.partner?"partner":"tip"
-    const key=(surprise.type+"-"+surprise.title).toLowerCase().replace(/[^a-z0-9]+/g,"-").replace(/^-|-$/g,"")
-    const {error}=await supabase.rpc("open_daily_chest",{p_reward_key:key,p_reward_type:type})
+    const {data,error}=await supabase.rpc("open_daily_chest")
     if(error){console.error(error);return}
+    if(data) setServerReward(data)
   } else localStorage.setItem("lukulu-chest-day",String(day))
   setOpened(true)
 }
+ const shown=member&&serverReward?{icon:serverReward.icon,type:serverReward.label,title:serverReward.title,text:serverReward.body,xp:serverReward.xp_awarded,badge:serverReward.badge_key,partner:serverReward.reward_type==="partner"}:surprise
  return <main className="chestPage">
   <section className="chestHero">
    <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Une surprise t'attend chaque jour.</h1><p>Conseil, découverte, petit défi ou bonus : Lukulu garde chaque jour quelque chose pour les collectionneurs curieux.</p><div className="chestRule">✦ Un seul coffre par jour • Une nouvelle surprise demain</div>{!member&&ready&&<div className="chestLoginHint">Connecte-toi pour que ton historique et tes futures récompenses soient liés à ton compte.</div>}<div className="chestRarity">Certains jours, le coffre peut être <b>doré</b>… et cacher un vrai cadeau. 👀</div></div>
@@ -59,7 +64,7 @@ export default function CoffrePage(){
   </section>
   <section className={"dailyReveal "+(opened?"revealed ":"")+((rareDay||partnerDay)?"rareReveal":"")+(partnerDay?" partnerReveal":"")}>
    {!opened?<div className="chestWaiting"><span>🔒</span><h2>Le coffre est encore fermé</h2><p>Touche le coffre pour découvrir la surprise de Lukulu.</p></div>:
-   <article className="surpriseCard"><span className="surpriseIcon">{surprise.icon}</span><div><small>{surprise.type}</small><h2>{surprise.title}</h2><p>{surprise.text}</p>{surprise.xp&&<b className="xpReward">+{surprise.xp} XP</b>}{surprise.badge&&<b className="badgeReward">🏅 Badge : {surprise.badge}</b>}{surprise.partner&&<div className="partnerReward"><b>🎟️ Récompense partenaire</b><span>Le bouton de réclamation apparaîtra ici lorsqu’un partenaire sera actif.</span></div>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
+   <article className="surpriseCard"><span className="surpriseIcon">{shown.icon}</span><div><small>{shown.type}</small><h2>{shown.title}</h2><p>{shown.text}</p>{shown.xp>0&&<b className="xpReward">+{shown.xp} XP</b>}{shown.badge&&<b className="badgeReward">🏅 Badge débloqué</b>}{shown.partner&&<div className="partnerReward"><b>🎟️ Récompense partenaire</b><span>Le bouton de réclamation apparaîtra ici lorsqu’un partenaire sera actif.</span></div>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
   </section>
   <section className="chestFooter"><h2>Les surprises peuvent venir de toutes les générations.</h2><p>Le coffre pourra bientôt contenir des actualités, anecdotes, défis, découvertes du catalogue, badges rares et petites récompenses de progression.</p><a href="/progression" className="btn">Voir mon grade</a></section>
  </main>
