@@ -637,3 +637,12 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
     box-shadow:none!important;
   }
 }
+
+
+/* Daily Lukulu: fixed visual box prevents layout shifts between variants */
+.homeMascotVisual{display:flex;align-items:center;justify-content:center}
+.homeMascotVisual img{width:100%;height:100%;object-fit:contain;object-position:50% 50%;transform:none}
+@media(max-width:620px){
+  .homeMascotVisual{height:330px;min-height:330px;max-height:330px}
+  .homeMascotVisual img{width:100%;height:100%;object-fit:contain;object-position:50% 50%;transform:none}
+}
