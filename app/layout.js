@@ -18,6 +18,7 @@ const navLinks = [
   ['/opportunites', 'Watchlist'],
   ['/communaute', 'Communauté'],
   ['/trades', 'Trades'],
+  ['/progression', 'Mon grade'],
   ['/admin', 'Admin']
 ]
 
