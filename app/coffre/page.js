@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react"
 
 const surprises=[
+ {icon:"🌟",type:"Surprise rare",title:"Le coffre doré de Lukulu",text:"Aujourd'hui est un jour spécial. Tu viens de trouver une surprise rare : le badge Éclat doré sera débloqué lorsque les badges seront reliés à ton compte.",rare:true,badge:"Éclat doré"},
  {icon:"💡",type:"Astuce de Lukulu",title:"Protège aussi tes produits scellés",text:"La lumière, l'humidité et les variations de température peuvent marquer un emballage avec le temps. Un rangement stable et à l'abri de la lumière aide à préserver son état."},
  {icon:"🔎",type:"Le savais-tu ?",title:"Une collection raconte une époque",text:"Les emballages, artworks et formats de produits évoluent avec les générations. Conserver ces détails dans ta fiche rend ta collection plus intéressante à suivre."},
  {icon:"🧩",type:"Mini-défi",title:"Inspecte un de tes artsets",text:"Choisis aujourd'hui une série et vérifie si tous tes artworks sont bien renseignés. Une petite vérification peut révéler une pièce manquante."},
@@ -18,20 +19,21 @@ export default function CoffrePage(){
  const [opened,setOpened]=useState(false)
  const [ready,setReady]=useState(false)
  const day=dayNumber()
- const surprise=useMemo(()=>surprises[day%surprises.length],[day])
+ const rareDay = day % 17 === 0
+ const surprise=useMemo(()=>rareDay?surprises[0]:surprises[1+(day%(surprises.length-1))],[day,rareDay])
  useEffect(()=>{setOpened(localStorage.getItem("lukulu-chest-day")===String(day));setReady(true)},[day])
  function openChest(){localStorage.setItem("lukulu-chest-day",String(day));setOpened(true)}
  return <main className="chestPage">
   <section className="chestHero">
-   <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Une surprise t'attend chaque jour.</h1><p>Conseil, découverte, petit défi ou bonus : Lukulu garde chaque jour quelque chose pour les collectionneurs curieux.</p><div className="chestRule">✦ Un seul coffre par jour • Une nouvelle surprise demain</div></div>
+   <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Une surprise t'attend chaque jour.</h1><p>Conseil, découverte, petit défi ou bonus : Lukulu garde chaque jour quelque chose pour les collectionneurs curieux.</p><div className="chestRule">✦ Un seul coffre par jour • Une nouvelle surprise demain</div><div className="chestRarity">Certains jours, le coffre peut être <b>doré</b>… 👀</div></div>
    <div className="chestScene">
     <img src="/Lukulu-1.png" alt="Lukulu" className="chestLukulu"/>
-    <button className={"treasureChest "+(opened?"open":"")} onClick={openChest} disabled={!ready||opened} aria-label="Ouvrir le coffre de Lukulu"><span className="chestGlow">✦</span><span className="chestLid"></span><span className="chestBody"><i>◆</i></span></button>
+    <button className={"treasureChest "+(opened?"open ":"")+(rareDay?"golden":"")} onClick={openChest} disabled={!ready||opened} aria-label="Ouvrir le coffre de Lukulu"><span className="chestGlow">✦</span><span className="chestLid"></span><span className="chestBody"><i>◆</i></span></button>
    </div>
   </section>
-  <section className={"dailyReveal "+(opened?"revealed":"")}>
+  <section className={"dailyReveal "+(opened?"revealed ":"")+(rareDay?"rareReveal":"")}>
    {!opened?<div className="chestWaiting"><span>🔒</span><h2>Le coffre est encore fermé</h2><p>Touche le coffre pour découvrir la surprise de Lukulu.</p></div>:
-   <article className="surpriseCard"><span className="surpriseIcon">{surprise.icon}</span><div><small>{surprise.type}</small><h2>{surprise.title}</h2><p>{surprise.text}</p>{surprise.xp&&<b className="xpReward">+{surprise.xp} XP</b>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
+   <article className="surpriseCard"><span className="surpriseIcon">{surprise.icon}</span><div><small>{surprise.type}</small><h2>{surprise.title}</h2><p>{surprise.text}</p>{surprise.xp&&<b className="xpReward">+{surprise.xp} XP</b>}{surprise.badge&&<b className="badgeReward">🏅 Badge : {surprise.badge}</b>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
   </section>
   <section className="chestFooter"><h2>Les surprises peuvent venir de toutes les générations.</h2><p>Le coffre pourra bientôt contenir des actualités, anecdotes, défis, découvertes du catalogue, badges rares et petites récompenses de progression.</p><a href="/progression" className="btn">Voir mon grade</a></section>
  </main>
