@@ -13,6 +13,7 @@ export default function ProgressionPage(){
  const [earned,setEarned]=useState([])
  const [connected,setConnected]=useState(false)
  const [stats,setStats]=useState(null)
+ const [xpEvents,setXpEvents]=useState([])
  useEffect(()=>{
   const supabase=createClient()
   async function load(){
@@ -20,7 +21,7 @@ export default function ProgressionPage(){
     if(!user){setXp(Number(localStorage.getItem("pokevaleur-demo-xp")||0));return}
     setConnected(true)
     const {data}=await supabase.rpc("get_member_progression")
-    if(data){setXp(data.xp||0);setHistory(data.chest_history||[]);setEarned(data.badges||[]);setStats(data.achievements||null)}
+    if(data){setXp(data.xp||0);setHistory(data.chest_history||[]);setEarned(data.badges||[]);setStats(data.achievements||null);setXpEvents(data.xp_events||[])}
   }
   load()
  },[])
@@ -32,6 +33,7 @@ export default function ProgressionPage(){
   <section className="progressSection"><div className="progressTitle"><span>Les 7 grades</span><h2>Une progression qui raconte ton parcours</h2></div><div className="rankGrid">{ranks.map((r,i)=><article className={i===index?"active":""} key={r[0]}><em>{r[2]}</em><small>NIVEAU {i+1}</small><strong>{r[0]}</strong><span>Dès {r[1]} XP</span></article>)}</div></section>
   <section className="progressTwoCols"><article className="progressPanel"><span className="progressEyebrow dark">GAGNER DE L'XP</span><h2>Les bonnes actions sont récompensées</h2><div className="xpList">{actions.map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</div><p className="progressNote">Les actions répétitives seront plafonnées et les contributions communautaires ne compteront qu'après validation.</p></article><article className="progressPanel"><span className="progressEyebrow dark">BADGES</span><h2>Collectionne aussi tes exploits</h2><div className="badgeGrid">{badges.map(([icon,name,desc,key])=>{const got=earned.some(b=>b.key===key);return <div className={got?"badgeEarned":"badgeLocked"} key={name}><em>{got?icon:"🔒"}</em><span><strong>{name}</strong><small>{got?"Obtenu • "+desc:desc}</small></span></div>})}</div></article></section>
   {connected&&stats&&<section className="memberStats"><div><b>{stats.items}</b><span>objets</span></div><div><b>{stats.photos}</b><span>photos</span></div><div><b>{stats.contributions}</b><span>contributions validées</span></div><div><b>{stats.trades}</b><span>échanges</span></div></section>}
+  {connected&&xpEvents.length>0&&<section className="xpJournal"><div className="progressTitle"><span>Journal XP</span><h2>Ce qui fait progresser ton grade</h2></div><div className="xpJournalList">{xpEvents.map((e,i)=><div key={i}><span>{e.type==="collection_item"?"📦":e.type==="photo"?"📸":e.type==="contribution"?"📚":e.type==="trade"?"🤝":"✨"}</span><strong>{e.type==="collection_item"?"Objet ajouté":e.type==="photo"?"Photo ajoutée":e.type==="contribution"?"Contribution validée":e.type==="trade"?"Échange réalisé":"Activité"}</strong><b>+{e.xp} XP</b></div>)}</div></section>}
   <section className="progressHistory">
    <div className="progressTitle"><span>Mon parcours</span><h2>Mes dernières découvertes avec Lukulu</h2></div>
    {!connected?<p className="historyEmpty">Connecte-toi pour retrouver ici ton historique personnel.</p>:history.length===0?<p className="historyEmpty">Ton histoire commence ici. Ouvre ton premier coffre de Lukulu !</p>:<div className="historyList">{history.slice(0,8).map((h,i)=><div key={h.opened_on+"-"+i}><span className="historyIcon">{h.reward_type==="partner"?"🎁":h.reward_type==="badge"?"🏅":h.reward_type==="xp"?"✨":"🔐"}</span><span><strong>{h.reward_type==="partner"?"Cadeau partenaire":h.reward_type==="badge"?"Badge découvert":h.reward_type==="xp"?"Bonus XP":"Coffre ouvert"}</strong><small>{new Date(h.opened_on+"T12:00:00").toLocaleDateString("fr-FR",{day:"numeric",month:"long",year:"numeric"})}{h.xp_awarded?(" • +"+h.xp_awarded+" XP"):""}</small></span></div>)}</div>}
