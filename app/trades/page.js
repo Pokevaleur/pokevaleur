@@ -29,7 +29,7 @@ export default function TradesPage() {
     }
 
     const [{ data:itemData }, { data:listingData }, { data:offerData }] = await Promise.all([
-      supabase.from('collection_items').select('id,product_id,custom_name,quantity,photo_path,variant_note').eq('user_id', user.id).order('created_at',{ascending:false}),
+      supabase.from('collection_items').select('id,product_id,custom_name,quantity,photo_path,variant_note,collection_profiles!inner(profile_type)').eq('collection_profiles.profile_type','personal').order('created_at',{ascending:false}),
       supabase.from('trade_listings').select('*').order('created_at',{ascending:false}),
       supabase.from('trade_offers').select('*').or(`sender_id.eq.${user.id},recipient_id.eq.${user.id}`).order('created_at',{ascending:false})
     ])

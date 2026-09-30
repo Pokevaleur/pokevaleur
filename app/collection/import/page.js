@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import * as XLSX from 'xlsx'
 import { createClient } from '../../../lib/supabase-browser'
+import { fetchAllRows } from '../../../lib/supabase-pagination'
 
 const HEADER_ALIASES = {
   name: ['produit','nom','nom produit','item','article','reference','référence','designation','désignation'],
@@ -76,6 +77,8 @@ function detectMapping(headers) {
 export default function ImportCollectionPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user,setUser] = useState(null)
+  const [targetProfileId,setTargetProfileId] = useState(null)
+  const [targetProfileName,setTargetProfileName] = useState('Ma collection')
   const [catalog,setCatalog] = useState([])
   const [existing,setExisting] = useState([])
   const [rows,setRows] = useState([])
@@ -84,19 +87,59 @@ export default function ImportCollectionPage() {
   const [fileName,setFileName] = useState('')
   const [message,setMessage] = useState('')
   const [importing,setImporting] = useState(false)
+  const [initializing,setInitializing] = useState(true)
+  const existingProductIds = useMemo(
+    () => new Set(existing.map(item => item.product_id).filter(Boolean)),
+    [existing]
+  )
+  const existingNames = useMemo(
+    () => new Set(existing.map(item => norm(item.custom_name)).filter(Boolean)),
+    [existing]
+  )
 
   useEffect(()=>{ init() },[])
 
   async function init(){
     const { data:{ user } } = await supabase.auth.getUser()
     setUser(user)
-    if(!user) return
-    const [{data:products},{data:items}] = await Promise.all([
-      supabase.from('products').select('id,name,series,product_type,category').eq('is_public',true),
-      supabase.from('collection_items').select('id,product_id,custom_name,quantity,purchase_price,purchase_date')
+    if(!user) {
+      setInitializing(false)
+      return
+    }
+    const { data: profileRows, error: profilesError } = await supabase.from('collection_profiles')
+      .select('id,display_name,is_default')
+      .order('created_at')
+    if (profilesError) {
+      setMessage(profilesError.message)
+      setInitializing(false)
+      return
+    }
+    const savedProfileId = window.localStorage.getItem(`pokevaleur-collection:${user.id}`)
+    const targetProfile = (profileRows || []).find(profile => profile.id === savedProfileId)
+      || (profileRows || []).find(profile => profile.is_default)
+    if (!targetProfile?.id) {
+      setMessage('Aucun profil de collection disponible pour ce compte.')
+      setInitializing(false)
+      return
+    }
+    setTargetProfileId(targetProfile.id)
+    setTargetProfileName(targetProfile.display_name)
+    const [{data:products,error:productsError},{data:items,error:itemsError}] = await Promise.all([
+      fetchAllRows(() => supabase.from('products').select('id,name,series,product_type,category')
+        .eq('is_public',true).order('name').order('id')),
+      fetchAllRows(() => supabase.from('collection_items')
+        .select('id,product_id,custom_name,quantity,purchase_price,purchase_date')
+        .eq('collection_profile_id',targetProfile.id)
+        .order('created_at').order('id'))
     ])
+    if (productsError || itemsError) {
+      setMessage(productsError?.message || itemsError.message)
+      setInitializing(false)
+      return
+    }
     setCatalog(products||[])
     setExisting(items||[])
+    setInitializing(false)
   }
 
   function scoreProducts(name) {
@@ -133,11 +176,9 @@ export default function ImportCollectionPage() {
     if (price != null && (price < 0 || price > 1000000)) errors.push('Prix incohérent')
     if (source[currentMapping.purchase_date] && !date) warnings.push('Date non reconnue')
 
-    const existingMatch = existing.find(item => {
-      if (best?.product?.id && item.product_id === best.product.id) return true
-      return norm(item.custom_name) === norm(name)
-    })
-    if (existingMatch) warnings.push('Déjà présent dans ta collection')
+    if ((best?.product?.id && existingProductIds.has(best.product.id)) || existingNames.has(norm(name))) {
+      warnings.push('Déjà présent dans ta collection')
+    }
 
     let status='unknown'
     let productId=null
@@ -216,12 +257,13 @@ export default function ImportCollectionPage() {
   async function importValidated(){
     const ready=rows.filter(r=>r.selected && r.status==='identified' && r.productId && !r.errors.length)
     if(!ready.length) return setMessage('Aucune ligne validée à importer.')
-    if(!window.confirm(`Importer ${ready.length} ligne${ready.length>1?'s':''} validée${ready.length>1?'s':''} dans ta collection ?`)) return
+    if(!window.confirm(`Importer ${ready.length} ligne${ready.length>1?'s':''} validée${ready.length>1?'s':''} dans « ${targetProfileName} » ?`)) return
     setImporting(true)
     setMessage('Import en cours…')
 
     const payload=ready.map(r=>({
       user_id:user.id,
+      collection_profile_id:targetProfileId,
       product_id:r.productId,
       custom_name:catalog.find(p=>p.id===r.productId)?.name || r.name,
       quantity:r.quantity || 1,
@@ -243,6 +285,7 @@ export default function ImportCollectionPage() {
     setRows(prev=>prev.map(r=>importedIndexes.has(r._index)?{...r,selected:false,status:'imported'}:r))
   }
 
+  if(initializing) return <main className="narrow"><section className="panel"><p>Préparation de l’import…</p></section></main>
   if(!user) return <main className="narrow"><section className="panel"><h1>Importer ma collection</h1><p>Connecte-toi pour importer ton fichier.</p><a className="btn" href="/login">Connexion</a></section></main>
 
   const counts={
@@ -259,6 +302,7 @@ export default function ImportCollectionPage() {
           <span className="eyebrow dark">Import assisté</span>
           <h1>Importer Excel / CSV</h1>
           <p className="muted">PokéValeur analyse ton fichier avant toute insertion. Une ligne incertaine n’est jamais importée automatiquement.</p>
+          <p className="muted">Destination de l’import : <strong>{targetProfileName}</strong>.</p>
         </div>
         <div className="collectionHeaderActions"><a className="btn ghost" href="/collection">← Ma collection</a></div>
       </div>

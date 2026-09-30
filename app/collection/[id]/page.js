@@ -40,7 +40,7 @@ export default function CollectionItemDetailPage() {
       supabase.from('collection_items').select('*').eq('id', params.id).eq('user_id', user.id).single(),
       supabase.from('collection_item_photos').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('sort_order'),
       supabase.from('collection_item_boosters').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('position'),
-      supabase.from('booster_reference_contributions').select('*').eq('collection_item_id', params.id).eq('user_id', user.id)
+      supabase.from('booster_reference_contributions').select('*').eq('collection_item_id', params.id)
     ])
 
     setItem(itemData || null)

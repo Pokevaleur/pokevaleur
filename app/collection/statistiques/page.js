@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
+import { fetchAllRows } from '../../../lib/supabase-pagination'
 
 function euro(value) {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(Number(value || 0))
@@ -17,6 +18,8 @@ export default function CollectionStatisticsPage() {
   const [items, setItems] = useState([])
   const [products, setProducts] = useState([])
   const [snapshots, setSnapshots] = useState([])
+  const [profileName, setProfileName] = useState('Ma collection')
+  const [hasProfileHistory, setHasProfileHistory] = useState(true)
 
   useEffect(() => { load() }, [])
 
@@ -27,11 +30,40 @@ export default function CollectionStatisticsPage() {
       return
     }
 
-    const [{ data: itemData }, { data: productData }, { data: snapshotData }] = await Promise.all([
-      supabase.from('collection_items').select('*').eq('user_id', user.id),
+    const { data: profileRows, error: profilesError } = await supabase
+      .from('collection_profiles')
+      .select('id,display_name,is_default')
+      .order('created_at')
+    if (profilesError) {
+      setLoading(false)
+      return
+    }
+    const savedProfileId = window.localStorage.getItem(`pokevaleur-collection:${user.id}`)
+    const selectedProfile = (profileRows || []).find(profile => profile.id === savedProfileId)
+      || (profileRows || []).find(profile => profile.is_default)
+    if (!selectedProfile) {
+      setLoading(false)
+      return
+    }
+    setProfileName(selectedProfile.display_name)
+    setHasProfileHistory(selectedProfile.is_default)
+
+    const snapshotsRequest = selectedProfile.is_default
+      ? supabase.from('collection_value_snapshots').select('*').eq('user_id', user.id).order('snapshot_date', { ascending: true })
+      : Promise.resolve({ data: [] })
+    const [{ data: itemData, error: itemsError }, { data: productData }, { data: snapshotData }] = await Promise.all([
+      fetchAllRows(() => supabase.from('collection_items').select('*')
+        .eq('collection_profile_id', selectedProfile.id)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })),
       supabase.from('products').select('id,name,series,product_type,release_year,current_value,zero_defect_value'),
-      supabase.from('collection_value_snapshots').select('*').eq('user_id', user.id).order('snapshot_date', { ascending: true })
+      snapshotsRequest
     ])
+
+    if (itemsError) {
+      setLoading(false)
+      return
+    }
 
     const rows = itemData || []
     const catalog = productData || []
@@ -50,23 +82,27 @@ export default function CollectionStatisticsPage() {
     const currentValue = rows.reduce((sum, item) => sum + getValue(item) * (item.quantity || 1), 0)
     const itemCount = rows.reduce((sum, item) => sum + (item.quantity || 1), 0)
 
-    await supabase.from('collection_value_snapshots').upsert({
-      user_id: user.id,
-      snapshot_date: new Date().toISOString().slice(0,10),
-      invested,
-      current_value: currentValue,
-      item_count: itemCount
-    }, { onConflict: 'user_id,snapshot_date' })
+    let refreshedSnapshots = []
+    if (selectedProfile.is_default) {
+      await supabase.from('collection_value_snapshots').upsert({
+        user_id: user.id,
+        snapshot_date: new Date().toISOString().slice(0,10),
+        invested,
+        current_value: currentValue,
+        item_count: itemCount
+      }, { onConflict: 'user_id,snapshot_date' })
 
-    const { data: refreshedSnapshots } = await supabase
-      .from('collection_value_snapshots')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('snapshot_date', { ascending: true })
+      const { data } = await supabase
+        .from('collection_value_snapshots')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('snapshot_date', { ascending: true })
+      refreshedSnapshots = data || snapshotData || []
+    }
 
     setItems(rows)
     setProducts(catalog)
-    setSnapshots(refreshedSnapshots || snapshotData || [])
+    setSnapshots(refreshedSnapshots)
     setLoading(false)
   }
 
@@ -140,8 +176,8 @@ export default function CollectionStatisticsPage() {
 
       <section className="catalogHero statsHero">
         <span className="eyebrow dark">Tableau de bord personnel</span>
-        <h1>Statistiques de ma collection</h1>
-        <p className="muted">Valeur, performance, répartition et évolution de l’ensemble de ta collection.</p>
+        <h1>Statistiques : {profileName}</h1>
+        <p className="muted">Valeur, performance et répartition de cette collection.</p>
       </section>
 
       <section className="stats collectionStatsCards">
@@ -153,7 +189,7 @@ export default function CollectionStatisticsPage() {
 
       <section className="panel statsTrendPanel">
         <div className="statsSectionHead">
-          <div><h2>Évolution de la valeur totale</h2><p className="muted">Un point est mémorisé chaque jour où tu consultes cette page.</p></div>
+          <div><h2>Évolution de la valeur totale</h2><p className="muted">{hasProfileHistory ? 'Un point est mémorisé chaque jour où tu consultes cette page.' : 'L’historique propre à cette collection sera disponible plus tard.'}</p></div>
           <strong>{euro(current)}</strong>
         </div>
         {snapshots.length >= 2 ? (
@@ -171,8 +207,8 @@ export default function CollectionStatisticsPage() {
           </>
         ) : (
           <div className="emptyPriceChart">
-            <strong>Historique en construction</strong>
-            <span>Le graphique se construira automatiquement au fil des prochains relevés.</span>
+            <strong>{hasProfileHistory ? 'Historique en construction' : 'Pas encore d’historique pour cette collection'}</strong>
+            <span>{hasProfileHistory ? 'Le graphique se construira automatiquement au fil des prochains relevés.' : `Les totaux affichés concernent uniquement « ${profileName} »; ils ne modifient pas l’historique personnel du compte.`}</span>
           </div>
         )}
       </section>
