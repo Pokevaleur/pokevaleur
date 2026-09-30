@@ -706,7 +706,8 @@ export default function CollectionPage() {
           </p>
         </div>
         <div className="collectionHeaderActions">
-          <a className="btn" href="/collection/statistiques">📊 Statistiques</a>\n          <a className="btn" href="/collection/import">📥 Importer Excel / CSV</a>
+          <a className="btn" href="/collection/statistiques">📊 Statistiques</a>
+          <a className="btn" href="/collection/import">📥 Importer Excel / CSV</a>
           <a className="btn" href="/opportunites">🎯 Doublons & Watchlist</a>
           <div className="exportCollectionActions">
             <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>⬇ Exporter avec prix</button>
