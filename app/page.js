@@ -41,13 +41,13 @@ export default function Home() {
           <div className={`homeMascotVisual lukulu-${lukuluDay}`}>
             <img src={lukuluSrc} alt="Lukulu, le gardien des trésors de collection PokéValeur" />
           </div>
-          <div className="homeMiniCard top">
-            <span>Watchlist</span>
-            <b>3 opportunités</b>
-          </div>
+          <a className="homeMiniCard top homeMiniCardLink" href="/opportunites" aria-label="Ouvrir les opportunités : Watchlist, doublons et offres">
+            <span>Opportunités</span>
+            <b>Watchlist, doublons, offres →</b>
+          </a>
           <div className="homeMiniCard bottom">
             <span>Artsets</span>
-            <b>7 complets</b>
+            <b>Suivi en préparation</b>
           </div>
         </div>
       </section>

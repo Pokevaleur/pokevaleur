@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { fetchAllRows } from '../../lib/supabase-pagination'
 
 function euro(value) {
   if (value == null || Number.isNaN(Number(value))) return '—'
@@ -48,7 +49,11 @@ export default function OpportunitiesPage() {
     }
 
     const [itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes] = await Promise.all([
-      supabase.from('collection_items').select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date').eq('user_id', user.id),
+      fetchAllRows(() => supabase.from('collection_items')
+        .select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date,collection_profiles!inner(profile_type)')
+        .eq('collection_profiles.profile_type', 'personal')
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true })),
       supabase.from('products').select('id,name,series,product_type,current_value,zero_defect_value,price_updated_at').eq('is_public', true).order('name'),
       supabase.from('product_watchlist').select('id,product_id,target_price,max_price,notes,active,created_at').eq('user_id', user.id).eq('active', true).order('created_at', { ascending:false }),
       supabase.from('product_price_history').select('product_id,price,observed_at,condition_tier,observation_type').eq('observation_type','confirmed_sale').order('observed_at', { ascending:true }),

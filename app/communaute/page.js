@@ -30,8 +30,8 @@ export default function CommunautePage() {
     }
     const { count: collectionCount } = await supabase
       .from('collection_items')
-      .select('id', { count: 'exact', head: true })
-      .eq('user_id', user.id)
+      .select('id,collection_profiles!inner(profile_type)', { count: 'exact', head: true })
+      .eq('collection_profiles.profile_type', 'personal')
     setItemRows(collectionCount || 0)
 
     const { data: channelData, error: channelError } = await supabase

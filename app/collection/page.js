@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { fetchAllRows } from '../../lib/supabase-pagination'
 
 const emptyForm = {
   custom_name: '',
@@ -17,9 +18,20 @@ const emptyForm = {
   variant_note: ''
 }
 
+const AVATAR_EMOJI = { star: '⭐', fire: '🔥', water: '💧', leaf: '🍃', spark: '⚡', crystal: '💎' }
+
 export default function CollectionPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState(null)
+  const [profileIdentity, setProfileIdentity] = useState(null)
+  const [collectionProfiles, setCollectionProfiles] = useState([])
+  const [activeProfileId, setActiveProfileId] = useState(null)
+  const [isSwitchingProfile, setIsSwitchingProfile] = useState(false)
+  const activeProfileIdRef = useRef(null)
+  const loadRequestRef = useRef(0)
+  const [childName, setChildName] = useState('')
+  const [familyMessage, setFamilyMessage] = useState('')
+  const [transferLink, setTransferLink] = useState('')
   const [items, setItems] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
@@ -27,6 +39,8 @@ export default function CollectionPage() {
   const [editForm, setEditForm] = useState(emptyForm)
   const [query, setQuery] = useState('')
   const [catalog, setCatalog] = useState([])
+  const [catalogMatches, setCatalogMatches] = useState([])
+  const [catalogLoading, setCatalogLoading] = useState(false)
   const [catalogQuery, setCatalogQuery] = useState('')
   const [photoFiles, setPhotoFiles] = useState([])
   const [editPhotoFiles, setEditPhotoFiles] = useState([])
@@ -35,22 +49,70 @@ export default function CollectionPage() {
   const [isSaving, setIsSaving] = useState(false)
   const [photoUploadState, setPhotoUploadState] = useState({})
   const [collectionVoiceListening, setCollectionVoiceListening] = useState(false)
+  const activeCollectionProfile = collectionProfiles.find(profile => profile.id === activeProfileId)
 
-  async function load() {
+  async function load(preferredProfileId = activeProfileIdRef.current) {
+    const requestId = ++loadRequestRef.current
+    const isCurrentRequest = () => requestId === loadRequestRef.current
     const { data: { user } } = await supabase.auth.getUser()
+    if (!isCurrentRequest()) return
     setUser(user)
     if (!user) return
 
-    const { data, error } = await supabase
+    const { data: identity } = await supabase.from('profiles')
+      .select('display_name,avatar_key').eq('id', user.id).maybeSingle()
+    if (!isCurrentRequest()) return
+    setProfileIdentity(identity || null)
+
+    const { data: profileRows, error: profilesError } = await supabase
+      .from('collection_profiles')
+      .select('id,profile_type,is_default,display_name,avatar_key,transferred_at')
+      .order('created_at')
+    if (!isCurrentRequest()) return
+    if (profilesError) {
+      setMessage(profilesError.message)
+      return
+    }
+    const availableProfiles = profileRows || []
+    setCollectionProfiles(availableProfiles)
+    const savedProfileId = typeof window !== 'undefined' ? window.localStorage.getItem(`pokevaleur-collection:${user.id}`) : null
+    const selectedProfile = availableProfiles.find(profile => profile.id === preferredProfileId)
+      || availableProfiles.find(profile => profile.id === savedProfileId)
+      || availableProfiles.find(profile => profile.is_default)
+    if (!selectedProfile) {
+      setMessage('Aucun profil de collection disponible pour ce compte.')
+      return
+    }
+    activeProfileIdRef.current = selectedProfile.id
+    setActiveProfileId(selectedProfile.id)
+    if (typeof window !== 'undefined') window.localStorage.setItem(`pokevaleur-collection:${user.id}`, selectedProfile.id)
+
+    const { data, error } = await fetchAllRows(() => supabase
       .from('collection_items')
       .select('*')
+      .eq('collection_profile_id', selectedProfile.id)
       .order('created_at', { ascending: false })
+      .order('id', { ascending: true }))
+    if (!isCurrentRequest()) return
 
     if (error) {
       setMessage(error.message)
     } else {
       const rows = data || []
       setItems(rows)
+
+      const productIds = [...new Set(rows.map(item => item.product_id).filter(Boolean))]
+      const linkedProducts = []
+      for (let offset = 0; offset < productIds.length; offset += 100) {
+        const { data: products, error: productsError } = await supabase
+          .from('products')
+          .select('id,name,series,category,current_value,zero_defect_value')
+          .eq('is_public', true)
+          .in('id', productIds.slice(offset, offset + 100))
+        if (!productsError) linkedProducts.push(...(products || []))
+        if (!isCurrentRequest()) return
+      }
+      setCatalog(linkedProducts)
 
       const signedEntries = await Promise.all(
         rows
@@ -62,6 +124,7 @@ export default function CollectionPage() {
             return [item.id, signed?.signedUrl || null]
           })
       )
+      if (!isCurrentRequest()) return
 
       setPhotoUrls(Object.fromEntries(signedEntries.filter(([, url]) => url)))
     }
@@ -91,19 +154,98 @@ export default function CollectionPage() {
   }
 
   useEffect(() => {
+    const transferToken = new URLSearchParams(window.location.search).get('transfer')
+    if (transferToken) {
+      window.location.replace(`/collection/rejoindre?token=${encodeURIComponent(transferToken)}`)
+      return
+    }
     load()
-    loadCatalog()
   }, [])
 
-  async function loadCatalog() {
-    const { data, error } = await supabase
-      .from('products')
-      .select('id,name,series,category,current_value,zero_defect_value')
-      .eq('is_public', true)
-      .order('name')
-
-    if (!error) setCatalog(data || [])
+  async function selectCollectionProfile(profileId) {
+    if (!profileId || isSwitchingProfile || profileId === activeProfileIdRef.current) return
+    setIsSwitchingProfile(true)
+    activeProfileIdRef.current = profileId
+    setActiveProfileId(profileId)
+    if (user) window.localStorage.setItem(`pokevaleur-collection:${user.id}`, profileId)
+    setItems([])
+    setCatalog([])
+    setPhotoUrls({})
+    setEditingId(null)
+    setMessage('')
+    try {
+      await load(profileId)
+    } finally {
+      setIsSwitchingProfile(false)
+    }
   }
+
+  async function createChildProfile(e) {
+    e.preventDefault()
+    const name = childName.trim()
+    if (name.length < 1 || name.length > 32) return setFamilyMessage('Le prénom ou pseudo doit contenir de 1 à 32 caractères.')
+    const { data, error } = await supabase.from('collection_profiles').insert({
+      manager_user_id: user.id,
+      profile_type: 'child',
+      display_name: name,
+      avatar_key: 'star'
+    }).select('id').single()
+    if (error) return setFamilyMessage(error.message)
+    setChildName('')
+    setFamilyMessage(`La collection de ${name} est créée.`)
+    await selectCollectionProfile(data.id)
+  }
+
+  async function createTransferLink(profile) {
+    setFamilyMessage('')
+    const { data, error } = await supabase.rpc('create_collection_transfer_invite', { profile_id: profile.id })
+    if (error) return setFamilyMessage(error.message)
+    const link = `${window.location.origin}/collection/rejoindre?token=${encodeURIComponent(data)}`
+    setTransferLink(link)
+    try {
+      await navigator.clipboard.writeText(link)
+      setFamilyMessage('Lien de transfert copié. Il est valable 7 jours et ne peut servir qu’une fois.')
+    } catch {
+      setFamilyMessage('Lien créé. Copie-le et transmets-le à l’enfant : il est valable 7 jours et ne peut servir qu’une fois.')
+    }
+  }
+
+  useEffect(() => {
+    const searchTerm = catalogQuery.trim()
+    if (searchTerm.length < 2 || (form.product_id && searchTerm === form.custom_name)) {
+      setCatalogMatches([])
+      setCatalogLoading(false)
+      return
+    }
+
+    let active = true
+    setCatalogLoading(true)
+    const timeout = setTimeout(async () => {
+      const pattern = `%${searchTerm.replace(/[\\%_]/g, character => `\\${character}`)}%`
+      const [names, series] = await Promise.all([
+        supabase.from('products').select('id,name,series,category,current_value,zero_defect_value')
+          .eq('is_public', true).ilike('name', pattern).order('name').limit(6),
+        supabase.from('products').select('id,name,series,category,current_value,zero_defect_value')
+          .eq('is_public', true).ilike('series', pattern).order('name').limit(6),
+      ])
+      if (!active) return
+      const results = new Map()
+      for (const product of [...(names.data || []), ...(series.data || [])]) results.set(product.id, product)
+      const matches = [...results.values()].slice(0, 6)
+      setCatalogMatches(matches)
+      setCatalog(previous => {
+        const byId = new Map(previous.map(product => [product.id, product]))
+        for (const product of matches) byId.set(product.id, product)
+        return [...byId.values()]
+      })
+      setCatalogLoading(false)
+    }, 250)
+
+    return () => {
+      active = false
+      clearTimeout(timeout)
+    }
+  }, [catalogQuery, form.product_id, form.custom_name, supabase])
 
   function chooseCatalogProduct(product) {
     setForm({
@@ -182,6 +324,7 @@ export default function CollectionPage() {
 
   async function addItem(e) {
     e.preventDefault()
+    if (isSwitchingProfile) return setMessage('Attends le chargement de la collection sélectionnée.')
     if (!user) return setMessage('Connecte-toi d’abord.')
 
     let uploadedPhotoPaths = []
@@ -198,6 +341,7 @@ export default function CollectionPage() {
 
     const payload = {
       user_id: user.id,
+      collection_profile_id: activeProfileId,
       product_id: form.product_id || null,
       custom_name: form.custom_name.trim(),
       quantity: Number(form.quantity || 1),
@@ -382,15 +526,29 @@ export default function CollectionPage() {
     const ok = window.confirm(`Supprimer “${item.custom_name}” de ta collection ?`)
     if (!ok) return
 
+    const { data: photos, error: photosError } = await supabase
+      .from('collection_item_photos')
+      .select('photo_path')
+      .eq('collection_item_id', item.id)
+    if (photosError) return setMessage(`Impossible de vérifier les photos de cet objet : ${photosError.message}`)
+
+    const photoPaths = [...new Set([item.photo_path, ...(photos || []).map(photo => photo.photo_path)].filter(Boolean))]
+    if (photoPaths.length) {
+      const { error: storageError } = await supabase.storage.from('collection-images').remove(photoPaths)
+      if (storageError) {
+        return setMessage(`Nettoyage des photos impossible ; l’objet est conservé. Certaines photos ont peut-être déjà été retirées : ${storageError.message}`)
+      }
+    }
+
     const { error } = await supabase
       .from('collection_items')
       .delete()
       .eq('id', item.id)
 
-    if (error) return setMessage(error.message)
-
-    if (item.photo_path) {
-      await supabase.storage.from('collection-images').remove([item.photo_path])
+    if (error) {
+      setMessage(`Photos supprimées, mais l’objet n’a pas pu être supprimé : ${error.message}`)
+      await load()
+      return
     }
 
     setMessage('Produit supprimé.')
@@ -522,16 +680,6 @@ export default function CollectionPage() {
     return haystack.includes(needle)
   })
 
-  const catalogMatches = catalog
-    .filter(product =>
-      catalogQuery.trim().length >= 2 &&
-      (
-        product.name.toLowerCase().includes(catalogQuery.toLowerCase()) ||
-        (product.series || '').toLowerCase().includes(catalogQuery.toLowerCase())
-      )
-    )
-    .slice(0, 6)
-
   if (!user) {
     return (
       <main className="narrow">
@@ -549,21 +697,50 @@ export default function CollectionPage() {
       <div className="collectionHeader">
         <div>
           <span className="eyebrow dark">Mon espace</span>
-          <h1>Ma collection</h1>
-          <p className="muted">{user.email}</p>
+          <h1>{activeCollectionProfile && !activeCollectionProfile.is_default ? `Collection de ${activeCollectionProfile.display_name}` : 'Ma collection'}</h1>
+          <p className="muted" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <span className={`avatarIcon avatar-${activeCollectionProfile?.is_default ? profileIdentity?.avatar_key || 'star' : activeCollectionProfile?.avatar_key || 'star'}`} aria-hidden="true">
+              {AVATAR_EMOJI[activeCollectionProfile?.is_default ? profileIdentity?.avatar_key : activeCollectionProfile?.avatar_key] || AVATAR_EMOJI.star}
+            </span>
+            <span>{activeCollectionProfile?.is_default ? profileIdentity?.display_name || 'Collectionneur' : activeCollectionProfile?.display_name || 'Collection familiale'}</span>
+          </p>
         </div>
         <div className="collectionHeaderActions">
           <a className="btn" href="/collection/statistiques">📊 Statistiques</a>\n          <a className="btn" href="/collection/import">📥 Importer Excel / CSV</a>
           <a className="btn" href="/opportunites">🎯 Doublons & Watchlist</a>
           <div className="exportCollectionActions">
-            <button className="btn ghost" type="button" onClick={() => exportCollection(true)}>⬇ Exporter avec prix</button>
-            <button className="btn ghost" type="button" onClick={() => exportCollection(false)}>⬇ Exporter sans prix</button>
+            <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>⬇ Exporter avec prix</button>
+            <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>⬇ Exporter sans prix</button>
           </div>
           <button className="btn ghost dangerGhost" onClick={signOut}>Se déconnecter</button>
         </div>
       </div>
 
-      <section className="stats">
+      <section className="panel" style={{ marginBottom: 20 }}>
+        <h2>Collections de la famille</h2>
+        <p className="muted">Chaque enfant peut commencer sans compte. Quand il en crée un, tu peux lui transférer toute sa collection avec un lien à usage unique.</p>
+        <div className="buttonRow" style={{ flexWrap: 'wrap', gap: 8 }}>
+          {collectionProfiles.map(profile => (
+            <button key={profile.id} className={`btn ${profile.id === activeProfileId ? '' : 'ghost'}`} type="button" disabled={isSwitchingProfile} onClick={() => selectCollectionProfile(profile.id)}>
+              {AVATAR_EMOJI[profile.is_default ? profileIdentity?.avatar_key : profile.avatar_key] || AVATAR_EMOJI.star} {profile.display_name}{profile.transferred_at ? ' (transférée)' : profile.is_default ? ' (toi)' : ''}
+            </button>
+          ))}
+        </div>
+        <form onSubmit={createChildProfile} className="buttonRow" style={{ marginTop: 14, gap: 8, flexWrap: 'wrap' }}>
+          <input aria-label="Prénom ou pseudo de l’enfant" value={childName} onChange={e => setChildName(e.target.value)} placeholder="Prénom ou pseudo de l’enfant" maxLength={32} disabled={isSwitchingProfile} />
+          <button className="btn" type="submit" disabled={isSwitchingProfile}>＋ Créer sa collection</button>
+        </form>
+        {collectionProfiles.filter(profile => profile.profile_type === 'child').map(profile => (
+          <div key={`invite-${profile.id}`} className="buttonRow" style={{ marginTop: 10 }}>
+            <button type="button" className="btn ghost" onClick={() => createTransferLink(profile)}>Transférer « {profile.display_name} » après création de son compte</button>
+          </div>
+        ))}
+        {isSwitchingProfile && <p role="status" className="muted">Chargement de la collection sélectionnée…</p>}
+        {familyMessage && <p role="status" className="muted">{familyMessage}</p>}
+        {transferLink && <p><a href={transferLink}>{transferLink}</a></p>}
+      </section>
+
+      {!isSwitchingProfile && <section className="stats">
         <div>
           <span>Investi</span>
           <strong>{invested.toFixed(2)} €</strong>
@@ -583,7 +760,7 @@ export default function CollectionPage() {
           <span>Items</span>
           <strong>{itemCount}</strong>
         </div>
-      </section>
+      </section>}
 
       <section className="contentGrid">
         <div className="panel">
@@ -601,6 +778,7 @@ export default function CollectionPage() {
                   placeholder="Ex. 151, Arceus, Célébrations..."
                 />
               </label>
+              {catalogLoading && <small className="muted">Recherche dans le catalogue…</small>}
               {catalogMatches.length > 0 && (
                 <div className="catalogSuggestions">
                   {catalogMatches.map(product => (
@@ -614,6 +792,9 @@ export default function CollectionPage() {
                     </button>
                   ))}
                 </div>
+              )}
+              {!catalogLoading && catalogQuery.trim().length >= 2 && catalogMatches.length === 0 && (
+                <small className="muted">Aucun résultat. Tu peux saisir le nom librement ci-dessous.</small>
               )}
               <small className="muted">
                 Tu peux choisir un produit du catalogue ou saisir librement un produit ci-dessous.
@@ -812,7 +993,7 @@ export default function CollectionPage() {
               Si deux exemplaires du même coffret n’ont pas les mêmes boosters, ajoute-les séparément (quantité 1) afin de conserver leur composition exacte.
             </small>
 
-            <button className="btn" type="submit" disabled={isSaving}>{isSaving ? 'Enregistrement en cours…' : 'Ajouter à ma collection'}</button>
+            <button className="btn" type="submit" disabled={isSaving || isSwitchingProfile}>{isSwitchingProfile ? 'Chargement…' : isSaving ? 'Enregistrement en cours…' : 'Ajouter à ma collection'}</button>
           </form>
 
           {message && <p className="message">{message}</p>}
