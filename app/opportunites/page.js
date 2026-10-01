@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
+import { findWatchlistProducts } from '../../lib/watchlist-search.mjs'
 
 function euro(value) {
   if (value == null || Number.isNaN(Number(value))) return '—'
@@ -36,44 +37,52 @@ export default function OpportunitiesPage() {
   const [notificationPrefs, setNotificationPrefs] = useState({ email_enabled:true, email_address:'', sms_enabled:false, phone_e164:'', alert_watchlist_price:true })
   const [notificationMessage, setNotificationMessage] = useState('')
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
 
   useEffect(() => { load() }, [])
 
   async function load() {
     setLoading(true)
-    const { data:{ user } } = await supabase.auth.getUser()
-    setUser(user)
-    if (!user) {
+    setLoadError('')
+    try {
+      const { data:{ user }, error: authError } = await supabase.auth.getUser()
+      if (authError) throw authError
+      setUser(user)
+      if (!user) return
+
+      const [itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes] = await Promise.all([
+        fetchAllRows(() => supabase.from('collection_items')
+          .select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date,collection_profiles!inner(profile_type)')
+          .eq('collection_profiles.profile_type', 'personal')
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })),
+        fetchAllRows(() => supabase.from('products').select('id,name,series,product_type,current_value,zero_defect_value,price_updated_at').eq('is_public', true).order('name').order('id')),
+        fetchAllRows(() => supabase.from('product_watchlist').select('id,product_id,target_price,max_price,notes,active,created_at').eq('user_id', user.id).eq('active', true).order('created_at', { ascending:false }).order('id')),
+        fetchAllRows(() => supabase.from('product_price_history').select('product_id,price,observed_at,condition_tier,observation_type').eq('observation_type','confirmed_sale').order('observed_at', { ascending:true }).order('id')),
+        supabase.from('notification_preferences').select('email_enabled,email_address,sms_enabled,phone_e164,alert_watchlist_price').eq('user_id', user.id).maybeSingle(),
+        fetchAllRows(() => supabase.from('market_offers').select('id,product_id,source,seller_name,seller_type,seller_rating,price,shipping_price,total_price,currency,condition_note,language,offer_url,observed_at').eq('active', true).order('observed_at', { ascending:false }).order('id'))
+      ])
+
+      if ([itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes].some(result => result.error)) {
+        throw new Error('Le tableau de bord n’a pas pu être chargé.')
+      }
+      setItems(itemsRes.data || [])
+      setProducts(productsRes.data || [])
+      setWatchlist(watchRes.data || [])
+      setHistory(historyRes.data || [])
+      setOffers(offersRes.data || [])
+      setNotificationPrefs({
+        email_enabled:prefsRes.data?.email_enabled ?? true,
+        email_address:prefsRes.data?.email_address || user.email || '',
+        sms_enabled:prefsRes.data?.sms_enabled ?? false,
+        phone_e164:prefsRes.data?.phone_e164 || '',
+        alert_watchlist_price:prefsRes.data?.alert_watchlist_price ?? true
+      })
+    } catch {
+      setLoadError('Impossible de charger tes doublons et ta watchlist. Réessaie dans un instant.')
+    } finally {
       setLoading(false)
-      return
     }
-
-    const [itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes] = await Promise.all([
-      fetchAllRows(() => supabase.from('collection_items')
-        .select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date,collection_profiles!inner(profile_type)')
-        .eq('collection_profiles.profile_type', 'personal')
-        .order('created_at', { ascending: true })
-        .order('id', { ascending: true })),
-      supabase.from('products').select('id,name,series,product_type,current_value,zero_defect_value,price_updated_at').eq('is_public', true).order('name'),
-      supabase.from('product_watchlist').select('id,product_id,target_price,max_price,notes,active,created_at').eq('user_id', user.id).eq('active', true).order('created_at', { ascending:false }),
-      supabase.from('product_price_history').select('product_id,price,observed_at,condition_tier,observation_type').eq('observation_type','confirmed_sale').order('observed_at', { ascending:true }),
-      supabase.from('notification_preferences').select('email_enabled,email_address,sms_enabled,phone_e164,alert_watchlist_price').eq('user_id', user.id).maybeSingle(),
-      supabase.from('market_offers').select('id,product_id,source,seller_name,seller_type,seller_rating,price,shipping_price,total_price,currency,condition_note,language,offer_url,observed_at').eq('active', true).order('observed_at', { ascending:false })
-    ])
-
-    setItems(itemsRes.data || [])
-    setProducts(productsRes.data || [])
-    setWatchlist(watchRes.data || [])
-    setHistory(historyRes.data || [])
-    setOffers(offersRes.data || [])
-    setNotificationPrefs({
-      email_enabled:prefsRes.data?.email_enabled ?? true,
-      email_address:prefsRes.data?.email_address || user.email || '',
-      sms_enabled:prefsRes.data?.sms_enabled ?? false,
-      phone_e164:prefsRes.data?.phone_e164 || '',
-      alert_watchlist_price:prefsRes.data?.alert_watchlist_price ?? true
-    })
-    setLoading(false)
   }
 
   const productById = useMemo(() => Object.fromEntries(products.map(p => [p.id,p])), [products])
@@ -155,14 +164,7 @@ export default function OpportunitiesPage() {
     }
   }).sort((a,b) => Number(b.opportunity) - Number(a.opportunity)), [watchlist, productById, history, offers])
 
-  const searchMatches = useMemo(() => {
-    const n = normalize(query)
-    if (n.length < 2) return []
-    const watched = new Set(watchlist.map(w => w.product_id))
-    return products
-      .filter(p => !watched.has(p.id) && normalize([p.name,p.series,p.product_type].join(' ')).includes(n))
-      .slice(0,8)
-  }, [query, products, watchlist])
+  const searchMatches = useMemo(() => findWatchlistProducts(products, watchlist, query), [query, products, watchlist])
 
   async function addToWatchlist(e) {
     e.preventDefault()
@@ -216,6 +218,14 @@ export default function OpportunitiesPage() {
   }
 
   if (loading) return <main><section className="panel"><p>Chargement du tableau de bord…</p></section></main>
+
+  if (loadError) return (
+    <main className="narrow"><section className="panel">
+      <h1>Doublons & Watchlist</h1>
+      <p role="alert">{loadError}</p>
+      <button className="btn" type="button" onClick={load}>Réessayer</button>
+    </section></main>
+  )
 
   if (!user) return (
     <main className="narrow">
@@ -295,7 +305,7 @@ export default function OpportunitiesPage() {
           <form onSubmit={addToWatchlist} className="formGrid">
             <label>
               Rechercher un produit
-              <input value={query} onChange={e => { setQuery(e.target.value); setSelectedProduct(null) }} placeholder="Ex. ETB Évolution Céleste" />
+              <input type="search" value={query} onChange={e => { setQuery(e.target.value); setSelectedProduct(null) }} placeholder="Ex. ETB Évolution Céleste" />
             </label>
 
             {searchMatches.length > 0 && !selectedProduct && (
@@ -307,6 +317,8 @@ export default function OpportunitiesPage() {
                 ))}
               </div>
             )}
+
+            {query.trim().length >= 2 && !selectedProduct && searchMatches.length === 0 && <p role="status" className="muted">Aucun produit à ajouter : vérifie la recherche ou les produits déjà présents dans ta watchlist.</p>}
 
             {selectedProduct && <div className="message">✓ {selectedProduct.name}</div>}
 
