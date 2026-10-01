@@ -810,3 +810,5 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .crystalAction{font-size:11px}
 }
 @media(prefers-reduced-motion:reduce){.crystalHero .surpriseCard,.crystalChest.open img{animation:none}}
+
+.chestXpPromise{display:block;margin-top:8px;color:#b5f1ff;font-weight:800;font-size:14px}.chestXpSummary{display:flex;flex-direction:column;gap:10px;margin:14px 0 6px}.chestXpSummary a{font-size:14px;color:#174764;text-decoration:underline;text-underline-offset:3px}.chestOpenError{color:#ffe4d8!important;font-size:14px!important}.crystalChest:disabled{cursor:default}

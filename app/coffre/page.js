@@ -24,6 +24,9 @@ export default function CoffrePage(){
  const revealRef=useRef(null)
  const revealRequested=useRef(false)
  const [ready,setReady]=useState(false)
+ const openingRef=useRef(false)
+ const [opening,setOpening]=useState(false)
+ const [openError,setOpenError]=useState("")
  const [member,setMember]=useState(false)
  const [serverReward,setServerReward]=useState(null)
  const [voucher,setVoucher]=useState(null)
@@ -39,7 +42,9 @@ export default function CoffrePage(){
     const {data:{user}}=await supabase.auth.getUser()
     setMember(!!user)
     if(user){
-      const d=new Date(), today=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")
+      const parts=new Intl.DateTimeFormat("en-CA",{timeZone:"Europe/Paris",year:"numeric",month:"2-digit",day:"2-digit"}).formatToParts(new Date())
+      const datePart=type=>parts.find(part=>part.type===type).value
+      const today=`${datePart("year")}-${datePart("month")}-${datePart("day")}`
       const {data}=await supabase.from("chest_openings").select("opened_on").eq("user_id",user.id).eq("opened_on",today).maybeSingle()
       if(data){
         const {data:reward}=await supabase.rpc("open_daily_chest")
@@ -72,28 +77,37 @@ export default function CoffrePage(){
   setVoucher(data);setClaiming(false)
  }
  async function openChest(){
-  if(member){
+  if(!ready||opened||openingRef.current)return
+  openingRef.current=true;setOpening(true);setOpenError("")
+  try{
+   if(member){
     const supabase=createClient()
     const {data,error}=await supabase.rpc("open_daily_chest")
-    if(error){console.error(error);return}
-    if(data) setServerReward(data)
-  } else localStorage.setItem("lukulu-chest-day",String(day))
-  revealRequested.current=true
-  setOpened(true)
-}
+    if(error||!data)throw error||new Error("Récompense indisponible")
+    setServerReward(data)
+   }else localStorage.setItem("lukulu-chest-day",String(day))
+   revealRequested.current=true
+   setOpened(true)
+  }catch{
+   setOpenError("Le coffre n’a pas pu être ouvert. Réessaie dans un instant : aucun gain supplémentaire ne sera compté.")
+  }finally{
+   openingRef.current=false;setOpening(false)
+  }
+ }
+
  const shown=!member?visitorSurprises[day%visitorSurprises.length]:member&&serverReward?{icon:serverReward.icon,type:serverReward.label,title:serverReward.title,text:serverReward.body,xp:serverReward.xp_awarded,badge:serverReward.badge_key,partner:serverReward.reward_type==="partner"}:surprise
  const revealKind=shown.partner?"partner":shown.badge?"rare":shown.xp>0?"xp":"normal"
  const lukuluReaction=opened?({partner:"Lukulu a trouvé un vrai trésor ! 🎁",rare:"Lukulu semble très fier de cette trouvaille. ✨",xp:"Quelques éclats de plus pour ta progression ! 💎",normal:"Une nouvelle découverte gardée pour toi. 💙"}[revealKind]):"Lukulu veille sur le coffre…"
  return <main className="chestPage">
   <section className="chestHero crystalHero">
-   <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Ton trésor du jour</h1><p className="chestIntro">Une surprise à découvrir avec Lukulu.</p></div>
+   <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Ton trésor du jour</h1><p className="chestIntro">Une surprise à découvrir avec Lukulu.{member&&<span className="chestXpPromise"> +1 XP par ouverture quotidienne</span>}</p>{openError&&<p role="alert" className="chestOpenError">{openError}</p>}</div>
    <div className="chestScene">
     <div className={"lukuluReaction "+(opened?revealKind:"waiting")}><span>{lukuluReaction}</span><img src={opened?"/coffre/lukulu-happy.webp":"/coffre/lukulu-waiting.webp"} alt={opened?"Lukulu célèbre ta découverte":"Lukulu veille sur ton coffre"} className="chestLukulu"/></div>
-    <button className={"crystalChest "+(opened?"open":"")} onClick={openChest} disabled={!ready||opened} aria-label={opened?"Coffre ouvert, surprise découverte":"Ouvrir le coffre de Lukulu"}><img src={opened?"/coffre/chest-blue-open.webp":"/coffre/chest-blue-closed.webp"} alt=""/><span className="crystalAction">{opened?"À demain ✦":"Toucher pour ouvrir ✦"}</span></button>
+    <button className={"crystalChest "+(opened?"open":"")} onClick={openChest} disabled={!ready||opened||opening} aria-label={opened?"Coffre ouvert, surprise découverte":"Ouvrir le coffre de Lukulu"}><img src={opened?"/coffre/chest-blue-open.webp":"/coffre/chest-blue-closed.webp"} alt=""/><span className="crystalAction">{opened?"À demain ✦":opening?"Ouverture…":"Toucher pour ouvrir ✦"}</span></button>
    </div>
   <section ref={revealRef} tabIndex={-1} aria-label="Ta surprise du jour" aria-live="polite" className={"dailyReveal "+(opened?"revealed "+revealKind+"Reveal ":"")}>
    {!opened?null:
-   <article className="surpriseCard"><span className="surpriseIcon">{shown.icon}</span><div><small>{shown.type}</small><h2>{shown.title}</h2><p>{shown.text}</p>{shown.xp>0&&<b className="xpReward">+{shown.xp} XP</b>}{shown.badge&&<b className="badgeReward">🏅 Badge débloqué</b>}{shown.partner&&<div className="partnerReward"><b>🎟️ Récompense partenaire</b>{!voucher?<><span>Ton cadeau est réservé. Réclame-le pour afficher ton code personnel.</span><button type="button" className="claimRewardBtn" onClick={claimVoucher} disabled={claiming}>{claiming?"Attribution en cours…":"Réclamer mon cadeau"}</button>{claimError&&<small className="claimError">{claimError}</small>}</>:<div className="voucherCard"><small>OFFERT PAR</small><strong>{voucher.partner}</strong><h3>{voucher.title}</h3>{voucher.description&&<p>{voucher.description}</p>}<div className="voucherCode"><span>TON CODE</span><b>{voucher.code}</b></div>{voucher.valid_until&&<small>Valable jusqu’au {new Date(voucher.valid_until).toLocaleDateString("fr-FR")}</small>}{voucher.terms&&<small className="voucherTerms">{voucher.terms}</small>}</div>}</div>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
+   <article className="surpriseCard"><span className="surpriseIcon">{shown.icon}</span><div><small>{shown.type}</small><h2>{shown.title}</h2><p>{shown.text}</p>{member&&serverReward&&shown.xp>0&&<div className="chestXpSummary"><b className="xpReward">+{shown.xp} XP {serverReward.already_opened?"obtenus aujourd’hui":"gagnés"}</b>{Number.isFinite(serverReward.total_xp)&&<a href="/progression">Mon compteur : <strong>{serverReward.total_xp} XP</strong> →</a>}</div>}{shown.badge&&<b className="badgeReward">🏅 Badge débloqué</b>}{shown.partner&&<div className="partnerReward"><b>🎟️ Récompense partenaire</b>{!voucher?<><span>Ton cadeau est réservé. Réclame-le pour afficher ton code personnel.</span><button type="button" className="claimRewardBtn" onClick={claimVoucher} disabled={claiming}>{claiming?"Attribution en cours…":"Réclamer mon cadeau"}</button>{claimError&&<small className="claimError">{claimError}</small>}</>:<div className="voucherCard"><small>OFFERT PAR</small><strong>{voucher.partner}</strong><h3>{voucher.title}</h3>{voucher.description&&<p>{voucher.description}</p>}<div className="voucherCode"><span>TON CODE</span><b>{voucher.code}</b></div>{voucher.valid_until&&<small>Valable jusqu’au {new Date(voucher.valid_until).toLocaleDateString("fr-FR")}</small>}{voucher.terms&&<small className="voucherTerms">{voucher.terms}</small>}</div>}</div>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
   </section>
   </section>
   <div hidden aria-hidden="true"><img src="/coffre/lukulu-happy.webp" alt=""/><img src="/coffre/chest-blue-open.webp" alt=""/></div>
