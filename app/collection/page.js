@@ -5,6 +5,7 @@ import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { filterCollectionItems } from '../../lib/collection-search.mjs'
+import { saveUploadedPhotoBatch } from '../../lib/collection-photo-save.mjs'
 
 const emptyForm = {
   custom_name: '',
@@ -467,28 +468,25 @@ export default function CollectionPage() {
       paths = await uploadCollectionPhotos(files)
 
       const currentItem = items.find(item => item.id === id)
-      const { count } = await supabase
-        .from('collection_item_photos')
-        .select('id', { count: 'exact', head: true })
-        .eq('collection_item_id', id)
-
-      const { error: insertError } = await supabase.from('collection_item_photos').insert(
-        paths.map((path, index) => ({
-          collection_item_id: id,
-          user_id: user.id,
-          photo_path: path,
-          sort_order: (count || 0) + index
-        }))
-      )
-      if (insertError) throw insertError
-
-      if (!currentItem?.photo_path && paths[0]) {
-        const { error: updateError } = await supabase
-          .from('collection_items')
-          .update({ photo_path: paths[0] })
-          .eq('id', id)
-        if (updateError) throw updateError
-      }
+      await saveUploadedPhotoBatch({
+        paths,
+        link: async uploaded => {
+          const { count, error: countError } = await supabase.from('collection_item_photos')
+            .select('id', { count: 'exact', head: true }).eq('collection_item_id', id)
+          if (countError) throw countError
+          const { error } = await supabase.from('collection_item_photos').insert(
+            uploaded.map((path, index) => ({ collection_item_id: id, user_id: user.id,
+              photo_path: path, sort_order: (count || 0) + index }))
+          )
+          if (error) throw error
+        },
+        setPrimary: async path => {
+          if (currentItem?.photo_path || !path) return
+          const { error } = await supabase.from('collection_items').update({ photo_path: path }).eq('id', id)
+          if (error) throw error
+        },
+        remove: uploaded => supabase.storage.from('collection-images').remove(uploaded),
+      })
 
       setPhotoUploadState(prev => ({
         ...prev,
@@ -499,10 +497,10 @@ export default function CollectionPage() {
       }))
       await load()
     } catch (error) {
-      if (paths.length) await supabase.storage.from('collection-images').remove(paths)
+      if (error.photosLinked) await load()
       setPhotoUploadState(prev => ({
         ...prev,
-        [id]: { status: 'error', text: `❌ ${error.message || 'Impossible d’enregistrer la photo.'}` }
+        [id]: { status: 'error', text: error.photosLinked ? '⚠️ Photos enregistrées, mais la photo principale n’a pas pu être actualisée. Les fichiers sont conservés.' : `❌ ${error.message || 'Impossible d’enregistrer la photo.'}` }
       }))
     }
   }
@@ -531,7 +529,6 @@ export default function CollectionPage() {
       variant_note: editForm.variant_note.trim() || null
     }
 
-    if (newPhotoPaths.length && !currentItem?.photo_path) payload.photo_path = newPhotoPaths[0]
 
     const { error } = await supabase
       .from('collection_items')
@@ -546,20 +543,33 @@ export default function CollectionPage() {
     }
 
     if (newPhotoPaths.length) {
-      const { count } = await supabase
-        .from('collection_item_photos')
-        .select('id', { count: 'exact', head: true })
-        .eq('collection_item_id', id)
-
-      const { error: photoError } = await supabase.from('collection_item_photos').insert(
-        newPhotoPaths.map((path, index) => ({
-          collection_item_id: id,
-          user_id: user.id,
-          photo_path: path,
-          sort_order: (count || 0) + index
-        }))
-      )
-      if (photoError) setMessage('Modifications enregistrées, mais certaines photos n’ont pas pu être ajoutées.')
+      try {
+        await saveUploadedPhotoBatch({
+          paths: newPhotoPaths,
+          link: async uploaded => {
+            const { count, error: countError } = await supabase.from('collection_item_photos')
+              .select('id', { count: 'exact', head: true }).eq('collection_item_id', id)
+            if (countError) throw countError
+            const { error } = await supabase.from('collection_item_photos').insert(
+              uploaded.map((path, index) => ({ collection_item_id: id, user_id: user.id,
+                photo_path: path, sort_order: (count || 0) + index }))
+            )
+            if (error) throw error
+          },
+          setPrimary: async path => {
+            if (currentItem?.photo_path || !path) return
+            const { error } = await supabase.from('collection_items').update({ photo_path: path }).eq('id', id)
+            if (error) throw error
+          },
+          remove: uploaded => supabase.storage.from('collection-images').remove(uploaded),
+        })
+      } catch (photoError) {
+        setEditPhotoFiles([])
+        await load()
+        return setMessage(photoError.photosLinked
+          ? '⚠️ Produit et photos enregistrés, mais la photo principale n’a pas pu être actualisée.'
+          : '⚠️ Produit modifié, mais les nouvelles photos n’ont pas pu être enregistrées. Réessaie l’ajout des photos.')
+      }
     }
 
     setEditingId(null)
