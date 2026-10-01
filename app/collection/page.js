@@ -1008,7 +1008,7 @@ export default function CollectionPage() {
                     <div className="productMain">
                       <div>
                         <h3>{item.custom_name}</h3>
-                        {linkedProduct && <a className="miniBtn" href={`/catalogue/${linkedProduct.id}`}>Référence : {linkedProduct.name} →</a>}
+                        {linkedProduct && <a className="miniBtn catalogueReference" href={`/catalogue/${linkedProduct.id}`}>Référence : {linkedProduct.name} →</a>}
                         <p>
                           Qté {item.quantity}
                           {item.purchase_date ? ` • acheté le ${new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR')}` : ''}

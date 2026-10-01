@@ -826,3 +826,9 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
   .authCard .actions .btn{width:100%;min-width:0;text-align:center}
   .authCard .passwordToggle{padding:0 10px;font-size:14px}
 }
+
+
+/* Long catalogue references must wrap as a single block. */
+.catalogueReference{display:block;width:fit-content;max-width:100%;margin:8px 0 12px;line-height:1.4;white-space:normal;overflow-wrap:anywhere;font-size:14px}
+.productMain>div,.itemValueTop>div{min-width:0}
+.collectionItemPhoto img{display:block;max-width:100%;object-fit:contain}

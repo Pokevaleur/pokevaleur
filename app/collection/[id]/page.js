@@ -403,7 +403,7 @@ export default function CollectionItemDetailPage() {
           <div className="itemValueTop">
             <div>
               <span className="eyebrow dark">Valeur de mon exemplaire</span>
-              {productInfo && <a className="miniBtn" href={`/catalogue/${productInfo.id}`}>Référence catalogue : {productInfo.name} →</a>}
+              {productInfo && <a className="miniBtn catalogueReference" href={`/catalogue/${productInfo.id}`}>Référence catalogue : {productInfo.name} →</a>}
               {productInfo?.series && <p className="muted itemSeriesLine">{productInfo.series}{productInfo.product_type ? ` • ${productInfo.product_type}` : ''}</p>}
             </div>
             {productInfo?.release_date && (
