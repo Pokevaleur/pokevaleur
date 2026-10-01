@@ -832,3 +832,16 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .catalogueReference{display:block;width:fit-content;max-width:100%;margin:8px 0 12px;line-height:1.4;white-space:normal;overflow-wrap:anywhere;font-size:14px}
 .productMain>div,.itemValueTop>div{min-width:0}
 .collectionItemPhoto img{display:block;max-width:100%;object-fit:contain}
+
+/* Product detail children may shrink and wrap within the available viewport. */
+.productDetailHero>div{min-width:0;max-width:100%}
+.detailProductIdentity{overflow-wrap:anywhere}
+.detailProductIdentity .btn{max-width:100%;white-space:normal}
+.detailReleaseDate strong,.referenceValue strong,.zeroDefectHeroValue b{overflow-wrap:anywhere}
+@media(max-width:850px){
+ .productDetailHero{width:100%;padding:22px;align-items:stretch}
+ .detailProductIdentity,.referenceValue{width:100%;flex:auto}
+ .detailReleaseDate{grid-template-columns:minmax(0,1fr)}
+ .referenceValue strong{font-size:28px}
+ .zeroDefectHeroValue{max-width:100%}
+}
