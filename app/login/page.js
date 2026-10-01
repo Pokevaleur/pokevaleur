@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 
 const AVATARS = [
@@ -12,16 +12,55 @@ const AVATARS = [
   { key: 'crystal', emoji: '💎', label: 'Cristal' },
 ]
 
+const POST_LOGIN_PREFIXES = ['/collection', '/communaute', '/opportunites', '/trades', '/admin']
+
+function getPostLoginPath() {
+  const savedPath = window.localStorage.getItem('pokevaleur-post-login-path')
+  const requestedPath = new URLSearchParams(window.location.search).get('next')
+  const candidate = savedPath || requestedPath || '/collection'
+  try {
+    const parsed = new URL(candidate, window.location.origin)
+    const isAllowedPath = POST_LOGIN_PREFIXES.some(prefix => parsed.pathname === prefix || parsed.pathname.startsWith(prefix + '/'))
+    if (parsed.origin === window.location.origin && isAllowedPath) {
+      return parsed.pathname + parsed.search + parsed.hash
+    }
+  } catch {}
+  return '/collection'
+}
+
 export default function LoginPage() {
   const [mode, setMode] = useState('signin')
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [showPassword, setShowPassword] = useState(false)
   const [displayName, setDisplayName] = useState('')
   const [avatarKey, setAvatarKey] = useState('star')
   const [message, setMessage] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const supabase = useMemo(() => createClient(), [])
   const isSignUp = mode === 'signup'
+
+  useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('reset') === 'invalid') {
+      setMessage('Ce lien de réinitialisation est invalide ou a expiré. Demande un nouveau lien.')
+    }
+  }, [])
+
+  function authErrorMessage(error, context) {
+    const detail = error?.message?.toLowerCase() || ''
+    if (detail.includes('invalid login credentials') || detail.includes('invalid credentials')) {
+      return 'Adresse e-mail ou mot de passe incorrect.'
+    }
+    if (detail.includes('email not confirmed') || detail.includes('email_not_confirmed')) {
+      return 'Confirme ton adresse e-mail avant de te connecter.'
+    }
+    if (detail.includes('too many requests') || detail.includes('rate limit')) {
+      return 'Trop de tentatives. Attends quelques minutes avant de réessayer.'
+    }
+    return context === 'signin'
+      ? 'La connexion a échoué. Vérifie tes informations puis réessaie.'
+      : 'La création du compte a échoué. Réessaie dans quelques instants.'
+  }
 
   function validate() {
     if (!email.trim()) {
@@ -47,12 +86,12 @@ export default function LoginPage() {
     setIsSubmitting(true)
     setMessage('Création du compte...')
     try {
-      const returnPath = window.localStorage.getItem('pokevaleur-post-login-path') || '/collection'
+      const returnPath = getPostLoginPath()
       const transferToken = new URL(returnPath, window.location.origin).searchParams.get('token')
       const emailRedirectTo = transferToken
         ? `${window.location.origin}/collection?transfer=${encodeURIComponent(transferToken)}`
-        : `${window.location.origin}/collection`
-      const { error } = await supabase.auth.signUp({
+        : `${window.location.origin}${returnPath}`
+      const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
         password,
         options: {
@@ -64,7 +103,12 @@ export default function LoginPage() {
         },
       })
       if (!error) {
-        setMessage('Compte créé. Vérifie ton e-mail si Supabase demande une confirmation.')
+        if (data.user && data.user.identities?.length === 0) {
+          setMessage('Cette adresse e-mail est déjà associée à un compte. Connecte-toi avec ce compte ou utilise « Mot de passe oublié ? » si tu ne connais plus son mot de passe.')
+          return
+        }
+        setMode('signin')
+        setMessage('Compte créé. Confirme ton adresse avec le lien reçu par e-mail, puis connecte-toi avec cette adresse. Si un autre compte est déjà ouvert, déconnecte-le avant de te connecter à celui-ci.')
         return
       }
       const lowerMessage = error.message.toLowerCase()
@@ -73,7 +117,7 @@ export default function LoginPage() {
       } else if (lowerMessage.includes('database error') || lowerMessage.includes('duplicate key')) {
         setMessage('La création a échoué. Ce pseudo est peut-être déjà pris : essaie-en un autre.')
       } else {
-        setMessage(error.message)
+        setMessage(authErrorMessage(error, 'signup'))
       }
     } catch {
       setMessage('Connexion impossible au service. Vérifie ta connexion puis réessaie.')
@@ -92,15 +136,8 @@ export default function LoginPage() {
         email: email.trim(),
         password,
       })
-      if (error) return setMessage(error.message)
-      const savedDestination = window.localStorage.getItem('pokevaleur-post-login-path') || '/collection'
-      let destination = '/collection'
-      try {
-        const parsedDestination = new URL(savedDestination, window.location.origin)
-        if (parsedDestination.origin === window.location.origin && parsedDestination.pathname === '/collection/rejoindre') {
-          destination = parsedDestination.pathname + parsedDestination.search
-        }
-      } catch {}
+      if (error) return setMessage(authErrorMessage(error, 'signin'))
+      const destination = getPostLoginPath()
       window.localStorage.removeItem('pokevaleur-post-login-path')
       window.location.href = destination
     } catch {
@@ -114,6 +151,32 @@ export default function LoginPage() {
     e.preventDefault()
     if (isSignUp) return signUp()
     return signIn(e)
+  }
+
+  async function requestPasswordReset() {
+    const normalizedEmail = email.trim()
+    if (!normalizedEmail) {
+      setMessage('Entre ton adresse e-mail pour recevoir un lien de réinitialisation.')
+      return
+    }
+    setIsSubmitting(true)
+    setMessage('Envoi de la demande…')
+    try {
+      const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent('/update-password')}`
+      const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo })
+      if (error) {
+        const detail = error.message?.toLowerCase() || ''
+        setMessage(detail.includes('rate limit') || detail.includes('too many requests')
+          ? 'Trop de demandes. Attends quelques minutes avant de réessayer.'
+          : 'La demande n’a pas pu être envoyée. Vérifie ton adresse puis réessaie.')
+        return
+      }
+      setMessage('Si un compte correspond à cette adresse, un e-mail de réinitialisation va être envoyé. Vérifie aussi tes courriers indésirables.')
+    } catch {
+      setMessage('Connexion impossible au service. Vérifie ta connexion puis réessaie.')
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   function changeMode(nextMode) {
@@ -182,15 +245,38 @@ export default function LoginPage() {
 
           <label>
             Mot de passe
-            <input
-              type="password"
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              required
-              minLength={6}
-              autoComplete={isSignUp ? 'new-password' : 'current-password'}
-            />
+            <div className="passwordField">
+              <input
+                id="account-password"
+                type={showPassword ? 'text' : 'password'}
+                value={password}
+                onChange={e => setPassword(e.target.value)}
+                required
+                minLength={6}
+                autoComplete={isSignUp ? 'new-password' : 'current-password'}
+              />
+              <button
+                className="passwordToggle"
+                type="button"
+                aria-controls="account-password"
+                aria-pressed={showPassword}
+                onClick={() => setShowPassword(visible => !visible)}
+              >
+                {showPassword ? 'Masquer' : 'Afficher'}
+              </button>
+            </div>
           </label>
+
+          {!isSignUp && (
+            <button
+              className="passwordRecoveryLink"
+              type="button"
+              disabled={isSubmitting}
+              onClick={requestPasswordReset}
+            >
+              Mot de passe oublié ?
+            </button>
+          )}
 
           <div className="actions">
             <button className="btn" type="submit" disabled={isSubmitting}>
