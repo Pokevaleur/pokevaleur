@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useMemo, useState } from "react"
+import { useEffect, useMemo, useRef, useState } from "react"
 import { createClient } from "../../lib/supabase-browser"
 
 const surprises=[
@@ -21,6 +21,8 @@ function dayNumber(){const d=new Date();return Math.floor(Date.UTC(d.getFullYear
 
 export default function CoffrePage(){
  const [opened,setOpened]=useState(false)
+ const revealRef=useRef(null)
+ const revealRequested=useRef(false)
  const [ready,setReady]=useState(false)
  const [member,setMember]=useState(false)
  const [serverReward,setServerReward]=useState(null)
@@ -49,6 +51,18 @@ export default function CoffrePage(){
   }
   load()
  },[day])
+ useEffect(()=>{
+  if(!opened||!revealRequested.current)return
+  revealRequested.current=false
+  const frame=requestAnimationFrame(()=>{
+   const reward=revealRef.current
+   if(!reward)return
+   reward.focus({preventScroll:true})
+   const rect=reward.getBoundingClientRect()
+   if(rect.bottom>window.innerHeight||rect.top<90)reward.scrollIntoView({behavior:window.matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth",block:"nearest"})
+  })
+  return ()=>cancelAnimationFrame(frame)
+ },[opened])
  async function claimVoucher(){
   if(!member||claiming)return
   setClaiming(true);setClaimError("")
@@ -64,23 +78,25 @@ export default function CoffrePage(){
     if(error){console.error(error);return}
     if(data) setServerReward(data)
   } else localStorage.setItem("lukulu-chest-day",String(day))
+  revealRequested.current=true
   setOpened(true)
 }
  const shown=!member?visitorSurprises[day%visitorSurprises.length]:member&&serverReward?{icon:serverReward.icon,type:serverReward.label,title:serverReward.title,text:serverReward.body,xp:serverReward.xp_awarded,badge:serverReward.badge_key,partner:serverReward.reward_type==="partner"}:surprise
  const revealKind=shown.partner?"partner":shown.badge?"rare":shown.xp>0?"xp":"normal"
  const lukuluReaction=opened?({partner:"Lukulu a trouvé un vrai trésor ! 🎁",rare:"Lukulu semble très fier de cette trouvaille. ✨",xp:"Quelques éclats de plus pour ta progression ! 💎",normal:"Une nouvelle découverte gardée pour toi. 💙"}[revealKind]):"Lukulu veille sur le coffre…"
  return <main className="chestPage">
-  <section className="chestHero">
+  <section className="chestHero crystalHero">
    <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Ton trésor du jour</h1><p className="chestIntro">Une surprise à découvrir avec Lukulu.</p></div>
    <div className="chestScene">
-    <div className={"lukuluReaction "+(opened?revealKind:"waiting")}><span>{lukuluReaction}</span><img src="/Lukulu-1.png" alt="Lukulu" className="chestLukulu"/></div>
-    <button className={"treasureChest "+(opened?"open "+revealKind+" ":"")+((opened&&(revealKind==="rare"||revealKind==="partner"))?"golden ":"")+(opened&&revealKind==="partner"?"partner":"")} onClick={openChest} disabled={!ready||opened} aria-label="Ouvrir le coffre de Lukulu"><span className="chestGlow">✦</span><span className="chestLid"></span><span className="chestBody"><i>◆</i></span><span className="chestAction">{opened?"À demain ✦":"Toucher pour ouvrir ✦"}</span></button>
+    <div className={"lukuluReaction "+(opened?revealKind:"waiting")}><span>{lukuluReaction}</span><img src={opened?"/coffre/lukulu-happy.webp":"/coffre/lukulu-waiting.webp"} alt={opened?"Lukulu célèbre ta découverte":"Lukulu veille sur ton coffre"} className="chestLukulu"/></div>
+    <button className={"crystalChest "+(opened?"open":"")} onClick={openChest} disabled={!ready||opened} aria-label={opened?"Coffre ouvert, surprise découverte":"Ouvrir le coffre de Lukulu"}><img src={opened?"/coffre/chest-blue-open.webp":"/coffre/chest-blue-closed.webp"} alt=""/><span className="crystalAction">{opened?"À demain ✦":"Toucher pour ouvrir ✦"}</span></button>
    </div>
-  </section>
-  <section className={"dailyReveal "+(opened?"revealed "+revealKind+"Reveal ":"")}>
-   {!opened?<div className="chestWaiting"><span>🔒</span><h2>Le coffre est encore fermé</h2><p>Touche le coffre pour découvrir la surprise de Lukulu.</p></div>:
+  <section ref={revealRef} tabIndex={-1} aria-label="Ta surprise du jour" aria-live="polite" className={"dailyReveal "+(opened?"revealed "+revealKind+"Reveal ":"")}>
+   {!opened?null:
    <article className="surpriseCard"><span className="surpriseIcon">{shown.icon}</span><div><small>{shown.type}</small><h2>{shown.title}</h2><p>{shown.text}</p>{shown.xp>0&&<b className="xpReward">+{shown.xp} XP</b>}{shown.badge&&<b className="badgeReward">🏅 Badge débloqué</b>}{shown.partner&&<div className="partnerReward"><b>🎟️ Récompense partenaire</b>{!voucher?<><span>Ton cadeau est réservé. Réclame-le pour afficher ton code personnel.</span><button type="button" className="claimRewardBtn" onClick={claimVoucher} disabled={claiming}>{claiming?"Attribution en cours…":"Réclamer mon cadeau"}</button>{claimError&&<small className="claimError">{claimError}</small>}</>:<div className="voucherCard"><small>OFFERT PAR</small><strong>{voucher.partner}</strong><h3>{voucher.title}</h3>{voucher.description&&<p>{voucher.description}</p>}<div className="voucherCode"><span>TON CODE</span><b>{voucher.code}</b></div>{voucher.valid_until&&<small>Valable jusqu’au {new Date(voucher.valid_until).toLocaleDateString("fr-FR")}</small>}{voucher.terms&&<small className="voucherTerms">{voucher.terms}</small>}</div>}</div>}<span className="tomorrow">Reviens demain : Lukulu prépare déjà autre chose…</span></div></article>}
   </section>
+  </section>
+  <div hidden aria-hidden="true"><img src="/coffre/lukulu-happy.webp" alt=""/><img src="/coffre/chest-blue-open.webp" alt=""/></div>
   <section className="chestDetails"><p>Conseil, découverte, petit défi ou bonus : Lukulu garde chaque jour quelque chose pour les collectionneurs curieux.</p><div className="chestRule">✦ Un seul coffre par jour • Une nouvelle surprise demain</div>{!member&&ready&&<div className="chestLoginHint">Découvre gratuitement un conseil ou un défi. Aucun XP, badge ou cadeau n’est attribué en visiteur. <a href="/login">Connecte-toi pour accéder aux récompenses et retrouver ton historique.</a></div>}<div className="chestRarity">Les membres connectés peuvent aussi découvrir un coffre <b>doré</b> et des cadeaux partenaires, selon les disponibilités. 👀</div></section>
   <section className="chestFooter"><h2>Les surprises peuvent venir de toutes les générations.</h2><p>Le coffre pourra bientôt contenir des actualités, anecdotes, défis, découvertes du catalogue, badges rares et petites récompenses de progression.</p><a href="/progression" className="btn">Voir mon grade</a></section>
  </main>
