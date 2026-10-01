@@ -753,3 +753,33 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 @media(max-width:480px){.avatarPicker{grid-template-columns:repeat(2,minmax(0,1fr))}.avatarOption{padding:8px;font-size:12px}}
 .passwordField{display:flex;align-items:stretch;gap:8px}.passwordField input{flex:1;min-width:0}.passwordToggle{flex:none;padding:0 14px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text);font:inherit;font-weight:700;cursor:pointer}.passwordToggle:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
 .passwordRecoveryLink{justify-self:start;padding:4px 0;border:0;background:transparent;color:var(--navy);font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.passwordRecoveryLink:disabled{opacity:.6;cursor:wait}
+
+/* Daily treasure: scene first, explanations below the reward. */
+.chestHero{background:radial-gradient(ellipse at 75% 80%,#245779 0,#0c304e 40%,#071c33 100%);border:1px solid #345473}
+.chestDetails{margin-top:22px;padding:22px;background:#eaf0f6;border-radius:20px;color:#334d65;line-height:1.5}
+.chestDetails .chestRule{background:#dbe5ef}.chestDetails .chestRarity{color:#496078}.chestDetails .chestRarity b{color:#886000}
+.chestDetails a{text-decoration:underline}.chestDetails>p{margin-top:0}
+.chestScene .treasureChest{width:180px;height:140px;margin-bottom:40px;flex-shrink:0;filter:drop-shadow(0 0 16px #ffc43144)}
+.chestScene .chestBody,.chestScene .chestLid{left:5%;width:90%;border:5px solid #f4c55f;background:repeating-linear-gradient(0deg,transparent 0 19px,#25120955 20px 22px),linear-gradient(110deg,#b87338,#593018 60%,#985326);box-shadow:inset 0 0 0 2px #7b460e,inset 0 5px 12px #ffe1a044,0 10px 20px #0005}
+.chestScene .chestBody{height:85px;border-radius:8px 8px 20px 20px}
+.chestScene .chestLid{height:65px;top:4px;border-radius:65px 65px 8px 8px}
+.chestScene .chestBody:before,.chestScene .chestLid:before{content:"";position:absolute;inset:0 15%;border-left:9px solid #dba735;border-right:9px solid #dba735;box-shadow:inset 2px 0 #ffe7a8,inset -2px 0 #ffe7a8}
+.chestScene .chestBody i{left:50%;top:12px;transform:translateX(-50%);z-index:1;border:2px solid #ffe9a0;background:linear-gradient(135deg,#fff1b2,#d39a1d);box-shadow:0 3px 6px #0005;font-size:20px}
+.chestScene .chestGlow{left:65px;top:-22px;text-shadow:0 0 24px #ffe8a2}
+.chestAction{position:absolute;top:calc(100% + 14px);left:50%;transform:translateX(-50%);white-space:nowrap;color:#fff0b8;font-size:12px;font-weight:800}
+.chestScene .treasureChest:focus-visible{outline:3px solid #fff0b8;outline-offset:10px;border-radius:18px}
+@media(max-width:700px){
+ .chestPage .chestHero{padding:18px 16px 20px!important;gap:6px;align-items:stretch}
+ .chestPage .chestCopy h1{font-size:30px!important;line-height:1.1!important;margin:8px 0!important}
+ .chestPage .chestCopy .chestIntro{font-size:14px!important;margin:0!important}
+ .chestPage .chestScene{height:260px!important;grid-template-columns:minmax(0,1fr) 170px!important;gap:4px!important;margin-top:4px!important;padding-bottom:42px!important}
+ .chestPage .chestScene .chestLukulu{height:170px!important;max-width:100%!important}
+ .chestPage .chestScene .treasureChest,.chestPage .chestScene .treasureChest.open{transform:none!important;width:170px;height:132px}
+ .chestPage .chestScene .lukuluReaction>span{font-size:10px!important;max-width:150px!important}
+ .chestDetails{font-size:14px;padding:18px}.chestDetails .chestLoginHint{font-size:13px!important;padding:0!important}
+}
+@media(max-width:360px){
+ .chestPage .chestScene{grid-template-columns:minmax(0,1fr) 150px!important}
+ .chestPage .chestScene .treasureChest,.chestPage .chestScene .treasureChest.open{width:150px}
+ .chestPage .chestScene .chestLukulu{height:150px!important}
+}
