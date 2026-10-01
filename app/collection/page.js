@@ -52,12 +52,60 @@ export default function CollectionPage() {
   const [photoFiles, setPhotoFiles] = useState([])
   const [editPhotoFiles, setEditPhotoFiles] = useState([])
   const [photoUrls, setPhotoUrls] = useState({})
+  const [photoGallery, setPhotoGallery] = useState({ itemId: null, photos: [], loading: false, busy: false, message: '' })
+  const photoOrderPendingRef = useRef(false)
   const [photoStepDone, setPhotoStepDone] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const addItemPendingRef = useRef(false)
   const [photoUploadState, setPhotoUploadState] = useState({})
   const [collectionVoiceListening, setCollectionVoiceListening] = useState(false)
   const activeCollectionProfile = collectionProfiles.find(profile => profile.id === activeProfileId)
+
+  const editPhotoUploadStatus = photoUploadState[editingId]?.status
+  useEffect(() => {
+    if (!editingId || editPhotoUploadStatus === 'uploading') return
+    let cancelled = false
+    setPhotoGallery({ itemId: editingId, photos: [], loading: true, busy: false, message: '' })
+    async function fetchGallery() {
+      try {
+        const { data, error } = await fetchAllRows(() => supabase.from('collection_item_photos')
+          .select('id,photo_path,sort_order').eq('collection_item_id', editingId)
+          .order('sort_order').order('id'))
+        if (error) throw error
+        const photos = await Promise.all((data || []).map(async photo => {
+          const { data: signed } = await supabase.storage.from('collection-images').createSignedUrl(photo.photo_path, 3600)
+          return { ...photo, url: signed?.signedUrl || null }
+        }))
+        if (!cancelled) setPhotoGallery({ itemId: editingId, photos, loading: false, busy: false, message: '' })
+      } catch {
+        if (!cancelled) setPhotoGallery({ itemId: editingId, photos: [], loading: false, busy: false, message: 'Impossible de charger les photos. Ferme puis rouvre la fiche pour réessayer.' })
+      }
+    }
+    fetchGallery()
+    return () => { cancelled = true }
+  }, [editingId, activeProfileId, editPhotoUploadStatus, supabase])
+
+  async function changePhotoOrder(itemId, index, targetIndex) {
+    if (photoOrderPendingRef.current || photoGallery.loading || editPhotoUploadStatus === 'uploading' || photoGallery.itemId !== itemId) return
+    const next = [...photoGallery.photos]
+    if (index < 0 || targetIndex < 0 || index >= next.length || targetIndex >= next.length) return
+    const [photo] = next.splice(index, 1)
+    next.splice(targetIndex, 0, photo)
+    const profileId = activeProfileIdRef.current
+    photoOrderPendingRef.current = true
+    setPhotoGallery(prev => ({ ...prev, busy: true, message: 'Enregistrement de l’ordre…' }))
+    try {
+      const { error } = await supabase.rpc('set_collection_item_photo_order', { p_item_id: itemId, p_photo_ids: next.map(entry => entry.id) })
+      if (error) throw error
+      if (activeProfileIdRef.current !== profileId) return
+      setPhotoGallery(prev => prev.itemId === itemId ? { ...prev, photos: next, busy: false, message: '✓ Ordre et photo principale enregistrés.' } : prev)
+      await load(profileId)
+    } catch (error) {
+      setPhotoGallery(prev => prev.itemId === itemId ? { ...prev, busy: false, message: `Impossible de changer l’ordre : ${error.message || 'réessaie après avoir rouvert la fiche.'}` } : prev)
+    } finally {
+      photoOrderPendingRef.current = false
+    }
+  }
 
   async function load(preferredProfileId = activeProfileIdRef.current) {
     const requestId = ++loadRequestRef.current
@@ -460,7 +508,7 @@ export default function CollectionPage() {
   }
 
   async function addPhotosImmediately(id, files) {
-    if (!files?.length) return
+    if (!files?.length || photoOrderPendingRef.current || photoUploadState[id]?.status === 'uploading') return
     setPhotoUploadState(prev => ({ ...prev, [id]: { status: 'uploading', text: files.length > 1 ? 'Envoi des photos…' : 'Envoi de la photo…' } }))
 
     let paths = []
@@ -885,6 +933,26 @@ export default function CollectionPage() {
                           Particularité de l’exemplaire
                           <input value={editForm.variant_note} onChange={e => setEditForm({ ...editForm, variant_note: e.target.value })} />
                         </label>
+                        <section style={{ gridColumn: '1 / -1' }} aria-label="Photos du produit">
+                          <h3>Photos enregistrées</h3>
+                          <p className="muted">Choisis la photo principale ou déplace les photos. Chaque changement est enregistré automatiquement.</p>
+                          {photoGallery.itemId === item.id && photoGallery.loading && <p role="status">Chargement des photos…</p>}
+                          {photoGallery.itemId === item.id && !photoGallery.loading && photoGallery.photos.length === 0 && !photoGallery.message && <p>Aucune photo enregistrée.</p>}
+                          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                            {photoGallery.itemId === item.id && photoGallery.photos.map((photo, index) => (
+                              <div key={photo.id} style={{ width: 180, maxWidth: '100%', padding: 10, border: '1px solid #cbd5e1', borderRadius: 12 }}>
+                                {photo.url ? <img src={photo.url} alt={`Photo ${index + 1} de ${item.custom_name}`} style={{ width: '100%', height: 120, objectFit: 'contain' }} /> : <p>Aperçu indisponible</p>}
+                                <p>{index + 1}. {photo.photo_path === item.photo_path ? 'Photo principale' : 'Photo du produit'}</p>
+                                <div className="buttonRow" style={{ flexWrap: 'wrap', gap: 6 }}>
+                                  <button type="button" className="miniBtn" disabled={photoGallery.busy || editPhotoUploadStatus === 'uploading' || index === 0 && photo.photo_path === item.photo_path} onClick={() => changePhotoOrder(item.id, index, 0)}>Définir comme principale</button>
+                                  <button type="button" className="miniBtn" aria-label={`Avancer la photo ${index + 1}`} disabled={photoGallery.busy || editPhotoUploadStatus === 'uploading' || index === 0} onClick={() => changePhotoOrder(item.id, index, index - 1)}>← Avant</button>
+                                  <button type="button" className="miniBtn" aria-label={`Reculer la photo ${index + 1}`} disabled={photoGallery.busy || editPhotoUploadStatus === 'uploading' || index === photoGallery.photos.length - 1} onClick={() => changePhotoOrder(item.id, index, index + 1)}>Après →</button>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                          {photoGallery.itemId === item.id && photoGallery.message && <p role="status">{photoGallery.message}</p>}
+                        </section>
                         {photoUploadState[item.id] && (
                           <div className={`photoImmediateStatus ${photoUploadState[item.id].status}`} role="status">
                             {photoUploadState[item.id].text}
@@ -894,6 +962,7 @@ export default function CollectionPage() {
                           <label className="photoAction">
                             <input
                               className="photoInput"
+                              disabled={photoGallery.busy || editPhotoUploadStatus === 'uploading'}
                               type="file"
                               accept="image/*"
                               capture="environment"
@@ -913,6 +982,7 @@ export default function CollectionPage() {
                           <label className="photoAction">
                             <input
                               className="photoInput"
+                              disabled={photoGallery.busy || editPhotoUploadStatus === 'uploading'}
                               type="file"
                               accept="image/*"
                               multiple
@@ -931,7 +1001,7 @@ export default function CollectionPage() {
                         </div>
                       </div>
                       <div className="rowActions">
-                        <button className="miniBtn primaryMini" onClick={() => saveEdit(item.id)}>Enregistrer</button>
+                        <button className="miniBtn primaryMini" disabled={photoGallery.busy || editPhotoUploadStatus === 'uploading'} onClick={() => saveEdit(item.id)}>Enregistrer</button>
                         <button className="miniBtn" onClick={() => setEditingId(null)}>Annuler</button>
                       </div>
                     </article>
