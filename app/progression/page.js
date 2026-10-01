@@ -15,15 +15,22 @@ export default function ProgressionPage(){
  const [stats,setStats]=useState(null)
  const [xpEvents,setXpEvents]=useState([])
  const [streak,setStreak]=useState(0)
+ const [progressionLoaded,setProgressionLoaded]=useState(false)
  useEffect(()=>{
   const supabase=createClient()
   async function load(){
-    const {data:{user}}=await supabase.auth.getUser()
-    if(!user){setXp(Number(localStorage.getItem("pokevaleur-demo-xp")||0));return}
-    setConnected(true)
-    await supabase.rpc("record_member_visit")
-    const {data}=await supabase.rpc("get_member_progression")
-    if(data){setXp(data.xp||0);setHistory(data.chest_history||[]);setEarned(data.badges||[]);setStats(data.achievements||null);setXpEvents(data.xp_events||[]);setStreak(data.streak_days||0)}
+    try{
+      const {data:{user},error:authError}=await supabase.auth.getUser()
+      if(authError)throw authError
+      if(!user){setXp(0);setProgressionLoaded(true);return}
+      setConnected(true)
+      await supabase.rpc("record_member_visit")
+      const {data,error}=await supabase.rpc("get_member_progression")
+      if(error)throw error
+      if(data){setXp(data.xp||0);setHistory(data.chest_history||[]);setEarned(data.badges||[]);setStats(data.achievements||null);setXpEvents(data.xp_events||[]);setStreak(data.streak_days||0)}
+    }catch{
+      setConnected(false);setXp(0);setHistory([]);setEarned([]);setStats(null);setXpEvents([]);setStreak(0)
+    }finally{setProgressionLoaded(true)}
   }
   load()
  },[])
@@ -31,9 +38,9 @@ export default function ProgressionPage(){
  const current=ranks[index], next=ranks[index+1]
  const progress=next?Math.min(100,((xp-current[1])/(next[1]-current[1]))*100):100
  return <main className="progressPage">
-  <section className="progressHero"><div><span className="progressEyebrow">PROGRESSION POKÉVALEUR</span><h1>Grandis aux côtés de Lukulu.</h1><p>Ton grade récompense ta fidélité et surtout ce que tu apportes à ta collection et à la communauté. Pas besoin de rester connecté des heures : ce sont les actions utiles qui comptent.</p></div><div className="rankCard"><span className="rankCrystal">{current[2]}</span><small>TON GRADE</small><strong>{current[0]}</strong><b>{xp} XP</b><div className="rankBar"><i style={{width:progress+"%"}} /></div><span>{next?(next[1]-xp)+" XP avant "+next[0]:"Grade maximum atteint"}</span></div></section>
-  <section className="progressSection"><div className="progressTitle"><span>Les 7 grades</span><h2>Une progression qui raconte ton parcours</h2></div><div className="rankGrid">{ranks.map((r,i)=><article className={i===index?"active":""} key={r[0]}><em>{r[2]}</em><small>NIVEAU {i+1}</small><strong>{r[0]}</strong><span>Dès {r[1]} XP</span></article>)}</div></section>
-  <section className="progressTwoCols"><article className="progressPanel"><span className="progressEyebrow dark">GAGNER DE L'XP</span><h2>Les bonnes actions sont récompensées</h2><div className="xpList">{actions.map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</div><p className="progressNote">Les actions répétitives seront plafonnées et les contributions communautaires ne compteront qu'après validation.</p></article><article className="progressPanel"><span className="progressEyebrow dark">BADGES</span><h2>Collectionne aussi tes exploits</h2><div className="badgeGrid">{badges.map(([icon,name,desc,key])=>{const got=earned.some(b=>b.key===key);return <div className={got?"badgeEarned":"badgeLocked"} key={name}><em>{got?icon:"🔒"}</em><span><strong>{name}</strong><small>{got?"Obtenu • "+desc:desc}</small></span></div>})}</div></article></section>
+  <section className="progressHero"><div><span className="progressEyebrow">PROGRESSION POKÉVALEUR</span><h1>Grandis aux côtés de Lukulu.</h1><p>Ton grade récompense ta fidélité et surtout ce que tu apportes à ta collection et à la communauté. Pas besoin de rester connecté des heures : ce sont les actions utiles qui comptent.</p></div>{connected&&progressionLoaded?<div className="rankCard"><span className="rankCrystal">{current[2]}</span><small>TON GRADE</small><strong>{current[0]}</strong><b>{xp} XP</b><div className="rankBar"><i style={{width:progress+"%"}} /></div><span>{next?(next[1]-xp)+" XP avant "+next[0]:"Grade maximum atteint"}</span></div>:progressionLoaded?<div className="rankCard"><span className="rankCrystal">✦</span><small>PROGRESSION PERSONNELLE</small><strong>Ton grade apparaîtra ici</strong><p>Connecte-toi pour afficher ton XP, ton grade et tes récompenses.</p><a className="btn" href="/login">Connexion</a></div>:<div className="rankCard" aria-label="Chargement du grade"><span className="rankCrystal">✦</span><small>PROGRESSION PERSONNELLE</small><strong>Chargement…</strong></div>}</section>
+  <section className="progressSection"><div className="progressTitle"><span>Les 7 grades</span><h2>Une progression qui raconte ton parcours</h2></div><div className="rankGrid">{ranks.map((r,i)=><article className={connected&&progressionLoaded&&i===index?"active":""} key={r[0]}><em>{r[2]}</em><small>NIVEAU {i+1}</small><strong>{r[0]}</strong><span>Dès {r[1]} XP</span></article>)}</div></section>
+  <section className="progressTwoCols"><article className="progressPanel"><span className="progressEyebrow dark">GAGNER DE L'XP</span><h2>Les bonnes actions sont récompensées</h2><div className="xpList">{actions.map(([a,b])=><div key={a}><span>{a}</span><b>{b}</b></div>)}</div><p className="progressNote">Les actions répétitives seront plafonnées et les contributions communautaires ne compteront qu'après validation.</p></article><article className="progressPanel"><span className="progressEyebrow dark">BADGES</span><h2>Collectionne aussi tes exploits</h2><div className="badgeGrid">{badges.map(([icon,name,desc,key])=>{const known=connected&&progressionLoaded;const got=known&&earned.some(b=>b.key===key);return <div className={got?"badgeEarned":known?"badgeLocked":"badgePreview"} key={name}><em>{known&&!got?"🔒":icon}</em><span><strong>{name}</strong><small>{got?"Obtenu • "+desc:known?desc:`${desc} · État visible après connexion`}</small></span></div>})}</div></article></section>
   {connected&&<div className="streakCard"><span>🔥</span><strong>{streak} jour{streak!==1?"s":""}</strong><small>Série actuelle avec Lukulu</small></div>}
   {connected&&stats&&<section className="memberStats"><div><b>{stats.items}</b><span>objets</span></div><div><b>{stats.photos}</b><span>photos</span></div><div><b>{stats.contributions}</b><span>contributions validées</span></div><div><b>{stats.trades}</b><span>échanges</span></div></section>}
   {connected&&xpEvents.length>0&&<section className="xpJournal"><div className="progressTitle"><span>Journal XP</span><h2>Ce qui fait progresser ton grade</h2></div><div className="xpJournalList">{xpEvents.map((e,i)=><div key={i}><span>{e.type==="collection_item"?"📦":e.type==="photo"?"📸":e.type==="contribution"?"📚":e.type==="trade"?"🤝":"✨"}</span><strong>{e.type==="collection_item"?"Objet ajouté":e.type==="photo"?"Photo ajoutée":e.type==="contribution"?"Contribution validée":e.type==="trade"?"Échange réalisé":"Activité"}</strong><b>+{e.xp} XP</b></div>)}</div></section>}

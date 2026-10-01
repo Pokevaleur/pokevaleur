@@ -23,7 +23,7 @@ export async function middleware(request) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  const protectedPrefixes = ['/collection', '/communaute', '/opportunites', '/trades', '/admin']
+  const protectedPrefixes = ['/collection', '/communaute', '/opportunites', '/trades', '/admin', '/admin-partenaires']
   const needsAuth = protectedPrefixes.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
 
   if (needsAuth && !user) {
@@ -32,7 +32,7 @@ export async function middleware(request) {
     return NextResponse.redirect(loginUrl)
   }
 
-  if (pathname === '/admin' || pathname.startsWith('/admin/')) {
+  if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/admin-partenaires') {
     const { data: profile } = await supabase
       .from('profiles')
       .select('is_admin')
@@ -53,6 +53,7 @@ export const config = {
     '/communaute/:path*',
     '/opportunites/:path*',
     '/trades/:path*',
-    '/admin/:path*'
+    '/admin/:path*',
+    '/admin-partenaires'
   ]
 }
