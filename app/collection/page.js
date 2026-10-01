@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
-import { createProductMatcher } from '../../lib/product-search.mjs'
+import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
+import { filterCollectionItems } from '../../lib/collection-search.mjs'
 
 const emptyForm = {
   custom_name: '',
@@ -39,6 +40,7 @@ export default function CollectionPage() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState(emptyForm)
   const [query, setQuery] = useState('')
+  const [conditionFilter, setConditionFilter] = useState('all')
   const [catalog, setCatalog] = useState([])
   const [catalogMatches, setCatalogMatches] = useState([])
   const [catalogLoading, setCatalogLoading] = useState(false)
@@ -692,37 +694,8 @@ export default function CollectionPage() {
   const percent = invested > 0 ? (difference / invested) * 100 : 0
   const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0)
 
-  function normalizeSearch(value) {
-    return String(value || '')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-      .trim()
-  }
-
-  const filteredItems = items.filter(item => {
-    const needle = normalizeSearch(query)
-    if (!needle) return true
-
-    const product = catalog.find(p => p.id === item.product_id)
-    const haystack = [
-      item.custom_name,
-      item.purchase_place,
-      item.seller_name,
-      item.booster_configuration,
-      item.variant_note,
-      item.notes,
-      item.purchase_date,
-      item.sealed_condition === 'zero_defect' ? 'zero defaut parfait' : 'standard',
-      product?.name,
-      product?.series,
-      product?.category
-    ]
-      .map(normalizeSearch)
-      .join(' ')
-
-    return haystack.includes(needle)
-  })
+  const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
+  const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter)
 
   if (!user) {
     return (
@@ -761,6 +734,37 @@ export default function CollectionPage() {
         </div>
       </div>
 
+      <section className="panel" style={{ marginBottom: 20 }} aria-label="Recherche dans ma collection">
+        <h2>Rechercher dans ma collection</h2>
+            <div className="voiceSearchWrap collectionVoiceSearch">
+              <input
+                className="searchInput"
+                type="search"
+                aria-label="Rechercher dans ma collection"
+                placeholder="Rechercher produit, série, vendeur, lieu, booster, note..."
+                value={query}
+                onChange={e => setQuery(e.target.value)}
+              />
+              <button
+                type="button"
+                className={collectionVoiceListening ? 'voiceSearchButton listening' : 'voiceSearchButton'}
+                aria-label="Rechercher à la voix"
+                title="Recherche vocale"
+                onClick={() => startVoiceSearch(setQuery, setCollectionVoiceListening)}
+              >
+                {collectionVoiceListening ? '🎙️' : '🎤'}
+              </button>
+            </div>
+        <label style={{ display: 'block', marginTop: 12 }}>
+          État du produit
+          <select value={conditionFilter} onChange={e => setConditionFilter(e.target.value)}>
+            <option value="all">Tous les états</option>
+            <option value="zero_defect">Zéro défaut</option>
+            <option value="standard">État standard</option>
+          </select>
+        </label>
+        <p className="muted" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Recherche un produit ou choisis un état pour afficher tes objets.'}</p>
+      </section>
       <section className="panel" style={{ marginBottom: 20 }}>
         <h2>Collections de la famille</h2>
         <p className="muted">Chaque enfant peut commencer sans compte. Quand il en crée un, tu peux lui transférer toute sa collection avec un lien à usage unique.</p>
@@ -808,6 +812,170 @@ export default function CollectionPage() {
       </section>}
 
       <section className="contentGrid">
+        <div className="panel">
+          <div className="listHeader">
+            <h2>Mes produits</h2>
+
+          </div>
+
+          <div className="productList">
+            {filteredItems.length === 0 ? (
+              <p>{isSwitchingProfile ? 'Chargement de la collection…' : items.length === 0 ? 'Ta collection est vide pour le moment.' : !hasCollectionSearch ? 'Tes objets apparaîtront après une recherche ou un filtre.' : 'Aucun produit trouvé.'}</p>
+            ) : (
+              filteredItems.map(item => {
+                const buy = Number(item.purchase_price) || 0
+                const value = getCurrentValue(item)
+                const diff = value - buy
+                const pct = buy > 0 ? (diff / buy) * 100 : 0
+
+                if (editingId === item.id) {
+                  return (
+                    <article className="productCard editing" key={item.id}>
+                      <div className="editGrid">
+                        <label>
+                          Produit
+                          <input value={editForm.custom_name} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
+                        </label>
+                        <label>
+                          Quantité
+                          <input type="number" min="1" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} />
+                        </label>
+                        <label>
+                          État du scellé
+                          <select value={editForm.sealed_condition} onChange={e => setEditForm({ ...editForm, sealed_condition: e.target.value })}>
+                            <option value="standard">Marché standard</option>
+                            <option value="zero_defect">Zéro défaut</option>
+                          </select>
+                        </label>
+                        <label>
+                          Achat (€)
+                          <input type="number" min="0" step="0.01" value={editForm.purchase_price} onChange={e => setEditForm({ ...editForm, purchase_price: e.target.value })} />
+                        </label>
+                        <label>
+                          Valeur manuelle (€)
+                          <input type="number" min="0" step="0.01" value={editForm.current_value_override} onChange={e => setEditForm({ ...editForm, current_value_override: e.target.value })} placeholder="Vide = cote PokéValeur" />
+                        </label>
+                        <label>
+                          Date
+                          <input type="date" value={editForm.purchase_date} onChange={e => setEditForm({ ...editForm, purchase_date: e.target.value })} />
+                        </label>
+                        <label>
+                          Lieu
+                          <input value={editForm.purchase_place} onChange={e => setEditForm({ ...editForm, purchase_place: e.target.value })} />
+                        </label>
+                        <label>
+                          Vendeur (facultatif)
+                          <input value={editForm.seller_name} onChange={e => setEditForm({ ...editForm, seller_name: e.target.value })} />
+                        </label>
+                        <label>
+                          Composition exacte des boosters
+                          <textarea rows="4" value={editForm.booster_configuration} onChange={e => setEditForm({ ...editForm, booster_configuration: e.target.value })} />
+                        </label>
+                        <label>
+                          Particularité de l’exemplaire
+                          <input value={editForm.variant_note} onChange={e => setEditForm({ ...editForm, variant_note: e.target.value })} />
+                        </label>
+                        {photoUploadState[item.id] && (
+                          <div className={`photoImmediateStatus ${photoUploadState[item.id].status}`} role="status">
+                            {photoUploadState[item.id].text}
+                          </div>
+                        )}
+                        <div className="photoChoice">
+                          <label className="photoAction">
+                            <input
+                              className="photoInput"
+                              type="file"
+                              accept="image/*"
+                              capture="environment"
+                              onChange={async e => {
+                                const file = e.target.files?.[0]
+                                if (file) await addPhotosImmediately(item.id, [file])
+                                e.target.value = ''
+                              }}
+                            />
+                            <span className="photoActionIcon">📷</span>
+                            <span>
+                              <b>Prendre une photo</b>
+                              <small>Ajoutée immédiatement à cette fiche</small>
+                            </span>
+                          </label>
+
+                          <label className="photoAction">
+                            <input
+                              className="photoInput"
+                              type="file"
+                              accept="image/*"
+                              multiple
+                              onChange={async e => {
+                                const files = [...(e.target.files || [])]
+                                if (files.length) await addPhotosImmediately(item.id, files)
+                                e.target.value = ''
+                              }}
+                            />
+                            <span className="photoActionIcon">🖼️</span>
+                            <span>
+                              <b>Ajouter des photos</b>
+                              <small>Choisis une ou plusieurs images</small>
+                            </span>
+                          </label>
+                        </div>
+                      </div>
+                      <div className="rowActions">
+                        <button className="miniBtn primaryMini" onClick={() => saveEdit(item.id)}>Enregistrer</button>
+                        <button className="miniBtn" onClick={() => setEditingId(null)}>Annuler</button>
+                      </div>
+                    </article>
+                  )
+                }
+
+                return (
+                  <article className="productCard" key={item.id}>
+                    {photoUrls[item.id] && (
+                      <div className="collectionItemPhoto">
+                        <img src={photoUrls[item.id]} alt={item.custom_name} />
+                      </div>
+                    )}
+                    <div className="productMain">
+                      <div>
+                        <h3>{item.custom_name}</h3>
+                        <p>
+                          Qté {item.quantity}
+                          {item.purchase_date ? ` • acheté le ${new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR')}` : ''}
+                          {item.purchase_place ? ` • ${item.purchase_place}` : ''}
+                          {item.seller_name ? ` • vendeur : ${item.seller_name}` : ''}
+                          {item.sealed_condition === 'zero_defect' ? ' • zéro défaut' : ''}
+                        </p>
+                        {item.booster_configuration && (
+                          <p className="itemComposition"><b>Boosters :</b> {item.booster_configuration}</p>
+                        )}
+                        {item.variant_note && (
+                          <p className="itemVariantNote"><b>Particularité :</b> {item.variant_note}</p>
+                        )}
+                      </div>
+                      <div className="productValues">
+                        <b>{buy.toFixed(2)} € → {value.toFixed(2)} €</b>
+                        {item.current_value_override === null && getCatalogValue(item) !== null
+                          ? <small className="muted">{item.sealed_condition === 'zero_defect' ? 'Cote PokéValeur zéro défaut' : 'Cote PokéValeur standard'}</small>
+                          : item.current_value_override !== null
+                            ? <small className="muted">Valeur manuelle</small>
+                            : null}
+                        <span className={diff >= 0 ? 'gain' : 'loss'}>
+                          {diff >= 0 ? '+' : ''}{diff.toFixed(2)} €
+                          {buy > 0 ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)} %)` : ''}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="rowActions">
+                      <a className="miniBtn" href={`/collection/${item.id}`}>Voir la fiche</a>
+                      <button className="miniBtn" onClick={() => startEdit(item)}>Modifier</button>
+                      <button className="miniBtn dangerMini" onClick={() => deleteItem(item)}>Supprimer</button>
+                    </div>
+                  </article>
+                )
+              })
+            )}
+          </div>
+        </div>
         <div className="panel">
           <h2 id="ajouter-produit" style={{ scrollMarginTop: 100 }}>Ajouter un produit</h2>
           <form onSubmit={addItem} className="formGrid">
@@ -1045,186 +1213,6 @@ export default function CollectionPage() {
           {message && <p className="message">{message}</p>}
         </div>
 
-        <div className="panel">
-          <div className="listHeader">
-            <h2>Mes produits</h2>
-            <div className="voiceSearchWrap collectionVoiceSearch">
-              <input
-                className="searchInput"
-                placeholder="Rechercher produit, série, vendeur, lieu, booster, note..."
-                value={query}
-                onChange={e => setQuery(e.target.value)}
-              />
-              <button
-                type="button"
-                className={collectionVoiceListening ? 'voiceSearchButton listening' : 'voiceSearchButton'}
-                aria-label="Rechercher à la voix"
-                title="Recherche vocale"
-                onClick={() => startVoiceSearch(setQuery, setCollectionVoiceListening)}
-              >
-                {collectionVoiceListening ? '🎙️' : '🎤'}
-              </button>
-            </div>
-          </div>
-
-          <div className="productList">
-            {filteredItems.length === 0 ? (
-              <p>{items.length === 0 ? 'Ta collection est vide pour le moment.' : 'Aucun produit trouvé.'}</p>
-            ) : (
-              filteredItems.map(item => {
-                const buy = Number(item.purchase_price) || 0
-                const value = getCurrentValue(item)
-                const diff = value - buy
-                const pct = buy > 0 ? (diff / buy) * 100 : 0
-
-                if (editingId === item.id) {
-                  return (
-                    <article className="productCard editing" key={item.id}>
-                      <div className="editGrid">
-                        <label>
-                          Produit
-                          <input value={editForm.custom_name} onChange={e => setEditForm({ ...editForm, custom_name: e.target.value })} />
-                        </label>
-                        <label>
-                          Quantité
-                          <input type="number" min="1" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} />
-                        </label>
-                        <label>
-                          État du scellé
-                          <select value={editForm.sealed_condition} onChange={e => setEditForm({ ...editForm, sealed_condition: e.target.value })}>
-                            <option value="standard">Marché standard</option>
-                            <option value="zero_defect">Zéro défaut</option>
-                          </select>
-                        </label>
-                        <label>
-                          Achat (€)
-                          <input type="number" min="0" step="0.01" value={editForm.purchase_price} onChange={e => setEditForm({ ...editForm, purchase_price: e.target.value })} />
-                        </label>
-                        <label>
-                          Valeur manuelle (€)
-                          <input type="number" min="0" step="0.01" value={editForm.current_value_override} onChange={e => setEditForm({ ...editForm, current_value_override: e.target.value })} placeholder="Vide = cote PokéValeur" />
-                        </label>
-                        <label>
-                          Date
-                          <input type="date" value={editForm.purchase_date} onChange={e => setEditForm({ ...editForm, purchase_date: e.target.value })} />
-                        </label>
-                        <label>
-                          Lieu
-                          <input value={editForm.purchase_place} onChange={e => setEditForm({ ...editForm, purchase_place: e.target.value })} />
-                        </label>
-                        <label>
-                          Vendeur (facultatif)
-                          <input value={editForm.seller_name} onChange={e => setEditForm({ ...editForm, seller_name: e.target.value })} />
-                        </label>
-                        <label>
-                          Composition exacte des boosters
-                          <textarea rows="4" value={editForm.booster_configuration} onChange={e => setEditForm({ ...editForm, booster_configuration: e.target.value })} />
-                        </label>
-                        <label>
-                          Particularité de l’exemplaire
-                          <input value={editForm.variant_note} onChange={e => setEditForm({ ...editForm, variant_note: e.target.value })} />
-                        </label>
-                        {photoUploadState[item.id] && (
-                          <div className={`photoImmediateStatus ${photoUploadState[item.id].status}`} role="status">
-                            {photoUploadState[item.id].text}
-                          </div>
-                        )}
-                        <div className="photoChoice">
-                          <label className="photoAction">
-                            <input
-                              className="photoInput"
-                              type="file"
-                              accept="image/*"
-                              capture="environment"
-                              onChange={async e => {
-                                const file = e.target.files?.[0]
-                                if (file) await addPhotosImmediately(item.id, [file])
-                                e.target.value = ''
-                              }}
-                            />
-                            <span className="photoActionIcon">📷</span>
-                            <span>
-                              <b>Prendre une photo</b>
-                              <small>Ajoutée immédiatement à cette fiche</small>
-                            </span>
-                          </label>
-
-                          <label className="photoAction">
-                            <input
-                              className="photoInput"
-                              type="file"
-                              accept="image/*"
-                              multiple
-                              onChange={async e => {
-                                const files = [...(e.target.files || [])]
-                                if (files.length) await addPhotosImmediately(item.id, files)
-                                e.target.value = ''
-                              }}
-                            />
-                            <span className="photoActionIcon">🖼️</span>
-                            <span>
-                              <b>Ajouter des photos</b>
-                              <small>Choisis une ou plusieurs images</small>
-                            </span>
-                          </label>
-                        </div>
-                      </div>
-                      <div className="rowActions">
-                        <button className="miniBtn primaryMini" onClick={() => saveEdit(item.id)}>Enregistrer</button>
-                        <button className="miniBtn" onClick={() => setEditingId(null)}>Annuler</button>
-                      </div>
-                    </article>
-                  )
-                }
-
-                return (
-                  <article className="productCard" key={item.id}>
-                    {photoUrls[item.id] && (
-                      <div className="collectionItemPhoto">
-                        <img src={photoUrls[item.id]} alt={item.custom_name} />
-                      </div>
-                    )}
-                    <div className="productMain">
-                      <div>
-                        <h3>{item.custom_name}</h3>
-                        <p>
-                          Qté {item.quantity}
-                          {item.purchase_date ? ` • acheté le ${new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR')}` : ''}
-                          {item.purchase_place ? ` • ${item.purchase_place}` : ''}
-                          {item.seller_name ? ` • vendeur : ${item.seller_name}` : ''}
-                          {item.sealed_condition === 'zero_defect' ? ' • zéro défaut' : ''}
-                        </p>
-                        {item.booster_configuration && (
-                          <p className="itemComposition"><b>Boosters :</b> {item.booster_configuration}</p>
-                        )}
-                        {item.variant_note && (
-                          <p className="itemVariantNote"><b>Particularité :</b> {item.variant_note}</p>
-                        )}
-                      </div>
-                      <div className="productValues">
-                        <b>{buy.toFixed(2)} € → {value.toFixed(2)} €</b>
-                        {item.current_value_override === null && getCatalogValue(item) !== null
-                          ? <small className="muted">{item.sealed_condition === 'zero_defect' ? 'Cote PokéValeur zéro défaut' : 'Cote PokéValeur standard'}</small>
-                          : item.current_value_override !== null
-                            ? <small className="muted">Valeur manuelle</small>
-                            : null}
-                        <span className={diff >= 0 ? 'gain' : 'loss'}>
-                          {diff >= 0 ? '+' : ''}{diff.toFixed(2)} €
-                          {buy > 0 ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)} %)` : ''}
-                        </span>
-                      </div>
-                    </div>
-                    <div className="rowActions">
-                      <a className="miniBtn" href={`/collection/${item.id}`}>Voir la fiche</a>
-                      <button className="miniBtn" onClick={() => startEdit(item)}>Modifier</button>
-                      <button className="miniBtn dangerMini" onClick={() => deleteItem(item)}>Supprimer</button>
-                    </div>
-                  </article>
-                )
-              })
-            )}
-          </div>
-        </div>
       </section>
     </main>
   )
