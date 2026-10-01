@@ -1,20 +1,16 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
+import { summarizeWatchlistHistory } from '../../lib/watchlist-history.mjs'
+import { selectWatchlistOffer } from '../../lib/watchlist-offers.mjs'
 import { findWatchlistProducts } from '../../lib/watchlist-search.mjs'
+import { summarizeDuplicatePurchasePrices, summarizeDuplicateValues, summarizeDuplicateGroups } from '../../lib/duplicate-purchase-prices.mjs'
 
 function euro(value) {
   if (value == null || Number.isNaN(Number(value))) return '—'
   return new Intl.NumberFormat('fr-FR', { style:'currency', currency:'EUR', maximumFractionDigits:2 }).format(Number(value))
-}
-
-function median(values) {
-  if (!values.length) return null
-  const sorted = [...values].sort((a,b) => a-b)
-  const m = Math.floor(sorted.length / 2)
-  return sorted.length % 2 ? sorted[m] : (sorted[m-1] + sorted[m]) / 2
 }
 
 function normalize(value) {
@@ -32,23 +28,40 @@ export default function OpportunitiesPage() {
   const [query, setQuery] = useState('')
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [targetPrice, setTargetPrice] = useState('')
+  const [targetDrafts, setTargetDrafts] = useState({})
   const [notes, setNotes] = useState('')
   const [message, setMessage] = useState('')
+  const watchMutationRef = useRef(false)
+  const [watchSaving, setWatchSaving] = useState(false)
   const [notificationPrefs, setNotificationPrefs] = useState({ email_enabled:true, email_address:'', sms_enabled:false, phone_e164:'', alert_watchlist_price:true })
   const [notificationMessage, setNotificationMessage] = useState('')
+  const notificationSavingRef = useRef(false)
+  const [notificationSaving, setNotificationSaving] = useState(false)
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
+  const loadRequestRef = useRef(0)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    return () => { loadRequestRef.current += 1 }
+  }, [])
 
   async function load() {
+    const request = ++loadRequestRef.current
     setLoading(true)
     setLoadError('')
     try {
       const { data:{ user }, error: authError } = await supabase.auth.getUser()
+      if (request !== loadRequestRef.current) return
       if (authError) throw authError
       setUser(user)
-      if (!user) return
+      if (!user) {
+        setItems([])
+        setWatchlist([])
+        setHistory([])
+        setOffers([])
+        return
+      }
 
       const [itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes] = await Promise.all([
         fetchAllRows(() => supabase.from('collection_items')
@@ -63,12 +76,14 @@ export default function OpportunitiesPage() {
         fetchAllRows(() => supabase.from('market_offers').select('id,product_id,source,seller_name,seller_type,seller_rating,price,shipping_price,total_price,currency,condition_note,language,offer_url,observed_at').eq('active', true).order('observed_at', { ascending:false }).order('id'))
       ])
 
+      if (request !== loadRequestRef.current) return
       if ([itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes].some(result => result.error)) {
         throw new Error('Le tableau de bord n’a pas pu être chargé.')
       }
       setItems(itemsRes.data || [])
       setProducts(productsRes.data || [])
       setWatchlist(watchRes.data || [])
+      setTargetDrafts({})
       setHistory(historyRes.data || [])
       setOffers(offersRes.data || [])
       setNotificationPrefs({
@@ -79,9 +94,9 @@ export default function OpportunitiesPage() {
         alert_watchlist_price:prefsRes.data?.alert_watchlist_price ?? true
       })
     } catch {
-      setLoadError('Impossible de charger tes doublons et ta watchlist. Réessaie dans un instant.')
+      if (request === loadRequestRef.current) setLoadError('Impossible de charger tes doublons et ta watchlist. Réessaie dans un instant.')
     } finally {
-      setLoading(false)
+      if (request === loadRequestRef.current) setLoading(false)
     }
   }
 
@@ -90,7 +105,9 @@ export default function OpportunitiesPage() {
   const duplicateGroups = useMemo(() => {
     const groups = new Map()
     items.forEach(item => {
-      const key = item.product_id || 'custom:' + normalize(item.custom_name)
+      const customName = normalize(item.custom_name)
+      const key = item.product_id ? `product:${item.product_id}`
+        : customName ? `custom:${customName}` : `item:${item.id}`
       const product = item.product_id ? productById[item.product_id] : null
       const currentValue = item.current_value_override != null
         ? Number(item.current_value_override)
@@ -98,7 +115,7 @@ export default function OpportunitiesPage() {
           ? Number(product.zero_defect_value)
           : product?.current_value != null
             ? Number(product.current_value)
-            : Number(item.purchase_price || 0)
+            : null
 
       if (!groups.has(key)) {
         groups.set(key, {
@@ -107,7 +124,6 @@ export default function OpportunitiesPage() {
           name:product?.name || item.custom_name,
           series:product?.series || '',
           quantity:0,
-          invested:0,
           currentValue:currentValue,
           rows:[]
         })
@@ -115,38 +131,29 @@ export default function OpportunitiesPage() {
       const g = groups.get(key)
       const q = Number(item.quantity || 1)
       g.quantity += q
-      g.invested += Number(item.purchase_price || 0) * q
-      g.currentValue = Math.max(g.currentValue || 0, currentValue || 0)
-      g.rows.push(item)
+      g.rows.push({ ...item, estimatedUnitValue: currentValue })
     })
 
     return [...groups.values()]
       .filter(g => g.quantity > 1)
       .map(g => {
         const sellable = g.quantity - 1
-        const avgBuy = g.quantity ? g.invested / g.quantity : 0
-        const unitGain = (g.currentValue || 0) - avgBuy
-        return { ...g, sellable, avgBuy, unitGain, estimatedSaleValue:sellable * (g.currentValue || 0) }
+        const valueStats = summarizeDuplicateValues(g.rows)
+        const purchaseStats = summarizeDuplicatePurchasePrices(g.rows, valueStats.currentValue)
+        return { ...g, sellable, ...valueStats, ...purchaseStats }
       })
-      .sort((a,b) => b.estimatedSaleValue - a.estimatedSaleValue)
+      .sort((a,b) => (b.estimatedSaleValue ?? -1) - (a.estimatedSaleValue ?? -1))
   }, [items, productById])
 
   const watchRows = useMemo(() => watchlist.map(w => {
     const product = productById[w.product_id]
     const sales = history.filter(h => h.product_id === w.product_id && (h.condition_tier || 'standard') === 'standard')
-    const now = Date.now()
-    const last90 = sales.filter(s => now - new Date(s.observed_at).getTime() <= 90 * 86400000)
-    const last30 = sales.filter(s => now - new Date(s.observed_at).getTime() <= 30 * 86400000)
-    const prices90 = last90.map(s => Number(s.price)).filter(Number.isFinite)
-    const prices30 = last30.map(s => Number(s.price)).filter(Number.isFinite)
+    const historyStats = summarizeWatchlistHistory(sales)
     const market = product?.current_value != null ? Number(product.current_value) : null
     const target = w.target_price != null ? Number(w.target_price) : null
     const productOffers = offers.filter(o => o.product_id === w.product_id)
-    const bestOffer = productOffers.length
-      ? [...productOffers].sort((a,b) => Number(a.total_price ?? a.price) - Number(b.total_price ?? b.price))[0]
-      : null
-    const effectivePrice = bestOffer ? Number(bestOffer.total_price ?? bestOffer.price) : market
-    const opportunity = target != null && effectivePrice != null && effectivePrice <= target
+    const { bestOffer, opportunity } = selectWatchlistOffer(productOffers, w.target_price)
+    const effectivePrice = bestOffer ? bestOffer.comparableTotal : market
     const discountToTarget = target && effectivePrice != null ? ((target - effectivePrice) / target) * 100 : null
 
     return {
@@ -156,9 +163,7 @@ export default function OpportunitiesPage() {
       target,
       opportunity,
       discountToTarget,
-      median90: median(prices90),
-      low30: prices30.length ? Math.min(...prices30) : null,
-      sales90: prices90.length,
+      ...historyStats,
       bestOffer,
       effectivePrice
     }
@@ -166,55 +171,101 @@ export default function OpportunitiesPage() {
 
   const searchMatches = useMemo(() => findWatchlistProducts(products, watchlist, query), [query, products, watchlist])
 
+  async function mutateWatchlist(action, success) {
+    if (watchMutationRef.current) return
+    watchMutationRef.current = true
+    setWatchSaving(true)
+    setMessage('Enregistrement…')
+    try {
+      const { error } = await action()
+      if (error) throw error
+      setMessage(success)
+      await load()
+      return true
+    } catch {
+      setMessage('Impossible de confirmer la modification. Réessaie après avoir actualisé la page.')
+      return false
+    } finally {
+      watchMutationRef.current = false
+      setWatchSaving(false)
+    }
+  }
+
+  function parseTarget(value) {
+    if (String(value).trim() === '') return null
+    const target = Number(value)
+    if (!Number.isFinite(target) || target < 0) throw new Error('invalid target')
+    return target
+  }
+
   async function addToWatchlist(e) {
     e.preventDefault()
-    if (!user || !selectedProduct) return
-    const { error } = await supabase.from('product_watchlist').upsert({
-      user_id:user.id,
-      product_id:selectedProduct.id,
-      target_price:targetPrice === '' ? null : Number(targetPrice),
-      notes:notes.trim() || null,
-      active:true
-    }, { onConflict:'user_id,product_id' })
-
-    if (error) return setMessage('❌ ' + error.message)
-    setMessage('✓ Produit ajouté à la watchlist.')
-    setSelectedProduct(null)
-    setQuery('')
-    setTargetPrice('')
-    setNotes('')
-    await load()
+    if (!user || !selectedProduct || watchMutationRef.current) return
+    let target
+    try { target = parseTarget(targetPrice) }
+    catch { return setMessage('Indique un prix objectif positif ou nul, ou laisse le champ vide.') }
+    await mutateWatchlist(async () => {
+      const result = await supabase.from('product_watchlist').upsert({
+        user_id:user.id, product_id:selectedProduct.id,
+        target_price:target, notes:notes.trim() || null, active:true
+      }, { onConflict:'user_id,product_id' }).select('id').single()
+      if (!result.error && result.data?.id) {
+        setSelectedProduct(null)
+        setQuery('')
+        setTargetPrice('')
+        setNotes('')
+      }
+      return result
+    }, '✓ Produit ajouté à la watchlist.')
   }
 
   async function removeWatch(id) {
-    const { error } = await supabase.from('product_watchlist').delete().eq('id',id)
-    if (error) return setMessage('❌ ' + error.message)
-    await load()
+    if (!user) return
+    await mutateWatchlist(() => supabase.from('product_watchlist').delete()
+      .eq('id',id).eq('user_id',user.id).select('id').single(), '✓ Produit retiré de la watchlist.')
   }
 
   async function updateTarget(id, value) {
-    const { error } = await supabase.from('product_watchlist').update({
-      target_price:value === '' ? null : Number(value)
-    }).eq('id',id)
-    if (error) return setMessage('❌ ' + error.message)
-    await load()
+    if (!user || watchMutationRef.current) return
+    const existing = watchlist.find(row => row.id === id)
+    const savedTarget = existing?.target_price == null ? null : Number(existing.target_price)
+    const restore = () => setTargetDrafts(drafts => ({ ...drafts, [id]: savedTarget ?? '' }))
+    let target
+    try { target = parseTarget(value) }
+    catch {
+      restore()
+      return setMessage('Prix objectif invalide : la dernière valeur chargée a été rétablie.')
+    }
+    if (savedTarget === target) { restore(); return }
+    const confirmed = await mutateWatchlist(() => supabase.from('product_watchlist').update({ target_price:target })
+      .eq('id',id).eq('user_id',user.id).select('id').single(), '✓ Prix objectif enregistré.')
+    if (!confirmed) restore()
   }
 
   async function saveNotificationPreferences(e) {
     e.preventDefault()
-    if (!user) return
+    if (!user || notificationSavingRef.current) return
+    notificationSavingRef.current = true
+    setNotificationSaving(true)
     setNotificationMessage('Enregistrement…')
-    const { error } = await supabase.from('notification_preferences').upsert({
-      user_id:user.id,
-      email_enabled:Boolean(notificationPrefs.email_enabled),
-      email_address:notificationPrefs.email_address.trim() || null,
-      sms_enabled:Boolean(notificationPrefs.sms_enabled),
-      phone_e164:notificationPrefs.phone_e164.trim() || null,
-      alert_watchlist_price:Boolean(notificationPrefs.alert_watchlist_price),
-      updated_at:new Date().toISOString()
-    }, { onConflict:'user_id' })
-    if (error) return setNotificationMessage('❌ ' + error.message)
-    setNotificationMessage('✓ Préférences d’alerte enregistrées.')
+    try {
+      const { error } = await supabase.from('notification_preferences').upsert({
+        user_id:user.id,
+        email_enabled:Boolean(notificationPrefs.email_enabled),
+        email_address:notificationPrefs.email_address.trim() || null,
+        sms_enabled:Boolean(notificationPrefs.sms_enabled),
+        phone_e164:notificationPrefs.phone_e164.trim() || null,
+        alert_watchlist_price:Boolean(notificationPrefs.alert_watchlist_price),
+        updated_at:new Date().toISOString()
+      }, { onConflict:'user_id' }).select('user_id').single()
+      if (error) throw error
+      setNotificationMessage('✓ Préférences enregistrées. Les envois automatiques ne sont pas encore actifs.')
+    } catch {
+      setNotificationMessage('Impossible de confirmer l’enregistrement des préférences. Réessaie après avoir actualisé la page.')
+    } finally {
+      notificationSavingRef.current = false
+      setNotificationSaving(false)
+    }
   }
 
   if (loading) return <main><section className="panel"><p>Chargement du tableau de bord…</p></section></main>
@@ -232,13 +283,12 @@ export default function OpportunitiesPage() {
       <section className="panel">
         <h1>Doublons & Watchlist</h1>
         <p>Connecte-toi pour accéder à tes doublons et à ta veille de prix.</p>
-        <a className="btn" href="/login">Connexion / inscription</a>
+        <a className="btn" href="/login?next=%2Fopportunites">Connexion / inscription</a>
       </section>
     </main>
   )
 
-  const totalDuplicates = duplicateGroups.reduce((s,g) => s + g.sellable, 0)
-  const salePotential = duplicateGroups.reduce((s,g) => s + g.estimatedSaleValue, 0)
+  const { totalDuplicates, possibleDuplicates, incompleteValuation, salePotential } = summarizeDuplicateGroups(duplicateGroups)
   const opportunities = watchRows.filter(w => w.opportunity).length
 
   return (
@@ -256,16 +306,19 @@ export default function OpportunitiesPage() {
       </div>
 
       <section className="stats">
-        <div><span>Doublons disponibles</span><strong>{totalDuplicates}</strong></div>
-        <div><span>Valeur potentielle</span><strong>{euro(salePotential)}</strong></div>
+        <div><span>Doublons avec référence catalogue</span><strong>{totalDuplicates}</strong></div>
+        <div><span>Valeur de ces doublons{incompleteValuation ? ' (partielle)' : ''}</span><strong>{euro(salePotential)}</strong></div>
         <div><span>Watchlist</span><strong>{watchRows.length}</strong></div>
         <div><span>Prix sous objectif</span><strong>{opportunities}</strong></div>
       </section>
 
-      <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(320px,1fr))',gap:'18px'}}>
+      {possibleDuplicates > 0 && <p className="muted">{possibleDuplicates} doublon{possibleDuplicates > 1 ? 's' : ''} possible{possibleDuplicates > 1 ? 's' : ''} hors catalogue à vérifier, exclu{possibleDuplicates > 1 ? 's' : ''} des totaux ci-dessus.</p>}
+      {incompleteValuation && <p className="muted">Le total exclut les groupes dont une valeur manque. Renseigne les valeurs de ces exemplaires pour obtenir une estimation complète.</p>}
+
+      <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,320px),1fr))',gap:'18px'}}>
         <section className="panel">
           <h2>♻️ Mes doublons à vendre</h2>
-          <p className="muted">PokéValeur conserve par défaut 1 exemplaire de chaque référence et considère le surplus comme doublon potentiel.</p>
+          <p className="muted">Le calcul suppose que tu conserves 1 exemplaire par référence. Il ne modifie pas ta collection. Pour les produits hors catalogue, un nom identique suggère seulement un doublon à vérifier.</p>
           {duplicateGroups.length === 0 ? (
             <p>Aucun doublon détecté pour le moment.</p>
           ) : (
@@ -274,24 +327,43 @@ export default function OpportunitiesPage() {
                 <article className="productCard" key={g.key}>
                   <div className="productMain">
                     <div>
-                      <span className="catalogBadge">{index < 3 ? 'À regarder en priorité' : 'Doublon'}</span>
+                      <span className="catalogBadge">{!g.productId ? 'Doublon possible · à vérifier' : index < 3 ? 'À regarder en priorité' : 'Doublon'}</span>
                       <h3>{g.name}</h3>
                       <p>{g.series || 'Série non renseignée'} • {g.quantity} possédé{g.quantity > 1 ? 's' : ''} • {g.sellable} en doublon</p>
                     </div>
                     <div className="productValues">
-                      <b>{euro(g.currentValue)} / unité</b>
-                      <span className={g.unitGain >= 0 ? 'gain' : 'loss'}>
-                        {g.unitGain >= 0 ? '+' : ''}{euro(g.unitGain)} vs achat moyen
+                      <b>{g.currentValue == null ? 'Valeur non renseignée' : `${euro(g.currentValue)} / unité en moyenne`}</b>
+                      <span className={g.unitGain == null ? 'muted' : g.unitGain >= 0 ? 'gain' : 'loss'}>
+                        {g.unitGain == null ? 'Gain non calculable' : `${g.unitGain >= 0 ? '+' : ''}${euro(g.unitGain)} vs achat moyen`}
                       </span>
                     </div>
                   </div>
                   <div className="marketStats">
-                    <div><span>Achat moyen</span><strong>{euro(g.avgBuy)}</strong></div>
+                    <div><span>Achat moyen{g.missingPurchaseCount > 0 ? ' (partiel)' : ''}</span><strong>{euro(g.avgBuy)}</strong></div>
                     <div><span>À conserver</span><strong>1</strong></div>
                     <div><span>À vendre</span><strong>{g.sellable}</strong></div>
                     <div><span>Valeur doublons</span><strong>{euro(g.estimatedSaleValue)}</strong></div>
                   </div>
-                  {g.rows[0]?.id && <div className="rowActions"><a className="miniBtn" href={`/collection/${g.rows[0].id}`}>Voir mes exemplaires</a></div>}
+                  {g.missingValueCount > 0 && <p className="muted">Valeur manquante pour {g.missingValueCount} exemplaire{g.missingValueCount > 1 ? 's' : ''}. Estimation de revente non calculable.</p>}
+                  {!g.productId && <p className="muted">Ces fiches sont regroupées par leur nom, sans référence catalogue commune. Vérifie qu’il s’agit du même produit avant de considérer les exemplaires comme des doublons.</p>}
+                  <p className="muted">Estimation en conservant l’exemplaire de plus forte valeur. Les autres sont évalués selon leur état et leur valeur renseignée.</p>
+                  {g.missingPurchaseCount > 0 && <p className="muted">Prix d’achat non renseigné pour {g.missingPurchaseCount} exemplaire{g.missingPurchaseCount > 1 ? 's' : ''}. La moyenne porte sur les achats connus ; le gain comparatif n’est pas calculé.</p>}
+                  <details style={{ marginTop: 12 }}>
+                    <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Voir mes exemplaires · {g.rows.length} fiche{g.rows.length > 1 ? 's' : ''}</summary>
+                    <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+                      {g.rows.map(item => (
+                        <div key={item.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 10, minWidth: 0 }}>
+                          <strong>{item.custom_name || g.name}</strong>
+                          <p style={{ margin: '6px 0', overflowWrap: 'anywhere' }}>
+                            {item.quantity || 1} exemplaire{Number(item.quantity || 1) > 1 ? 's' : ''} · {item.sealed_condition === 'zero_defect' ? 'Zéro défaut' : 'État standard'}
+                            {' · Achat : '}{euro(item.purchase_price)}
+                            {item.purchase_date && ` · ${new Date(item.purchase_date + 'T12:00:00').toLocaleDateString('fr-FR')}`}
+                          </p>
+                          <a className="miniBtn" href={`/collection/${item.id}`}>Ouvrir cette fiche →</a>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 </article>
               ))}
             </div>
@@ -332,7 +404,7 @@ export default function OpportunitiesPage() {
               <input value={notes} onChange={e => setNotes(e.target.value)} placeholder="Ex. seulement en français / scellé propre" />
             </label>
 
-            <button className="btn" type="submit" disabled={!selectedProduct}>Ajouter à ma watchlist</button>
+            <button className="btn" type="submit" disabled={!selectedProduct || watchSaving}>{watchSaving ? 'Enregistrement…' : 'Ajouter à ma watchlist'}</button>
           </form>
 
           {message && <p className="message">{message}</p>}
@@ -349,8 +421,8 @@ export default function OpportunitiesPage() {
                   <div className="productValues">
                     <b>{euro(w.effectivePrice)}</b>
                     {w.bestOffer
-                      ? <small className="muted">Meilleure offre repérée</small>
-                      : <small className="muted">Cote PokéValeur</small>}
+                      ? <small className="muted">Meilleure offre en euros, port compris</small>
+                      : <small className="muted">Cote PokéValeur · aucune offre comparable repérée</small>}
                     {w.target != null && <small className="muted">Objectif : {euro(w.target)}</small>}
                   </div>
                 </div>
@@ -371,7 +443,7 @@ export default function OpportunitiesPage() {
                     <br />
                     Prix : {euro(w.bestOffer.price)}
                     {w.bestOffer.shipping_price != null ? ` + port ${euro(w.bestOffer.shipping_price)}` : ''}
-                    {' • '}Total : {euro(w.bestOffer.total_price ?? w.bestOffer.price)}
+                    {' • '}Total : {euro(w.bestOffer.comparableTotal)}
                     {w.bestOffer.language ? ` • ${w.bestOffer.language}` : ''}
                     {w.bestOffer.condition_note ? ` • ${w.bestOffer.condition_note}` : ''}
                   </div>
@@ -385,13 +457,15 @@ export default function OpportunitiesPage() {
                       type="number"
                       min="0"
                       step="0.01"
-                      defaultValue={w.target ?? ''}
+                      disabled={watchSaving}
+                      value={targetDrafts[w.id] ?? w.target ?? ''}
+                      onChange={e => setTargetDrafts(drafts => ({ ...drafts, [w.id]: e.target.value }))}
                       onBlur={e => updateTarget(w.id,e.target.value)}
                     />
                   </label>
                   <a className="miniBtn" href={`/catalogue/${w.product_id}`}>Voir la fiche</a>
                   {w.bestOffer?.offer_url && <a className="miniBtn primaryMini" href={w.bestOffer.offer_url} target="_blank" rel="noreferrer">Voir l’offre</a>}
-                  <button className="miniBtn dangerMini" type="button" onClick={() => removeWatch(w.id)}>Retirer</button>
+                  <button className="miniBtn dangerMini" type="button" disabled={watchSaving} onClick={() => removeWatch(w.id)}>Retirer</button>
                 </div>
               </article>
             ))}
@@ -400,9 +474,10 @@ export default function OpportunitiesPage() {
       </section>
 
       <section className="panel" style={{marginTop:'18px'}}>
-        <h2>🔔 Mes alertes</h2>
-        <p className="muted">Choisis comment recevoir une alerte lorsqu’un produit de ta watchlist atteint ton prix objectif.</p>
+        <h2>🔔 Mes préférences d’alerte</h2>
+        <p className="muted">Les alertes automatiques par e-mail et SMS ne sont pas encore actives. Tu peux enregistrer tes préférences pour leur future activation.</p>
         <form onSubmit={saveNotificationPreferences} className="formGrid">
+          <fieldset disabled={notificationSaving} style={{ border: 0, padding: 0, margin: 0, minWidth: 0, display: 'grid', gap: 16 }}>
           <label style={{display:'flex',alignItems:'center',gap:'10px'}}>
             <input type="checkbox" checked={notificationPrefs.email_enabled} onChange={e => setNotificationPrefs({...notificationPrefs,email_enabled:e.target.checked})} />
             Alerte par e-mail
@@ -423,10 +498,11 @@ export default function OpportunitiesPage() {
             <input type="checkbox" checked={notificationPrefs.alert_watchlist_price} onChange={e => setNotificationPrefs({...notificationPrefs,alert_watchlist_price:e.target.checked})} />
             M’alerter lorsqu’un prix objectif est atteint
           </label>
-          <button className="btn" type="submit">Enregistrer mes alertes</button>
+          <button className="btn" type="submit">{notificationSaving ? 'Enregistrement…' : 'Enregistrer mes préférences'}</button>
+          </fieldset>
         </form>
         {notificationMessage && <p className="message">{notificationMessage}</p>}
-        <p className="muted"><small>L’e-mail et le SMS sont préparés côté compte. L’envoi automatique sera activé dès que le service de notification externe sera branché.</small></p>
+        <p className="muted"><small>Tes préférences sont conservées dans ton compte. Aucun e-mail ni SMS d’alerte n’est envoyé pour le moment.</small></p>
       </section>
 
       <section className="panel" style={{marginTop:'18px'}}>

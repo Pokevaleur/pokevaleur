@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '../../../lib/supabase-browser'
+import { saveUploadedPhotoBatch, uploadUnlinkedPhotoBatch } from '../../../lib/collection-photo-save.mjs'
 
 export default function CollectionItemDetailPage() {
   const params = useParams()
@@ -11,10 +12,14 @@ export default function CollectionItemDetailPage() {
   const [photos, setPhotos] = useState([])
   const [activePhoto, setActivePhoto] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
+  const [photoPreviewWarning, setPhotoPreviewWarning] = useState(false)
+  const loadRequestRef = useRef(0)
   const [boosters, setBoosters] = useState([])
   const [boosterMessage, setBoosterMessage] = useState('')
   const [photoMessage, setPhotoMessage] = useState('')
   const [photoUploading, setPhotoUploading] = useState(false)
+  const photoUploadPendingRef = useRef(false)
   const [analyzing, setAnalyzing] = useState(false)
   const [analysisMessage, setAnalysisMessage] = useState('')
   const [analysisCandidates, setAnalysisCandidates] = useState({})
@@ -26,62 +31,75 @@ export default function CollectionItemDetailPage() {
 
   useEffect(() => {
     if (params?.id) load()
+    return () => { loadRequestRef.current++ }
   }, [params?.id])
 
   async function load() {
+    const request = ++loadRequestRef.current
+    const isCurrent = () => request === loadRequestRef.current
     setLoading(true)
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
-      window.location.href = '/login'
-      return
-    }
-
-    const [{ data: itemData }, { data: photoData }, { data: boosterData }, { data: contributionData }] = await Promise.all([
-      supabase.from('collection_items').select('*').eq('id', params.id).eq('user_id', user.id).single(),
-      supabase.from('collection_item_photos').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('sort_order'),
-      supabase.from('collection_item_boosters').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('position'),
-      supabase.from('booster_reference_contributions').select('*').eq('collection_item_id', params.id)
-    ])
-
-    setItem(itemData || null)
-
-    if (itemData?.product_id) {
-      const [{ data: expected }, { data: product }, { data: history }] = await Promise.all([
-        supabase
-          .from('product_contents')
-          .select('item_name,quantity,confidence')
-          .eq('product_id', itemData.product_id)
-          .eq('content_type', 'booster'),
-        supabase
-          .from('products')
-          .select('id,name,series,product_type,release_date,current_value,zero_defect_value,currency,price_source,price_updated_at')
-          .eq('id', itemData.product_id)
-          .single(),
-        supabase
-          .from('product_price_history')
-          .select('price,observed_at,source,condition_tier,observation_type')
-          .eq('product_id', itemData.product_id)
-          .eq('observation_type', 'confirmed_sale')
-          .order('observed_at', { ascending: true })
-          .limit(60)
+    setLoadError('')
+    try {
+      const { data: { user }, error: authError } = await supabase.auth.getUser()
+      if (authError) throw authError
+      if (!isCurrent()) return
+      if (!user) {
+        window.location.href = `/login?next=${encodeURIComponent(`/collection/${params.id}`)}`
+        return
+      }
+      const results = await Promise.all([
+        supabase.from('collection_items').select('*').eq('id', params.id).eq('user_id', user.id).maybeSingle(),
+        supabase.from('collection_item_photos').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('sort_order').order('id'),
+        supabase.from('collection_item_boosters').select('*').eq('collection_item_id', params.id).eq('user_id', user.id).order('position'),
+        supabase.from('booster_reference_contributions').select('*').eq('collection_item_id', params.id),
       ])
-      setExpectedBoosters(expected || [])
-      setProductInfo(product || null)
-      setPriceHistory(history || [])
-    } else {
-      setExpectedBoosters([])
-      setProductInfo(null)
-      setPriceHistory([])
+      if (results.some(result => result.error)) throw new Error('Chargement de la fiche impossible.')
+      if (!isCurrent()) return
+      const [itemData, photoData, boosterData, contributionData] = results.map(result => result.data)
+      if (!itemData) {
+        setItem(null)
+        setPhotos([])
+        setBoosters([])
+        return
+      }
+      let expected = [], product = null, history = []
+      if (itemData.product_id) {
+        const references = await Promise.all([
+          supabase.from('product_contents').select('item_name,quantity,confidence')
+            .eq('product_id', itemData.product_id).eq('content_type', 'booster'),
+          supabase.from('products').select('id,name,series,product_type,release_date,current_value,zero_defect_value,currency,price_source,price_updated_at,image_url')
+            .eq('id', itemData.product_id).maybeSingle(),
+          supabase.from('product_price_history').select('price,observed_at,source,condition_tier,observation_type')
+            .eq('product_id', itemData.product_id).eq('observation_type', 'confirmed_sale')
+            .order('observed_at', { ascending: false }).order('id', { ascending: false }).limit(60),
+        ])
+        if (references.some(result => result.error)) throw new Error('Chargement des références impossible.')
+        expected = references[0].data || []
+        product = references[1].data || null
+        history = [...(references[2].data || [])].reverse()
+      }
+      const signed = await Promise.all((photoData || []).map(async photo => {
+        try {
+          const { data } = await supabase.storage.from('collection-images').createSignedUrl(photo.photo_path, 3600)
+          return { ...photo, url: data?.signedUrl || null }
+        } catch {
+          return { ...photo, url: null }
+        }
+      }))
+      if (!isCurrent()) return
+      setItem(itemData)
+      setExpectedBoosters(expected)
+      setProductInfo(product)
+      setPriceHistory(history)
+      setPhotos(signed.filter(photo => photo.url))
+      setPhotoPreviewWarning(signed.some(photo => !photo.url))
+      setBoosters(boosterData || [])
+      setReferenceContributions(contributionData || [])
+    } catch {
+      if (isCurrent()) setLoadError('Impossible de charger cette fiche. Vérifie ta connexion puis réessaie.')
+    } finally {
+      if (isCurrent()) setLoading(false)
     }
-
-    const signed = await Promise.all((photoData || []).map(async photo => {
-      const { data } = await supabase.storage.from('collection-images').createSignedUrl(photo.photo_path, 3600)
-      return { ...photo, url: data?.signedUrl || null }
-    }))
-    setPhotos(signed.filter(photo => photo.url))
-    setBoosters(boosterData || [])
-    setReferenceContributions(contributionData || [])
-    setLoading(false)
   }
 
   async function compressDetailPhoto(file) {
@@ -105,34 +123,55 @@ export default function CollectionItemDetailPage() {
 
   async function addDetailPhotos(fileList) {
     const files = Array.from(fileList || [])
-    if (!files.length) return
+    if (!files.length || photoUploadPendingRef.current || !item) return
+    photoUploadPendingRef.current = true
     setPhotoUploading(true)
     setPhotoMessage(files.length > 1 ? 'Envoi des photos…' : 'Envoi de la photo…')
-    const uploaded = []
+    let saved = false
     try {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) throw new Error('Ta session a expiré.')
-      const { count } = await supabase.from('collection_item_photos').select('id', { count: 'exact', head: true }).eq('collection_item_id', params.id)
-      for (let index = 0; index < files.length; index++) {
-        const file = await compressDetailPhoto(files[index])
+      const { count, error: countError } = await supabase.from('collection_item_photos')
+        .select('id', { count: 'exact', head: true }).eq('collection_item_id', params.id)
+      if (countError) throw countError
+      const remove = paths => supabase.storage.from('collection-images').remove(paths)
+      const uploaded = await uploadUnlinkedPhotoBatch(files, async original => {
+        const file = await compressDetailPhoto(original)
         if (file.size > 8 * 1024 * 1024) throw new Error('Une photo reste trop volumineuse après compression.')
         const path = `${user.id}/${crypto.randomUUID()}.jpg`
-        const { data, error } = await supabase.storage.from('collection-images').upload(path, file, { cacheControl: '3600', contentType: 'image/jpeg', upsert: false })
+        const { data, error } = await supabase.storage.from('collection-images').upload(path, file,
+          { cacheControl: '3600', contentType: 'image/jpeg', upsert: false })
         if (error || !data?.path) throw new Error(error?.message || 'Envoi impossible.')
-        uploaded.push(data.path)
-        const { error: linkError } = await supabase.from('collection_item_photos').insert({
-          collection_item_id: params.id, user_id: user.id, photo_path: data.path, sort_order: (count || 0) + index
-        })
-        if (linkError) throw linkError
-      }
-      if (!item.photo_path && uploaded[0]) {
-        await supabase.from('collection_items').update({ photo_path: uploaded[0] }).eq('id', params.id).eq('user_id', user.id)
-      }
+        return data.path
+      }, remove)
+      await saveUploadedPhotoBatch({
+        paths: uploaded,
+        link: async paths => {
+          const { error } = await supabase.from('collection_item_photos').insert(paths.map((path, index) => ({
+            collection_item_id: params.id, user_id: user.id, photo_path: path, sort_order: (count || 0) + index,
+          })))
+          if (error) throw error
+        },
+        setPrimary: async path => {
+          if (item.photo_path || !path) return
+          const { error } = await supabase.from('collection_items').update({ photo_path: path })
+            .eq('id', params.id).eq('user_id', user.id)
+          if (error) throw error
+        },
+        remove,
+      })
+      saved = true
       setPhotoMessage(`✓ ${files.length} photo${files.length > 1 ? 's' : ''} enregistrée${files.length > 1 ? 's' : ''}. Elles serviront ensemble à affiner l’identification.`)
       await load()
     } catch (error) {
-      setPhotoMessage('❌ ' + (error.message || 'Impossible d’enregistrer la photo.'))
+      if (error.photosLinked) await load().catch(() => {})
+      setLoading(false)
+      setPhotoMessage(error.photosLinked
+        ? '⚠️ Photos enregistrées, mais la photo principale n’a pas pu être actualisée. Les fichiers sont conservés.'
+        : saved ? '⚠️ Photos enregistrées. Recharge la fiche pour les afficher.'
+          : '❌ ' + (error.message || 'Impossible d’enregistrer la photo.'))
     } finally {
+      photoUploadPendingRef.current = false
       setPhotoUploading(false)
     }
   }
@@ -337,7 +376,13 @@ export default function CollectionItemDetailPage() {
   }
 
   if (loading) return <main><section className="panel"><p>Chargement...</p></section></main>
-  if (!item) return <main><section className="panel"><h1>Produit introuvable</h1></section></main>
+  if (loadError) return <main><section className="panel">
+    <h1>Chargement de la fiche interrompu</h1>
+    <p role="alert">{loadError}</p>
+    <button className="btn" type="button" onClick={load}>Réessayer</button>
+    <a className="btn ghost" href="/collection">Retour à ma collection</a>
+  </section></main>
+  if (!item) return <main><section className="panel"><h1>Produit introuvable ou inaccessible</h1><a className="btn" href="/collection">Retour à ma collection</a></section></main>
 
   return (
     <main>
@@ -358,6 +403,7 @@ export default function CollectionItemDetailPage() {
           <div className="itemValueTop">
             <div>
               <span className="eyebrow dark">Valeur de mon exemplaire</span>
+              {productInfo && <a className="miniBtn" href={`/catalogue/${productInfo.id}`}>Référence catalogue : {productInfo.name} →</a>}
               {productInfo?.series && <p className="muted itemSeriesLine">{productInfo.series}{productInfo.product_type ? ` • ${productInfo.product_type}` : ''}</p>}
             </div>
             {productInfo?.release_date && (
@@ -401,7 +447,7 @@ export default function CollectionItemDetailPage() {
             <div className="itemPriceChartHead">
               <div>
                 <h2>Évolution du prix</h2>
-                <p className="muted">Ventes confirmées utilisées pour la cote.</p>
+                <p className="muted">Les 60 ventes confirmées les plus récentes, affichées dans l’ordre chronologique.</p>
               </div>
               {productInfo?.price_updated_at && <small>Mis à jour le {new Date(productInfo.price_updated_at).toLocaleDateString('fr-FR')}</small>}
             </div>
@@ -428,6 +474,8 @@ export default function CollectionItemDetailPage() {
           </div>
         </div>
 
+        {photoPreviewWarning && <p className="message" role="status">Certains aperçus photo sont indisponibles pour le moment. Recharge la fiche pour réessayer.</p>}
+        {photos.length === 0 && productInfo?.image_url && <section className="panel"><img src={productInfo.image_url} alt={productInfo.name} loading="lazy" style={{ width: '100%', maxHeight: 300, objectFit: 'contain' }} /><p className="muted">Visuel du catalogue</p></section>}
         {photos.length > 0 && (
           <div className="personalGallery">
             <button className="personalMainPhoto" onClick={() => setActivePhoto(photos[0].url)}>

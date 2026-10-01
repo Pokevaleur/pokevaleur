@@ -31,3 +31,21 @@ test('Successful saving links the batch before choosing its primary photo', asyn
   })
   assert.deepEqual(actions, [['linked', 'first', 'second'], ['primary', 'first']])
 })
+
+test('A failed second upload removes the first new file without touching existing photos', async () => {
+  const { uploadUnlinkedPhotoBatch } = await import('../lib/collection-photo-save.mjs')
+  const stored = new Set(['already-linked'])
+  await assert.rejects(uploadUnlinkedPhotoBatch(['first', 'second'], async file => {
+    if (file === 'second') throw new Error('upload failed')
+    stored.add(file)
+    return file
+  }, async paths => paths.forEach(path => stored.delete(path))), /upload failed/)
+  assert.deepEqual([...stored], ['already-linked'])
+})
+test('A cleanup failure preserves the original upload error', async () => {
+  const { uploadUnlinkedPhotoBatch } = await import('../lib/collection-photo-save.mjs')
+  await assert.rejects(uploadUnlinkedPhotoBatch(['first', 'second'], async file => {
+    if (file === 'second') throw new Error('original upload failure')
+    return file
+  }, async () => { throw new Error('cleanup failure') }), /original upload failure/)
+})

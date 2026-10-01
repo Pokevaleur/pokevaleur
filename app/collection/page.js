@@ -5,7 +5,8 @@ import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { filterCollectionItems } from '../../lib/collection-search.mjs'
-import { saveUploadedPhotoBatch } from '../../lib/collection-photo-save.mjs'
+import { calculateCollectionStatistics, hasPurchasePrice } from '../../lib/collection-statistics.mjs'
+import { saveUploadedPhotoBatch, uploadUnlinkedPhotoBatch } from '../../lib/collection-photo-save.mjs'
 
 const emptyForm = {
   custom_name: '',
@@ -162,7 +163,7 @@ export default function CollectionPage() {
       for (let offset = 0; offset < productIds.length; offset += 100) {
         const { data: products, error: productsError } = await supabase
           .from('products')
-          .select('id,name,series,category,current_value,zero_defect_value')
+          .select('id,name,series,category,current_value,zero_defect_value,image_url')
           .eq('is_public', true)
           .in('id', productIds.slice(offset, offset + 100))
         if (!productsError) linkedProducts.push(...(products || []))
@@ -400,11 +401,8 @@ export default function CollectionPage() {
   }
 
   async function uploadCollectionPhotos(files) {
-    const paths = []
-    for (const file of files) {
-      paths.push(await uploadCollectionPhoto(file))
-    }
-    return paths
+    return uploadUnlinkedPhotoBatch(files, uploadCollectionPhoto,
+      paths => supabase.storage.from('collection-images').remove(paths))
   }
 
   async function addItem(e) {
@@ -706,10 +704,10 @@ export default function CollectionPage() {
         row.splice(
           4,
           0,
-          purchasePrice.toFixed(2),
+          hasPurchasePrice(item) ? purchasePrice.toFixed(2) : '',
           Number(currentValue || 0).toFixed(2),
           Number((currentValue || 0) * quantity).toFixed(2),
-          Number(((currentValue || 0) - purchasePrice) * quantity).toFixed(2)
+          hasPurchasePrice(item) ? Number(((currentValue || 0) - purchasePrice) * quantity).toFixed(2) : ''
         )
       }
 
@@ -738,19 +736,7 @@ export default function CollectionPage() {
     window.location.href = '/'
   }
 
-  const invested = items.reduce(
-    (sum, item) => sum + (Number(item.purchase_price) || 0) * (item.quantity || 1),
-    0
-  )
-
-  const current = items.reduce(
-    (sum, item) => sum + getCurrentValue(item) * (item.quantity || 1),
-    0
-  )
-
-  const difference = current - invested
-  const percent = invested > 0 ? (difference / invested) * 100 : 0
-  const itemCount = items.reduce((sum, item) => sum + (item.quantity || 1), 0)
+  const { invested, current, difference, evolution: percent, itemCount, missingPurchaseCount } = calculateCollectionStatistics(items, getCurrentValue)
 
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
   const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter)
@@ -859,7 +845,7 @@ export default function CollectionPage() {
         <div>
           <span>Évolution</span>
           <strong className={difference >= 0 ? 'gain' : 'loss'}>
-            {difference >= 0 ? '+' : ''}{difference.toFixed(2)} €
+            {difference == null ? '—' : `${difference >= 0 ? '+' : ''}${difference.toFixed(2)} €`}
             <small>{invested > 0 ? ` (${percent >= 0 ? '+' : ''}${percent.toFixed(1)} %)` : ''}</small>
           </strong>
         </div>
@@ -869,6 +855,7 @@ export default function CollectionPage() {
         </div>
       </section>}
 
+      {!isSwitchingProfile && missingPurchaseCount > 0 && <p className="message" role="status">Prix d’achat non renseigné pour {missingPurchaseCount} exemplaire{missingPurchaseCount > 1 ? 's' : ''}. La plus-value porte uniquement sur les achats renseignés.</p>}
       <section className="contentGrid">
         <div className="panel">
           <div className="listHeader">
@@ -881,9 +868,11 @@ export default function CollectionPage() {
               <p>{isSwitchingProfile ? 'Chargement de la collection…' : items.length === 0 ? 'Ta collection est vide pour le moment.' : !hasCollectionSearch ? 'Tes objets apparaîtront après une recherche ou un filtre.' : 'Aucun produit trouvé.'}</p>
             ) : (
               filteredItems.map(item => {
+                const linkedProduct = catalog.find(product => product.id === item.product_id)
+                const displayPhoto = photoUrls[item.id] || linkedProduct?.image_url
                 const buy = Number(item.purchase_price) || 0
                 const value = getCurrentValue(item)
-                const diff = value - buy
+                const diff = hasPurchasePrice(item) ? value - buy : null
                 const pct = buy > 0 ? (diff / buy) * 100 : 0
 
                 if (editingId === item.id) {
@@ -1010,14 +999,16 @@ export default function CollectionPage() {
 
                 return (
                   <article className="productCard" key={item.id}>
-                    {photoUrls[item.id] && (
+                    {displayPhoto && (
                       <div className="collectionItemPhoto">
-                        <img src={photoUrls[item.id]} alt={item.custom_name} />
+                        <img src={displayPhoto} alt={item.custom_name} loading="lazy" />
+                        {!photoUrls[item.id] && <small className="muted">Visuel du catalogue</small>}
                       </div>
                     )}
                     <div className="productMain">
                       <div>
                         <h3>{item.custom_name}</h3>
+                        {linkedProduct && <a className="miniBtn" href={`/catalogue/${linkedProduct.id}`}>Référence : {linkedProduct.name} →</a>}
                         <p>
                           Qté {item.quantity}
                           {item.purchase_date ? ` • acheté le ${new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR')}` : ''}
@@ -1033,14 +1024,14 @@ export default function CollectionPage() {
                         )}
                       </div>
                       <div className="productValues">
-                        <b>{buy.toFixed(2)} € → {value.toFixed(2)} €</b>
+                        <b>{hasPurchasePrice(item) ? `${buy.toFixed(2)} €` : 'Achat non renseigné'} → {value.toFixed(2)} €</b>
                         {item.current_value_override === null && getCatalogValue(item) !== null
                           ? <small className="muted">{item.sealed_condition === 'zero_defect' ? 'Cote PokéValeur zéro défaut' : 'Cote PokéValeur standard'}</small>
                           : item.current_value_override !== null
                             ? <small className="muted">Valeur manuelle</small>
                             : null}
                         <span className={diff >= 0 ? 'gain' : 'loss'}>
-                          {diff >= 0 ? '+' : ''}{diff.toFixed(2)} €
+                          {diff == null ? 'Plus-value non calculable' : `${diff >= 0 ? '+' : ''}${diff.toFixed(2)} €`}
                           {buy > 0 ? ` (${pct >= 0 ? '+' : ''}${pct.toFixed(1)} %)` : ''}
                         </span>
                       </div>
