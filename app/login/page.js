@@ -21,6 +21,7 @@ function getPostLoginPath() {
 
 export default function LoginPage() {
   const [mode, setMode] = useState('signin')
+  const [isCatalogueProposal, setIsCatalogueProposal] = useState(false)
   const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [showPassword, setShowPassword] = useState(false)
@@ -32,6 +33,7 @@ export default function LoginPage() {
   const isSignUp = mode === 'signup'
 
   useEffect(() => {
+    setIsCatalogueProposal(new URLSearchParams(window.location.search).get('next') === '/catalogue#proposer-produit')
     if (new URLSearchParams(window.location.search).get('reset') === 'invalid') {
       setMessage('Ce lien de réinitialisation est invalide ou a expiré. Demande un nouveau lien.')
     }
@@ -180,9 +182,9 @@ export default function LoginPage() {
       <section className="panel authCard">
         <h1>{isSignUp ? 'Créer ton compte PokéValeur' : 'Connexion à PokéValeur'}</h1>
         <p>
-          {isSignUp
-            ? 'Choisis ton pseudo et ton avatar pour créer ton profil de collectionneur.'
-            : 'Connecte-toi pour retrouver et gérer ta collection.'}
+          {isCatalogueProposal
+            ? isSignUp ? 'Crée ton compte pour proposer une référence au catalogue.' : 'Connecte-toi pour proposer une référence au catalogue.'
+            : isSignUp ? 'Choisis ton pseudo et ton avatar pour créer ton profil de collectionneur.' : 'Connecte-toi pour retrouver et gérer ta collection.'}
         </p>
 
         <form onSubmit={submit}>

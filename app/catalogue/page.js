@@ -296,7 +296,7 @@ export default function CataloguePage() {
         </section>
       )}
 
-      <section className="panel suggestionPanel">
+      <section className="panel suggestionPanel" id="proposer-produit" style={{ scrollMarginTop: 100 }}>
         <h2>Produit absent du catalogue ?</h2>
         <p className="muted">
           Les membres connectés peuvent proposer une référence à ajouter.
@@ -348,7 +348,7 @@ export default function CataloguePage() {
             <button className="btn" type="submit">Proposer ce produit</button>
           </form>
         ) : (
-          <a className="btn" href="/login">Se connecter pour proposer</a>
+          <a className="btn" href="/login?next=%2Fcatalogue%23proposer-produit">Se connecter pour proposer</a>
         )}
 
         {suggestionMessage && <p className="message">{suggestionMessage}</p>}

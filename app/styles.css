@@ -812,3 +812,17 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 @media(prefers-reduced-motion:reduce){.crystalHero .surpriseCard,.crystalChest.open img{animation:none}}
 
 .chestXpPromise{display:block;margin-top:8px;color:#b5f1ff;font-weight:800;font-size:14px}.chestXpSummary{display:flex;flex-direction:column;gap:10px;margin:14px 0 6px}.chestXpSummary a{font-size:14px;color:#174764;text-decoration:underline;text-underline-offset:3px}.chestOpenError{color:#ffe4d8!important;font-size:14px!important}.crystalChest:disabled{cursor:default}
+
+/* Keep authentication controls within their card, including narrow phones. */
+.authCard form{grid-template-columns:minmax(0,1fr);min-width:0}
+.authCard form>*,.authCard label,.authCard .passwordField{min-width:0;max-width:100%}
+.authCard input{width:100%;min-width:0;max-width:100%}
+.authCard .passwordField{display:grid;grid-template-columns:minmax(0,1fr) auto}
+.authCard .passwordField input{width:100%}
+.authCard .actions .btn{max-width:100%;white-space:normal;overflow-wrap:anywhere}
+.authCard .message{overflow-wrap:anywhere}
+@media(max-width:480px){
+  .authCard .actions{display:grid;grid-template-columns:minmax(0,1fr);margin:16px 0 0}
+  .authCard .actions .btn{width:100%;min-width:0;text-align:center}
+  .authCard .passwordToggle{padding:0 10px;font-size:14px}
+}
