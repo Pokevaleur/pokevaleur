@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
+import { createProductMatcher } from '../../lib/product-search.mjs'
 
 const emptyForm = {
   custom_name: '',
@@ -41,6 +42,9 @@ export default function CollectionPage() {
   const [catalog, setCatalog] = useState([])
   const [catalogMatches, setCatalogMatches] = useState([])
   const [catalogLoading, setCatalogLoading] = useState(false)
+  const [catalogError, setCatalogError] = useState('')
+  const catalogIndexRef = useRef(null)
+  const preselectedProductRef = useRef(null)
   const [catalogQuery, setCatalogQuery] = useState('')
   const [photoFiles, setPhotoFiles] = useState([])
   const [editPhotoFiles, setEditPhotoFiles] = useState([])
@@ -212,6 +216,7 @@ export default function CollectionPage() {
 
   useEffect(() => {
     const searchTerm = catalogQuery.trim()
+    setCatalogError('')
     if (searchTerm.length < 2 || (form.product_id && searchTerm === form.custom_name)) {
       setCatalogMatches([])
       setCatalogLoading(false)
@@ -220,24 +225,28 @@ export default function CollectionPage() {
 
     let active = true
     setCatalogLoading(true)
+    setCatalogMatches([])
     const timeout = setTimeout(async () => {
-      const pattern = `%${searchTerm.replace(/[\\%_]/g, character => `\\${character}`)}%`
-      const [names, series] = await Promise.all([
-        supabase.from('products').select('id,name,series,category,current_value,zero_defect_value')
-          .eq('is_public', true).ilike('name', pattern).order('name').limit(6),
-        supabase.from('products').select('id,name,series,category,current_value,zero_defect_value')
-          .eq('is_public', true).ilike('series', pattern).order('name').limit(6),
-      ])
+      if (!catalogIndexRef.current) {
+        catalogIndexRef.current = fetchAllRows(() => supabase.from('products')
+          .select('id,name,series,category,product_type,current_value,zero_defect_value')
+          .eq('is_public', true).order('name').order('id'))
+      }
+      const { data, error } = await catalogIndexRef.current
+      if (error) catalogIndexRef.current = null
       if (!active) return
-      const results = new Map()
-      for (const product of [...(names.data || []), ...(series.data || [])]) results.set(product.id, product)
-      const matches = [...results.values()].slice(0, 6)
-      setCatalogMatches(matches)
-      setCatalog(previous => {
-        const byId = new Map(previous.map(product => [product.id, product]))
-        for (const product of matches) byId.set(product.id, product)
-        return [...byId.values()]
-      })
+      if (error) {
+        setCatalogError('La recherche est indisponible. Réessaie en modifiant ta recherche.')
+        setCatalogMatches([])
+      } else {
+        const matches = data.filter(createProductMatcher(searchTerm)).slice(0, 6)
+        setCatalogMatches(matches)
+        setCatalog(previous => {
+          const byId = new Map(previous.map(product => [product.id, product]))
+          for (const product of matches) byId.set(product.id, product)
+          return [...byId.values()]
+        })
+      }
       setCatalogLoading(false)
     }, 250)
 
@@ -246,6 +255,30 @@ export default function CollectionPage() {
       clearTimeout(timeout)
     }
   }, [catalogQuery, form.product_id, form.custom_name, supabase])
+
+  useEffect(() => {
+    if (!user) return
+    const productId = new URLSearchParams(window.location.search).get('product')
+    if (!productId || preselectedProductRef.current === productId) return
+    let active = true
+    async function preselect() {
+      const { data: product, error } = await supabase.from('products')
+        .select('id,name,series,category,product_type,current_value,zero_defect_value')
+        .eq('is_public', true).eq('id', productId).maybeSingle()
+      if (!active) return
+      preselectedProductRef.current = productId
+      if (error || !product) {
+        setMessage('Ce produit n’est plus disponible dans le catalogue. Tu peux le rechercher ou saisir son nom.')
+        return
+      }
+      setForm(previous => ({ ...previous, product_id: product.id, custom_name: product.name, current_value_override: '' }))
+      setCatalogQuery(product.name)
+      setCatalog(previous => [...previous.filter(item => item.id !== product.id), product])
+      document.getElementById('ajouter-produit')?.scrollIntoView({ block: 'start' })
+    }
+    preselect()
+    return () => { active = false }
+  }, [user, supabase])
 
   function chooseCatalogProduct(product) {
     setForm({
@@ -765,7 +798,7 @@ export default function CollectionPage() {
 
       <section className="contentGrid">
         <div className="panel">
-          <h2>Ajouter un produit</h2>
+          <h2 id="ajouter-produit" style={{ scrollMarginTop: 100 }}>Ajouter un produit</h2>
           <form onSubmit={addItem} className="formGrid">
             <div className="catalogPicker">
               <label>
@@ -779,7 +812,8 @@ export default function CollectionPage() {
                   placeholder="Ex. 151, Arceus, Célébrations..."
                 />
               </label>
-              {catalogLoading && <small className="muted">Recherche dans le catalogue…</small>}
+              {catalogLoading && <small role="status" className="muted">Recherche dans le catalogue…</small>}
+              {catalogError && <small role="alert" className="muted">{catalogError}</small>}
               {catalogMatches.length > 0 && (
                 <div className="catalogSuggestions">
                   {catalogMatches.map(product => (
@@ -794,7 +828,7 @@ export default function CollectionPage() {
                   ))}
                 </div>
               )}
-              {!catalogLoading && catalogQuery.trim().length >= 2 && catalogMatches.length === 0 && (
+              {!catalogLoading && !catalogError && !form.product_id && catalogQuery.trim().length >= 2 && catalogMatches.length === 0 && (
                 <small className="muted">Aucun résultat. Tu peux saisir le nom librement ci-dessous.</small>
               )}
               <small className="muted">

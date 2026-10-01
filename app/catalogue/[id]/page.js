@@ -105,6 +105,7 @@ export default function ProductDetailPage() {
             {product.category === 'sealed' ? 'Scellé' : product.category}
           </span>
           <h1>{product.name}</h1>
+          <a className="btn" href={`/collection?product=${encodeURIComponent(product.id)}`}>Ajouter à ma collection</a>
           <p className="muted">{product.series || 'Série non renseignée'}</p>
           <div className="detailReleaseDate">
             <span>Date de sortie officielle</span>

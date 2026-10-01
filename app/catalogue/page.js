@@ -2,6 +2,8 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { fetchAllRows } from '../../lib/supabase-pagination'
+import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 
 function median(values) {
   if (!values.length) return null
@@ -16,6 +18,8 @@ export default function CataloguePage() {
   const supabase = useMemo(() => createClient(), [])
   const [products, setProducts] = useState([])
   const [history, setHistory] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState('')
   const [query, setQuery] = useState('')
   const [user, setUser] = useState(null)
   const [suggestion, setSuggestion] = useState({ name:'', series:'', category:'sealed', notes:'' })
@@ -80,98 +84,28 @@ export default function CataloguePage() {
   }
 
   async function loadProducts() {
-    const [{ data: productData }, { data: historyData }] = await Promise.all([
-      supabase
+    setLoading(true)
+    setLoadError('')
+    const [{ data: productData, error: productError }, { data: historyData }] = await Promise.all([
+      fetchAllRows(() => supabase
         .from('products')
         .select('id,name,series,category,product_type,release_date,release_period,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
         .eq('is_public', true)
-        .order('name'),
+        .order('name').order('id')),
       supabase
         .from('product_price_history')
         .select('id,product_id,source,price,observed_at,condition_tier,observation_type')
         .order('observed_at', { ascending: true })
     ])
 
+    if (productError) setLoadError('Le catalogue ne peut pas être chargé pour le moment.')
+    setLoading(false)
     setProducts(productData || [])
     setHistory(historyData || [])
   }
 
-  const filtered = products.filter(product => {
-    const normalizedQuery = query
-      .trim()
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-
-    if (!normalizedQuery) return true
-
-    const aliases = {
-      etb: ['coffret dresseur elite', 'elite trainer box', 'etb'],
-      'elite trainer box': ['coffret dresseur elite', 'etb'],
-      'coffret dresseur': ['coffret dresseur elite', 'etb'],
-      display: ['display', 'boite de boosters', 'booster box', 'display 36 boosters', 'demi-display 18 boosters'],
-      'booster box': ['display', 'boite de boosters', 'display 36 boosters'],
-      'demi display': ['demi-display', 'demi display', '18 boosters', 'booster box 18 boosters'],
-      'demie display': ['demi-display', 'demi display', '18 boosters', 'booster box 18 boosters'],
-      'half display': ['demi-display', '18 boosters', 'booster box 18 boosters'],
-      bundle: ['booster bundle', 'lot de 6 boosters', 'bundle'],
-      'booster bundle': ['lot de 6 boosters', 'bundle'],
-      tripack: ['tripack', 'tripack blister', 'blister 3 boosters', '3 boosters'],
-      blister: ['blister', 'tripack'],
-      pokebox: ['pokebox', 'poke box', 'tin', 'boite'],
-      tin: ['tin', 'pokebox', 'poke box', 'boite'],
-      minitin: ['mini tin', 'mini-boite', 'mini boite'],
-      'mini tin': ['mini tin', 'mini-boite', 'mini boite'],
-      upc: ['ultra-premium collection', 'collection ultra-premium', 'upc'],
-      'ultra premium': ['ultra-premium collection', 'collection ultra-premium', 'upc'],
-      valisette: ['valisette', 'coffre de collection', 'collector chest'],
-      coffre: ['coffre de collection', 'valisette', 'collector chest'],
-      'pin box': ['collection pins', 'collection pin', 'coffret pins', 'pin box'],
-      'pins box': ['collection pins', 'collection pin', 'coffret pins', 'pin box'],
-      coffret: ['coffret', 'collection'],
-      premium: ['collection premium', 'premium'],
-      poster: ['collection poster', 'poster'],
-      classeur: ['collection classeur', 'classeur', 'binder collection'],
-      binder: ['collection classeur', 'classeur', 'binder collection'],
-      journee: ['journee pokemon', 'pokemon day', 'journee pokemon 2026'],
-      'journee pokemon': ['pokemon day', 'journee pokemon 2026'],
-      'pokemon day': ['journee pokemon', 'journee pokemon 2026'],
-      '30 ans': ['journee pokemon 2026', '30e anniversaire', '30eme anniversaire', 'collection k.o.', 'collection ko'],
-      ko: ['collection k.o.', 'collection ko'],
-      'collection ko': ['collection k.o.', 'collection ko'],
-      'collection k.o.': ['collection k.o.', 'collection ko'],
-      evoli: ['évoli', 'evoli'],
-      phyllali: ['phyllali', 'leafeon'],
-      leafeon: ['phyllali', 'leafeon'],
-      vstar: ['vstar', 'v star'],
-      'collection speciale': ['collection spéciale', 'collection speciale', 'coffret']
-    }
-
-    const expandedTerms = new Set([normalizedQuery])
-    Object.entries(aliases).forEach(([alias, terms]) => {
-      if (normalizedQuery.includes(alias) || alias.includes(normalizedQuery)) {
-        terms.forEach(term => expandedTerms.add(term))
-      }
-    })
-
-    const haystack = [
-      product.name,
-      product.series,
-      product.category,
-      product.product_type
-    ]
-      .filter(Boolean)
-      .join(' ')
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '')
-
-    return [...expandedTerms].some(term =>
-      haystack.includes(
-        term.normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-      )
-    )
-  })
+  const hasSearch = Boolean(normalizeSearch(query))
+  const filtered = useMemo(() => hasSearch ? products.filter(createProductMatcher(query)) : [], [products, query, hasSearch])
 
   function getStats(productId, tier = 'standard') {
     const sales = history.filter(item =>
@@ -203,13 +137,16 @@ export default function CataloguePage() {
           PokéValeur distingue toujours le prix d’achat personnel de la valeur de référence du marché.
         </p>
         <div className="catalogCount">
-          <strong>{products.length}</strong>
+          <strong>{loading ? '…' : loadError ? '—' : products.length}</strong>
           <span>produit{products.length > 1 ? 's' : ''} recensé{products.length > 1 ? 's' : ''}</span>
-          {query && <small>{filtered.length} résultat{filtered.length > 1 ? 's' : ''} pour ta recherche</small>}
+          {hasSearch && !loading && !loadError && <small role="status">{filtered.length} résultat{filtered.length > 1 ? 's' : ''} pour ta recherche</small>}
         </div>
         <div className="voiceSearchWrap">
           <input
             className="catalogSearch"
+            type="search"
+            aria-label="Rechercher un produit ou une série"
+            aria-describedby="catalog-search-help"
             value={query}
             onChange={e => setQuery(e.target.value)}
             placeholder="Rechercher un produit ou une série..."
@@ -224,9 +161,14 @@ export default function CataloguePage() {
             {voiceListening ? '🎙️' : '🎤'}
           </button>
         </div>
+        <p id="catalog-search-help" className="muted">Saisis un nom, une série ou un format. Par exemple : ETB 151, demi-display ou valisette Arceus.</p>
       </section>
 
-      <section className="catalogGrid">
+      {!hasSearch && <section className="panel"><h2>Quel trésor recherches-tu ?</h2><p className="muted">Les produits apparaîtront au fil de ta recherche.</p></section>}
+      {hasSearch && loading && <p role="status">Chargement du catalogue…</p>}
+      {loadError && <section className="panel" role="alert"><p>{loadError}</p><button type="button" className="btn" onClick={loadProducts}>Réessayer</button></section>}
+
+      <section className="catalogGrid" aria-label="Résultats de recherche">
         {filtered.map(product => {
           const stats = getStats(product.id, 'standard')
           const zeroDefectStats = getStats(product.id, 'zero_defect')
@@ -348,7 +290,7 @@ export default function CataloguePage() {
         })}
       </section>
 
-      {filtered.length === 0 && (
+      {hasSearch && !loading && !loadError && filtered.length === 0 && (
         <section className="panel narrow">
           <p>Aucun produit trouvé pour cette recherche.</p>
         </section>
