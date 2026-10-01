@@ -51,6 +51,7 @@ export default function CollectionPage() {
   const [photoUrls, setPhotoUrls] = useState({})
   const [photoStepDone, setPhotoStepDone] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const addItemPendingRef = useRef(false)
   const [photoUploadState, setPhotoUploadState] = useState({})
   const [collectionVoiceListening, setCollectionVoiceListening] = useState(false)
   const activeCollectionProfile = collectionProfiles.find(profile => profile.id === activeProfileId)
@@ -357,73 +358,83 @@ export default function CollectionPage() {
 
   async function addItem(e) {
     e.preventDefault()
+    if (addItemPendingRef.current) return
     if (isSwitchingProfile) return setMessage('Attends le chargement de la collection sélectionnée.')
     if (!user) return setMessage('Connecte-toi d’abord.')
 
-    let uploadedPhotoPaths = []
-    setIsSaving(true)
-    setMessage(photoFiles.length ? `Envoi de ${photoFiles.length} photo${photoFiles.length > 1 ? 's' : ''} vers le stockage…` : 'Enregistrement du produit…')
-
+    if (!activeProfileId) return setMessage('Attends le chargement de ton profil de collection.')
+    addItemPendingRef.current = true
     try {
-      uploadedPhotoPaths = await uploadCollectionPhotos(photoFiles)
-    } catch (error) {
-      setIsSaving(false)
-      setMessage(`❌ ${error.message}`)
-      return
-    }
+      let uploadedPhotoPaths = []
+      setIsSaving(true)
+      setMessage(photoFiles.length ? `Envoi de ${photoFiles.length} photo${photoFiles.length > 1 ? 's' : ''} vers le stockage…` : 'Enregistrement du produit…')
 
-    const payload = {
-      user_id: user.id,
-      collection_profile_id: activeProfileId,
-      product_id: form.product_id || null,
-      custom_name: form.custom_name.trim(),
-      quantity: Number(form.quantity || 1),
-      purchase_price: form.purchase_price ? Number(form.purchase_price) : null,
-      purchase_date: form.purchase_date || null,
-      purchase_place: form.purchase_place.trim() || null,
-      seller_name: form.seller_name.trim() || null,
-      current_value_override: form.current_value_override ? Number(form.current_value_override) : null,
-      sealed_condition: form.sealed_condition || 'standard',
-      booster_configuration: form.booster_configuration.trim() || null,
-      variant_note: form.variant_note.trim() || null,
-      photo_path: uploadedPhotoPaths[0] || null
-    }
+      try {
+        uploadedPhotoPaths = await uploadCollectionPhotos(photoFiles)
+      } catch (error) {
+        setMessage(`❌ ${error.message}`)
+        return
+      }
 
-    const { data: insertedItem, error } = await supabase
-      .from('collection_items')
-      .insert(payload)
-      .select('id')
-      .single()
+      const payload = {
+        user_id: user.id,
+        collection_profile_id: activeProfileId,
+        product_id: form.product_id || null,
+        custom_name: form.custom_name.trim(),
+        quantity: Number(form.quantity || 1),
+        purchase_price: form.purchase_price ? Number(form.purchase_price) : null,
+        purchase_date: form.purchase_date || null,
+        purchase_place: form.purchase_place.trim() || null,
+        seller_name: form.seller_name.trim() || null,
+        current_value_override: form.current_value_override ? Number(form.current_value_override) : null,
+        sealed_condition: form.sealed_condition || 'standard',
+        booster_configuration: form.booster_configuration.trim() || null,
+        variant_note: form.variant_note.trim() || null,
+        photo_path: uploadedPhotoPaths[0] || null
+      }
 
-    if (error) {
+      const { data: insertedItem, error } = await supabase
+        .from('collection_items')
+        .insert(payload)
+        .select('id')
+        .single()
+
+      if (error) {
+        if (uploadedPhotoPaths.length) {
+          await supabase.storage.from('collection-images').remove(uploadedPhotoPaths)
+        }
+        return setMessage(`❌ ${error.message}`)
+      }
+
+      setForm(emptyForm)
+      setCatalogQuery('')
+      setCatalogMatches([])
+      setPhotoFiles([])
+      setPhotoStepDone(false)
+
       if (uploadedPhotoPaths.length) {
-        await supabase.storage.from('collection-images').remove(uploadedPhotoPaths)
+        const { error: photoError } = await supabase.from('collection_item_photos').insert(
+          uploadedPhotoPaths.map((path, index) => ({
+            collection_item_id: insertedItem.id,
+            user_id: user.id,
+            photo_path: path,
+            sort_order: index
+          }))
+        )
+        if (photoError) {
+          await load()
+          return setMessage(`⚠️ Produit ajouté et fichier photo envoyé, mais liaison de la photo impossible : ${photoError.message}`)
+        }
       }
+
+      setMessage(uploadedPhotoPaths.length ? `✓ Produit ajouté et ${uploadedPhotoPaths.length} photo${uploadedPhotoPaths.length > 1 ? 's' : ''} enregistrée${uploadedPhotoPaths.length > 1 ? 's' : ''}.` : '✓ Produit ajouté à ta collection.')
+      await load()
+    } catch {
+      setMessage('L’enregistrement a été interrompu. Vérifie ta collection avant de réessayer.')
+    } finally {
+      addItemPendingRef.current = false
       setIsSaving(false)
-      return setMessage(`❌ ${error.message}`)
     }
-
-    if (uploadedPhotoPaths.length) {
-      const { error: photoError } = await supabase.from('collection_item_photos').insert(
-        uploadedPhotoPaths.map((path, index) => ({
-          collection_item_id: insertedItem.id,
-          user_id: user.id,
-          photo_path: path,
-          sort_order: index
-        }))
-      )
-      if (photoError) {
-        setIsSaving(false)
-        return setMessage(`⚠️ Produit ajouté et fichier photo envoyé, mais liaison de la photo impossible : ${photoError.message}`)
-      }
-    }
-
-    setForm(emptyForm)
-    setPhotoFiles([])
-    setPhotoStepDone(false)
-    setIsSaving(false)
-    setMessage(uploadedPhotoPaths.length ? `✓ Produit ajouté et ${uploadedPhotoPaths.length} photo${uploadedPhotoPaths.length > 1 ? 's' : ''} enregistrée${uploadedPhotoPaths.length > 1 ? 's' : ''}.` : '✓ Produit ajouté à ta collection.')
-    await load()
   }
 
   function startEdit(item) {
@@ -1028,7 +1039,7 @@ export default function CollectionPage() {
               Si deux exemplaires du même coffret n’ont pas les mêmes boosters, ajoute-les séparément (quantité 1) afin de conserver leur composition exacte.
             </small>
 
-            <button className="btn" type="submit" disabled={isSaving || isSwitchingProfile}>{isSwitchingProfile ? 'Chargement…' : isSaving ? 'Enregistrement en cours…' : 'Ajouter à ma collection'}</button>
+            <button className="btn" type="submit" disabled={isSaving || isSwitchingProfile || !activeProfileId}>{isSwitchingProfile ? 'Chargement…' : isSaving ? 'Enregistrement en cours…' : 'Ajouter à ma collection'}</button>
           </form>
 
           {message && <p className="message">{message}</p>}

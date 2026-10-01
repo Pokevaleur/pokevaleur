@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { resolvePostLoginPath } from '../../lib/post-login-path.mjs'
 
 const AVATARS = [
   { key: 'star', emoji: '⭐', label: 'Étoile' },
@@ -12,20 +13,10 @@ const AVATARS = [
   { key: 'crystal', emoji: '💎', label: 'Cristal' },
 ]
 
-const POST_LOGIN_PREFIXES = ['/collection', '/communaute', '/opportunites', '/trades', '/admin']
-
 function getPostLoginPath() {
   const savedPath = window.localStorage.getItem('pokevaleur-post-login-path')
   const requestedPath = new URLSearchParams(window.location.search).get('next')
-  const candidate = savedPath || requestedPath || '/collection'
-  try {
-    const parsed = new URL(candidate, window.location.origin)
-    const isAllowedPath = POST_LOGIN_PREFIXES.some(prefix => parsed.pathname === prefix || parsed.pathname.startsWith(prefix + '/'))
-    if (parsed.origin === window.location.origin && isAllowedPath) {
-      return parsed.pathname + parsed.search + parsed.hash
-    }
-  } catch {}
-  return '/collection'
+  return resolvePostLoginPath(window.location.origin, requestedPath, savedPath)
 }
 
 export default function LoginPage() {
