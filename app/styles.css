@@ -751,3 +751,5 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .avatarIcon{display:grid;place-items:center;flex:none;width:38px;height:38px;border-radius:50%;font-size:21px;background:#f1f4f8}
 .avatar-fire{background:#fff0e7}.avatar-water{background:#e8f4ff}.avatar-leaf{background:#eaf8ed}.avatar-spark{background:#fff8d9}.avatar-crystal{background:#f1ebff}
 @media(max-width:480px){.avatarPicker{grid-template-columns:repeat(2,minmax(0,1fr))}.avatarOption{padding:8px;font-size:12px}}
+.passwordField{display:flex;align-items:stretch;gap:8px}.passwordField input{flex:1;min-width:0}.passwordToggle{flex:none;padding:0 14px;border:1px solid var(--border);border-radius:10px;background:#fff;color:var(--text);font:inherit;font-weight:700;cursor:pointer}.passwordToggle:focus-visible{outline:3px solid var(--navy);outline-offset:2px}
+.passwordRecoveryLink{justify-self:start;padding:4px 0;border:0;background:transparent;color:var(--navy);font:inherit;font-weight:700;text-decoration:underline;text-underline-offset:3px;cursor:pointer}.passwordRecoveryLink:disabled{opacity:.6;cursor:wait}
