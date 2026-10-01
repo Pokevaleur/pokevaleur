@@ -1,4 +1,5 @@
 import './styles.css'
+import Navigation from './navigation'
 
 export const viewport = {
   width: 'device-width',
@@ -19,8 +20,7 @@ const navLinks = [
   ['/communaute', 'Communauté'],
   ['/trades', 'Trades'],
   ['/progression', 'Mon grade'],
-  ['/coffre', 'Coffre de Lukulu'],
-  ['/admin', 'Admin']
+  ['/coffre', 'Coffre de Lukulu']
 ]
 
 export default function RootLayout({ children }) {
@@ -30,18 +30,7 @@ export default function RootLayout({ children }) {
         <header className="topbar">
           <a className="brand" href="/">PokéValeur</a>
 
-          <nav className="desktopNav">
-            {navLinks.map(([href, label]) => <a href={href} key={href}>{label}</a>)}
-            <a href="/login" className="btn small">Connexion</a>
-          </nav>
-
-          <details className="mobileMenu">
-            <summary aria-label="Ouvrir le menu">☰</summary>
-            <div className="mobileMenuPanel">
-              {navLinks.map(([href, label]) => <a href={href} key={href}>{label}</a>)}
-              <a href="/login" className="btn small">Connexion</a>
-            </div>
-          </details>
+          <Navigation links={navLinks} />
         </header>
 
         {children}
