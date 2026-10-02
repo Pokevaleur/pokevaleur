@@ -282,9 +282,14 @@ export default function CataloguePage() {
                 </span>
               </div>
 
-              <a className="detailLink" href={`/catalogue/${product.id}`}>
-                Voir la fiche détaillée →
-              </a>
+              <div className="catalogCardActions">
+                <a className="btn small" href={`/collection?product=${encodeURIComponent(product.id)}`}>
+                  Ajouter à ma collection
+                </a>
+                <a className="detailLink" href={`/catalogue/${product.id}`}>
+                  Voir la fiche détaillée →
+                </a>
+              </div>
             </article>
           )
         })}
