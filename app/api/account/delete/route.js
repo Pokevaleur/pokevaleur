@@ -9,6 +9,10 @@ function jsonError(message, status) {
 }
 
 export async function POST(request) {
+  if (process.env.VERCEL_ENV !== 'production') {
+    return jsonError('La suppression réelle du compte est désactivée dans l’aperçu.', 403)
+  }
+
   const origin = request.headers.get('origin')
   if (!origin || origin !== new URL(request.url).origin) {
     return jsonError('Requête refusée.', 403)
