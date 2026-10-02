@@ -938,3 +938,5 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .collectionSearchHeading{flex-wrap:wrap}
 .collectionSearchPanel .searchInput{min-width:0}
 @media(max-width:420px){.opportunitiesWorkspace .duplicateReviewActions{display:grid;grid-template-columns:1fr}.opportunitiesWorkspace .productMain{flex-direction:column;align-items:flex-start}.opportunitiesWorkspace .productValues{text-align:left}}
+
+.catalogCardActions{display:grid;gap:4px;margin-top:14px}.catalogCardActions .btn{width:100%;text-align:center}.catalogCardActions .detailLink{margin-top:6px}
