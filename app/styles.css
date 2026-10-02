@@ -884,7 +884,7 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .collectionSearchHeading h2{font-size:18px}
 }
 
-.collectionQuickLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.collectionQuickLinks{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:14px}
 .collectionQuickLinks>a{display:flex;align-items:center;gap:8px;min-height:52px;padding:12px;background:#edf3f9;border:1px solid #dce6f0;border-radius:12px;font-weight:700;font-size:13px}
 .collectionQuickLinks>a>span:last-child{margin-left:auto}
 .collectionFileActions{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-top:12px}
