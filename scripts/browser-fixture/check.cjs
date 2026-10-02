@@ -34,7 +34,7 @@ async function main(){
      await page.waitForFunction(()=>document.querySelectorAll('.productCard').length===2)
      await capture('collection-search')
      await page.getByRole('button',{name:'Effacer',exact:true}).click()
-     await page.getByLabel('État du produit',{exact:true}).selectOption('zero_defect')
+     await page.locator('.collectionSearchFilters select').selectOption('zero_defect')
      await page.waitForFunction(()=>document.querySelectorAll('.productCard').length===1)
      assert((await page.locator('.productCard').innerText()).includes('Blister Test'))
      await page.getByRole('button',{name:'Effacer',exact:true}).click()
