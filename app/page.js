@@ -38,6 +38,7 @@ function ValueChart() {
 
 export default function Home() {
   const [member, setMember] = useState(false)
+  const [lukuluSecret, setLukuluSecret] = useState(false)
   useEffect(() => {
     let active = true
     const supabase = createClient()
@@ -75,7 +76,10 @@ export default function Home() {
     <section className={styles.social} aria-label="Partager sa passion et apprendre avec Lukulu">
       <div className={styles.community}><h2><span aria-hidden="true">♧</span> Une passion à partager</h2><p>Rencontre d’autres passionnés et échange tes découvertes.</p><div className={styles.avatars} aria-label="Exemples d’avatars originaux">{avatars.map((label,i) => <div key={label} role="img" aria-label={`Avatar original : ${label}`} className={styles.avatar} style={{backgroundPosition:`${(i%4)*100/3}% ${Math.floor(i/4)*100/3}%`}}/>)}</div><small>Exemples d’avatars</small></div>
       <div className={styles.guides}>
-        <article className={`${styles.card} ${styles.guide}`}><h2>Lukulu t’accompagne</h2><p>Des conseils pour apprendre et faire grandir ta collection.</p><Art kind="lukulu" label="Lukulu, le gardien de tes trésors, te salue"/></article>
+        <article className={`${styles.card} ${styles.guide}`} onKeyDown={event => { if (event.key === 'Escape' && lukuluSecret) { setLukuluSecret(false); event.currentTarget.querySelector('button[data-lukulu-secret]').focus() } }}><h2>Lukulu t’accompagne</h2><p>Des conseils pour apprendre et faire grandir ta collection.</p>
+          <button type="button" data-lukulu-secret className={`${styles.lukuluSecret} ${lukuluSecret ? styles.lukuluGreeting : ''}`} aria-label="Découvrir le petit secret de Lukulu" aria-expanded={lukuluSecret} aria-controls="lukulu-secret-bubble" onClick={() => setLukuluSecret(value => !value)}><Art kind="lukulu" label="Lukulu, le gardien de tes trésors, te salue"/></button>
+          {lukuluSecret && <div id="lukulu-secret-bubble" className={styles.secretBubble}><p role="status">Lukulu, c’est mon nom de gardien. Mais en famille, on m’appelle… <strong>Kulukulukuku ! 🤭</strong></p><button type="button" onClick={event => { setLukuluSecret(false); event.currentTarget.closest('article').querySelector('button[data-lukulu-secret]').focus() }}>Ça reste entre nous</button></div>}
+        </article>
         <article className={`${styles.card} ${styles.guide}`}><h2>Le coffre de Lukulu</h2><p>Conseils, découvertes ou cadeaux selon les disponibilités.</p><Art kind="chest" label="Le coffre bleu scintillant de Lukulu"/></article>
       </div>
     </section>
