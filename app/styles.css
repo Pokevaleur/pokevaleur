@@ -884,7 +884,7 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .collectionSearchHeading h2{font-size:18px}
 }
 
-.collectionQuickLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.collectionQuickLinks{display:grid;grid-template-columns:minmax(0,1fr);gap:10px;margin-bottom:14px}
 .collectionQuickLinks>a{display:flex;align-items:center;gap:8px;min-height:52px;padding:12px;background:#edf3f9;border:1px solid #dce6f0;border-radius:12px;font-weight:700;font-size:13px}
 .collectionQuickLinks>a>span:last-child{margin-left:auto}
 .collectionFileActions{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-top:12px}
@@ -938,3 +938,67 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .collectionSearchHeading{flex-wrap:wrap}
 .collectionSearchPanel .searchInput{min-width:0}
 @media(max-width:420px){.opportunitiesWorkspace .duplicateReviewActions{display:grid;grid-template-columns:1fr}.opportunitiesWorkspace .productMain{flex-direction:column;align-items:flex-start}.opportunitiesWorkspace .productValues{text-align:left}}
+
+.catalogCardActions{display:grid;gap:4px;margin-top:14px}.catalogCardActions .btn{width:100%;text-align:center}.catalogCardActions .detailLink{margin-top:6px}
+
+
+/* Account identity and profile access */
+.accountMenu{position:relative}
+.accountMenu>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:40px;padding:5px 10px;border:1px solid rgba(255,255,255,.22);border-radius:999px;color:#fff;cursor:pointer}
+.accountMenu>summary::-webkit-details-marker{display:none}
+.profileAvatar{display:inline-flex;align-items:center;justify-content:center;flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:#fff4c7;font-size:20px}
+.accountMenuName{display:block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.accountMenuPanel{position:absolute;z-index:80;top:calc(100% + 8px);right:0;display:grid;gap:8px;min-width:230px;padding:12px;border:1px solid #dce2e9;border-radius:14px;background:#fff;color:var(--text);box-shadow:0 14px 36px rgba(4,20,38,.2)}
+.accountMenuIdentity{display:grid;gap:3px;padding:4px 6px 10px;border-bottom:1px solid #e7ebf0}
+.accountMenuIdentity small{overflow-wrap:anywhere;color:#697789;font-size:13px}
+.accountMenuPanel a,.accountMenuPanel button{display:flex;align-items:center;min-height:40px;padding:8px 10px;border:0;border-radius:9px;background:#f4f7fb;color:var(--text);font:inherit;font-weight:700;text-align:left;cursor:pointer}
+.accountMenuPanel a:hover,.accountMenuPanel button:hover{background:#e8eff8}
+.profilePage{max-width:760px}
+.profileHero{display:flex;align-items:center;gap:16px;margin:20px 0;padding:18px;border-radius:16px;background:#f4f7fb}
+.profileAvatarLarge{display:inline-flex;align-items:center;justify-content:center;flex:0 0 64px;width:64px;height:64px;border-radius:50%;background:#fff1bb;font-size:34px}
+.profileHero h2{margin:0 0 4px}
+.profileHero p{margin:0;color:#697789}
+.profileDetails{display:grid;gap:0;margin:0 0 18px}
+.profileDetails>div{display:grid;grid-template-columns:minmax(150px,1fr) 2fr;gap:12px;padding:12px 0;border-bottom:1px solid #e3e7ec}
+.profileDetails dt{color:#697789}
+.profileDetails dd{margin:0;font-weight:700;overflow-wrap:anywhere}
+.profileActions{display:flex;flex-wrap:wrap;gap:10px}
+@media(max-width:700px){
+  .mobileMenuPanel .accountMenu{grid-column:1/-1}
+  .mobileMenuPanel .accountMenu>summary{justify-content:flex-start;min-height:44px;border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.07)}
+  .mobileMenuPanel .accountMenuPanel{position:static;min-width:0;margin-top:8px;box-shadow:none}
+  .profileDetails>div{grid-template-columns:1fr;gap:4px}
+}
+
+
+@media(max-width:700px){
+  .mobileMenuPanel{max-height:calc(100vh - 100px);overflow-y:auto;overscroll-behavior:contain}
+  .mobileMenuPanel .mobileAccountCard{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:8px;padding:4px 2px 12px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,.2)}
+  .mobileAccountIdentity{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-width:0;padding:4px 2px}
+  .mobileAccountIdentity>span:last-child{display:grid;gap:2px;min-width:0}
+  .mobileAccountIdentity strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff}
+  .mobileAccountIdentity small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bdcada;font-size:12px}
+  .mobileMenuPanel .mobileProfileLink,.mobileMenuPanel .mobileAccountSignOut{min-width:0;min-height:40px;padding:8px;border:0;border-radius:10px;text-align:center}
+  .mobileMenuPanel .mobileProfileLink{background:var(--gold);color:#111;font-weight:800}
+  .mobileMenuPanel .mobileAccountSignOut{background:rgba(255,255,255,.1);color:#fff;font:inherit;cursor:pointer}
+}
+
+
+/* Profile avatar gallery */
+.profileAvatarIllustrated{background-color:transparent!important;background-repeat:no-repeat;background-size:400% 400%;box-shadow:0 2px 7px rgba(4,20,38,.16)}
+.profileAvatarChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.profileAvatarFieldset{min-width:0;border:0;padding:0;margin:0 0 12px}
+.profileAvatarFieldset legend{margin-bottom:8px;font-weight:700}
+.profileAvatarChoice{min-width:0;min-height:84px;display:grid;place-items:center;gap:4px;padding:7px 3px;border:1px solid #cfd8e3;border-radius:12px;background:#fff;color:#122033;font:inherit;cursor:pointer}
+.profileAvatarChoice[aria-pressed="true"]{border:2px solid #0a2748;background:#fff4c7}
+.profileAvatarChoice:focus-visible{outline:3px solid #2f7ed8;outline-offset:2px}
+.profileAvatarChoice small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.profileAvatarOptionImage{width:48px;height:48px;border-radius:50%;font-size:28px}
+.profileAvatarLarge.profileAvatarIllustrated{background-color:transparent!important}
+.profileAvatarDetail{display:flex;align-items:center;gap:8px}
+.profileAvatarDetailMark{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;border-radius:50%;font-size:20px}
+.profileAvatarDetailMark.profileAvatarIllustrated{background-color:transparent!important}
+@media(max-width:390px){.profileAvatarChoices{grid-template-columns:repeat(4,minmax(0,1fr))}.profileAvatarOptionImage{width:42px;height:42px}}
+
+.collectionProfileAvatar{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;vertical-align:middle;margin-right:4px;border-radius:50%;background:#fff4c7;font-size:16px}
+.collectionProfileAvatar.profileAvatarIllustrated{background-color:transparent!important}

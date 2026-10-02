@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { ProfileAvatar } from '../../lib/profile-avatars'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { filterCollectionItems } from '../../lib/collection-search.mjs'
@@ -21,8 +22,6 @@ const emptyForm = {
   booster_configuration: '',
   variant_note: ''
 }
-
-const AVATAR_EMOJI = { star: '⭐', fire: '🔥', water: '💧', leaf: '🍃', spark: '⚡', crystal: '💎' }
 
 export default function CollectionPage() {
   const supabase = useMemo(() => createClient(), [])
@@ -57,6 +56,7 @@ export default function CollectionPage() {
   const photoOrderPendingRef = useRef(false)
   const [photoStepDone, setPhotoStepDone] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [loginNext, setLoginNext] = useState('/collection')
   const addItemPendingRef = useRef(false)
   const [photoUploadState, setPhotoUploadState] = useState({})
   const [collectionVoiceListening, setCollectionVoiceListening] = useState(false)
@@ -211,11 +211,13 @@ export default function CollectionPage() {
   }
 
   useEffect(() => {
-    const transferToken = new URLSearchParams(window.location.search).get('transfer')
+    const params = new URLSearchParams(window.location.search)
+    const transferToken = params.get('transfer')
     if (transferToken) {
       window.location.replace(`/collection/rejoindre?token=${encodeURIComponent(transferToken)}`)
       return
     }
+    setLoginNext(`/collection${window.location.search}`)
     load()
   }, [])
 
@@ -731,11 +733,6 @@ export default function CollectionPage() {
     URL.revokeObjectURL(url)
   }
 
-  async function signOut() {
-    await supabase.auth.signOut()
-    window.location.href = '/'
-  }
-
   const { invested, current, difference, evolution: percent, itemCount, missingPurchaseCount } = calculateCollectionStatistics(items, getCurrentValue)
 
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
@@ -747,7 +744,7 @@ export default function CollectionPage() {
         <section className="panel">
           <h1>Ma collection</h1>
           <p>Connecte-toi pour accéder à ta collection personnelle.</p>
-          <a className="btn" href="/login">Connexion / inscription</a>
+          <a className="btn" href={`/login?next=${encodeURIComponent(loginNext)}`}>Connexion / inscription</a>
         </section>
       </main>
     )
@@ -756,20 +753,7 @@ export default function CollectionPage() {
   return (
     <main className="collectionWorkspace">
       <div className="collectionHeader">
-        <div>
-          <span className="eyebrow dark">Mon espace</span>
-          <h1>{activeCollectionProfile && !activeCollectionProfile.is_default ? `Collection de ${activeCollectionProfile.display_name}` : 'Ma collection'}</h1>
-          <p className="muted" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className={`avatarIcon avatar-${activeCollectionProfile?.is_default ? profileIdentity?.avatar_key || 'star' : activeCollectionProfile?.avatar_key || 'star'}`} aria-hidden="true">
-              {AVATAR_EMOJI[activeCollectionProfile?.is_default ? profileIdentity?.avatar_key : activeCollectionProfile?.avatar_key] || AVATAR_EMOJI.star}
-            </span>
-            <span>{activeCollectionProfile?.is_default ? profileIdentity?.display_name || 'Collectionneur' : activeCollectionProfile?.display_name || 'Collection familiale'}</span>
-          </p>
-        </div>
-        <details className="collectionAccountMenu">
-          <summary>Mon compte</summary>
-          <button type="button" className="miniBtn dangerMini" onClick={signOut}>Se déconnecter</button>
-        </details>
+        <h1>{activeCollectionProfile && !activeCollectionProfile.is_default ? `Collection de ${activeCollectionProfile.display_name}` : 'Ma collection'}</h1>
       </div>
 
       <section className="panel collectionSearchPanel" aria-label="Recherche dans ma collection">
@@ -808,7 +792,6 @@ export default function CollectionPage() {
       </section>
       <div className="collectionQuickLinks" aria-label="Suivi de collection">
         <a href="/collection/statistiques"><span aria-hidden="true">📊</span> Statistiques <span aria-hidden="true">→</span></a>
-        <a href="/opportunites"><span aria-hidden="true">🎯</span> Doublons & Watchlist <span aria-hidden="true">→</span></a>
       </div>
       <details className="panel collectionToolsPanel">
         <summary>Mes fichiers</summary>
@@ -829,7 +812,7 @@ export default function CollectionPage() {
         <div className="buttonRow" style={{ flexWrap: 'wrap', gap: 8 }}>
           {collectionProfiles.map(profile => (
             <button key={profile.id} className={`btn ${profile.id === activeProfileId ? '' : 'ghost'}`} type="button" disabled={isSwitchingProfile} onClick={() => selectCollectionProfile(profile.id)}>
-              {AVATAR_EMOJI[profile.is_default ? profileIdentity?.avatar_key : profile.avatar_key] || AVATAR_EMOJI.star} {profile.display_name}{profile.transferred_at ? ' (transférée)' : profile.is_default ? ' (toi)' : ''}
+              <ProfileAvatar className="collectionProfileAvatar" avatarKey={profile.is_default ? profileIdentity?.avatar_key : profile.avatar_key} aria-hidden="true" /> {profile.display_name}{profile.transferred_at ? ' (transférée)' : profile.is_default ? ' (toi)' : ''}
             </button>
           ))}
         </div>
