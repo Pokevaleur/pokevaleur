@@ -23,6 +23,13 @@ async function main(){
    }
    async function step(label,fn){try{await fn();report.push({name,label,passed:true});console.log('PASS '+name+' '+label)}catch(e){report.push({name,label,passed:false,error:e.message});await capture('failure').catch(()=>{});throw e}}
    try{
+    await step('Connected home shows member actions instead of signup',async()=>{
+     await page.goto(base+'/',{waitUntil:'networkidle'})
+     await page.getByRole('link',{name:'Retrouve ma collection',exact:true}).waitFor()
+     assert.equal(await page.getByRole('link',{name:'Rejoins PokéValeur',exact:true}).count(),0)
+     await page.getByRole('navigation',{name:'Mon espace de collectionneur'}).waitFor()
+     await capture('home-connected')
+    })
     await step('Collection search and filters',async()=>{
      await page.goto(base+'/collection',{waitUntil:'networkidle'})
      assert.equal(new URL(page.url()).pathname,'/collection','Synthetic session must display collection')
@@ -95,10 +102,10 @@ async function main(){
  }finally{
   await browser.close()
   await fs.writeFile('connected-browser-report/results.json',JSON.stringify(report,null,2))
-  const summary=`## Connected UI fixture checks\n\n${report.filter(r=>r.passed).length}/${report.length} completed checks passed. Expected: 21 checks.\n\nSynthetic session and in-memory data only. Real authentication, Postgres persistence and RLS are NOT covered. No production calls are allowed.\n\n`+report.map(r=>`- ${r.passed?'✅':'❌'} ${r.name}: ${r.label}${r.error?' — '+r.error:''}`).join('\n')+'\n'
+  const summary=`## Connected UI fixture checks\n\n${report.filter(r=>r.passed).length}/${report.length} completed checks passed. Expected: 24 checks.\n\nSynthetic session and in-memory data only. Real authentication, Postgres persistence and RLS are NOT covered. No production calls are allowed.\n\n`+report.map(r=>`- ${r.passed?'✅':'❌'} ${r.name}: ${r.label}${r.error?' — '+r.error:''}`).join('\n')+'\n'
   await fs.writeFile('connected-browser-report/summary.md',summary)
   if(process.env.GITHUB_STEP_SUMMARY)await fs.appendFile(process.env.GITHUB_STEP_SUMMARY,summary)
  }
- assert(report.length===21 && report.every(r=>r.passed),'Connected UI checks failed; see screenshots and report')
+ assert(report.length===24 && report.every(r=>r.passed),'Connected UI checks failed; see screenshots and report')
 }
 main().catch(e=>{console.error(e);process.exitCode=1})

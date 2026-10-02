@@ -1,101 +1,75 @@
-"use client"
+'use client'
 
-import { useEffect, useState } from "react"
+import { useEffect, useState } from 'react'
+import { createClient } from '../lib/supabase-browser'
+import styles from './home.module.css'
+
+const categories = [['sealed', 'Scellés'], ['graded', 'Cartes gradées'], ['binder', 'Master sets']]
+const avatars = ['Loutre', 'Chouette', 'Petit papillon', 'Panda roux', 'Raton laveur', 'Hérisson', 'Phoque', 'Petit galet', 'Alpaga', 'Renard', 'Petit nuage', 'Chat', 'Blaireau', 'Fennec', 'Macareux', 'Petite feuille']
+
+function Art({ kind, label, className = '' }) {
+  return <div role="img" aria-label={label} className={`${styles.art} ${styles[kind]} ${className}`} />
+}
+
+function ValueChart() {
+  const points = [[44,174],[84,152],[124,165],[164,132],[204,111],[244,143],[284,127],[324,122],[364,105],[404,87],[444,99],[484,65],[524,44],[564,19]]
+  const line = points.map(p => p.join(',')).join(' ')
+  return <article className={`${styles.card} ${styles.chartCard}`}>
+    <div className={styles.chartTitle}><h2><span aria-hidden="true">▥</span> L’évolution de la valeur de ta collection</h2><div><span>1 an</span><small>Exemple</small></div></div>
+    <svg className={styles.chart} viewBox="0 0 590 230" role="img" aria-label="Exemple de l’évolution d’une valeur de collection en euros, de janvier à septembre. Ces chiffres ne représentent pas ta collection.">
+      <defs><linearGradient id="home-value-fill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stopColor="#3697f5" stopOpacity=".35"/><stop offset="1" stopColor="#3697f5" stopOpacity=".02"/></linearGradient></defs>
+      {[20,80,140,200].map((y,i) => <g key={y}><line x1="44" y1={y} x2="564" y2={y} stroke="#e7edf5"/><text x="35" y={y+4} textAnchor="end" className={styles.chartTick}>{[800,600,400,200][i]} €</text></g>)}
+      <polygon points={`44,200 ${line} 564,200`} fill="url(#home-value-fill)"/>
+      <polyline points={line} stroke="#1976ed" strokeWidth="3" fill="none" strokeLinejoin="round"/>
+      {points.map(([x,y],i) => <circle key={x} cx={x} cy={y} r={i===13?6:4} fill="#fff" stroke={i%3===0?'#efae1b':'#1976ed'} strokeWidth="2"/>)}
+      {['Jan','Mars','Mai','Juil','Sept'].map((m,i) => <text key={m} x={44+i*130} y="225" textAnchor={i===0?'start':i===4?'end':'middle'} className={styles.chartMonth}>{m}</text>)}
+    </svg>
+  </article>
+}
 
 export default function Home() {
-  const [lukuluDay, setLukuluDay] = useState(1)
-
+  const [member, setMember] = useState(false)
   useEffect(() => {
-    const now = new Date()
-    const dayKey = Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000)
-    setLukuluDay((dayKey % 4) + 1)
+    let active = true
+    const supabase = createClient()
+    const sync = async () => {
+      try { const { data: { user }, error } = await supabase.auth.getUser(); if (active) setMember(!error && Boolean(user)) }
+      catch { if (active) setMember(false) }
+    }
+    sync()
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { if (active) setMember(false); setTimeout(() => { if (active) sync() }, 0) })
+    return () => { active = false; subscription.unsubscribe() }
   }, [])
 
-  const lukuluSrc = `/Lukulu-${lukuluDay}.png`
-
-  return (
-    <main className="homePage">
-      <section className="homeHero">
-        <div className="homeHeroCopy">
-          <span className="homePill">PokéValeur • Produits scellés & cartes</span>
-          <h1>Lukulu, le gardien de vos trésors de collection.</h1>
-          <p>
-            Suivez la valeur de vos produits, organisez votre collection et gardez une vision claire
-            de ce que vous possédez. Avec Lukulu, repérez vos doublons, complétez vos artsets et
-            surveillez les meilleures opportunités.
-          </p>
-
-          <div className="homeHeroActions">
-            <a className="btn homePrimary" href="/login">Créer mon compte</a>
-            <a className="btn ghost" href="/catalogue">Explorer le catalogue</a>
-          </div>
-
-          <div className="homeTrustRow">
-            <span>✓ Collection privée</span>
-            <span>✓ Cotes suivies</span>
-            <span>✓ Pensé mobile</span>
-          </div>
-        </div>
-
-        <div className="homeHeroShowcase">
-          <div className={`homeMascotVisual lukulu-${lukuluDay}`}>
-            <img src={lukuluSrc} alt="Lukulu, le gardien des trésors de collection PokéValeur" />
-          </div>
-          <a className="homeMiniCard top homeMiniCardLink" href="/opportunites" aria-label="Ouvrir les opportunités : Watchlist, doublons et offres">
-            <span>Opportunités</span>
-            <b>Watchlist, doublons, offres →</b>
-          </a>
-          <div className="homeMiniCard bottom">
-            <span>Artsets</span>
-            <b>Suivi en préparation</b>
-          </div>
-        </div>
-      </section>
-
-      <section className="homeQuickStats">
-        <article><span>Catalogue</span><strong>600+ produits</strong><small>ETB, displays, cases, boosters, coffrets…</small></article>
-        <article><span>Suivi intelligent</span><strong>Valeur & historique</strong><small>Prix d’achat, cote, évolution et ventes observées.</small></article>
-        <article><span>Collectionneur</span><strong>Artsets & doublons</strong><small>Repère ce qui manque et ce que tu peux revendre.</small></article>
-        <article><span>Communauté</span><strong>Trades entre membres</strong><small>Mise en relation simple, sans intermédiaire financier.</small></article>
-      </section>
-
-      <section className="homeSection">
-        <div className="homeSectionHead">
-          <span className="eyebrow dark">Tout au même endroit</span>
-          <h2>Un vrai tableau de bord de collectionneur</h2>
-          <p>Pas seulement “combien ça vaut”, mais aussi quoi conserver, quoi vendre, quoi chercher et comment ta collection évolue.</p>
-        </div>
-
-        <div className="homeFeatureGrid">
-          <article className="homeFeatureCard featured"><div className="homeFeatureIcon">📦</div><h3>Ma collection</h3><p>Photos, prix d’achat, état, variantes, compositions et valeur actuelle.</p><a href="/collection">Ouvrir ma collection →</a></article>
-          <article className="homeFeatureCard"><div className="homeFeatureIcon">🎯</div><h3>Watchlist & alertes</h3><p>Fixe un prix objectif et repère les offres intéressantes lorsqu’elles apparaissent.</p><a href="/opportunites">Voir les opportunités →</a></article>
-          <article className="homeFeatureCard"><div className="homeFeatureIcon">♻️</div><h3>Doublons</h3><p>Identifie instantanément les exemplaires en surplus et leur valeur potentielle.</p><a href="/opportunites">Voir mes doublons →</a></article>
-          <article className="homeFeatureCard"><div className="homeFeatureIcon">🧩</div><h3>Artsets</h3><p>Suis chaque artwork de booster ou solo blister et visualise ce qu’il te manque.</p><span className="homeSoon">En cours d’enrichissement</span></article>
-          <article className="homeFeatureCard"><div className="homeFeatureIcon">🔁</div><h3>Trades</h3><p>Propose tes doublons et échange directement avec d’autres collectionneurs.</p><a href="/trades">Découvrir les trades →</a></article>
-          <article className="homeFeatureCard"><div className="homeFeatureIcon">💬</div><h3>Communauté</h3><p>Échange avec des membres actifs dans un espace modéré et réservé aux comptes.</p><a href="/communaute">Entrer dans la communauté →</a></article>
-        </div>
-      </section>
-
-      <section className="homeSplit">
-        <div className="homeStoryCard dark">
-          <span className="homePill mutedPill">Le principe PokéValeur</span>
-          <h2>Tu sais exactement ce que tu possèdes.</h2>
-          <p>Chaque produit peut devenir une vraie fiche de collection : photos, origine, prix d’achat, état du scellé, boosters visibles, historique et valeur.</p>
-          <div className="homeChecklist"><span>✓ Fiche détaillée</span><span>✓ Historique de valeur</span><span>✓ Photos personnelles</span><span>✓ Recherche rapide</span></div>
-        </div>
-
-        <div className="homeStoryCard gold">
-          <span className="homePill">Assistant collectionneur</span>
-          <h2>PokéValeur t’aide à décider, sans décider à ta place.</h2>
-          <p>Doublons, watchlist, objectifs de prix, artsets incomplets et trades potentiels : l’information utile remonte au bon moment.</p>
-          <a className="btn" href="/opportunites">Voir mon tableau de bord</a>
-        </div>
-      </section>
-
-      <section className="homeFinalCta">
-        <div><span className="eyebrow">Ta collection mérite mieux qu’un tableau Excel</span><h2>Commence à construire ton PokéValeur.</h2></div>
-        <a className="btn" href="/login">Créer mon espace gratuitement</a>
-      </section>
-    </main>
-  )
+  return <main className={styles.page}>
+    <section className={styles.hero}>
+      <div className={styles.heroCopy}>
+        <h1>Chaque collection<br/>a ses <span>trésors.</span></h1>
+        <p>Scellés, cartes gradées et master sets : organise ta collection et partage ta passion.</p>
+        <a className={styles.join} href={member ? '/collection' : '/login'}>{member ? 'Retrouve ma collection' : 'Rejoins PokéValeur'}</a>
+      </div>
+      <img className={styles.heroArt} src="/accueil/collection-treasures.webp" alt="Un album, un produit scellé et une carte gradée, illustrés comme des trésors de collection" fetchPriority="high"/>
+    </section>
+    {member && <nav className={styles.memberLinks} aria-label="Mon espace de collectionneur"><a href="/collection#ajouter">Ajouter un achat</a><a href="/opportunites">Mes doublons et souhaits</a><a href="/communaute">Communauté</a><a href="/coffre">Mon coffre du jour</a></nav>}
+    <section className={styles.dashboard} aria-label="Les services de PokéValeur, exemples de présentation">
+      <ValueChart/>
+      <div className={styles.productTypes}>{categories.map(([kind,label]) => <article className={`${styles.card} ${styles.type}`} key={kind}><Art kind={kind} label={`Illustration : ${label}`}/><h2>{label}</h2></article>)}</div>
+      <div className={styles.metrics}>
+        <article className={`${styles.card} ${styles.master}`}><Art kind="cards" label="Quelques cartes de collection"/><div><h2>Master set</h2><div className={styles.progressNumber}><strong>186 / 210</strong><small>Exemple</small></div><div className={styles.progress} role="img" aria-label="Exemple : 186 cartes sur 210, soit environ 89 %"><span/></div></div></article>
+        <article className={`${styles.card} ${styles.duplicates}`}><Art kind="cards" label="Des exemplaires à comparer"/><div><h2>Doublons à vérifier</h2><p>Compare tes exemplaires.</p></div></article>
+      </div>
+      <div className={styles.services}>
+        <article className={`${styles.card} ${styles.missing}`}><Art kind="missing" label="Un emplacement de carte à compléter"/><div><h2>Trouve la pièce manquante</h2><p>Complète tes séries grâce aux échanges entre passionnés.</p></div></article>
+        <article className={`${styles.card} ${styles.audience}`}><span className={styles.smallIcon} aria-hidden="true">▱</span><div><h2>Tu débutes ?</h2><p>Des conseils pour constituer ta collection à ton rythme.</p></div></article>
+        <article className={`${styles.card} ${styles.audience}`}><span className={styles.smallIcon} aria-hidden="true">▥</span><div><h2>Tu collectionnes déjà ?</h2><p>Complète tes séries et partage tes connaissances.</p></div></article>
+      </div>
+    </section>
+    <section className={styles.social} aria-label="Partager sa passion et apprendre avec Lukulu">
+      <div className={styles.community}><h2><span aria-hidden="true">♧</span> Une passion à partager</h2><p>Rencontre d’autres passionnés et échange tes découvertes.</p><div className={styles.avatars} aria-label="Exemples d’avatars originaux">{avatars.map((label,i) => <div key={label} role="img" aria-label={`Avatar original : ${label}`} className={styles.avatar} style={{backgroundPosition:`${(i%4)*100/3}% ${Math.floor(i/4)*100/3}%`}}/>)}</div><small>Exemples d’avatars</small></div>
+      <div className={styles.guides}>
+        <article className={`${styles.card} ${styles.guide}`}><h2>Lukulu t’accompagne</h2><p>Des conseils pour apprendre et faire grandir ta collection.</p><Art kind="lukulu" label="Lukulu, le gardien de tes trésors, te salue"/></article>
+        <article className={`${styles.card} ${styles.guide}`}><h2>Le coffre de Lukulu</h2><p>Conseils, découvertes ou cadeaux selon les disponibilités.</p><Art kind="chest" label="Le coffre bleu scintillant de Lukulu"/></article>
+      </div>
+    </section>
+  </main>
 }

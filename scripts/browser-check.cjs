@@ -36,6 +36,19 @@ async function main() {
             assert.equal(row.overflow, false, 'Horizontal overflow')
             row.brokenImages = await page.evaluate(() => [...document.images].filter(i => i.getClientRects().length && i.complete && !i.naturalWidth).map(i => i.getAttribute('src')))
             assert.equal(row.brokenImages.length, 0, 'Visible image failed to load')
+            if (route === '/') {
+              await page.getByRole('link', { name: 'Rejoins PokéValeur', exact: true }).waitFor()
+              assert.equal(await page.locator('header nav, header details').count(), 0, 'Guest home has no navigation menus')
+              assert.equal(await page.getByRole('searchbox').count(), 0, 'No homepage search')
+              assert.equal(await page.getByRole('link', { name: 'Explorer le catalogue' }).count(), 0)
+              assert((await page.locator('main').innerText()).includes('Scellés, cartes gradées et master sets'))
+              assert((await page.locator('main').innerText()).includes('Le coffre de Lukulu'))
+              assert.equal(await page.locator('main [role="img"][aria-label^="Avatar original"]').count(), 16)
+              for (const asset of ['collection-treasures', 'avatars-originals', 'approved-desktop']) {
+                const image = await page.request.get(base + '/accueil/' + asset + '.webp')
+                assert(image.ok(), 'Home illustration must be available: ' + asset)
+              }
+            }
             if (route === '/coffre') {
               const chest = page.getByRole('button', { name: 'Ouvrir le coffre de Lukulu', exact: true })
               await chest.waitFor()

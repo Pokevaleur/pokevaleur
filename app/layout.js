@@ -1,5 +1,5 @@
 import './styles.css'
-import Navigation from './navigation'
+import SiteHeader from './site-header'
 
 export const viewport = {
   width: 'device-width',
@@ -27,11 +27,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="fr">
       <body>
-        <header className="topbar">
-          <a className="brand" href="/">PokéValeur</a>
-
-          <Navigation links={navLinks} />
-        </header>
+        <SiteHeader links={navLinks} />
 
         {children}
 
