@@ -49,3 +49,44 @@ jobs:
           path: browser-report/
           retention-days: 3
           if-no-files-found: warn
+  connected-ui:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Install application
+        run: npm install --no-audit --no-fund
+      - name: Prepare disposable UI fixture checkout
+        run: node scripts/browser-fixture/prepare.cjs
+      - name: Build isolated application
+        run: npm run build
+      - name: Install isolated browser tooling
+        run: |
+          npm install --prefix /tmp/pokevaleur-browser-tools --no-audit --no-fund playwright@1.58.2
+          /tmp/pokevaleur-browser-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Start fixture and application
+        run: |
+          node scripts/browser-fixture/server.cjs > /tmp/pokevaleur-fixture.log 2>&1 &
+          npm run start -- --port 3100 > /tmp/pokevaleur-server.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3100/login > /dev/null && curl --fail --silent http://127.0.0.1:54321/__fixture/state > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pokevaleur-fixture.log /tmp/pokevaleur-server.log
+          exit 1
+      - name: Test connected collection and duplicate review UI
+        env:
+          PLAYWRIGHT_MODULE: /tmp/pokevaleur-browser-tools/node_modules/playwright
+        run: node scripts/browser-fixture/check.cjs
+      - name: Publish connected UI captures and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: connected-ui-browser-report
+          path: connected-browser-report/
+          retention-days: 3
+          if-no-files-found: warn
