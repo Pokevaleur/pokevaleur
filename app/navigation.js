@@ -7,6 +7,7 @@ import { AVATARS, ProfileAvatar } from '../lib/profile-avatars'
 export default function Navigation({ links }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [identity, setIdentity] = useState(null)
+  const [authState, setAuthState] = useState('checking')
   const [authVersion, setAuthVersion] = useState(0)
 
   useEffect(() => {
@@ -14,6 +15,7 @@ export default function Navigation({ links }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(() => {
       setIsAdmin(false)
       setIdentity(null)
+      setAuthState('checking')
       setAuthVersion(value => value + 1)
     })
     return () => subscription.unsubscribe()
@@ -39,6 +41,7 @@ export default function Navigation({ links }) {
       if (error || !user) {
         setIdentity(null)
         setIsAdmin(false)
+        setAuthState('signed-out')
         return
       }
 
@@ -57,11 +60,13 @@ export default function Navigation({ links }) {
         email: user.email || '',
       })
       setIsAdmin(!profileError && profile?.is_admin === true)
+      setAuthState('signed-in')
     }
     loadIdentity().catch(() => {
       if (active) {
         setIdentity(null)
         setIsAdmin(false)
+        setAuthState('error')
       }
     })
     return () => { active = false }
@@ -96,7 +101,7 @@ export default function Navigation({ links }) {
     <>
       <nav className="desktopNav">
         {items}
-        {accountMenu || <a href="/login" className="btn small">Connexion</a>}
+        {accountMenu || (authState === 'signed-out' && <a href="/login" className="btn small">Connexion</a>)}
       </nav>
       <details className="mobileMenu">
         <summary aria-label="Ouvrir le menu">☰</summary>
@@ -112,7 +117,7 @@ export default function Navigation({ links }) {
             </section>
           )}
           {items}
-          {!identity && <a href="/login" className="btn small">Connexion</a>}
+          {!identity && authState === 'signed-out' && <a href="/login" className="btn small">Connexion</a>}
         </div>
       </details>
     </>
