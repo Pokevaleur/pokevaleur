@@ -34,6 +34,15 @@ test('UPCs and anniversary aliases retain the requested Pokémon', () => {
   assert.deepEqual(found('30 ans Nymphali'), [products[6].name])
   assert.deepEqual(found('30ans Amphinobi'), [products[7].name])
 })
+test('short anniversary searches recognize 30e without matching unrelated numbers', () => {
+  for (const query of ['30', '3 0', '30e']) {
+    assert.deepEqual(found(query), [products[6].name, products[7].name, products[8].name])
+    assert.equal(createProductMatcher(query)({ name: 'Lot de 130 boosters' }), false)
+  }
+  assert.deepEqual(found('30 Nymphali'), [products[6].name])
+  assert.deepEqual(found('3 0 Amphinobi'), [products[7].name])
+  assert.deepEqual(found('collection ko'), [products[8].name])
+})
 test('punctuation, accents and whole alias words are handled', () => {
   assert.deepEqual(found('collection ko'), [products[8].name])
   assert.deepEqual(found('mini tin evoli'), [products[9].name])
