@@ -811,7 +811,6 @@ export default function CollectionPage() {
       </section>
       <div className="collectionQuickLinks" aria-label="Suivi de collection">
         <a href="/collection/statistiques"><span aria-hidden="true">📊</span> Statistiques <span aria-hidden="true">→</span></a>
-        <a href="/opportunites"><span aria-hidden="true">🎯</span> Doublons & Watchlist <span aria-hidden="true">→</span></a>
       </div>
       <details className="panel collectionToolsPanel">
         <summary>Mes fichiers</summary>
