@@ -156,14 +156,14 @@ export default function ProfilePage() {
           <a className="btn" href="/collection">Ma collection</a>
         </div>
 
-        <details className="profileDangerZone">
-          <summary>Supprimer mon compte</summary>
-          <div className="profileDangerContent">
-            <h2>Suppression définitive</h2>
+        <details className="profileDangerZone" style={{ marginTop: 24, paddingTop: 16, borderTop: "1px solid #e3e7ec" }}>
+          <summary style={{ cursor: "pointer", minHeight: 44, display: "flex", alignItems: "center", color: "#9b1c1c", fontWeight: 800 }}>Supprimer mon compte</summary>
+          <div className="profileDangerContent" style={{ marginTop: 12, padding: 16, borderRadius: 14, border: "1px solid #f1c7c7", background: "#fff7f7" }}>
+            <h2 style={{ color: "#8d1717", fontSize: 20 }}>Suppression définitive</h2>
             <p>Cette action effacera ton compte, tes collections gérées avec ce compte, les photos associées et les autres données personnelles liées. Elle est définitive.</p>
             <p>Pour éviter une erreur, confirme ton adresse e-mail, saisis le mot SUPPRIMER et retape ton mot de passe.</p>
-            <form className="profileDeleteForm" onSubmit={deleteAccount}>
-              <label>
+            <form className="profileDeleteForm" onSubmit={deleteAccount} style={{ display: "grid", gap: 12, marginTop: 16 }}>
+              <label style={{ display: "grid", gap: 6, fontWeight: 700 }}>
                 Écris SUPPRIMER
                 <input
                   type="text"
@@ -174,7 +174,7 @@ export default function ProfilePage() {
                   required
                 />
               </label>
-              <label>
+              <label style={{ display: "grid", gap: 6, fontWeight: 700 }}>
                 Confirme l’adresse e-mail de ton compte
                 <input
                   type="email"
@@ -184,7 +184,7 @@ export default function ProfilePage() {
                   required
                 />
               </label>
-              <label>
+              <label style={{ display: "grid", gap: 6, fontWeight: 700 }}>
                 Mot de passe actuel
                 <input
                   type="password"
@@ -194,10 +194,10 @@ export default function ProfilePage() {
                   required
                 />
               </label>
-              <button className="profileDeleteButton" type="submit" disabled={isDeleting}>
+              <button className="profileDeleteButton" type="submit" disabled={isDeleting} style={{ minHeight: 48, border: 0, borderRadius: 10, padding: "10px 14px", background: isDeleting ? "#8c7777" : "#a61b1b", color: "white", font: "inherit", fontWeight: 800, cursor: isDeleting ? "wait" : "pointer" }}>
                 {isDeleting ? 'Suppression en cours…' : 'Effacer définitivement mon compte'}
               </button>
-              {deletionMessage && <p role="status" className="profileDeleteMessage">{deletionMessage}</p>}
+              {deletionMessage && <p role="status" className="profileDeleteMessage" style={{ margin: 0, color: "#6b2222" }}>{deletionMessage}</p>}
             </form>
           </div>
         </details>
