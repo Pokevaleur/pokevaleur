@@ -126,7 +126,7 @@ export default function ProfilePage() {
         <section className="panel">
           <h1>Mon profil</h1>
           <p>Connecte-toi pour consulter les informations de ton profil.</p>
-          <a className="btn" href={\`/login?next=\${encodeURIComponent('/profil')}\`}>Connexion</a>
+          <a className="btn" href={`/login?next=${encodeURIComponent('/profil')}`}>Connexion</a>
         </section>
       </main>
     )
