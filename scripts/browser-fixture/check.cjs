@@ -23,11 +23,11 @@ async function main(){
    }
    async function step(label,fn){try{await fn();report.push({name,label,passed:true});console.log('PASS '+name+' '+label)}catch(e){report.push({name,label,passed:false,error:e.message});await capture('failure').catch(()=>{});throw e}}
    try{
-    await step('Connected home shows member actions instead of signup',async()=>{
+    await step('Connected home keeps approved CTA and opens member collection',async()=>{
      await page.goto(base+'/',{waitUntil:'networkidle'})
-     await page.getByRole('link',{name:'Retrouve ma collection',exact:true}).waitFor()
-     assert.equal(await page.getByRole('link',{name:'Rejoins PokéValeur',exact:true}).count(),0)
-     await page.getByRole('navigation',{name:'Mon espace de collectionneur'}).waitFor()
+     const join=page.getByRole('link',{name:'Rejoins PokéValeur',exact:true}); await join.waitFor(); await page.waitForFunction(()=>Array.from(document.querySelectorAll('a')).some(a=>a.textContent==='Rejoins PokéValeur' && a.getAttribute('href')==='/collection'))
+     assert.equal(await join.getAttribute('href'),'/collection')
+     assert.equal(await page.getByRole('navigation',{name:'Mon espace de collectionneur'}).count(),0)
      await capture('home-connected')
     })
     await step('Collection search and filters',async()=>{
