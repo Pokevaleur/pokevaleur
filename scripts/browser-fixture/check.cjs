@@ -3,7 +3,7 @@ const assert=require('node:assert/strict')
 const {chromium}=require(process.env.PLAYWRIGHT_MODULE || 'playwright')
 const base='http://127.0.0.1:3100'
 const fixture='http://127.0.0.1:54321'
-async function api(path){const response=await fetch(fixture+'/__fixture/'+path);assert(response.ok());return response.json()}
+async function api(path){const response=await fetch(fixture+'/__fixture/'+path);assert(response.ok);return response.json()}
 async function main(){
  await fs.mkdir('connected-browser-report',{recursive:true})
  const browser=await chromium.launch()
