@@ -39,8 +39,14 @@ async function main() {
             if (route === '/coffre') {
               const chest = page.getByRole('button', { name: 'Ouvrir le coffre de Lukulu', exact: true })
               await chest.waitFor()
+              await page.screenshot({ path: `browser-report/${name}-coffre-closed.png`, fullPage: true })
               await chest.click()
               await page.locator('.dailyReveal.revealed').waitFor()
+              await page.waitForFunction(() => {
+                const card = document.querySelector('.dailyReveal .surpriseCard')
+                const chest = document.querySelector('.crystalChest.open img')
+                return card && chest && Number(getComputedStyle(card).opacity) > 0.99 && Number(getComputedStyle(chest).opacity) > 0.99
+              })
               assert.equal(await page.locator('.chestXpSummary').count(), 0, 'Visitor must not earn XP')
             }
             if (route === '/progression') assert.equal(await page.locator('.memberStats').count(), 0, 'Visitor must not see member counters')
