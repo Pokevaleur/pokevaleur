@@ -108,7 +108,7 @@ export default function ProfilePage() {
       }
 
       await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
-      window.location.assign('/?compte=supprime')
+      window.location.assign('/compte-supprime')
     } catch {
       setDeletionMessage('Impossible de joindre le service. Le compte n’a pas été supprimé.')
     } finally {
