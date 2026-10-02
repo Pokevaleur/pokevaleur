@@ -766,16 +766,7 @@ export default function CollectionPage() {
             <span>{activeCollectionProfile?.is_default ? profileIdentity?.display_name || 'Collectionneur' : activeCollectionProfile?.display_name || 'Collection familiale'}</span>
           </p>
         </div>
-        <div className="collectionHeaderActions">
-          <a className="btn" href="/collection/statistiques">📊 Statistiques</a>
-          <a className="btn" href="/collection/import">📥 Importer Excel / CSV</a>
-          <a className="btn" href="/opportunites">🎯 Doublons & Watchlist</a>
-          <div className="exportCollectionActions">
-            <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>⬇ Exporter avec prix</button>
-            <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>⬇ Exporter sans prix</button>
-          </div>
-          <button className="btn ghost dangerGhost" onClick={signOut}>Se déconnecter</button>
-        </div>
+
       </div>
 
       <section className="panel" style={{ marginBottom: 20 }} aria-label="Recherche dans ma collection">
@@ -809,6 +800,19 @@ export default function CollectionPage() {
         </label>
         <p className="muted" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Recherche un produit ou choisis un état pour afficher tes objets.'}</p>
       </section>
+      <details className="panel collectionToolsPanel">
+        <summary>Outils de collection</summary>
+        <div className="collectionHeaderActions">
+          <a className="btn" href="/collection/statistiques">📊 Statistiques</a>
+          <a className="btn" href="/collection/import">📥 Importer Excel / CSV</a>
+          <a className="btn" href="/opportunites">🎯 Doublons & Watchlist</a>
+          <div className="exportCollectionActions">
+            <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>⬇ Exporter avec prix</button>
+            <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>⬇ Exporter sans prix</button>
+          </div>
+          <button className="btn ghost dangerGhost" onClick={signOut}>Se déconnecter</button>
+        </div>
+      </details>
       <section className="panel" style={{ marginBottom: 20 }}>
         <h2>Collections de la famille</h2>
         <p className="muted">Chaque enfant peut commencer sans compte. Quand il en crée un, tu peux lui transférer toute sa collection avec un lien à usage unique.</p>

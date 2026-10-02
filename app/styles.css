@@ -832,7 +832,6 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .catalogueReference{display:block;width:fit-content;max-width:100%;margin:8px 0 12px;line-height:1.4;white-space:normal;overflow-wrap:anywhere;font-size:14px}
 .productMain>div,.itemValueTop>div{min-width:0}
 .collectionItemPhoto img{display:block;max-width:100%;object-fit:contain}
-
 /* Product detail children may shrink and wrap within the available viewport. */
 .productDetailHero>div{min-width:0;max-width:100%}
 .detailProductIdentity{overflow-wrap:anywhere}
@@ -844,4 +843,16 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .detailReleaseDate{grid-template-columns:minmax(0,1fr)}
  .referenceValue strong{font-size:28px}
  .zeroDefectHeroValue{max-width:100%}
+}
+
+/* Collection: search before secondary tools, compact on mobile. */
+.collectionToolsPanel{margin-bottom:20px;padding:16px 20px}
+.collectionToolsPanel>summary{cursor:pointer;font-weight:700;min-height:32px;line-height:32px}
+.collectionToolsPanel .collectionHeaderActions{margin-top:14px;display:flex!important;flex-wrap:wrap;gap:10px}
+.collectionToolsPanel .exportCollectionActions{display:flex;flex-wrap:wrap;gap:10px}
+.collectionToolsPanel .btn{white-space:normal;min-width:0}
+@media(max-width:650px){
+ .collectionToolsPanel .collectionHeaderActions{display:grid!important;grid-template-columns:1fr!important}
+ .collectionToolsPanel .exportCollectionActions{display:grid;grid-template-columns:1fr;width:100%}
+ .collectionToolsPanel .btn{width:100%}
 }

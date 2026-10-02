@@ -143,17 +143,20 @@ export default function CollectionStatisticsPage() {
   const topGains = enriched.filter(hasPurchasePrice).sort((a,b) => b.gain - a.gain).slice(0,5)
   const topValues = [...enriched].sort((a,b) => b.value - a.value).slice(0,5)
 
-  function aggregate(keyFn) {
+  function aggregate(keyFn, limit = 8) {
     const map = {}
     enriched.forEach(row => {
       const key = keyFn(row) || 'Non renseigné'
-      map[key] = (map[key] || 0) + row.value
+      if (!map[key]) map[key] = { value: 0, count: 0 }
+      map[key].value += row.value
+      map[key].count += Number(row.quantity) || 1
     })
-    return Object.entries(map).sort((a,b) => b[1]-a[1]).slice(0,8)
+    return Object.entries(map).map(([label, totals]) => [label, totals.value, totals.count])
+      .sort((a,b) => b[1]-a[1]).slice(0,limit)
   }
 
   const seriesRows = aggregate(row => row.product.series)
-  const typeRows = aggregate(row => row.product.product_type || row.product.category)
+  const typeRows = aggregate(row => row.product.product_type || row.product.category, Infinity)
   const yearRows = aggregate(row => row.product.release_year ? String(row.product.release_year) : 'Année inconnue')
   const maxSeries = Math.max(1, ...seriesRows.map(([,v]) => v))
   const maxType = Math.max(1, ...typeRows.map(([,v]) => v))
@@ -241,9 +244,10 @@ export default function CollectionStatisticsPage() {
         <div className="panel">
           <h2>Répartition par type</h2>
           <div className="statsBars">
-            {typeRows.map(([label,value]) => (
+            {typeRows.map(([label,value,count]) => (
               <div className="statsBarRow" key={label}>
                 <div><span>{label}</span><strong>{euro(value)}</strong></div>
+                <small>{count} exemplaire{count > 1 ? 's' : ''}</small>
                 <i><b style={{width:`${value/maxType*100}%`}} /></i>
               </div>
             ))}

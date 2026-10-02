@@ -145,7 +145,7 @@ export default function TradesPage() {
       <section className="panel">
         <h1>Trades entre membres</h1>
         <p>Connecte-toi pour accéder aux échanges entre collectionneurs.</p>
-        <a className="btn" href="/login">Connexion</a>
+        <a className="btn" href="/login?next=%2Ftrades">Connexion</a>
       </section>
     </main>
   )
