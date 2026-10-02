@@ -969,3 +969,16 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
   .mobileMenuPanel .accountMenuPanel{position:static;min-width:0;margin-top:8px;box-shadow:none}
   .profileDetails>div{grid-template-columns:1fr;gap:4px}
 }
+
+
+@media(max-width:700px){
+  .mobileMenuPanel{max-height:calc(100vh - 100px);overflow-y:auto;overscroll-behavior:contain}
+  .mobileMenuPanel .mobileAccountCard{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;align-items:center;gap:8px;padding:4px 2px 12px;margin-bottom:4px;border-bottom:1px solid rgba(255,255,255,.2)}
+  .mobileAccountIdentity{grid-column:1/-1;display:flex;align-items:center;gap:10px;min-width:0;padding:4px 2px}
+  .mobileAccountIdentity>span:last-child{display:grid;gap:2px;min-width:0}
+  .mobileAccountIdentity strong{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#fff}
+  .mobileAccountIdentity small{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:#bdcada;font-size:12px}
+  .mobileMenuPanel .mobileProfileLink,.mobileMenuPanel .mobileAccountSignOut{min-width:0;min-height:40px;padding:8px;border:0;border-radius:10px;text-align:center}
+  .mobileMenuPanel .mobileProfileLink{background:var(--gold);color:#111;font-weight:800}
+  .mobileMenuPanel .mobileAccountSignOut{background:rgba(255,255,255,.1);color:#fff;font:inherit;cursor:pointer}
+}
