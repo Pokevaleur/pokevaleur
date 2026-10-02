@@ -67,6 +67,8 @@ create table if not exists public.collection_cards (
   raw_condition text,
   grading_company_id uuid references public.card_grading_companies(id) on delete restrict,
   grade numeric(3,1) check (grade is null or grade between 1 and 10),
+  grade_label text,
+  subgrades jsonb not null default '{}'::jsonb check (jsonb_typeof(subgrades) = 'object'),
   certification_number text,
   purchase_price numeric check (purchase_price is null or purchase_price >= 0),
   purchase_date date,
