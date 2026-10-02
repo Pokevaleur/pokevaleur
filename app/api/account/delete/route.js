@@ -42,6 +42,10 @@ export async function POST(request) {
     return jsonError('Ta session a expiré. Reconnecte-toi puis réessaie.', 401)
   }
 
+  if (body.confirmedEmail.trim().toLowerCase() !== user.email.trim().toLowerCase()) {
+    return jsonError('L’adresse e-mail ne correspond pas à celle du compte.', 400)
+  }
+
   const lastSignInAt = Date.parse(user.last_sign_in_at || '')
   if (!Number.isFinite(lastSignInAt) || Date.now() - lastSignInAt > 10 * 60 * 1000) {
     return jsonError('Pour protéger ton compte, confirme à nouveau ton mot de passe puis réessaie.', 401)
