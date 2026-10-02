@@ -8,7 +8,15 @@ const categories = [['sealed', 'Scellés'], ['graded', 'Cartes gradées'], ['bin
 const avatars = ['Loutre', 'Chouette', 'Petit papillon', 'Panda roux', 'Raton laveur', 'Hérisson', 'Phoque', 'Petit galet', 'Alpaga', 'Renard', 'Petit nuage', 'Chat', 'Blaireau', 'Fennec', 'Macareux', 'Petite feuille']
 
 function Art({ kind, label, className = '' }) {
-  return <div role="img" aria-label={label} className={`${styles.art} ${styles[kind]} ${className}`} />
+  const windows = {
+    sealed: '510 640 130 120', graded: '665 640 135 120', binder: '835 640 150 120',
+    cards: '490 827 70 70', missing: '30 933 130 100',
+    beginner: '383 936 88 87', experienced: '743 938 80 80',
+    lukulu: '562 1168 213 253', chest: '794 1193 208 227',
+  }
+  return <svg role="img" aria-label={label} viewBox={windows[kind]} className={`${styles.art} ${styles[kind]} ${className}`}>
+    <image href="/accueil/approved-desktop.webp" width="1024" height="1536"/>
+  </svg>
 }
 
 function ValueChart() {
@@ -60,8 +68,8 @@ export default function Home() {
       </div>
       <div className={styles.services}>
         <article className={`${styles.card} ${styles.missing}`}><Art kind="missing" label="Un emplacement de carte à compléter"/><div><h2>Trouve la pièce manquante</h2><p>Complète tes séries grâce aux échanges entre passionnés.</p></div></article>
-        <article className={`${styles.card} ${styles.audience}`}><span className={styles.smallIcon} aria-hidden="true">▱</span><div><h2>Tu débutes ?</h2><p>Des conseils pour constituer ta collection à ton rythme.</p></div></article>
-        <article className={`${styles.card} ${styles.audience}`}><span className={styles.smallIcon} aria-hidden="true">▥</span><div><h2>Tu collectionnes déjà ?</h2><p>Complète tes séries et partage tes connaissances.</p></div></article>
+        <article className={`${styles.card} ${styles.audience}`}><Art kind="beginner" label="Des livres pour apprendre"/><div><h2>Tu débutes ?</h2><p>Des conseils pour constituer ta collection à ton rythme.</p></div></article>
+        <article className={`${styles.card} ${styles.audience}`}><Art kind="experienced" label="Des informations pour compléter ses connaissances"/><div><h2>Tu collectionnes déjà ?</h2><p>Complète tes séries et partage tes connaissances.</p></div></article>
       </div>
     </section>
     <section className={styles.social} aria-label="Partager sa passion et apprendre avec Lukulu">
