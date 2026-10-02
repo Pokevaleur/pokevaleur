@@ -57,6 +57,7 @@ export default function CollectionPage() {
   const photoOrderPendingRef = useRef(false)
   const [photoStepDone, setPhotoStepDone] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
+  const [loginNext, setLoginNext] = useState('/collection')
   const addItemPendingRef = useRef(false)
   const [photoUploadState, setPhotoUploadState] = useState({})
   const [collectionVoiceListening, setCollectionVoiceListening] = useState(false)
@@ -211,11 +212,13 @@ export default function CollectionPage() {
   }
 
   useEffect(() => {
-    const transferToken = new URLSearchParams(window.location.search).get('transfer')
+    const params = new URLSearchParams(window.location.search)
+    const transferToken = params.get('transfer')
     if (transferToken) {
       window.location.replace(`/collection/rejoindre?token=${encodeURIComponent(transferToken)}`)
       return
     }
+    setLoginNext(`/collection${window.location.search}`)
     load()
   }, [])
 
@@ -747,7 +750,7 @@ export default function CollectionPage() {
         <section className="panel">
           <h1>Ma collection</h1>
           <p>Connecte-toi pour accéder à ta collection personnelle.</p>
-          <a className="btn" href="/login">Connexion / inscription</a>
+          <a className="btn" href={`/login?next=${encodeURIComponent(loginNext)}`}>Connexion / inscription</a>
         </section>
       </main>
     )
