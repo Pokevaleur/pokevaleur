@@ -7,3 +7,6 @@
 
 /* Keep the guardians directly on the community background, without panels. */
 .guide{background:none;color:#fff}.guide h2{color:#fff}.guide p{color:#e4edf6}
+
+/* Mobile CTA sits on the crystalline scene rather than above it. */
+@media(max-width:600px){.hero{min-height:470px}.heroCopy{position:static}.hero .join{position:absolute;left:20px;bottom:218px;z-index:2;box-shadow:0 5px 18px #6d91ac33}.guide .lukulu{height:180px}}

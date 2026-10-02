@@ -8,7 +8,7 @@ const categories = [['sealed', 'Scellés'], ['graded', 'Cartes gradées'], ['bin
 const avatars = ['Loutre', 'Chouette', 'Petit papillon', 'Panda roux', 'Raton laveur', 'Hérisson', 'Phoque', 'Petit galet', 'Alpaga', 'Renard', 'Petit nuage', 'Chat', 'Blaireau', 'Fennec', 'Macareux', 'Petite feuille']
 
 function Art({ kind, label, className = '' }) {
-  if (kind === 'lukulu' || kind === 'chest') return <img className={`${styles.art} ${styles[kind]} ${className}`} src={`/accueil/${kind}-floating.webp`} alt={label} loading="lazy"/>
+  if (kind === 'lukulu' || kind === 'chest') return <img className={`${styles.art} ${styles[kind]} ${className}`} src={kind === 'lukulu' ? '/accueil/lukulu-solo.webp' : '/accueil/chest-floating.webp'} alt={label} loading="lazy"/>
   const windows = {
     sealed: '510 640 130 120', graded: '665 640 135 120', binder: '835 640 150 120',
     cards: '490 827 70 70', missing: '32 942 125 78',
