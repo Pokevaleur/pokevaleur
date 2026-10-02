@@ -44,7 +44,7 @@ async function main() {
               assert((await page.locator('main').innerText()).includes('Scellés, cartes gradées et master sets'))
               assert((await page.locator('main').innerText()).includes('Le coffre de Lukulu'))
               assert.equal(await page.locator('main [role="img"][aria-label^="Avatar original"]').count(), 16)
-              for (const asset of ['collection-treasures', 'avatars-originals', 'approved-desktop']) {
+              for (const asset of ['hero-crystals', 'lukulu-floating', 'chest-floating', 'avatars-originals', 'approved-desktop']) {
                 const image = await page.request.get(base + '/accueil/' + asset + '.webp')
                 assert(image.ok(), 'Home illustration must be available: ' + asset)
               }

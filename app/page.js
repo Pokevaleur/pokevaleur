@@ -8,6 +8,7 @@ const categories = [['sealed', 'Scellés'], ['graded', 'Cartes gradées'], ['bin
 const avatars = ['Loutre', 'Chouette', 'Petit papillon', 'Panda roux', 'Raton laveur', 'Hérisson', 'Phoque', 'Petit galet', 'Alpaga', 'Renard', 'Petit nuage', 'Chat', 'Blaireau', 'Fennec', 'Macareux', 'Petite feuille']
 
 function Art({ kind, label, className = '' }) {
+  if (kind === 'lukulu' || kind === 'chest') return <img className={`${styles.art} ${styles[kind]} ${className}`} src={`/accueil/${kind}-floating.webp`} alt={label} loading="lazy"/>
   const windows = {
     sealed: '510 640 130 120', graded: '665 640 135 120', binder: '835 640 150 120',
     cards: '490 827 70 70', missing: '32 942 125 78',
@@ -56,7 +57,7 @@ export default function Home() {
         <p>Scellés, cartes gradées et master sets : organise ta collection et partage ta passion.</p>
         <a className={styles.join} href={member ? '/collection' : '/login'}>{member ? 'Retrouve ma collection' : 'Rejoins PokéValeur'}</a>
       </div>
-      <img className={styles.heroArt} src="/accueil/collection-treasures.webp" alt="Un album, un produit scellé et une carte gradée, illustrés comme des trésors de collection" fetchPriority="high"/>
+      <img className={styles.heroArt} src="/accueil/hero-crystals.webp" alt="Un album, un produit scellé et une carte gradée, illustrés comme des trésors de collection" fetchPriority="high"/>
     </section>
     {member && <nav className={styles.memberLinks} aria-label="Mon espace de collectionneur"><a href="/collection#ajouter-produit">Ajouter un achat</a><a href="/opportunites">Mes doublons et souhaits</a><a href="/communaute">Communauté</a><a href="/coffre">Mon coffre du jour</a></nav>}
     <section className={styles.dashboard} aria-label="Les services de PokéValeur, exemples de présentation">
