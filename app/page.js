@@ -10,9 +10,9 @@ const avatars = ['Loutre', 'Chouette', 'Petit papillon', 'Panda roux', 'Raton la
 function Art({ kind, label, className = '' }) {
   const windows = {
     sealed: '510 640 130 120', graded: '665 640 135 120', binder: '835 640 150 120',
-    cards: '490 827 70 70', missing: '30 933 130 100',
-    beginner: '383 936 88 87', experienced: '743 938 80 80',
-    lukulu: '562 1168 213 253', chest: '794 1193 208 227',
+    cards: '490 827 70 70', missing: '32 942 125 78',
+    beginner: '383 936 88 87', experienced: '747 943 38 70',
+    lukulu: '570 1168 195 250', chest: '801 1193 195 225',
   }
   return <svg role="img" aria-label={label} viewBox={windows[kind]} className={`${styles.art} ${styles[kind]} ${className}`}>
     <image href="/accueil/approved-desktop.webp" width="1024" height="1536"/>
