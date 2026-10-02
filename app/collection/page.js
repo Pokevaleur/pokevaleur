@@ -292,7 +292,7 @@ export default function CollectionPage() {
         setCatalogError('La recherche est indisponible. Réessaie en modifiant ta recherche.')
         setCatalogMatches([])
       } else {
-        const matches = data.filter(createProductMatcher(searchTerm)).slice(0, 6)
+        const matches = data.filter(createProductMatcher(searchTerm))
         setCatalogMatches(matches)
         setCatalog(previous => {
           const byId = new Map(previous.map(product => [product.id, product]))
@@ -1079,7 +1079,7 @@ export default function CollectionPage() {
               {catalogLoading && <small role="status" className="muted">Recherche dans le catalogue…</small>}
               {catalogError && <small role="alert" className="muted">{catalogError}</small>}
               {catalogMatches.length > 0 && (
-                <div className="catalogSuggestions">
+                <div className="catalogSuggestions" role="region" aria-label="Résultats du catalogue" tabIndex={0}>
                   {catalogMatches.map(product => (
                     <button
                       type="button"
