@@ -6,6 +6,7 @@ import { fetchAllRows } from '../../lib/supabase-pagination'
 import { summarizeWatchlistHistory } from '../../lib/watchlist-history.mjs'
 import { selectWatchlistOffer } from '../../lib/watchlist-offers.mjs'
 import { findWatchlistProducts } from '../../lib/watchlist-search.mjs'
+import { duplicateFingerprint, duplicateDecision } from '../../lib/duplicate-review.mjs'
 import { summarizeDuplicatePurchasePrices, summarizeDuplicateValues, summarizeDuplicateGroups } from '../../lib/duplicate-purchase-prices.mjs'
 
 function euro(value) {
@@ -21,6 +22,12 @@ export default function OpportunitiesPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState(null)
   const [items, setItems] = useState([])
+  const [duplicateReviews, setDuplicateReviews] = useState([])
+  const [reviewAvailable, setReviewAvailable] = useState(false)
+  const [reviewSaving, setReviewSaving] = useState(false)
+  const reviewPending = useRef(false)
+  const [duplicateView, setDuplicateView] = useState('pending')
+  const [reviewMessage, setReviewMessage] = useState('')
   const [products, setProducts] = useState([])
   const [watchlist, setWatchlist] = useState([])
   const [history, setHistory] = useState([])
@@ -65,7 +72,7 @@ export default function OpportunitiesPage() {
 
       const [itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes] = await Promise.all([
         fetchAllRows(() => supabase.from('collection_items')
-          .select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date,collection_profiles!inner(profile_type)')
+          .select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date,variant_note,booster_configuration,booster_artwork,collection_profiles!inner(profile_type)')
           .eq('collection_profiles.profile_type', 'personal')
           .order('created_at', { ascending: true })
           .order('id', { ascending: true })),
@@ -80,6 +87,10 @@ export default function OpportunitiesPage() {
       if ([itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes].some(result => result.error)) {
         throw new Error('Le tableau de bord n’a pas pu être chargé.')
       }
+      const reviewResult = await supabase.from('collection_duplicate_reviews').select('group_key,fingerprint,decision').eq('user_id',user.id)
+      if (request !== loadRequestRef.current) return
+      setReviewAvailable(!reviewResult.error)
+      setDuplicateReviews(reviewResult.data || [])
       setItems(itemsRes.data || [])
       setProducts(productsRes.data || [])
       setWatchlist(watchRes.data || [])
@@ -242,6 +253,22 @@ export default function OpportunitiesPage() {
     if (!confirmed) restore()
   }
 
+  async function reviewDuplicates(group, decision) {
+    if (!reviewAvailable || reviewPending.current) return
+    reviewPending.current = true
+    setReviewSaving(true)
+    setReviewMessage('Enregistrement…')
+    try {
+      const { data, error } = await supabase.from('collection_duplicate_reviews').upsert({
+        user_id:user.id, group_key:group.key, fingerprint:duplicateFingerprint(group.rows), decision, updated_at:new Date().toISOString()
+      }, { onConflict:'user_id,group_key' }).select('group_key,fingerprint,decision').single()
+      if (error || !data) throw error || new Error('Confirmation absente')
+      setDuplicateReviews(previous => [...previous.filter(r=>r.group_key!==group.key),data])
+      setReviewMessage(decision === 'confirmed' ? 'Identité des exemplaires confirmée. Aucune mise en vente effectuée.' : 'Groupe écarté : articles différents.')
+    } catch { setReviewMessage('Validation non enregistrée. Réessaie.') }
+    finally { reviewPending.current=false; setReviewSaving(false) }
+  }
+
   async function saveNotificationPreferences(e) {
     e.preventDefault()
     if (!user || notificationSavingRef.current) return
@@ -288,48 +315,50 @@ export default function OpportunitiesPage() {
     </main>
   )
 
-  const { totalDuplicates, possibleDuplicates, incompleteValuation, salePotential } = summarizeDuplicateGroups(duplicateGroups)
+  const { totalDuplicates, possibleDuplicates, incompleteValuation, salePotential } = summarizeDuplicateGroups(duplicateGroups.filter(g=>duplicateDecision(g,duplicateReviews)==='confirmed').map(g=>({...g,productId:g.productId || 'validated'})))
   const opportunities = watchRows.filter(w => w.opportunity).length
 
   return (
-    <main>
+    <main className="opportunitiesWorkspace">
       <div className="collectionHeader">
         <div>
           <span className="eyebrow dark">Assistant collectionneur</span>
           <h1>Doublons & Watchlist</h1>
-          <p className="muted">Repère ce que tu peux vendre en priorité et surveille les scellés que tu aimerais acheter.</p>
+          <p className="muted">Vérifie tes exemplaires et suis les produits que tu recherches.</p>
         </div>
         <div className="collectionHeaderActions">
-          <a className="btn ghost" href="/collection">← Ma collection</a>
-          <a className="btn ghost" href="/collection/statistiques">📊 Statistiques</a>
+          <a className="backLink" href="/collection">← Ma collection</a>
         </div>
       </div>
 
+      <nav className="opportunitiesNav" aria-label="Rubriques"><a href="#mes-exemplaires">Mes exemplaires</a><a href="#ma-watchlist">Ma watchlist</a></nav>
       <section className="stats">
-        <div><span>Doublons avec référence catalogue</span><strong>{totalDuplicates}</strong></div>
-        <div><span>Valeur de ces doublons{incompleteValuation ? ' (partielle)' : ''}</span><strong>{euro(salePotential)}</strong></div>
+        <div><span>Exemplaires en surplus validés</span><strong>{totalDuplicates}</strong></div>
+        <div><span>Estimation du surplus validé{incompleteValuation ? ' (partielle)' : ''}</span><strong>{euro(salePotential)}</strong></div>
         <div><span>Watchlist</span><strong>{watchRows.length}</strong></div>
         <div><span>Prix sous objectif</span><strong>{opportunities}</strong></div>
       </section>
 
-      {possibleDuplicates > 0 && <p className="muted">{possibleDuplicates} doublon{possibleDuplicates > 1 ? 's' : ''} possible{possibleDuplicates > 1 ? 's' : ''} hors catalogue à vérifier, exclu{possibleDuplicates > 1 ? 's' : ''} des totaux ci-dessus.</p>}
-      {incompleteValuation && <p className="muted">Le total exclut les groupes dont une valeur manque. Renseigne les valeurs de ces exemplaires pour obtenir une estimation complète.</p>}
-
       <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,320px),1fr))',gap:'18px'}}>
-        <section className="panel">
-          <h2>♻️ Mes doublons à vendre</h2>
-          <p className="muted">Le calcul suppose que tu conserves 1 exemplaire par référence. Il ne modifie pas ta collection. Pour les produits hors catalogue, un nom identique suggère seulement un doublon à vérifier.</p>
-          {duplicateGroups.length === 0 ? (
-            <p>Aucun doublon détecté pour le moment.</p>
+        <section className="panel" id="mes-exemplaires">
+          <h2>Vérifier mes exemplaires</h2>
+          <p className="muted">Même référence, même variante ? Compare avant de confirmer. Ta collection reste inchangée.</p>
+          <div className="duplicateReviewTabs" aria-label="État de vérification">
+            {[['pending','À vérifier'],['confirmed','Doublons validés'],['different','Écartés']].map(([key,label])=><button type="button" key={key} className="miniBtn" aria-pressed={duplicateView===key} onClick={()=>setDuplicateView(key)}>{label} ({duplicateGroups.filter(g=>duplicateDecision(g,duplicateReviews)===key).length})</button>)}
+          </div>
+          {!reviewAvailable && <p className="message">La validation n’est pas encore disponible. Aucun groupe n’est considéré comme validé.</p>}
+          {reviewMessage && <p role="status" className="message">{reviewMessage}</p>}
+          {duplicateGroups.filter(g=>duplicateDecision(g,duplicateReviews)===duplicateView).length === 0 ? (
+            <p>Aucun groupe dans cette rubrique.</p>
           ) : (
             <div className="productList">
-              {duplicateGroups.map((g,index) => (
+              {duplicateGroups.filter(g=>duplicateDecision(g,duplicateReviews)===duplicateView).map((g,index) => (
                 <article className="productCard" key={g.key}>
                   <div className="productMain">
                     <div>
-                      <span className="catalogBadge">{!g.productId ? 'Doublon possible · à vérifier' : index < 3 ? 'À regarder en priorité' : 'Doublon'}</span>
+                      <span className="catalogBadge">{duplicateView==='confirmed' ? 'Identité confirmée par toi' : duplicateView==='different' ? 'Articles différents' : 'Articles similaires · à vérifier'}</span>
                       <h3>{g.name}</h3>
-                      <p>{g.series || 'Série non renseignée'} • {g.quantity} possédé{g.quantity > 1 ? 's' : ''} • {g.sellable} en doublon</p>
+                      <p>{g.series || 'Série non renseignée'} • {g.quantity} possédé{g.quantity > 1 ? 's' : ''}{duplicateView==='confirmed' ? ` • ${g.sellable} en surplus si tu en conserves un` : ''}</p>
                     </div>
                     <div className="productValues">
                       <b>{g.currentValue == null ? 'Valeur non renseignée' : `${euro(g.currentValue)} / unité en moyenne`}</b>
@@ -338,17 +367,18 @@ export default function OpportunitiesPage() {
                       </span>
                     </div>
                   </div>
-                  <div className="marketStats">
+                  {duplicateView === 'confirmed' && <div className="marketStats">
                     <div><span>Achat moyen{g.missingPurchaseCount > 0 ? ' (partiel)' : ''}</span><strong>{euro(g.avgBuy)}</strong></div>
                     <div><span>À conserver</span><strong>1</strong></div>
-                    <div><span>À vendre</span><strong>{g.sellable}</strong></div>
-                    <div><span>Valeur doublons</span><strong>{euro(g.estimatedSaleValue)}</strong></div>
+                    <div><span>Surplus potentiel</span><strong>{g.sellable}</strong></div>
+                    <div><span>Estimation du surplus</span><strong>{euro(g.estimatedSaleValue)}</strong></div>
                   </div>
-                  {g.missingValueCount > 0 && <p className="muted">Valeur manquante pour {g.missingValueCount} exemplaire{g.missingValueCount > 1 ? 's' : ''}. Estimation de revente non calculable.</p>}
-                  {!g.productId && <p className="muted">Ces fiches sont regroupées par leur nom, sans référence catalogue commune. Vérifie qu’il s’agit du même produit avant de considérer les exemplaires comme des doublons.</p>}
-                  <p className="muted">Estimation en conservant l’exemplaire de plus forte valeur. Les autres sont évalués selon leur état et leur valeur renseignée.</p>
+                  }
+                  {duplicateView==='confirmed' && g.missingValueCount > 0 && <p className="muted">Valeur manquante pour {g.missingValueCount} exemplaire{g.missingValueCount > 1 ? 's' : ''}. Estimation de revente non calculable.</p>}
+                  {!g.productId && duplicateView==='pending' && <p className="muted">Ces fiches sont regroupées par leur nom, sans référence catalogue commune. Vérifie qu’il s’agit du même produit avant de considérer les exemplaires comme des doublons.</p>}
+                  {duplicateView==='confirmed' && <p className="muted">Estimation en conservant l’exemplaire de plus forte valeur. Les autres sont évalués selon leur état et leur valeur renseignée.</p>}
                   {g.missingPurchaseCount > 0 && <p className="muted">Prix d’achat non renseigné pour {g.missingPurchaseCount} exemplaire{g.missingPurchaseCount > 1 ? 's' : ''}. La moyenne porte sur les achats connus ; le gain comparatif n’est pas calculé.</p>}
-                  <details style={{ marginTop: 12 }}>
+                  <details open={duplicateView==='pending'} style={{ marginTop: 12 }}>
                     <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Voir mes exemplaires · {g.rows.length} fiche{g.rows.length > 1 ? 's' : ''}</summary>
                     <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
                       {g.rows.map(item => (
@@ -356,22 +386,27 @@ export default function OpportunitiesPage() {
                           <strong>{item.custom_name || g.name}</strong>
                           <p style={{ margin: '6px 0', overflowWrap: 'anywhere' }}>
                             {item.quantity || 1} exemplaire{Number(item.quantity || 1) > 1 ? 's' : ''} · {item.sealed_condition === 'zero_defect' ? 'Zéro défaut' : 'État standard'}
-                            {' · Achat : '}{euro(item.purchase_price)}
+                            {' · Achat : '}{item.purchase_price == null ? 'Non renseigné' : euro(item.purchase_price)}
                             {item.purchase_date && ` · ${new Date(item.purchase_date + 'T12:00:00').toLocaleDateString('fr-FR')}`}
                           </p>
+                          {(item.variant_note || item.booster_configuration || item.booster_artwork) && <p className="muted">{[item.variant_note,item.booster_configuration,item.booster_artwork].filter(Boolean).join(' · ')}</p>}
                           <a className="miniBtn" href={`/collection/${item.id}`}>Ouvrir cette fiche →</a>
                         </div>
                       ))}
                     </div>
                   </details>
+                  <div className="duplicateReviewActions">
+                    <button type="button" className="miniBtn" disabled={!reviewAvailable || reviewSaving} onClick={()=>reviewDuplicates(g,'confirmed')}>Même produit et même variante</button>
+                    <button type="button" className="miniBtn" disabled={!reviewAvailable || reviewSaving} onClick={()=>reviewDuplicates(g,'different')}>Ce sont des articles différents</button>
+                  </div>
                 </article>
               ))}
             </div>
           )}
         </section>
 
-        <section className="panel">
-          <h2>🎯 Ma watchlist</h2>
+        <section className="panel" id="ma-watchlist">
+          <h2>Ma watchlist</h2>
           <p className="muted">Ajoute un produit et fixe, si tu le souhaites, un prix auquel tu veux être alerté.</p>
 
           <form onSubmit={addToWatchlist} className="formGrid">

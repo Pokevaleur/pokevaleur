@@ -856,3 +856,85 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .collectionToolsPanel .exportCollectionActions{display:grid;grid-template-columns:1fr;width:100%}
  .collectionToolsPanel .btn{width:100%}
 }
+
+/* Compact collection workspace with a clear search hierarchy. */
+.collectionWorkspace .collectionHeader{margin-bottom:18px}
+.collectionWorkspace .collectionHeader h1{font-size:34px;line-height:1.1;margin:8px 0 12px}
+.collectionWorkspace .collectionHeader .eyebrow{font-size:12px}
+.collectionWorkspace .collectionHeader p{margin:0;font-size:14px}
+.collectionWorkspace .collectionHeader .avatarIcon{width:30px;height:30px;font-size:18px}
+.collectionSearchPanel{padding:20px;margin-bottom:14px;border:1px solid var(--border);box-shadow:0 4px 16px rgba(10,39,72,.04)}
+.collectionSearchHeading{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.collectionSearchHeading h2{font-size:20px;line-height:1.2;margin:0}
+.collectionSearchHeading a{white-space:nowrap;font-size:13px}
+.collectionSearchPanel .collectionVoiceSearch{max-width:none;gap:8px}
+.collectionSearchPanel .searchInput{width:100%;height:48px;padding:12px;font-size:16px;border-radius:12px;background:#f8fafc}
+.collectionSearchPanel .voiceSearchButton{width:44px;height:44px;flex-basis:44px;font-size:19px;box-shadow:none;border-radius:12px}
+.collectionSearchFilters{display:flex;align-items:flex-end;gap:12px;margin-top:14px}
+.collectionSearchFilters label{display:grid;gap:6px;flex:1;min-width:0;font-size:12px;font-weight:700;color:var(--muted)}
+.collectionSearchFilters select{display:block;width:100%;min-width:0;max-width:100%;height:44px;margin:0;padding:8px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;font-size:14px;color:var(--text)}
+.collectionSearchFilters button{min-height:44px}
+.collectionSearchStatus{font-size:12px;line-height:1.4;margin:12px 0 0}
+.collectionWorkspace .collectionToolsPanel{padding:12px 18px;border:1px solid var(--border);box-shadow:none;border-radius:14px}
+.collectionWorkspace .collectionToolsPanel>summary{font-size:14px}
+@media(max-width:650px){
+ .collectionWorkspace{padding:20px 16px}
+ .collectionWorkspace .collectionHeader h1{font-size:30px}
+ .collectionSearchPanel{padding:16px;border-radius:18px}
+ .collectionSearchHeading h2{font-size:18px}
+}
+
+.collectionQuickLinks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-bottom:14px}
+.collectionQuickLinks>a{display:flex;align-items:center;gap:8px;min-height:52px;padding:12px;background:#edf3f9;border:1px solid #dce6f0;border-radius:12px;font-weight:700;font-size:13px}
+.collectionQuickLinks>a>span:last-child{margin-left:auto}
+.collectionFileActions{display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-top:12px}
+.collectionExportMenu>summary{min-height:44px;padding:12px;border:1px solid var(--border);border-radius:9px;cursor:pointer;font-size:13px;font-weight:700}
+.collectionExportMenu>div{display:flex;gap:8px;flex-wrap:wrap;margin-top:8px}
+.collectionFileActions>a,.collectionExportMenu button{min-height:44px;font-size:13px}
+.collectionFamilyPanel>p{font-size:13px;line-height:1.5;margin:12px 0}
+.collectionFamilyPanel .btn{font-size:13px;padding:10px 12px;white-space:normal}
+.collectionAccountMenu{position:relative;align-self:start;font-size:12px}
+.collectionAccountMenu>summary{cursor:pointer;padding:10px;min-height:44px;border-radius:10px;background:#edf3f9;font-weight:700}
+.collectionAccountMenu button{display:block;margin-top:8px;min-height:44px;font-size:12px}
+@media(max-width:650px){
+ .collectionWorkspace .collectionHeader{display:flex;flex-direction:row;align-items:flex-start;gap:8px}
+ .collectionWorkspace .collectionHeader>div{flex:1;min-width:0}
+ .collectionWorkspace .collectionHeader h1{font-size:27px}
+ .collectionAccountMenu{flex-shrink:0}
+ .collectionQuickLinks>a{font-size:12px;flex-wrap:wrap;padding:10px}
+ .collectionFileActions{display:grid;grid-template-columns:1fr}
+}
+.duplicateReviewTabs,.duplicateReviewActions{display:flex;flex-wrap:wrap;gap:8px;margin:14px 0}
+.duplicateReviewTabs button[aria-pressed=true]{background:var(--navy);color:white;border-color:var(--navy)}
+.duplicateReviewActions button{min-height:44px;white-space:normal}
+
+/* Compact daily chest explanation */
+.chestGuide{margin-top:20px;padding:22px 24px;border:1px solid #dbe5ef;border-radius:20px;background:#edf3f8;color:#334d65}
+.chestGuideFacts{display:flex;flex-wrap:wrap;gap:8px 20px;font-size:13px;font-weight:700;color:#234c6b}
+.chestGuide h2{margin:14px 0 6px;font-size:22px;line-height:1.25;color:#132d43}
+.chestGuide p{margin:0;font-size:15px;line-height:1.5}
+.chestGuideActions{display:flex;flex-wrap:wrap;gap:4px 20px;margin-top:10px}
+.chestGuideActions a{display:inline-flex;align-items:center;min-height:44px;font-size:14px;font-weight:700;color:#174c75;text-decoration:underline;text-underline-offset:3px}
+@media(max-width:700px){.chestGuide{padding:18px}.chestGuide h2{font-size:20px}.chestGuideFacts{gap:8px 14px}.chestGuideActions{gap:0 16px}}
+
+.opportunitiesWorkspace .collectionHeader{margin-bottom:14px;gap:12px;align-items:flex-start}
+.opportunitiesWorkspace .collectionHeader h1{font-size:clamp(26px,4vw,36px);line-height:1.15;margin:6px 0 10px}
+.opportunitiesWorkspace .collectionHeader p{font-size:15px;line-height:1.5;margin:0}
+.opportunitiesWorkspace .collectionHeaderActions{margin:0}
+.opportunitiesNav{display:flex;gap:8px;margin:16px 0}
+.opportunitiesNav a{display:flex;align-items:center;justify-content:center;min-height:44px;padding:8px 16px;border-radius:12px;background:#e5eef6;color:#163f60;font-size:14px;font-weight:700;text-decoration:none}
+.opportunitiesWorkspace .stats{grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:18px}
+.opportunitiesWorkspace .stats>div{padding:16px;border-radius:16px;min-width:0}
+.opportunitiesWorkspace .stats span{font-size:13px;line-height:1.35}
+.opportunitiesWorkspace .stats strong{font-size:25px;overflow-wrap:anywhere}
+.opportunitiesWorkspace #mes-exemplaires,.opportunitiesWorkspace #ma-watchlist{scroll-margin-top:20px;min-width:0}
+@media(max-width:700px){.opportunitiesWorkspace .collectionHeader{display:flex;flex-direction:column}.opportunitiesWorkspace .stats{grid-template-columns:repeat(2,minmax(0,1fr))}.opportunitiesWorkspace .panel{padding:20px}.opportunitiesWorkspace .panel h2{font-size:22px}.opportunitiesNav a{flex:1;padding:8px}}
+
+/* Keep comparison controls usable on narrow screens and keyboards. */
+.opportunitiesWorkspace .duplicateReviewActions button,.opportunitiesWorkspace .duplicateReviewTabs button{min-height:44px;white-space:normal;text-align:left}
+.opportunitiesWorkspace .productCard h3,.opportunitiesWorkspace .productCard p,.opportunitiesWorkspace .productCard strong{overflow-wrap:anywhere}
+.opportunitiesWorkspace .productValues{min-width:0;max-width:100%}
+.opportunitiesWorkspace a:focus-visible,.opportunitiesWorkspace button:focus-visible,.chestGuide a:focus-visible,.collectionWorkspace summary:focus-visible{outline:3px solid #2875b5;outline-offset:3px}
+.collectionSearchHeading{flex-wrap:wrap}
+.collectionSearchPanel .searchInput{min-width:0}
+@media(max-width:420px){.opportunitiesWorkspace .duplicateReviewActions{display:grid;grid-template-columns:1fr}.opportunitiesWorkspace .productMain{flex-direction:column;align-items:flex-start}.opportunitiesWorkspace .productValues{text-align:left}}

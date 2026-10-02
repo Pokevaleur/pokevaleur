@@ -111,7 +111,11 @@ export default function CoffrePage(){
   </section>
   </section>
   <div hidden aria-hidden="true"><img src="/coffre/lukulu-happy.webp" alt=""/><img src="/coffre/chest-blue-open.webp" alt=""/></div>
-  <section className="chestDetails"><p>Conseil, découverte, petit défi ou bonus : Lukulu garde chaque jour quelque chose pour les collectionneurs curieux.</p><div className="chestRule">✦ Un seul coffre par jour • Une nouvelle surprise demain</div>{!member&&ready&&<div className="chestLoginHint">Découvre gratuitement un conseil ou un défi. Aucun XP, badge ou cadeau n’est attribué en visiteur. <a href="/login?next=%2Fcoffre">Connecte-toi pour accéder aux récompenses et retrouver ton historique.</a></div>}<div className="chestRarity">Les membres connectés peuvent aussi découvrir un coffre <b>doré</b> et des cadeaux partenaires, selon les disponibilités. 👀</div></section>
-  <section className="chestFooter"><h2>Les surprises peuvent venir de toutes les générations.</h2><p>Le coffre pourra bientôt contenir des actualités, anecdotes, défis, découvertes du catalogue, badges rares et petites récompenses de progression.</p><a href="/progression" className="btn">Voir mon grade</a></section>
+  <section className="chestGuide" aria-labelledby="chest-guide-title">
+   <div className="chestGuideFacts"><span>✦ Une ouverture par jour</span><span>💎 +1 XP pour les membres</span></div>
+   <h2 id="chest-guide-title">Des surprises de toutes les générations.</h2>
+   <p>Le coffre contient des conseils, des découvertes et des petits défis.</p>
+   <div className="chestGuideActions">{!member&&ready&&<a href="/login?next=%2Fcoffre">Me connecter pour gagner des XP →</a>}<a href="/progression">Voir ma progression →</a></div>
+  </section>
  </main>
 }

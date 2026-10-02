@@ -1,0 +1,51 @@
+name: Browser checks
+on:
+  push:
+    branches: [codex/browser-tests]
+  workflow_dispatch:
+permissions:
+  contents: read
+concurrency:
+  group: browser-check-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  visitor:
+    if: github.event.repository.private == false
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install application
+        run: npm ci
+      - name: Code checks
+        run: node --test tests/*.test.mjs
+      - name: Build application
+        run: npm run build
+      - name: Install isolated browser tooling
+        run: |
+          npm install --prefix /tmp/pokevaleur-browser-tools --no-audit --no-fund playwright@1.58.2
+          /tmp/pokevaleur-browser-tools/node_modules/.bin/playwright install --with-deps chromium
+      - name: Start local application
+        run: |
+          npm run start -- --port 3100 > /tmp/pokevaleur-server.log 2>&1 &
+          for i in $(seq 1 30); do
+            if curl --fail --silent http://127.0.0.1:3100/login > /dev/null; then exit 0; fi
+            sleep 1
+          done
+          cat /tmp/pokevaleur-server.log
+          exit 1
+      - name: Check visitor pages and capture screens
+        env:
+          PLAYWRIGHT_MODULE: /tmp/pokevaleur-browser-tools/node_modules/playwright
+        run: node scripts/browser-check.cjs
+      - name: Publish captures and report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: visitor-browser-report
+          path: browser-report/
+          retention-days: 3
+          if-no-files-found: warn

@@ -754,7 +754,7 @@ export default function CollectionPage() {
   }
 
   return (
-    <main>
+    <main className="collectionWorkspace">
       <div className="collectionHeader">
         <div>
           <span className="eyebrow dark">Mon espace</span>
@@ -766,17 +766,20 @@ export default function CollectionPage() {
             <span>{activeCollectionProfile?.is_default ? profileIdentity?.display_name || 'Collectionneur' : activeCollectionProfile?.display_name || 'Collection familiale'}</span>
           </p>
         </div>
-
+        <details className="collectionAccountMenu">
+          <summary>Mon compte</summary>
+          <button type="button" className="miniBtn dangerMini" onClick={signOut}>Se déconnecter</button>
+        </details>
       </div>
 
-      <section className="panel" style={{ marginBottom: 20 }} aria-label="Recherche dans ma collection">
-        <h2>Rechercher dans ma collection</h2>
+      <section className="panel collectionSearchPanel" aria-label="Recherche dans ma collection">
+        <div className="collectionSearchHeading"><h2>Retrouver un objet</h2><a href="#ajouter-produit" className="miniBtn primaryMini">＋ Ajouter</a></div>
             <div className="voiceSearchWrap collectionVoiceSearch">
               <input
                 className="searchInput"
                 type="search"
                 aria-label="Rechercher dans ma collection"
-                placeholder="Rechercher produit, série, vendeur, lieu, booster, note..."
+                placeholder="Nom, série, vendeur…"
                 value={query}
                 onChange={e => setQuery(e.target.value)}
               />
@@ -790,7 +793,8 @@ export default function CollectionPage() {
                 {collectionVoiceListening ? '🎙️' : '🎤'}
               </button>
             </div>
-        <label style={{ display: 'block', marginTop: 12 }}>
+        <div className="collectionSearchFilters">
+        <label>
           État du produit
           <select value={conditionFilter} onChange={e => setConditionFilter(e.target.value)}>
             <option value="all">Tous les états</option>
@@ -798,23 +802,29 @@ export default function CollectionPage() {
             <option value="standard">État standard</option>
           </select>
         </label>
-        <p className="muted" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Recherche un produit ou choisis un état pour afficher tes objets.'}</p>
+        {hasCollectionSearch && <button type="button" className="miniBtn" onClick={() => { setQuery(''); setConditionFilter('all') }}>Effacer</button>}
+        </div>
+        <p className="muted collectionSearchStatus" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Saisis un nom ou choisis un filtre.'}</p>
       </section>
+      <div className="collectionQuickLinks" aria-label="Suivi de collection">
+        <a href="/collection/statistiques"><span aria-hidden="true">📊</span> Statistiques <span aria-hidden="true">→</span></a>
+        <a href="/opportunites"><span aria-hidden="true">🎯</span> Doublons & Watchlist <span aria-hidden="true">→</span></a>
+      </div>
       <details className="panel collectionToolsPanel">
-        <summary>Outils de collection</summary>
-        <div className="collectionHeaderActions">
-          <a className="btn" href="/collection/statistiques">📊 Statistiques</a>
-          <a className="btn" href="/collection/import">📥 Importer Excel / CSV</a>
-          <a className="btn" href="/opportunites">🎯 Doublons & Watchlist</a>
-          <div className="exportCollectionActions">
-            <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>⬇ Exporter avec prix</button>
-            <button className="btn ghost" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>⬇ Exporter sans prix</button>
-          </div>
-          <button className="btn ghost dangerGhost" onClick={signOut}>Se déconnecter</button>
+        <summary>Mes fichiers</summary>
+        <div className="collectionFileActions">
+          <a className="miniBtn" href="/collection/import">Importer Excel / CSV</a>
+          <details className="collectionExportMenu">
+            <summary>Exporter ma collection</summary>
+            <div>
+              <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>Avec les prix</button>
+              <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>Sans les prix</button>
+            </div>
+          </details>
         </div>
       </details>
-      <section className="panel" style={{ marginBottom: 20 }}>
-        <h2>Collections de la famille</h2>
+      <details className="panel collectionToolsPanel collectionFamilyPanel">
+        <summary>Collections de la famille</summary>
         <p className="muted">Chaque enfant peut commencer sans compte. Quand il en crée un, tu peux lui transférer toute sa collection avec un lien à usage unique.</p>
         <div className="buttonRow" style={{ flexWrap: 'wrap', gap: 8 }}>
           {collectionProfiles.map(profile => (
@@ -835,7 +845,7 @@ export default function CollectionPage() {
         {isSwitchingProfile && <p role="status" className="muted">Chargement de la collection sélectionnée…</p>}
         {familyMessage && <p role="status" className="muted">{familyMessage}</p>}
         {transferLink && <p><a href={transferLink}>{transferLink}</a></p>}
-      </section>
+      </details>
 
       {!isSwitchingProfile && <section className="stats">
         <div>
