@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { ProfileAvatar } from '../../lib/profile-avatars'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { filterCollectionItems } from '../../lib/collection-search.mjs'
@@ -21,8 +22,6 @@ const emptyForm = {
   booster_configuration: '',
   variant_note: ''
 }
-
-const AVATAR_EMOJI = { star: '⭐', fire: '🔥', water: '💧', leaf: '🍃', spark: '⚡', crystal: '💎' }
 
 export default function CollectionPage() {
   const supabase = useMemo(() => createClient(), [])
@@ -813,7 +812,7 @@ export default function CollectionPage() {
         <div className="buttonRow" style={{ flexWrap: 'wrap', gap: 8 }}>
           {collectionProfiles.map(profile => (
             <button key={profile.id} className={`btn ${profile.id === activeProfileId ? '' : 'ghost'}`} type="button" disabled={isSwitchingProfile} onClick={() => selectCollectionProfile(profile.id)}>
-              {AVATAR_EMOJI[profile.is_default ? profileIdentity?.avatar_key : profile.avatar_key] || AVATAR_EMOJI.star} {profile.display_name}{profile.transferred_at ? ' (transférée)' : profile.is_default ? ' (toi)' : ''}
+              <ProfileAvatar className="collectionProfileAvatar" avatarKey={profile.is_default ? profileIdentity?.avatar_key : profile.avatar_key} aria-hidden="true" /> {profile.display_name}{profile.transferred_at ? ' (transférée)' : profile.is_default ? ' (toi)' : ''}
             </button>
           ))}
         </div>
