@@ -58,7 +58,7 @@ export default function Home() {
       </div>
       <img className={styles.heroArt} src="/accueil/collection-treasures.webp" alt="Un album, un produit scellé et une carte gradée, illustrés comme des trésors de collection" fetchPriority="high"/>
     </section>
-    {member && <nav className={styles.memberLinks} aria-label="Mon espace de collectionneur"><a href="/collection#ajouter">Ajouter un achat</a><a href="/opportunites">Mes doublons et souhaits</a><a href="/communaute">Communauté</a><a href="/coffre">Mon coffre du jour</a></nav>}
+    {member && <nav className={styles.memberLinks} aria-label="Mon espace de collectionneur"><a href="/collection#ajouter-produit">Ajouter un achat</a><a href="/opportunites">Mes doublons et souhaits</a><a href="/communaute">Communauté</a><a href="/coffre">Mon coffre du jour</a></nav>}
     <section className={styles.dashboard} aria-label="Les services de PokéValeur, exemples de présentation">
       <ValueChart/>
       <div className={styles.productTypes}>{categories.map(([kind,label]) => <article className={`${styles.card} ${styles.type}`} key={kind}><Art kind={kind} label={`Illustration : ${label}`}/><h2>{label}</h2></article>)}</div>
