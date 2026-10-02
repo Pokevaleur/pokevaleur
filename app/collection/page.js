@@ -734,11 +734,6 @@ export default function CollectionPage() {
     URL.revokeObjectURL(url)
   }
 
-  async function signOut() {
-    await supabase.auth.signOut()
-    window.location.href = '/'
-  }
-
   const { invested, current, difference, evolution: percent, itemCount, missingPurchaseCount } = calculateCollectionStatistics(items, getCurrentValue)
 
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
@@ -759,20 +754,7 @@ export default function CollectionPage() {
   return (
     <main className="collectionWorkspace">
       <div className="collectionHeader">
-        <div>
-          <span className="eyebrow dark">Mon espace</span>
-          <h1>{activeCollectionProfile && !activeCollectionProfile.is_default ? `Collection de ${activeCollectionProfile.display_name}` : 'Ma collection'}</h1>
-          <p className="muted" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span className={`avatarIcon avatar-${activeCollectionProfile?.is_default ? profileIdentity?.avatar_key || 'star' : activeCollectionProfile?.avatar_key || 'star'}`} aria-hidden="true">
-              {AVATAR_EMOJI[activeCollectionProfile?.is_default ? profileIdentity?.avatar_key : activeCollectionProfile?.avatar_key] || AVATAR_EMOJI.star}
-            </span>
-            <span>{activeCollectionProfile?.is_default ? profileIdentity?.display_name || 'Collectionneur' : activeCollectionProfile?.display_name || 'Collection familiale'}</span>
-          </p>
-        </div>
-        <details className="collectionAccountMenu">
-          <summary>Mon compte</summary>
-          <button type="button" className="miniBtn dangerMini" onClick={signOut}>Se déconnecter</button>
-        </details>
+        <h1>{activeCollectionProfile && !activeCollectionProfile.is_default ? `Collection de ${activeCollectionProfile.display_name}` : 'Ma collection'}</h1>
       </div>
 
       <section className="panel collectionSearchPanel" aria-label="Recherche dans ma collection">
