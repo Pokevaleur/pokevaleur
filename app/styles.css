@@ -982,3 +982,20 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
   .mobileMenuPanel .mobileProfileLink{background:var(--gold);color:#111;font-weight:800}
   .mobileMenuPanel .mobileAccountSignOut{background:rgba(255,255,255,.1);color:#fff;font:inherit;cursor:pointer}
 }
+
+
+/* Profile avatar gallery */
+.profileAvatarIllustrated{background-color:transparent!important;background-repeat:no-repeat;background-size:400% 400%;box-shadow:0 2px 7px rgba(4,20,38,.16)}
+.profileAvatarChoices{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
+.profileAvatarFieldset{min-width:0;border:0;padding:0;margin:0 0 12px}
+.profileAvatarFieldset legend{margin-bottom:8px;font-weight:700}
+.profileAvatarChoice{min-width:0;min-height:84px;display:grid;place-items:center;gap:4px;padding:7px 3px;border:1px solid #cfd8e3;border-radius:12px;background:#fff;color:#122033;font:inherit;cursor:pointer}
+.profileAvatarChoice[aria-pressed="true"]{border:2px solid #0a2748;background:#fff4c7}
+.profileAvatarChoice:focus-visible{outline:3px solid #2f7ed8;outline-offset:2px}
+.profileAvatarChoice small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
+.profileAvatarOptionImage{width:48px;height:48px;border-radius:50%;font-size:28px}
+.profileAvatarLarge.profileAvatarIllustrated{background-color:transparent!important}
+.profileAvatarDetail{display:flex;align-items:center;gap:8px}
+.profileAvatarDetailMark{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;border-radius:50%;font-size:20px}
+.profileAvatarDetailMark.profileAvatarIllustrated{background-color:transparent!important}
+@media(max-width:390px){.profileAvatarChoices{grid-template-columns:repeat(4,minmax(0,1fr))}.profileAvatarOptionImage{width:42px;height:42px}}

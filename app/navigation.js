@@ -2,15 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { createClient } from '../lib/supabase-browser'
-
-const AVATARS = {
-  star: '⭐',
-  fire: '🔥',
-  water: '💧',
-  leaf: '🍃',
-  spark: '⚡',
-  crystal: '💎',
-}
+import { AVATARS, ProfileAvatar } from '../lib/profile-avatars'
 
 export default function Navigation({ links }) {
   const [isAdmin, setIsAdmin] = useState(false)
@@ -86,7 +78,7 @@ export default function Navigation({ links }) {
   const accountMenu = identity && (
     <details className="accountMenu">
       <summary aria-label={`Compte de ${identity.displayName}`}>
-        <span className="profileAvatar" aria-hidden="true">{AVATARS[identity.avatarKey]}</span>
+        <ProfileAvatar className="profileAvatar" avatarKey={identity.avatarKey} aria-hidden="true" />
         <span className="accountMenuName">{identity.displayName}</span>
       </summary>
       <div className="accountMenuPanel">
@@ -112,7 +104,7 @@ export default function Navigation({ links }) {
           {identity && (
             <section className="mobileAccountCard" aria-label="Mon compte">
               <div className="mobileAccountIdentity">
-                <span className="profileAvatar" aria-hidden="true">{AVATARS[identity.avatarKey]}</span>
+                <ProfileAvatar className="profileAvatar" avatarKey={identity.avatarKey} aria-hidden="true" />
                 <span><strong>{identity.displayName}</strong>{identity.email && <small>{identity.email}</small>}</span>
               </div>
               <a className="mobileProfileLink" href="/profil">Mon profil</a>

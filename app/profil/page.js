@@ -2,15 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
-
-const AVATARS = {
-  star: { emoji: '⭐', label: 'Étoile' },
-  fire: { emoji: '🔥', label: 'Feu' },
-  water: { emoji: '💧', label: 'Eau' },
-  leaf: { emoji: '🍃', label: 'Feuille' },
-  spark: { emoji: '⚡', label: 'Éclair' },
-  crystal: { emoji: '💎', label: 'Cristal' },
-}
+import { AVATARS, ProfileAvatar } from '../../lib/profile-avatars'
 
 export default function ProfilePage() {
   const supabase = useMemo(() => createClient(), [])
@@ -204,12 +196,12 @@ export default function ProfilePage() {
         <span className="eyebrow dark">Mon compte</span>
         <h1>Mon profil</h1>
         <div className="profileHero">
-          <span className="profileAvatarLarge" aria-hidden="true">{avatar.emoji}</span>
+          <ProfileAvatar className="profileAvatarLarge" avatarKey={profile.avatar_key} aria-hidden="true" />
           <div><h2>{profile.display_name || 'Collectionneur'}</h2><p>Ton pseudo et ton avatar</p></div>
         </div>
         <dl className="profileDetails">
           <div><dt>Pseudo</dt><dd>{profile.display_name || 'Non renseigné'}</dd></div>
-          <div><dt>Avatar</dt><dd>{avatar.emoji} {avatar.label}</dd></div>
+          <div><dt>Avatar</dt><dd className="profileAvatarDetail"><ProfileAvatar className="profileAvatarDetailMark" avatarKey={profile.avatar_key} aria-hidden="true" /><span>{avatar.label}</span></dd></div>
           <div><dt>Adresse e-mail du compte</dt><dd>{email || 'Non renseignée'}</dd></div>
         </dl>
         <section className="profileEditPanel" style={{ margin: '20px 0', padding: 18, borderRadius: 16, background: '#f4f7fb' }}>
@@ -231,31 +223,37 @@ export default function ProfilePage() {
                 3 à 24 caractères : lettres, chiffres, point, tiret ou tiret bas.
               </small>
             </label>
-            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-              <legend style={{ marginBottom: 8, fontWeight: 700 }}>Avatar</legend>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
-                {Object.entries(AVATARS).map(([key, option]) => (
+            <fieldset className="profileAvatarFieldset">
+              <legend>Avatars illustrés</legend>
+              <div className="profileAvatarChoices">
+                {Object.entries(AVATARS).filter(([, option]) => option.cell).map(([key, option]) => (
                   <button
                     key={key}
+                    className="profileAvatarChoice"
                     type="button"
                     aria-pressed={editedAvatarKey === key}
-                    aria-label={option.label}
+                    aria-label={`Choisir ${option.label}`}
                     onClick={() => setEditedAvatarKey(key)}
-                    style={{
-                      minHeight: 68,
-                      display: 'grid',
-                      placeItems: 'center',
-                      gap: 2,
-                      padding: 8,
-                      border: editedAvatarKey === key ? '2px solid #0a2748' : '1px solid #cfd8e3',
-                      borderRadius: 12,
-                      background: editedAvatarKey === key ? '#fff4c7' : '#fff',
-                      color: '#122033',
-                      font: 'inherit',
-                      cursor: 'pointer',
-                    }}
                   >
-                    <span aria-hidden="true" style={{ fontSize: 23 }}>{option.emoji}</span>
+                    <ProfileAvatar className="profileAvatarOptionImage" avatarKey={key} aria-hidden="true" />
+                    <small>{option.label}</small>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <fieldset className="profileAvatarFieldset">
+              <legend>Avatars classiques</legend>
+              <div className="profileAvatarChoices profileAvatarChoicesClassic">
+                {Object.entries(AVATARS).filter(([, option]) => option.emoji).map(([key, option]) => (
+                  <button
+                    key={key}
+                    className="profileAvatarChoice"
+                    type="button"
+                    aria-pressed={editedAvatarKey === key}
+                    aria-label={`Choisir ${option.label}`}
+                    onClick={() => setEditedAvatarKey(key)}
+                  >
+                    <ProfileAvatar className="profileAvatarOptionImage" avatarKey={key} aria-hidden="true" />
                     <small>{option.label}</small>
                   </button>
                 ))}
