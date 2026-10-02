@@ -98,7 +98,16 @@ export default function Navigation({ links }) {
       <details className="mobileMenu">
         <summary aria-label="Ouvrir le menu">☰</summary>
         <div className="mobileMenuPanel">
-          {accountMenu}
+          {identity && (
+            <section className="mobileAccountCard" aria-label="Mon compte">
+              <div className="mobileAccountIdentity">
+                <span className="profileAvatar" aria-hidden="true">{AVATARS[identity.avatarKey]}</span>
+                <span><strong>{identity.displayName}</strong>{identity.email && <small>{identity.email}</small>}</span>
+              </div>
+              <a className="mobileProfileLink" href="/profil">Mon profil</a>
+              <button className="mobileAccountSignOut" type="button" onClick={signOut}>Se déconnecter</button>
+            </section>
+          )}
           {items}
           {!identity && <a href="/login" className="btn small">Connexion</a>}
         </div>
