@@ -16,6 +16,11 @@ export default function ProfilePage() {
   const supabase = useMemo(() => createClient(), [])
   const [status, setStatus] = useState('loading')
   const [profile, setProfile] = useState(null)
+  const [userId, setUserId] = useState('')
+  const [editedDisplayName, setEditedDisplayName] = useState('')
+  const [editedAvatarKey, setEditedAvatarKey] = useState('star')
+  const [profileMessage, setProfileMessage] = useState('')
+  const [isSavingProfile, setIsSavingProfile] = useState(false)
   const [email, setEmail] = useState('')
   const [confirmationText, setConfirmationText] = useState('')
   const [confirmationEmail, setConfirmationEmail] = useState('')
@@ -46,6 +51,9 @@ export default function ProfilePage() {
       }
 
       setProfile(data)
+      setUserId(user.id)
+      setEditedDisplayName(data.display_name || '')
+      setEditedAvatarKey(AVATARS[data.avatar_key] ? data.avatar_key : 'star')
       setEmail(user.email || '')
       setStatus('ready')
     }
@@ -53,6 +61,58 @@ export default function ProfilePage() {
     loadProfile().catch(() => { if (active) setStatus('error') })
     return () => { active = false }
   }, [supabase])
+
+  async function saveProfile(event) {
+    event.preventDefault()
+    setProfileMessage('')
+
+    const displayName = editedDisplayName.trim()
+    if (!/^[A-Za-z0-9._-]{3,24}$/.test(displayName)) {
+      setProfileMessage('Choisis un pseudo de 3 à 24 caractères : lettres, chiffres, point, tiret ou tiret bas.')
+      return
+    }
+    if (!AVATARS[editedAvatarKey]) {
+      setProfileMessage('Choisis un avatar proposé.')
+      return
+    }
+
+    setIsSavingProfile(true)
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .update({ display_name: displayName, avatar_key: editedAvatarKey })
+        .eq('id', userId)
+        .select('display_name,avatar_key')
+        .maybeSingle()
+
+      if (error) {
+        if (error.code === '23505') {
+          setProfileMessage('Ce pseudo est déjà utilisé. Choisis-en un autre.')
+        } else if (error.code === '23514') {
+          setProfileMessage('Le pseudo ou l’avatar ne respecte pas les règles autorisées.')
+        } else {
+          setProfileMessage('La modification n’a pas pu être enregistrée. Réessaie.')
+        }
+        return
+      }
+      if (!data) {
+        setProfileMessage('La modification n’a pas été enregistrée. Recharge la page puis réessaie.')
+        return
+      }
+
+      setProfile(data)
+      setEditedDisplayName(data.display_name)
+      setEditedAvatarKey(data.avatar_key)
+      setProfileMessage('Ton profil a été mis à jour.')
+      window.dispatchEvent(new CustomEvent('pokevaleur-profile-updated', {
+        detail: { displayName: data.display_name, avatarKey: data.avatar_key },
+      }))
+    } catch {
+      setProfileMessage('Impossible de joindre le service. Réessaie.')
+    } finally {
+      setIsSavingProfile(false)
+    }
+  }
 
   async function deleteAccount(event) {
     event.preventDefault()
@@ -152,6 +212,61 @@ export default function ProfilePage() {
           <div><dt>Avatar</dt><dd>{avatar.emoji} {avatar.label}</dd></div>
           <div><dt>Adresse e-mail du compte</dt><dd>{email || 'Non renseignée'}</dd></div>
         </dl>
+        <section className="profileEditPanel" style={{ margin: '20px 0', padding: 18, borderRadius: 16, background: '#f4f7fb' }}>
+          <h2 style={{ marginTop: 0, fontSize: 21 }}>Modifier mon profil</h2>
+          <form onSubmit={saveProfile} style={{ display: 'grid', gap: 14 }}>
+            <label>
+              Pseudo
+              <input
+                type="text"
+                value={editedDisplayName}
+                onChange={event => setEditedDisplayName(event.target.value)}
+                minLength={3}
+                maxLength={24}
+                autoComplete="nickname"
+                required
+                aria-describedby="profile-name-help"
+              />
+              <small id="profile-name-help" style={{ color: '#697789', fontWeight: 400 }}>
+                3 à 24 caractères : lettres, chiffres, point, tiret ou tiret bas.
+              </small>
+            </label>
+            <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+              <legend style={{ marginBottom: 8, fontWeight: 700 }}>Avatar</legend>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, minmax(0, 1fr))', gap: 8 }}>
+                {Object.entries(AVATARS).map(([key, option]) => (
+                  <button
+                    key={key}
+                    type="button"
+                    aria-pressed={editedAvatarKey === key}
+                    aria-label={option.label}
+                    onClick={() => setEditedAvatarKey(key)}
+                    style={{
+                      minHeight: 68,
+                      display: 'grid',
+                      placeItems: 'center',
+                      gap: 2,
+                      padding: 8,
+                      border: editedAvatarKey === key ? '2px solid #0a2748' : '1px solid #cfd8e3',
+                      borderRadius: 12,
+                      background: editedAvatarKey === key ? '#fff4c7' : '#fff',
+                      color: '#122033',
+                      font: 'inherit',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <span aria-hidden="true" style={{ fontSize: 23 }}>{option.emoji}</span>
+                    <small>{option.label}</small>
+                  </button>
+                ))}
+              </div>
+            </fieldset>
+            <button className="btn" type="submit" disabled={isSavingProfile}>
+              {isSavingProfile ? 'Enregistrement…' : 'Enregistrer mon profil'}
+            </button>
+            {profileMessage && <p role="status" aria-live="polite" style={{ margin: 0 }}>{profileMessage}</p>}
+          </form>
+        </section>
         <div className="profileActions">
           <a className="btn" href="/collection">Ma collection</a>
         </div>

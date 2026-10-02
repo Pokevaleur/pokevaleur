@@ -28,6 +28,17 @@ export default function Navigation({ links }) {
   }, [])
 
   useEffect(() => {
+    function handleProfileUpdated(event) {
+      const displayName = event.detail?.displayName
+      const avatarKey = event.detail?.avatarKey
+      if (typeof displayName !== 'string' || !Object.hasOwn(AVATARS, avatarKey)) return
+      setIdentity(current => current ? { ...current, displayName, avatarKey } : current)
+    }
+    window.addEventListener('pokevaleur-profile-updated', handleProfileUpdated)
+    return () => window.removeEventListener('pokevaleur-profile-updated', handleProfileUpdated)
+  }, [])
+
+  useEffect(() => {
     let active = true
     async function loadIdentity() {
       const supabase = createClient()
