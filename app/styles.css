@@ -940,3 +940,32 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 @media(max-width:420px){.opportunitiesWorkspace .duplicateReviewActions{display:grid;grid-template-columns:1fr}.opportunitiesWorkspace .productMain{flex-direction:column;align-items:flex-start}.opportunitiesWorkspace .productValues{text-align:left}}
 
 .catalogCardActions{display:grid;gap:4px;margin-top:14px}.catalogCardActions .btn{width:100%;text-align:center}.catalogCardActions .detailLink{margin-top:6px}
+
+
+/* Account identity and profile access */
+.accountMenu{position:relative}
+.accountMenu>summary{list-style:none;display:flex;align-items:center;gap:8px;min-height:40px;padding:5px 10px;border:1px solid rgba(255,255,255,.22);border-radius:999px;color:#fff;cursor:pointer}
+.accountMenu>summary::-webkit-details-marker{display:none}
+.profileAvatar{display:inline-flex;align-items:center;justify-content:center;flex:0 0 34px;width:34px;height:34px;border-radius:50%;background:#fff4c7;font-size:20px}
+.accountMenuName{display:block;max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
+.accountMenuPanel{position:absolute;z-index:80;top:calc(100% + 8px);right:0;display:grid;gap:8px;min-width:230px;padding:12px;border:1px solid #dce2e9;border-radius:14px;background:#fff;color:var(--text);box-shadow:0 14px 36px rgba(4,20,38,.2)}
+.accountMenuIdentity{display:grid;gap:3px;padding:4px 6px 10px;border-bottom:1px solid #e7ebf0}
+.accountMenuIdentity small{overflow-wrap:anywhere;color:#697789;font-size:13px}
+.accountMenuPanel a,.accountMenuPanel button{display:flex;align-items:center;min-height:40px;padding:8px 10px;border:0;border-radius:9px;background:#f4f7fb;color:var(--text);font:inherit;font-weight:700;text-align:left;cursor:pointer}
+.accountMenuPanel a:hover,.accountMenuPanel button:hover{background:#e8eff8}
+.profilePage{max-width:760px}
+.profileHero{display:flex;align-items:center;gap:16px;margin:20px 0;padding:18px;border-radius:16px;background:#f4f7fb}
+.profileAvatarLarge{display:inline-flex;align-items:center;justify-content:center;flex:0 0 64px;width:64px;height:64px;border-radius:50%;background:#fff1bb;font-size:34px}
+.profileHero h2{margin:0 0 4px}
+.profileHero p{margin:0;color:#697789}
+.profileDetails{display:grid;gap:0;margin:0 0 18px}
+.profileDetails>div{display:grid;grid-template-columns:minmax(150px,1fr) 2fr;gap:12px;padding:12px 0;border-bottom:1px solid #e3e7ec}
+.profileDetails dt{color:#697789}
+.profileDetails dd{margin:0;font-weight:700;overflow-wrap:anywhere}
+.profileActions{display:flex;flex-wrap:wrap;gap:10px}
+@media(max-width:700px){
+  .mobileMenuPanel .accountMenu{grid-column:1/-1}
+  .mobileMenuPanel .accountMenu>summary{justify-content:flex-start;min-height:44px;border-color:rgba(255,255,255,.22);background:rgba(255,255,255,.07)}
+  .mobileMenuPanel .accountMenuPanel{position:static;min-width:0;margin-top:8px;box-shadow:none}
+  .profileDetails>div{grid-template-columns:1fr;gap:4px}
+}
