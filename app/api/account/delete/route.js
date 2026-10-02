@@ -25,6 +25,10 @@ export async function POST(request) {
     return jsonError('Confirme explicitement la suppression.', 400)
   }
 
+  if (typeof body?.confirmedEmail !== 'string' || !body.confirmedEmail.trim()) {
+    return jsonError('Confirme l’adresse e-mail du compte.', 400)
+  }
+
   const authorization = request.headers.get('authorization') || ''
   const accessToken = authorization.startsWith('Bearer ') ? authorization.slice(7) : ''
   if (!accessToken) return jsonError('Reconnecte-toi puis réessaie.', 401)
