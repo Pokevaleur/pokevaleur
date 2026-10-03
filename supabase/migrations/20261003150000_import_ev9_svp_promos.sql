@@ -20,7 +20,7 @@ promo_input(collector_number,card_name,guide_order,local_id,source_path,is_maste
     ('SVP 183','Rubombelle de Lilie',193,'183','183',true),
     ('SVP 184','Ronflex de Nabil',194,'184','184',true),
     ('SVP 185','Yanma',195,'185','185',false),
-    ('SVP 186','Baggaïd',196,'186','186',false),
+    ('SVP 186','Baggiguane',196,'186','186',false),
     ('SVP 187','Yanmega',197,'187','187',true),
     ('SVP 188','Baggaïd',198,'188','188',true),
     ('SVP 189','Zorua de N',199,'189','189',true)
