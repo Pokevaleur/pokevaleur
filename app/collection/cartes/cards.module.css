@@ -70,7 +70,7 @@
 .notice { color:#254c35; background:#eaf7ee; }
 @media (max-width:760px) {
   .cardGrid { grid-template-columns:1fr; }
-  .page { width:min(100% - 24px, 620px); padding-top:18px; }
+  .page { width:min(calc(100% - 24px), 620px); padding-top:18px; }
 }
 @media (max-width:520px) {
   .controls, .filters { grid-template-columns:1fr; padding:14px; }
