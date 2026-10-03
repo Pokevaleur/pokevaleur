@@ -44,3 +44,10 @@
   .filters label:first-child { grid-column:auto; }
   .summary { align-items:flex-start; flex-direction:column; }
 }
+.sources { margin-top:16px; padding:12px; border:1px solid #f0dfad; border-radius:12px; background:#fffaf0; }
+.sources h3 { margin:0 0 9px; color:#765308; font-size:15px; }
+.source { display:grid; gap:4px; color:#405268; font-size:13px; }
+.source + .source { margin-top:10px; padding-top:10px; border-top:1px solid #f0e7d3; }
+.source strong { color:#17263a; font-size:14px; }
+.source p { margin:2px 0; }
+.source small { color:#768394; }
