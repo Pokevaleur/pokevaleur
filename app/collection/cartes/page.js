@@ -23,7 +23,7 @@ export default function CardChecklistPage() {
   const [companies, setCompanies] = useState([])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
-  const [showStamps, setShowStamps] = useState(false)
+  const [stampFilter, setStampFilter] = useState('main')
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -118,21 +118,25 @@ export default function CardChecklistPage() {
   }, [supabase, setId, profileId])
 
   const selectedSet = sets.find(row => row.id === setId)
-  const categories = useMemo(() => [...new Set(cards.map(card => card.guide_category_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cards])
+  const isIncludedVariant = variant => variant.is_master_set_target && (
+    stampFilter === 'all' ||
+    (stampFilter === 'stamps' ? variant.checklist_group === 'stamp' : variant.checklist_group === 'main')
+  )
+  const cardsWithIncludedVariants = cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
+  const categories = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.guide_category_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const visibleCards = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('fr')
-    return cards.filter(card => {
+    return cardsWithIncludedVariants.filter(card => {
       const matchesQuery = !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
       const matchesCategory = !category || card.guide_category_label === category
       return matchesQuery && matchesCategory
     })
-  }, [cards, query, category])
+  }, [cardsWithIncludedVariants, query, category])
 
-  const targetVariants = cards.flatMap(card => (card.card_print_variants || [])
-    .filter(variant => variant.is_master_set_target && (showStamps || variant.checklist_group === 'main')))
+  const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isIncludedVariant))
   const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
-  const completedCardCount = cards.filter(card => {
-    const targets = (card.card_print_variants || []).filter(variant => variant.is_master_set_target && (showStamps || variant.checklist_group === 'main'))
+  const completedCardCount = cardsWithIncludedVariants.filter(card => {
+    const targets = (card.card_print_variants || []).filter(isIncludedVariant)
     return targets.length > 0 && targets.every(variant => (owned[variant.id] || []).length > 0)
   }).length
   const completion = targetVariants.length ? Math.round(ownedTargetCount * 100 / targetVariants.length) : 0
@@ -287,16 +291,20 @@ export default function CardChecklistPage() {
                 {categories.map(value => <option key={value} value={value}>{value}</option>)}
               </select>
             </label>
-            <label className={styles.stampToggle}>
-              <input type="checkbox" checked={showStamps} onChange={event => setShowStamps(event.target.checked)} />
-              Inclure les versions tamponnées
+            <label>
+              Versions estampées
+              <select value={stampFilter} onChange={event => setStampFilter(event.target.value)}>
+                <option value="main">Versions principales uniquement</option>
+                <option value="all">Inclure les versions estampées</option>
+                <option value="stamps">Estampes uniquement</option>
+              </select>
             </label>
           </section>
 
           {cardsLoading ? <p className={styles.status}>Chargement des cartes…</p> : (
             <section className={styles.cardGrid} aria-label="Cartes de la série">
               {visibleCards.map(card => {
-                const cardVariants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target && (showStamps || variant.checklist_group === 'main'))
+                const cardVariants = (card.card_print_variants || []).filter(isIncludedVariant)
                 return (
                   <article className={styles.card} key={card.id}>
                     <div className={styles.cardTop}>
