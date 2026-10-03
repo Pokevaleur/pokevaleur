@@ -50,6 +50,10 @@
 .variantName small { color:#845e0c; background:#fff0bd; border-radius:999px; padding:3px 7px; font-size:.7rem; }
 .checkboxLine { display:flex; align-items:center; gap:8px; color:#314257; font-size:.9rem; }
 .checkboxLine input { flex:none; }
+.rawLine { display:flex; align-items:center; justify-content:space-between; gap:8px; }
+.copyActions { display:flex; gap:6px; }
+.copyActions button { width:32px; height:30px; border:1px solid #d7dfe8; border-radius:8px; background:#fff; color:#19334f; font-size:1.15rem; font-weight:800; cursor:pointer; }
+.copyActions button:disabled { opacity:.4; cursor:not-allowed; }
 .copyCount { display:block; margin:3px 0 0 28px; color:#6b7787; }
 .gradedSection { margin-top:8px; padding-top:8px; border-top:1px dashed #d7dee6; }
 .gradedHeading { display:flex; justify-content:space-between; align-items:center; color:#415369; font-size:.87rem; font-weight:700; }
