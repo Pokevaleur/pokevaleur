@@ -1,7 +1,6 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { useSearchParams } from 'next/navigation'
 import { createClient } from '../../../lib/supabase-browser'
 import styles from './cards.module.css'
 
@@ -13,8 +12,6 @@ function imageUrl(card) {
 
 export default function CardChecklistPage() {
   const supabase = useMemo(() => createClient(), [])
-  const searchParams = useSearchParams()
-  const requestedSetId = searchParams.get('set') || ''
   const [user, setUser] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [profiles, setProfiles] = useState([])
@@ -38,6 +35,7 @@ export default function CardChecklistPage() {
   useEffect(() => {
     let cancelled = false
     async function initialize() {
+      const requestedSetId = new URLSearchParams(window.location.search).get('set') || ''
       setLoading(true)
       const { data: { user: signedInUser }, error: authError } = await supabase.auth.getUser()
       if (cancelled) return
@@ -85,7 +83,7 @@ export default function CardChecklistPage() {
     initialize().catch(loadError => { if (!cancelled) setError(loadError.message || 'Impossible de charger la checklist.') })
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
-  }, [supabase, requestedSetId])
+  }, [supabase])
 
   useEffect(() => {
     if (!setId || !profileId) return
