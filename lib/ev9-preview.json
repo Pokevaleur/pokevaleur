@@ -3646,7 +3646,14 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/181/low.webp",
     "collector_number": "SVP 181",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Boîtier Stratégies et Combats EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
   },
   {
     "variants": [
@@ -3660,7 +3667,14 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/182/low.webp",
     "collector_number": "SVP 182",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Boîtier Stratégies et Combats EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
   },
   {
     "variants": [
@@ -3674,7 +3688,14 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/183/low.webp",
     "collector_number": "SVP 183",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Boîtier Stratégies et Combats EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
   },
   {
     "variants": [
@@ -3688,7 +3709,14 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/184/low.webp",
     "collector_number": "SVP 184",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Boîtier Stratégies et Combats EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
   },
   {
     "variants": [
@@ -3703,7 +3731,15 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/185/low.webp",
     "collector_number": "SVP 185",
-    "guide_category_label": "Promo internationale · marché à confirmer"
+    "guide_category_label": "Promo internationale · marché à confirmer",
+    "product_sources": [
+      {
+        "product_name": "Blister de booster individuel EV9",
+        "market": "International · pays à confirmer",
+        "source_label": "Guide français Aventures Ensemble",
+        "note": "Promo conservée au catalogue, hors Ultra Master Set français."
+      }
+    ]
   },
   {
     "variants": [
@@ -3718,7 +3754,15 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/186/low.webp",
     "collector_number": "SVP 186",
-    "guide_category_label": "Promo internationale · marché à confirmer"
+    "guide_category_label": "Promo internationale · marché à confirmer",
+    "product_sources": [
+      {
+        "product_name": "Blister de booster individuel EV9",
+        "market": "International · pays à confirmer",
+        "source_label": "Guide français Aventures Ensemble",
+        "note": "Promo conservée au catalogue, hors Ultra Master Set français."
+      }
+    ]
   },
   {
     "variants": [
@@ -3732,7 +3776,14 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/187/low.webp",
     "collector_number": "SVP 187",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Tripack EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
   },
   {
     "variants": [
@@ -3746,7 +3797,14 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/188/low.webp",
     "collector_number": "SVP 188",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Tripack EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
   },
   {
     "variants": [
@@ -3760,6 +3818,13 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/189/low.webp",
     "collector_number": "SVP 189",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Coffret Dresseur d’élite EV9 (ETB)",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
   }
 ]
