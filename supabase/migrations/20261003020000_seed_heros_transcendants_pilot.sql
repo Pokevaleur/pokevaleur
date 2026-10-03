@@ -80,9 +80,9 @@ insert into public.card_print_variants (
 )
 select
   id,
-  'standard',
-  'Standard',
-  'standard',
+  'holo',
+  'Holo',
+  'holo',
   'Illustration spéciale rare',
   'main',
   true
