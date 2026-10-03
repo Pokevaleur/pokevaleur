@@ -21,8 +21,11 @@ const filters = [
 
 export default function Ev9PreviewPage({ searchParams = {} }) {
   const requestedGroup = Array.isArray(searchParams.group) ? searchParams.group[0] : searchParams.group
-  const group = filters.some(([key]) => key === requestedGroup) ? requestedGroup : 'main'
   const requestedQuery = Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q
+  const hasQuery = Boolean((requestedQuery || '').trim())
+  const group = hasQuery && requestedGroup === 'main'
+    ? 'all'
+    : filters.some(([key]) => key === requestedGroup) ? requestedGroup : 'main'
   const query = (requestedQuery || '').trim().toLocaleLowerCase('fr')
   const targetGroup = group === 'all' ? null : group === 'promos' ? 'promo' : group === 'stamps' ? 'stamp' : 'main'
 
@@ -68,6 +71,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
         <a className={styles.clear} href="/apercu/ev9">Effacer</a>
       </form>
 
+      {hasQuery && <p className={styles.note} role="status">Recherche étendue aux cartes principales, aux promos et aux versions tamponnées.</p>}
       <p className={styles.note}>Aperçu fixe issu de la base de test du 3 octobre 2026. Les variantes tampons peuvent inclure des versions d’autres marchés ; leur périmètre français reste à confirmer.</p>
 
       <section className={styles.grid} aria-label="Checklist EV9 en lecture seule">
