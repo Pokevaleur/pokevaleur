@@ -15,7 +15,7 @@ with set_row as (
   values (
     'Méga-Évolution',
     'Méga-Évolution – Héros Transcendants',
-    'ME2pt5',
+    'ME02.5',
     'FR',
     date '2026-01-30',
     'https://www.pokemon.com/fr/jcc-pokemon/cartes-pokemon/series/me2pt5/280',
