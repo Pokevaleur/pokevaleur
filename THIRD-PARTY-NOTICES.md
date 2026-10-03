@@ -9,7 +9,7 @@ The French card names, card categories, rarity labels, illustrator names, set me
 - Set records: `data/Mega Evolution/Ascended Heroes/`
 - License: MIT; copyright © 2021 TCGdex.
 
-The imported records do not include TCGdex card images. Card-image URLs are not copied into the catalogue.
+The imported records do not include TCGdex card image files. The checklist displays thumbnails loaded on demand from the TCGdex asset CDN using the image endpoint documented at https://tcgdex.dev/fr/assets; image files are not copied into this repository or database.
 
 MIT License
 
