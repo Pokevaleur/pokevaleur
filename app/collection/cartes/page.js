@@ -17,7 +17,7 @@ export default function CardChecklistPage() {
   const [profiles, setProfiles] = useState([])
   const [profileId, setProfileId] = useState('')
   const [sets, setSets] = useState([])
-  const [setId, setSetId] = useState(requestedSetId)
+  const [setId, setSetId] = useState('')
   const [cards, setCards] = useState([])
   const [owned, setOwned] = useState({})
   const [companies, setCompanies] = useState([])
