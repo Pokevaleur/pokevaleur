@@ -1935,7 +1935,7 @@
     ],
     "card_name": "Gambex",
     "card_type": "Pokémon",
-    "image_url": "https://app.getzukan.com/img/tcgdex/fr/sv/sv09/100/high.webp",
+    "image_url": "/api/ev9-image/100",
     "collector_number": "100/159",
     "guide_category_label": "Peu commune"
   },
@@ -1954,7 +1954,7 @@
     ],
     "card_name": "Lestombaile",
     "card_type": "Pokémon",
-    "image_url": "https://app.getzukan.com/img/tcgdex/fr/sv/sv09/101/high.webp",
+    "image_url": "/api/ev9-image/101",
     "collector_number": "101/159",
     "guide_category_label": "Commune"
   },
