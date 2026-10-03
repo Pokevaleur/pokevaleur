@@ -995,7 +995,22 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/sv09/052/low.webp",
     "collector_number": "052/159",
-    "guide_category_label": "Commune"
+    "guide_category_label": "Commune",
+    "product_sources": [
+      {
+        "product_name": "Boosters Écarlate et Violet – Aventures Ensemble (EV09)",
+        "market": "France",
+        "variant_label": "Normale / Reverse",
+        "source_label": "Cartes du set EV9",
+        "note": "Le contenu des boosters est aléatoire."
+      },
+      {
+        "product_name": "Coffret Collection Premium Ampibidou-ex de Mashynn",
+        "market": "France",
+        "variant_label": "Holo cosmos",
+        "source_label": "Carte brillante incluse dans le coffret"
+      }
+    ]
   },
   {
     "variants": [
@@ -3824,6 +3839,27 @@
         "product_name": "Coffret Dresseur d’élite EV9 (ETB)",
         "market": "France",
         "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
+  },
+  {
+    "collector_number": "SVP 194",
+    "card_name": "Ampibidou-ex de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/194/low.webp",
+    "guide_category_label": "Promo SVP",
+    "variants": [
+      {
+        "finish_code": "holo_full_art",
+        "variant_label": "Promo brillante illustrée",
+        "checklist_group": "promo"
+      }
+    ],
+    "product_sources": [
+      {
+        "product_name": "Coffret Collection Premium Ampibidou-ex de Mashynn",
+        "market": "France",
+        "source_label": "Carte promo incluse dans le coffret"
       }
     ]
   }
