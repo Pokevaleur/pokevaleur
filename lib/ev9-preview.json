@@ -2657,7 +2657,22 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/sv09/135/low.webp",
     "collector_number": "135/159",
-    "guide_category_label": "Commune"
+    "guide_category_label": "Commune",
+    "product_sources": [
+      {
+        "product_name": "Boosters Écarlate et Violet – Aventures Ensemble (EV09)",
+        "market": "France",
+        "variant_label": "Normale / Reverse",
+        "source_label": "Cartes du set EV9",
+        "note": "Le contenu des boosters est aléatoire."
+      },
+      {
+        "product_name": "Coffret Zacian-ex de Nabil",
+        "market": "France",
+        "variant_label": "Holo cosmos",
+        "source_label": "Carte brillante incluse dans le coffret"
+      }
+    ]
   },
   {
     "variants": [
@@ -2686,7 +2701,22 @@
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/sv09/136/low.webp",
     "collector_number": "136/159",
-    "guide_category_label": "Rare"
+    "guide_category_label": "Rare",
+    "product_sources": [
+      {
+        "product_name": "Boosters Écarlate et Violet – Aventures Ensemble (EV09)",
+        "market": "France",
+        "variant_label": "Holo / Reverse",
+        "source_label": "Cartes du set EV9",
+        "note": "Le contenu des boosters est aléatoire."
+      },
+      {
+        "product_name": "Coffret Zacian-ex de Nabil",
+        "market": "France",
+        "variant_label": "Holo cosmos",
+        "source_label": "Carte brillante incluse dans le coffret"
+      }
+    ]
   },
   {
     "variants": [
@@ -3036,7 +3066,22 @@
     "card_type": "Dresseur",
     "image_url": "https://assets.tcgdex.net/fr/sv/sv09/151/low.webp",
     "collector_number": "151/159",
-    "guide_category_label": "Peu commune"
+    "guide_category_label": "Peu commune",
+    "product_sources": [
+      {
+        "product_name": "Boosters Écarlate et Violet – Aventures Ensemble (EV09)",
+        "market": "France",
+        "variant_label": "Normale / Reverse",
+        "source_label": "Cartes du set EV9",
+        "note": "Le contenu des boosters est aléatoire."
+      },
+      {
+        "product_name": "Coffret Collection Tournoi Premium – Lilie",
+        "market": "France",
+        "source_label": "Le coffret contient trois cartes Perle de Lilie",
+        "note": "La finition de ces trois exemplaires reste à confirmer."
+      }
+    ]
   },
   {
     "variants": [
@@ -3858,6 +3903,48 @@
     "product_sources": [
       {
         "product_name": "Coffret Collection Premium Ampibidou-ex de Mashynn",
+        "market": "France",
+        "source_label": "Carte promo incluse dans le coffret"
+      }
+    ]
+  },
+  {
+    "collector_number": "SVP 193",
+    "card_name": "Zacian-ex de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/193/low.webp",
+    "guide_category_label": "Promo SVP",
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "product_sources": [
+      {
+        "product_name": "Coffret Zacian-ex de Nabil",
+        "market": "France",
+        "source_label": "Carte promo incluse dans le coffret"
+      }
+    ]
+  },
+  {
+    "collector_number": "SVP 195",
+    "card_name": "Mélofée-ex de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/195/low.webp",
+    "guide_category_label": "Promo SVP",
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "product_sources": [
+      {
+        "product_name": "Coffret Collection Tournoi Premium – Lilie",
         "market": "France",
         "source_label": "Carte promo incluse dans le coffret"
       }
