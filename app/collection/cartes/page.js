@@ -292,11 +292,11 @@ export default function CardChecklistPage() {
               </select>
             </label>
             <label>
-              Versions estampées
+              Filtre stamp
               <select value={stampFilter} onChange={event => setStampFilter(event.target.value)}>
                 <option value="main">Versions principales uniquement</option>
-                <option value="all">Inclure les versions estampées</option>
-                <option value="stamps">Estampes uniquement</option>
+                <option value="all">Inclure les stamps</option>
+                <option value="stamps">Stamp uniquement</option>
               </select>
             </label>
           </section>
