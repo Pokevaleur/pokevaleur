@@ -270,7 +270,7 @@ export default function CardChecklistPage() {
           <section className={styles.progressCard} aria-label="Progression du Master Set">
             <div className={styles.progressHeading}>
               <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>variantes du checklist possédées</span></div>
-              <div><strong>{completedCardCount} / {cards.length}</strong><span>cartes complétées</span></div>
+              <div><strong>{completedCardCount} / {cardsWithIncludedVariants.length}</strong><span>cartes complétées</span></div>
               <strong className={styles.percent}>{completion}%</strong>
             </div>
             <div className={styles.progressTrack} role="progressbar" aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100" aria-label="Progression de la checklist">
