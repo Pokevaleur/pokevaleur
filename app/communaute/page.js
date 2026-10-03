@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { SocialAccessPrompt } from '../../lib/social-access-prompt'
 
 export default function CommunautePage() {
   const supabase = useMemo(() => createClient(), [])
@@ -14,20 +15,43 @@ export default function CommunautePage() {
   const [user, setUser] = useState(null)
   const [itemRows, setItemRows] = useState(0)
   const [actionMessage, setActionMessage] = useState('')
+  const [socialAccess, setSocialAccess] = useState(null)
+  const [socialAccessError, setSocialAccessError] = useState(false)
 
   useEffect(() => {
     load()
-    const timer = setInterval(loadMessages, 5000)
+  }, [])
+
+  useEffect(() => {
+    if (!channel?.id) return
+    const timer = setInterval(() => loadMessages(channel.id), 5000)
     return () => clearInterval(timer)
+  }, [channel?.id])
+
+  useEffect(() => {
+    window.addEventListener('focus', load)
+    return () => window.removeEventListener('focus', load)
   }, [])
 
   async function load() {
     const { data: { user } } = await supabase.auth.getUser()
     setUser(user)
     if (!user) {
+      setLoading(false)
       window.location.href = '/login'
       return
     }
+    const { data: accessData, error: accessError } = await supabase.rpc('get_social_access_status')
+    const accessStatus = Array.isArray(accessData) ? accessData[0] : accessData
+    if (accessError || !accessStatus?.can_access) {
+      setSocialAccess(false)
+      setSocialAccessError(Boolean(accessError))
+      if (accessError) setError('Impossible de vérifier ton accès. Réessaie avant de continuer.')
+      setLoading(false)
+      return
+    }
+    setSocialAccess(true)
+    setSocialAccessError(false)
     const { count: collectionCount } = await supabase
       .from('collection_items')
       .select('id,collection_profiles!inner(profile_type)', { count: 'exact', head: true })
@@ -51,6 +75,14 @@ export default function CommunautePage() {
 
   async function loadMessages(channelId = channel?.id) {
     if (!channelId) return
+    const { data: accessData, error: accessError } = await supabase.rpc('get_social_access_status')
+    const accessStatus = Array.isArray(accessData) ? accessData[0] : accessData
+    if (accessError || !accessStatus?.can_access) {
+      setSocialAccess(false)
+      setChannel(null)
+      setMessages([])
+      return
+    }
     const { data } = await supabase
       .from('community_messages')
       .select('id,user_id,author_name,body,created_at')
@@ -127,6 +159,18 @@ export default function CommunautePage() {
   const canPost = itemRows >= 10
 
   if (loading) return <main><section className="panel"><p>Chargement…</p></section></main>
+
+  if (!user) return <main className="narrow"><section className="panel"><h1>Chat PokéValeur</h1><p>Connecte-toi pour accéder à la Communauté.</p><a className="btn" href="/login?next=%2Fcommunaute">Connexion</a></section></main>
+
+  if (socialAccess !== true) return (
+    <main className="narrow"><section className="panel">
+      <span className="eyebrow dark">Communauté</span>
+      <h1>Avant d’entrer</h1>
+      <p className="muted">Un accord est nécessaire pour lire et publier dans la Communauté.</p>
+      {error && <p className="message" role="status">{error}</p>}
+      <SocialAccessPrompt supabase={supabase} verificationError={socialAccessError} onRetry={load} onGranted={load} />
+    </section></main>
+  )
 
   return (
     <main>
