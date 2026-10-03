@@ -46,7 +46,7 @@ export default function CardChecklistPage() {
   const [companies, setCompanies] = useState([])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
-  const [stampFilter, setStampFilter] = useState('main')
+  const [checklistFilter, setChecklistFilter] = useState('main')
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -142,8 +142,10 @@ export default function CardChecklistPage() {
 
   const selectedSet = sets.find(row => row.id === setId)
   const isIncludedVariant = variant => variant.is_master_set_target && (
-    stampFilter === 'all' ||
-    (stampFilter === 'stamps' ? variant.checklist_group === 'stamp' : variant.checklist_group === 'main')
+    checklistFilter === 'all' ||
+    (checklistFilter === 'stamps' ? variant.checklist_group === 'stamp' :
+      checklistFilter === 'promos' ? variant.checklist_group === 'promo' :
+      variant.checklist_group === 'main')
   )
   const cardsWithIncludedVariants = cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
   const categories = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.guide_category_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
@@ -315,16 +317,17 @@ export default function CardChecklistPage() {
               </select>
             </label>
             <label>
-              Filtre stamp
-              <select value={stampFilter} onChange={event => setStampFilter(event.target.value)}>
-                <option value="main">Versions principales uniquement</option>
-                <option value="all">Inclure les stamps</option>
-                <option value="stamps">Stamp uniquement</option>
+              Type de checklist
+              <select value={checklistFilter} onChange={event => setChecklistFilter(event.target.value)}>
+                <option value="main">Cartes et variantes principales</option>
+                <option value="promos">Promos SVP liées à la série</option>
+                <option value="stamps">Versions tamponnées</option>
+                <option value="all">Tout afficher</option>
               </select>
             </label>
           </section>
 
-          {stampFilter === 'stamps' && (
+          {checklistFilter === 'stamps' && (
             <p className={styles.imageNote} role="status">
               Le filtre liste les variantes avec stamp ; l’image disponible peut représenter la carte sans son stamp.
             </p>
