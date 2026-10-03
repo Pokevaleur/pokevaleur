@@ -5,9 +5,20 @@ import { createClient } from '../../../lib/supabase-browser'
 import styles from './cards.module.css'
 
 function imageUrl(card) {
-  const localId = card.image_source_url?.split('/').pop()
-  if (!localId) return ''
-  return 'https://assets.tcgdex.net/fr/me/me02.5/' + encodeURIComponent(localId) + '/low.webp'
+  const directUrl = card.image_url?.trim()
+  if (directUrl) {
+    const normalizedUrl = directUrl.replace(/\\/+$/, '')
+    return /\\.(png|jpe?g|webp)(\\?.*)?$/i.test(normalizedUrl)
+      ? normalizedUrl
+      : normalizedUrl + '/low.webp'
+  }
+
+  const match = card.image_source_url?.match(/\\/v2\\/([^/]+)\\/sets\\/([^/]+)\\/([^/]+)$/)
+  if (!match) return ''
+  const [, language, setCode, localId] = match
+  const seriesCode = setCode.match(/^[a-z]+/i)?.[0]
+  if (!seriesCode) return ''
+  return 'https://assets.tcgdex.net/' + language + '/' + seriesCode + '/' + setCode + '/' + encodeURIComponent(localId) + '/low.webp'
 }
 
 export default function CardChecklistPage() {
@@ -95,7 +106,7 @@ export default function CardChecklistPage() {
       setCards([])
       setOwned({})
       const { data: cardRows, error: cardError } = await supabase.from('cards')
-        .select('id,collector_number,card_name,card_type,guide_category_label,guide_category_code,mechanic_label,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
+        .select('id,collector_number,card_name,card_type,guide_category_label,guide_category_code,mechanic_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
         .eq('card_set_id', setId).order('guide_order', { ascending: true })
       if (cardError) throw cardError
       if (cancelled) return
