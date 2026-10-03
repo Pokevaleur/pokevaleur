@@ -115,6 +115,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
                     <div className={styles.source} key={source.product_name + index}>
                       <strong>{source.product_name}</strong>
                       <span>{source.market}</span>
+                      {source.variant_label && <span>Variante : {source.variant_label}</span>}
                       {source.note && <p>{source.note}</p>}
                       <small>{source.source_label}</small>
                     </div>
