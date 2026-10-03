@@ -11,6 +11,8 @@ The French card names, card categories, rarity labels, illustrator names, set me
 
 The imported records do not include TCGdex card image files. The checklist displays thumbnails loaded on demand from the TCGdex asset CDN using the image endpoint documented at https://tcgdex.dev/fr/assets; image files are not copied into this repository or database.
 
+The French card names, categories, rarity labels, illustrator names, set metadata and print-variant metadata for **Écarlate et Violet – Aventures Ensemble** are also based on this database snapshot: `data/Scarlet & Violet/Journey Together/` and `data/Scarlet & Violet/Journey Together.ts`. The import uses text metadata only; card thumbnails remain loaded on demand from the TCGdex asset CDN. The Aventures Ensemble stamped-variant list is provisional and includes multiple markets.
+
 MIT License
 
 Copyright (c) 2021 TCGdex
