@@ -23,7 +23,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
   const requestedGroup = Array.isArray(searchParams.group) ? searchParams.group[0] : searchParams.group
   const requestedQuery = Array.isArray(searchParams.q) ? searchParams.q[0] : searchParams.q
   const hasQuery = Boolean((requestedQuery || '').trim())
-  const group = hasQuery && requestedGroup === 'main'
+  const group = hasQuery && (!requestedGroup || requestedGroup === 'main')
     ? 'all'
     : filters.some(([key]) => key === requestedGroup) ? requestedGroup : 'main'
   const query = (requestedQuery || '').trim().toLocaleLowerCase('fr')
