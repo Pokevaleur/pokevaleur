@@ -1,0 +1,3953 @@
+[
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Chenipan",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/001/low.webp",
+    "collector_number": "001/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Chrysacier",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/002/low.webp",
+    "collector_number": "002/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Papilusion",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/003/low.webp",
+    "collector_number": "003/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Paras",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/004/low.webp",
+    "collector_number": "004/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Parasect",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/005/low.webp",
+    "collector_number": "005/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Chlorobule",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/006/low.webp",
+    "collector_number": "006/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Fragilady",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/007/low.webp",
+    "collector_number": "007/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Maracachi",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/008/low.webp",
+    "collector_number": "008/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Carabing",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/009/low.webp",
+    "collector_number": "009/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Trompignon",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/010/low.webp",
+    "collector_number": "010/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Gaulet-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/011/low.webp",
+    "collector_number": "011/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Escargaume",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/012/low.webp",
+    "collector_number": "012/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Limaspeed",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/013/low.webp",
+    "collector_number": "013/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Fermite",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/014/low.webp",
+    "collector_number": "014/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Viridium",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/015/low.webp",
+    "collector_number": "015/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Poussacha",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/016/low.webp",
+    "collector_number": "016/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Matourgeon",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/017/low.webp",
+    "collector_number": "017/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Holo cosmos",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Miascarade",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/018/low.webp",
+    "collector_number": "018/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Lilliterelle",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/019/low.webp",
+    "collector_number": "019/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Magmar",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/020/low.webp",
+    "collector_number": "020/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Maganon",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/021/low.webp",
+    "collector_number": "021/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Poussifeu",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/022/low.webp",
+    "collector_number": "022/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Galifeu",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/023/low.webp",
+    "collector_number": "023/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon logo de la série · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Braségali-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/024/low.webp",
+    "collector_number": "024/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Chartor",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/025/low.webp",
+    "collector_number": "025/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Darumarond de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/026/low.webp",
+    "collector_number": "026/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Darumacho de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/027/low.webp",
+    "collector_number": "027/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Pyronille",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/028/low.webp",
+    "collector_number": "028/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Pyrax",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/029/low.webp",
+    "collector_number": "029/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon logo de la série · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Reshiram-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/030/low.webp",
+    "collector_number": "030/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Volcanion-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/031/low.webp",
+    "collector_number": "031/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon flocon · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Artikodin",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/032/low.webp",
+    "collector_number": "032/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Rémoraid",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/033/low.webp",
+    "collector_number": "033/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Octillery",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/034/low.webp",
+    "collector_number": "034/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Nénupiot",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/035/low.webp",
+    "collector_number": "035/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Lombre",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/036/low.webp",
+    "collector_number": "036/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Ludicolo",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/037/low.webp",
+    "collector_number": "037/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Goélise",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/038/low.webp",
+    "collector_number": "038/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Bekipan",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/039/low.webp",
+    "collector_number": "039/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Wailmer",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/040/low.webp",
+    "collector_number": "040/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Holo cosmos",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Wailord",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/041/low.webp",
+    "collector_number": "041/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Regice",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/042/low.webp",
+    "collector_number": "042/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Délestin-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/043/low.webp",
+    "collector_number": "043/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Racaillou d'Alola",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/044/low.webp",
+    "collector_number": "044/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Gravalanch d'Alola",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/045/low.webp",
+    "collector_number": "045/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Grolem d'Alola",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/046/low.webp",
+    "collector_number": "046/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Voltorbe de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/047/low.webp",
+    "collector_number": "047/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Électrode de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/048/low.webp",
+    "collector_number": "048/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Statitik de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/049/low.webp",
+    "collector_number": "049/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Togedemaru",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/050/low.webp",
+    "collector_number": "050/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Tokorico-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/051/low.webp",
+    "collector_number": "051/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Holo cosmos",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Têtampoule de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/052/low.webp",
+    "collector_number": "052/159",
+    "guide_category_label": "Commune",
+    "product_sources": [
+      {
+        "product_name": "Boosters Écarlate et Violet – Aventures Ensemble (EV09)",
+        "market": "France",
+        "variant_label": "Normale / Reverse",
+        "source_label": "Cartes du set EV9",
+        "note": "Le contenu des boosters est aléatoire."
+      },
+      {
+        "product_name": "Coffret Collection Premium Ampibidou-ex de Mashynn",
+        "market": "France",
+        "variant_label": "Holo cosmos",
+        "source_label": "Carte brillante incluse dans le coffret"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Ampibidou-ex de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/053/low.webp",
+    "collector_number": "053/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Zapétrel de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/054/low.webp",
+    "collector_number": "054/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Fulgulairo de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/055/low.webp",
+    "collector_number": "055/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Mélofée-ex de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/056/low.webp",
+    "collector_number": "056/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Ossatueur d'Alola",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/057/low.webp",
+    "collector_number": "057/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "M. Mime",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/058/low.webp",
+    "collector_number": "058/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Polichombr",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/059/low.webp",
+    "collector_number": "059/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Branette",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/060/low.webp",
+    "collector_number": "060/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Terhal",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/061/low.webp",
+    "collector_number": "061/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Métang",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/062/low.webp",
+    "collector_number": "062/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Métalosse",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/063/low.webp",
+    "collector_number": "063/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Cryptéro de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/064/low.webp",
+    "collector_number": "064/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Plumeline",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/065/low.webp",
+    "collector_number": "065/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Bombydou de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/066/low.webp",
+    "collector_number": "066/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Rubombelle de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/067/low.webp",
+    "collector_number": "067/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Guérilande de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/068/low.webp",
+    "collector_number": "068/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon logo de la série · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Mimiqui-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/069/low.webp",
+    "collector_number": "069/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Sinistrail",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/070/low.webp",
+    "collector_number": "070/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Grimalin",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/071/low.webp",
+    "collector_number": "071/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Fourbelin",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/072/low.webp",
+    "collector_number": "072/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Angoliath",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/073/low.webp",
+    "collector_number": "073/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Crèmy",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/074/low.webp",
+    "collector_number": "074/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Charmilly-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/075/low.webp",
+    "collector_number": "075/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Osselait",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/076/low.webp",
+    "collector_number": "076/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Marcacrin",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/077/low.webp",
+    "collector_number": "077/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Cochignon",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/078/low.webp",
+    "collector_number": "078/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Mammochon-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/079/low.webp",
+    "collector_number": "079/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Embrylex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/080/low.webp",
+    "collector_number": "080/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Ymphect",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/081/low.webp",
+    "collector_number": "081/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Regirock",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/082/low.webp",
+    "collector_number": "082/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Pandespiègle",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/083/low.webp",
+    "collector_number": "083/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Rocabot",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/084/low.webp",
+    "collector_number": "084/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Holo cosmos",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Lougaroc",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/085/low.webp",
+    "collector_number": "085/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Dunaja de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/086/low.webp",
+    "collector_number": "086/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Dunaconda de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/087/low.webp",
+    "collector_number": "087/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Terracool",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/088/low.webp",
+    "collector_number": "088/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Terracruel",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/089/low.webp",
+    "collector_number": "089/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Craparoi",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/090/low.webp",
+    "collector_number": "090/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Smogo",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/091/low.webp",
+    "collector_number": "091/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Smogogo",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/092/low.webp",
+    "collector_number": "092/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Axoloto de Paldea",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/093/low.webp",
+    "collector_number": "093/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Terraiste de Paldea-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/094/low.webp",
+    "collector_number": "094/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Holo cosmos",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Tyranocif",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/095/low.webp",
+    "collector_number": "095/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Chacripan de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/096/low.webp",
+    "collector_number": "096/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Zorua de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/097/low.webp",
+    "collector_number": "097/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon Master Ball League · Holo",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Zoroark-ex de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/098/low.webp",
+    "collector_number": "098/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Pandarbare",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/099/low.webp",
+    "collector_number": "099/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Gambex",
+    "card_type": "Pokémon",
+    "image_url": "/api/ev9-image/100",
+    "collector_number": "100/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Lestombaile",
+    "card_type": "Pokémon",
+    "image_url": "/api/ev9-image/101",
+    "collector_number": "101/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Lançargot",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/102/low.webp",
+    "collector_number": "102/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Tic de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/103/low.webp",
+    "collector_number": "103/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Clic de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/104/low.webp",
+    "collector_number": "104/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Cliticlic de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/105/low.webp",
+    "collector_number": "105/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Limonde de Galar",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/106/low.webp",
+    "collector_number": "106/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Magearna",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/107/low.webp",
+    "collector_number": "107/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Corvaillus de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/108/low.webp",
+    "collector_number": "108/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Charibari",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/109/low.webp",
+    "collector_number": "109/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Pachyradjah",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/110/low.webp",
+    "collector_number": "110/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Zacian-ex de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/111/low.webp",
+    "collector_number": "111/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Draby",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/112/low.webp",
+    "collector_number": "112/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Drackhaus",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/113/low.webp",
+    "collector_number": "113/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon logo de la série · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Drattak-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/114/low.webp",
+    "collector_number": "114/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Drakkarmin",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/115/low.webp",
+    "collector_number": "115/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Reshiram de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/116/low.webp",
+    "collector_number": "116/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon EB Games · Holo",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon GameStop · Holo",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon logo de la série · Holo",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Ronflex de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/117/low.webp",
+    "collector_number": "117/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Fouinette",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/118/low.webp",
+    "collector_number": "118/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Fouinar",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/119/low.webp",
+    "collector_number": "119/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Insolourdo",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/120/low.webp",
+    "collector_number": "120/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Deusolourdo-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/121/low.webp",
+    "collector_number": "121/159",
+    "guide_category_label": "Double rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Kecleon",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/122/low.webp",
+    "collector_number": "122/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Tropius",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/123/low.webp",
+    "collector_number": "123/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Nanméouïe",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/124/low.webp",
+    "collector_number": "124/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Chinchidou",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/125/low.webp",
+    "collector_number": "125/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Pashmilla",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/126/low.webp",
+    "collector_number": "126/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Sonistrelle",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/127/low.webp",
+    "collector_number": "127/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Bruyverne",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/128/low.webp",
+    "collector_number": "128/159",
+    "guide_category_label": "Rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Dodoala",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/129/low.webp",
+    "collector_number": "129/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Draïeul",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/130/low.webp",
+    "collector_number": "130/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Rongourmand",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/131/low.webp",
+    "collector_number": "131/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Rongrigou",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/132/low.webp",
+    "collector_number": "132/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Minisange de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/133/low.webp",
+    "collector_number": "133/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Bleuseille de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/134/low.webp",
+    "collector_number": "134/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Holo cosmos",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Moumouton de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/135/low.webp",
+    "collector_number": "135/159",
+    "guide_category_label": "Commune",
+    "product_sources": [
+      {
+        "product_name": "Boosters Écarlate et Violet – Aventures Ensemble (EV09)",
+        "market": "France",
+        "variant_label": "Normale / Reverse",
+        "source_label": "Cartes du set EV9",
+        "note": "Le contenu des boosters est aléatoire."
+      },
+      {
+        "product_name": "Coffret Zacian-ex de Nabil",
+        "market": "France",
+        "variant_label": "Holo cosmos",
+        "source_label": "Carte brillante incluse dans le coffret"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Holo cosmos",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon logo de la série · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Moumouflon de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/136/low.webp",
+    "collector_number": "136/159",
+    "guide_category_label": "Rare",
+    "product_sources": [
+      {
+        "product_name": "Boosters Écarlate et Violet – Aventures Ensemble (EV09)",
+        "market": "France",
+        "variant_label": "Holo / Reverse",
+        "source_label": "Cartes du set EV9",
+        "note": "Le contenu des boosters est aléatoire."
+      },
+      {
+        "product_name": "Coffret Zacian-ex de Nabil",
+        "market": "France",
+        "variant_label": "Holo cosmos",
+        "source_label": "Carte brillante incluse dans le coffret"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Nigosier",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/137/low.webp",
+    "collector_number": "137/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Nigosier de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/138/low.webp",
+    "collector_number": "138/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Gourmelet",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/139/low.webp",
+    "collector_number": "139/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Fragroin",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/140/low.webp",
+    "collector_number": "140/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Tapatoès",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/141/low.webp",
+    "collector_number": "141/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Milio et Naire",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/142/low.webp",
+    "collector_number": "142/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Entraînement de Karatéka",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/143/low.webp",
+    "collector_number": "143/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Entraînement de Karatéka",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/144/low.webp",
+    "collector_number": "144/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Entraînement de Karatéka",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/145/low.webp",
+    "collector_number": "145/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Exploration de Pierre",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/146/low.webp",
+    "collector_number": "146/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Sac de Nabil",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/147/low.webp",
+    "collector_number": "147/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Bandeau Choix de Nabil",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/148/low.webp",
+    "collector_number": "148/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon Championnat régional · Normale",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon Championnat régional + Staff · Normale",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon Gym Challenge · Normale",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon Ultra Ball League · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Esprit Combatif d'Iris",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/149/low.webp",
+    "collector_number": "149/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon Gym Challenge · Normale",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Levalendura",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/150/low.webp",
+    "collector_number": "150/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Holo cosmos",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Perle de Lilie",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/151/low.webp",
+    "collector_number": "151/159",
+    "guide_category_label": "Peu commune",
+    "product_sources": [
+      {
+        "product_name": "Boosters Écarlate et Violet – Aventures Ensemble (EV09)",
+        "market": "France",
+        "variant_label": "Normale / Reverse",
+        "source_label": "Cartes du set EV9",
+        "note": "Le contenu des boosters est aléatoire."
+      },
+      {
+        "product_name": "Coffret Collection Tournoi Premium – Lilie",
+        "market": "France",
+        "source_label": "Le coffret contient trois cartes Perle de Lilie",
+        "note": "La finition de ces trois exemplaires reste à confirmer."
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Palais de N",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/152/low.webp",
+    "collector_number": "152/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "PP Plus de N",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/153/low.webp",
+    "collector_number": "153/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo_cosmos",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Paddoxton",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/154/low.webp",
+    "collector_number": "154/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Recherches Professorales",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/155/low.webp",
+    "collector_number": "155/159",
+    "guide_category_label": "Commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Billet à Échanger",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/156/low.webp",
+    "collector_number": "156/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Petite Frappe",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/157/low.webp",
+    "collector_number": "157/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Super Potion",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/158/low.webp",
+    "collector_number": "158/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "normal",
+        "variant_label": "Normale",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "reverse",
+        "variant_label": "Reverse",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Énergie Piquante",
+    "card_type": "Énergie",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/159/low.webp",
+    "collector_number": "159/159",
+    "guide_category_label": "Peu commune"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Maracachi",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/160/low.webp",
+    "collector_number": "160/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Artikodin",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/161/low.webp",
+    "collector_number": "161/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Wailord",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/162/low.webp",
+    "collector_number": "162/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Fulgulairo de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/163/low.webp",
+    "collector_number": "163/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Rubombelle de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/164/low.webp",
+    "collector_number": "164/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Marcacrin",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/165/low.webp",
+    "collector_number": "165/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Lougaroc",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/166/low.webp",
+    "collector_number": "166/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      },
+      {
+        "finish_code": "holo",
+        "variant_label": "Tampon logo de la série · Holo",
+        "checklist_group": "stamp"
+      }
+    ],
+    "card_name": "Reshiram de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/167/low.webp",
+    "collector_number": "167/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Fouinar",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/168/low.webp",
+    "collector_number": "168/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Sonistrelle",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/169/low.webp",
+    "collector_number": "169/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Moumouton de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/170/low.webp",
+    "collector_number": "170/159",
+    "guide_category_label": "Illustration rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Volcanion-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/171/low.webp",
+    "collector_number": "171/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Ampibidou-ex de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/172/low.webp",
+    "collector_number": "172/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Mélofée-ex de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/173/low.webp",
+    "collector_number": "173/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Mammochon-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/174/low.webp",
+    "collector_number": "174/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Zoroark-ex de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/175/low.webp",
+    "collector_number": "175/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Zacian-ex de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/176/low.webp",
+    "collector_number": "176/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Drattak-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/177/low.webp",
+    "collector_number": "177/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Deusolourdo-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/178/low.webp",
+    "collector_number": "178/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Exploration de Pierre",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/179/low.webp",
+    "collector_number": "179/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Esprit Combatif d'Iris",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/180/low.webp",
+    "collector_number": "180/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Petite Frappe",
+    "card_type": "Dresseur",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/181/low.webp",
+    "collector_number": "181/159",
+    "guide_category_label": "Ultra rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Volcanion-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/182/low.webp",
+    "collector_number": "182/159",
+    "guide_category_label": "Illustration spéciale rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Ampibidou-ex de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/183/low.webp",
+    "collector_number": "183/159",
+    "guide_category_label": "Illustration spéciale rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Mélofée-ex de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/184/low.webp",
+    "collector_number": "184/159",
+    "guide_category_label": "Illustration spéciale rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Zoroark-ex de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/185/low.webp",
+    "collector_number": "185/159",
+    "guide_category_label": "Illustration spéciale rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Zacian-ex de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/186/low.webp",
+    "collector_number": "186/159",
+    "guide_category_label": "Illustration spéciale rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Holo",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Drattak-ex",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/187/low.webp",
+    "collector_number": "187/159",
+    "guide_category_label": "Illustration spéciale rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo_gold",
+        "variant_label": "Holo dorée",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Ampibidou-ex de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/188/low.webp",
+    "collector_number": "188/159",
+    "guide_category_label": "Hyper rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo_gold",
+        "variant_label": "Holo dorée",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Zoroark-ex de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/189/low.webp",
+    "collector_number": "189/159",
+    "guide_category_label": "Hyper rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo_gold",
+        "variant_label": "Holo dorée",
+        "checklist_group": "main"
+      }
+    ],
+    "card_name": "Énergie Piquante",
+    "card_type": "Énergie",
+    "image_url": "https://assets.tcgdex.net/fr/sv/sv09/190/low.webp",
+    "collector_number": "190/159",
+    "guide_category_label": "Hyper rare"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "card_name": "Darumacho de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/181/low.webp",
+    "collector_number": "SVP 181",
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Boîtier Stratégies et Combats EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "card_name": "Fulgulairo de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/182/low.webp",
+    "collector_number": "SVP 182",
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Boîtier Stratégies et Combats EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "card_name": "Rubombelle de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/183/low.webp",
+    "collector_number": "SVP 183",
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Boîtier Stratégies et Combats EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "card_name": "Ronflex de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/184/low.webp",
+    "collector_number": "SVP 184",
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Boîtier Stratégies et Combats EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante · hors Ultra Master français",
+        "checklist_group": "promo",
+        "is_master_set_target": false
+      }
+    ],
+    "card_name": "Yanma",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/185/low.webp",
+    "collector_number": "SVP 185",
+    "guide_category_label": "Promo internationale · marché à confirmer",
+    "product_sources": [
+      {
+        "product_name": "Blister de booster individuel EV9",
+        "market": "International · pays à confirmer",
+        "source_label": "Guide français Aventures Ensemble",
+        "note": "Promo conservée au catalogue, hors Ultra Master Set français."
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante · hors Ultra Master français",
+        "checklist_group": "promo",
+        "is_master_set_target": false
+      }
+    ],
+    "card_name": "Baggiguane",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/186/low.webp",
+    "collector_number": "SVP 186",
+    "guide_category_label": "Promo internationale · marché à confirmer",
+    "product_sources": [
+      {
+        "product_name": "Blister de booster individuel EV9",
+        "market": "International · pays à confirmer",
+        "source_label": "Guide français Aventures Ensemble",
+        "note": "Promo conservée au catalogue, hors Ultra Master Set français."
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "card_name": "Yanmega",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/187/low.webp",
+    "collector_number": "SVP 187",
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Tripack EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "card_name": "Baggaïd",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/188/low.webp",
+    "collector_number": "SVP 188",
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Tripack EV9",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "card_name": "Zorua de N",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/189/low.webp",
+    "collector_number": "SVP 189",
+    "guide_category_label": "Promo SVP",
+    "product_sources": [
+      {
+        "product_name": "Coffret Dresseur d’élite EV9 (ETB)",
+        "market": "France",
+        "source_label": "Guide français Aventures Ensemble"
+      }
+    ]
+  },
+  {
+    "collector_number": "SVP 194",
+    "card_name": "Ampibidou-ex de Mashynn",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/194/low.webp",
+    "guide_category_label": "Promo SVP",
+    "variants": [
+      {
+        "finish_code": "holo_full_art",
+        "variant_label": "Promo brillante illustrée",
+        "checklist_group": "promo"
+      }
+    ],
+    "product_sources": [
+      {
+        "product_name": "Coffret Collection Premium Ampibidou-ex de Mashynn",
+        "market": "France",
+        "source_label": "Carte promo incluse dans le coffret"
+      }
+    ]
+  },
+  {
+    "collector_number": "SVP 193",
+    "card_name": "Zacian-ex de Nabil",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/193/low.webp",
+    "guide_category_label": "Promo SVP",
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "product_sources": [
+      {
+        "product_name": "Coffret Zacian-ex de Nabil",
+        "market": "France",
+        "source_label": "Carte promo incluse dans le coffret"
+      }
+    ]
+  },
+  {
+    "collector_number": "SVP 195",
+    "card_name": "Mélofée-ex de Lilie",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/195/low.webp",
+    "guide_category_label": "Promo SVP",
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "product_sources": [
+      {
+        "product_name": "Coffret Collection Tournoi Premium – Lilie",
+        "market": "France",
+        "source_label": "Carte promo incluse dans le coffret"
+      }
+    ]
+  }
+]
