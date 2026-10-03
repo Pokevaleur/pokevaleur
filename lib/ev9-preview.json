@@ -3694,29 +3694,31 @@
     "variants": [
       {
         "finish_code": "holo",
-        "variant_label": "Promo brillante",
-        "checklist_group": "promo"
+        "variant_label": "Promo brillante · hors Ultra Master français",
+        "checklist_group": "promo",
+        "is_master_set_target": false
       }
     ],
     "card_name": "Yanma",
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/185/low.webp",
     "collector_number": "SVP 185",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo internationale · marché à confirmer"
   },
   {
     "variants": [
       {
         "finish_code": "holo",
-        "variant_label": "Promo brillante",
-        "checklist_group": "promo"
+        "variant_label": "Promo brillante · hors Ultra Master français",
+        "checklist_group": "promo",
+        "is_master_set_target": false
       }
     ],
     "card_name": "Baggaïd",
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/186/low.webp",
     "collector_number": "SVP 186",
-    "guide_category_label": "Promo SVP"
+    "guide_category_label": "Promo internationale · marché à confirmer"
   },
   {
     "variants": [
