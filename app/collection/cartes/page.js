@@ -7,17 +7,29 @@ import styles from './cards.module.css'
 function imageUrl(card) {
   const directUrl = card.image_url?.trim()
   if (directUrl) {
-    const normalizedUrl = directUrl.replace(/\\/+$/, '')
-    return /\\.(png|jpe?g|webp)(\\?.*)?$/i.test(normalizedUrl)
-      ? normalizedUrl
-      : normalizedUrl + '/low.webp'
+    const queryIndex = directUrl.indexOf('?')
+    const imagePath = queryIndex < 0 ? directUrl : directUrl.slice(0, queryIndex)
+    const query = queryIndex < 0 ? '' : directUrl.slice(queryIndex)
+    const normalizedPath = imagePath.endsWith('/') ? imagePath.slice(0, -1) : imagePath
+    const lowerPath = normalizedPath.toLowerCase()
+    const isImageFile = ['.png', '.jpg', '.jpeg', '.webp'].some(extension => lowerPath.endsWith(extension))
+    return isImageFile ? directUrl : normalizedPath + '/low.webp' + query
   }
 
-  const match = card.image_source_url?.match(/\\/v2\\/([^/]+)\\/sets\\/([^/]+)\\/([^/]+)$/)
-  if (!match) return ''
-  const [, language, setCode, localId] = match
-  const seriesCode = setCode.match(/^[a-z]+/i)?.[0]
-  if (!seriesCode) return ''
+  const sourceParts = (card.image_source_url || '').split('/').filter(Boolean)
+  const setsIndex = sourceParts.lastIndexOf('sets')
+  if (setsIndex < 1 || setsIndex + 2 >= sourceParts.length) return ''
+  const language = sourceParts[setsIndex - 1]
+  const setCode = sourceParts[setsIndex + 1]
+  const localId = sourceParts[setsIndex + 2]
+  let seriesEnd = 0
+  while (seriesEnd < setCode.length) {
+    const character = setCode[seriesEnd].toLowerCase()
+    if (character < 'a' || character > 'z') break
+    seriesEnd += 1
+  }
+  const seriesCode = setCode.slice(0, seriesEnd)
+  if (!seriesCode || !language || !localId) return ''
   return 'https://assets.tcgdex.net/' + language + '/' + seriesCode + '/' + setCode + '/' + encodeURIComponent(localId) + '/low.webp'
 }
 
