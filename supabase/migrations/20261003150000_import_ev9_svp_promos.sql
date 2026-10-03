@@ -1,4 +1,5 @@
--- Ajoute les 9 promos SVP distribuées avec les produits français liés à EV9.
+-- Ajoute les 9 promos SVP liées aux produits EV9 : 7 françaises et 2 internationales gardées hors Ultra Master FR.
+-- Les fiches Pokémon confirment SVP 185–186 ; le pays de distribution de leurs blisters reste à confirmer.
 -- Produit et numéros 185–186 vérifiés dans le livret français EV9 p. 35–36 et l’encyclopédie officielle Pokémon.
 -- Elles restent identifiables dans un filtre distinct ; le compteur officiel EV9 demeure à 159.
 with target_set as (
@@ -8,21 +9,21 @@ with target_set as (
 ),
 set_note as (
   update public.card_sets
-  set checklist_scope_note = 'Checklist de travail EV9 : 190 cartes numérotées du set (001–190/159 ; 159 cartes officiellement annoncées), 343 variantes standard/reverse/holo et 42 variantes tamponnées TCGdex, plus 9 promos SVP en groupe séparé (181–189). Les tampons TCGdex peuvent inclure plusieurs marchés ; langue et provenance restent à vérifier avant publication. Six variantes Jumbo restent exclues. Série privée.'
+  set checklist_scope_note = 'Checklist de travail EV9 : 190 cartes numérotées du set (001–190/159 ; 159 cartes officiellement annoncées), 343 variantes standard/reverse/holo et 42 variantes tamponnées TCGdex, plus 9 promos SVP en groupe séparé (181–189), dont 7 incluses au Master Set français et 2 hors périmètre (185–186, marché à confirmer). Les tampons TCGdex peuvent inclure plusieurs marchés ; langue et provenance restent à vérifier avant publication. Six variantes Jumbo restent exclues. Série privée.'
   where set_code = 'SV09' and language = 'FR'
   returning id
 ),
-promo_input(collector_number,card_name,guide_order,local_id,source_path) as (
+promo_input(collector_number,card_name,guide_order,local_id,source_path,is_master_set_target) as (
   values
-    ('SVP 181','Darumacho de N',191,'181','181'),
-    ('SVP 182','Fulgulairo de Mashynn',192,'182','182'),
-    ('SVP 183','Rubombelle de Lilie',193,'183','183'),
-    ('SVP 184','Ronflex de Nabil',194,'184','184'),
-    ('SVP 185','Yanma',195,'185','185'),
-    ('SVP 186','Baggaïd',196,'186','186'),
-    ('SVP 187','Yanmega',197,'187','187'),
-    ('SVP 188','Baggaïd',198,'188','188'),
-    ('SVP 189','Zorua de N',199,'189','189')
+    ('SVP 181','Darumacho de N',191,'181','181',true),
+    ('SVP 182','Fulgulairo de Mashynn',192,'182','182',true),
+    ('SVP 183','Rubombelle de Lilie',193,'183','183',true),
+    ('SVP 184','Ronflex de Nabil',194,'184','184',true),
+    ('SVP 185','Yanma',195,'185','185',false),
+    ('SVP 186','Baggaïd',196,'186','186',false),
+    ('SVP 187','Yanmega',197,'187','187',true),
+    ('SVP 188','Baggaïd',198,'188','188',true),
+    ('SVP 189','Zorua de N',199,'189','189',true)
 ),
 upserted_cards as (
   insert into public.cards (
@@ -47,8 +48,11 @@ upserted_cards as (
 insert into public.card_print_variants (
   card_id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target
 )
-select c.id,'promo_holo','Promo brillante','holo',null,'promo',true
+select c.id,'promo_holo',
+  case when not p.is_master_set_target then 'Promo brillante · hors Ultra Master français' else 'Promo brillante' end,
+  'holo',null,'promo',p.is_master_set_target
 from upserted_cards c
+join promo_input p using (collector_number)
 on conflict (card_id,variant_key) do update set
   variant_label=excluded.variant_label,finish_code=excluded.finish_code,
   guide_marker=excluded.guide_marker,checklist_group=excluded.checklist_group,
