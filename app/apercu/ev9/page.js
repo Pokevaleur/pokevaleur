@@ -97,19 +97,31 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
                 )
               })}
             </div>
-            {card.product_sources?.length > 0 && (
-              <section className={styles.sources} aria-label={'Produits associés à ' + card.card_name}>
-                <h3>Où la trouver ?</h3>
-                {card.product_sources.map((source, index) => (
-                  <div className={styles.source} key={source.product_name + index}>
-                    <strong>{source.product_name}</strong>
-                    <span>{source.market}</span>
-                    {source.note && <p>{source.note}</p>}
-                    <small>{source.source_label}</small>
-                  </div>
-                ))}
-              </section>
-            )}
+            {(() => {
+              const productSources = card.product_sources?.length
+                ? card.product_sources
+                : card.visibleVariants.some(variant => variant.checklist_group === 'main')
+                  ? [{
+                    product_name: 'Boosters Écarlate et Violet – Aventures Ensemble (EV09)',
+                    market: 'France',
+                    source_label: 'Carte du set EV9',
+                    note: 'Le contenu des boosters est aléatoire ; cette indication ne garantit pas la carte.'
+                  }]
+                  : []
+              return productSources.length > 0 && (
+                <section className={styles.sources} aria-label={'Produits associés à ' + card.card_name}>
+                  <h3>Où la trouver ?</h3>
+                  {productSources.map((source, index) => (
+                    <div className={styles.source} key={source.product_name + index}>
+                      <strong>{source.product_name}</strong>
+                      <span>{source.market}</span>
+                      {source.note && <p>{source.note}</p>}
+                      <small>{source.source_label}</small>
+                    </div>
+                  ))}
+                </section>
+              )
+            })()}
           </article>
         ))}
         {!visibleCards.length && <p>Aucune carte ne correspond à cette recherche.</p>}
