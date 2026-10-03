@@ -149,16 +149,19 @@ export default function CardChecklistPage() {
     if (user) window.localStorage.setItem('pokevaleur-collection:' + user.id, nextProfileId)
   }
 
-  async function toggleRaw(variant) {
+  async function changeRawCopies(variant, action) {
     const copies = owned[variant.id] || []
     const rawCopies = copies.filter(copy => copy.ownership_type === 'raw')
+    if (action === 'remove' && !rawCopies.length) return
+    if (action === 'remove' && !window.confirm('Retirer un exemplaire brut de la collection ?')) return
     setBusyVariant(variant.id)
     setNotice('')
     try {
-      if (rawCopies.length) {
-        const { error: deleteError } = await supabase.from('collection_cards').delete().eq('id', rawCopies[rawCopies.length - 1].id)
+      if (action === 'remove') {
+        const copyToRemove = rawCopies[rawCopies.length - 1]
+        const { error: deleteError } = await supabase.from('collection_cards').delete().eq('id', copyToRemove.id)
         if (deleteError) throw deleteError
-        setOwned(current => ({ ...current, [variant.id]: (current[variant.id] || []).filter(copy => copy.id !== rawCopies[rawCopies.length - 1].id) }))
+        setOwned(current => ({ ...current, [variant.id]: (current[variant.id] || []).filter(copy => copy.id !== copyToRemove.id) }))
         setNotice(rawCopies.length > 1 ? 'Un exemplaire retiré ; les autres restent dans la collection.' : 'Carte retirée de la collection.')
       } else {
         const { data, error: insertError } = await supabase.from('collection_cards').insert({
@@ -169,7 +172,7 @@ export default function CardChecklistPage() {
         }).select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)').single()
         if (insertError) throw insertError
         setOwned(current => ({ ...current, [variant.id]: [...(current[variant.id] || []), data] }))
-        setNotice('Exemplaire ajouté à la collection.')
+        setNotice('Exemplaire brut ajouté à la collection.')
       }
     } catch (saveError) {
       setNotice('Enregistrement impossible : ' + (saveError.message || 'réessaie.'))
@@ -319,11 +322,16 @@ export default function CardChecklistPage() {
                               <span>{variant.variant_label}</span>
                               {variant.checklist_group === 'stamp' && <small>Tampon</small>}
                             </div>
-                            <label className={styles.checkboxLine}>
-                              <input type="checkbox" checked={rawCopies.length > 0} disabled={busyVariant === variant.id || cardsLoading} onChange={() => toggleRaw(variant)} />
-                              <span>Brute · {rawCopies.length}</span>
-                            </label>
-                            {rawCopies.length > 1 && <small className={styles.copyCount}>{rawCopies.length} exemplaires bruts</small>}
+                            <div className={styles.rawLine}>
+                              <label className={styles.checkboxLine}>
+                                <input type="checkbox" checked={rawCopies.length > 0} readOnly />
+                                <span>Brute · {rawCopies.length}</span>
+                              </label>
+                              <div className={styles.copyActions}>
+                                <button type="button" aria-label="Retirer un exemplaire brut" disabled={!rawCopies.length || busyVariant === variant.id} onClick={() => changeRawCopies(variant, 'remove')}>−</button>
+                                <button type="button" aria-label="Ajouter un exemplaire brut" disabled={busyVariant === variant.id} onClick={() => changeRawCopies(variant, 'add')}>+</button>
+                              </div>
+                            </div>
                             <div className={styles.gradedSection}>
                               <div className={styles.gradedHeading}><span>Gradées · {gradedCopies.length}</span><button type="button" onClick={() => setGradingVariant(gradingVariant === variant.id ? '' : variant.id)}>+ Ajouter</button></div>
                               {gradedCopies.map(copy => (
