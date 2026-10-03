@@ -1003,4 +1003,5 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .collectionProfileAvatar{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;vertical-align:middle;margin-right:4px;border-radius:50%;background:#fff4c7;font-size:16px}
 .collectionProfileAvatar.profileAvatarIllustrated{background-color:transparent!important}
 
-.topbar .brandCrown{display:inline-block;width:21px;height:14px;margin-left:4px;vertical-align:super;color:var(--gold)}@media(max-width:850px){.topbar .brandCrown{width:16px;height:11px;margin-left:3px}}
+
+.topbar .brandU{position:relative;display:inline-block}.topbar .brandCrown{position:absolute;left:50%;bottom:100%;width:18px;height:12px;transform:translateX(-50%);color:var(--gold);pointer-events:none}@media(max-width:850px){.topbar .brandCrown{width:15px;height:10px}}
