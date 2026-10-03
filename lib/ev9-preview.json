@@ -3698,6 +3698,34 @@
         "checklist_group": "promo"
       }
     ],
+    "card_name": "Yanma",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/185/low.webp",
+    "collector_number": "SVP 185",
+    "guide_category_label": "Promo SVP"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
+    "card_name": "Baggaïd",
+    "card_type": "Pokémon",
+    "image_url": "https://assets.tcgdex.net/fr/sv/svp/186/low.webp",
+    "collector_number": "SVP 186",
+    "guide_category_label": "Promo SVP"
+  },
+  {
+    "variants": [
+      {
+        "finish_code": "holo",
+        "variant_label": "Promo brillante",
+        "checklist_group": "promo"
+      }
+    ],
     "card_name": "Yanmega",
     "card_type": "Pokémon",
     "image_url": "https://assets.tcgdex.net/fr/sv/svp/187/low.webp",
