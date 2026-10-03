@@ -301,6 +301,12 @@ export default function CardChecklistPage() {
             </label>
           </section>
 
+          {stampFilter === 'stamps' && (
+            <p className={styles.imageNote} role="status">
+              Le filtre liste les variantes avec stamp ; l’image disponible peut représenter la carte sans son stamp.
+            </p>
+          )}
+
           {cardsLoading ? <p className={styles.status}>Chargement des cartes…</p> : (
             <section className={styles.cardGrid} aria-label="Cartes de la série">
               {visibleCards.map(card => {
@@ -309,7 +315,10 @@ export default function CardChecklistPage() {
                   <article className={styles.card} key={card.id}>
                     <div className={styles.cardTop}>
                       <div className={styles.artFrame}>
-                        <img src={imageUrl(card)} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} />
+                        <img src={imageUrl(card)} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => {
+                          event.currentTarget.style.display = 'none'
+                          event.currentTarget.parentElement.dataset.imageMissing = 'true'
+                        }} />
                         <span>{card.card_type || 'Carte Pokémon'}</span>
                       </div>
                       <div className={styles.cardHeading}>
