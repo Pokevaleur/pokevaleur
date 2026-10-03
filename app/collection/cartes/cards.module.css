@@ -39,6 +39,7 @@
 .artFrame { position:relative; overflow:hidden; display:grid; place-items:center; min-height:144px; border-radius:10px; background:linear-gradient(145deg,#e5efff,#fff1cf); color:#637187; }
 .artFrame img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
 .artFrame span { position:absolute; left:6px; bottom:6px; border-radius:999px; padding:3px 7px; background:#071c32d9; color:white; font-size:.65rem; }
+.artFrame[data-image-missing='true']::after { content:'Illustration indisponible'; position:absolute; inset:0; display:grid; place-items:center; padding:10px 8px 30px; color:#637187; font-size:.7rem; font-weight:700; text-align:center; pointer-events:none; }
 .cardHeading { min-width:0; }
 .number { display:inline-block; margin-bottom:6px; color:#5d6b7c; font-size:.84rem; font-weight:800; }
 .cardHeading h2 { margin:0; font-size:1.05rem; line-height:1.25; overflow-wrap:anywhere; }
@@ -70,6 +71,7 @@
 .status, .empty, .error, .notice { padding:14px 16px; border-radius:12px; background:#fff; }
 .status { color:#647286; }
 .empty { color:#667487; }
+.imageNote { margin:10px 0; padding:12px 14px; border:1px solid #eadca8; border-radius:12px; background:#fff9e7; color:#695824; font-size:.9rem; line-height:1.4; }
 .error { color:#842c31; background:#fff0f0; }
 .notice { color:#254c35; background:#eaf7ee; }
 @media (max-width:760px) {
