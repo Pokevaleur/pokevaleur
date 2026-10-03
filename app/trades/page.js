@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { SocialAccessPrompt } from '../../lib/social-access-prompt'
 
 export default function TradesPage() {
   const supabase = useMemo(() => createClient(), [])
@@ -16,8 +17,14 @@ export default function TradesPage() {
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [replyDrafts, setReplyDrafts] = useState({})
+  const [socialAccess, setSocialAccess] = useState(null)
+  const [socialAccessError, setSocialAccessError] = useState(false)
 
-  useEffect(() => { load() }, [])
+  useEffect(() => {
+    load()
+    window.addEventListener('focus', load)
+    return () => window.removeEventListener('focus', load)
+  }, [])
 
   async function load() {
     setLoading(true)
@@ -27,6 +34,21 @@ export default function TradesPage() {
       setLoading(false)
       return
     }
+
+    const { data: accessData, error: accessError } = await supabase.rpc('get_social_access_status')
+    const accessStatus = Array.isArray(accessData) ? accessData[0] : accessData
+    if (accessError || !accessStatus?.can_access) {
+      setSocialAccess(false)
+      setSocialAccessError(Boolean(accessError))
+      setItems([])
+      setListings([])
+      setOffers([])
+      setMessages({})
+      setLoading(false)
+      return
+    }
+    setSocialAccess(true)
+    setSocialAccessError(false)
 
     const [{ data:itemData }, { data:listingData }, { data:offerData }] = await Promise.all([
       supabase.from('collection_items').select('id,product_id,custom_name,quantity,photo_path,variant_note,collection_profiles!inner(profile_type)').eq('collection_profiles.profile_type','personal').order('created_at',{ascending:false}),
@@ -146,6 +168,17 @@ export default function TradesPage() {
         <h1>Trades entre membres</h1>
         <p>Connecte-toi pour accéder aux échanges entre collectionneurs.</p>
         <a className="btn" href="/login?next=%2Ftrades">Connexion</a>
+      </section>
+    </main>
+  )
+
+  if (socialAccess !== true) return (
+    <main className="narrow">
+      <section className="panel">
+        <span className="eyebrow dark">Trades</span>
+        <h1>Avant d’entrer</h1>
+        <p className="muted">Un accord est nécessaire pour voir les annonces et contacter d’autres collectionneurs.</p>
+        <SocialAccessPrompt supabase={supabase} verificationError={socialAccessError} onRetry={load} onGranted={load} />
       </section>
     </main>
   )
