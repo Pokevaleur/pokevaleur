@@ -13,6 +13,9 @@ export default function ProfilePage() {
   const [editedAvatarKey, setEditedAvatarKey] = useState('star')
   const [profileMessage, setProfileMessage] = useState('')
   const [isSavingProfile, setIsSavingProfile] = useState(false)
+  const [socialAccess, setSocialAccess] = useState(null)
+  const [socialConsentMessage, setSocialConsentMessage] = useState('')
+  const [withdrawingSocialConsent, setWithdrawingSocialConsent] = useState(false)
   const [email, setEmail] = useState('')
   const [confirmationText, setConfirmationText] = useState('')
   const [confirmationEmail, setConfirmationEmail] = useState('')
@@ -30,6 +33,11 @@ export default function ProfilePage() {
         setStatus('signed-out')
         return
       }
+
+      const { data: socialData, error: socialError } = await supabase.rpc('get_social_access_status')
+      if (!active) return
+      const socialRow = Array.isArray(socialData) ? socialData[0] : socialData
+      setSocialAccess(socialError ? null : Boolean(socialRow?.can_access))
 
       const { data, error } = await supabase
         .from('profiles')
@@ -53,6 +61,21 @@ export default function ProfilePage() {
     loadProfile().catch(() => { if (active) setStatus('error') })
     return () => { active = false }
   }, [supabase])
+
+  async function withdrawSocialConsent() {
+    if (withdrawingSocialConsent || socialAccess !== true) return
+    if (!window.confirm('Retirer ton accord fermera ton accès à la Communauté et aux Trades. La collection et son transfert restent disponibles. Continuer ?')) return
+    setWithdrawingSocialConsent(true)
+    setSocialConsentMessage('')
+    const { error } = await supabase.rpc('withdraw_social_access_consent')
+    if (error) {
+      setSocialConsentMessage('Impossible de retirer ton accord pour le moment. Réessaie.')
+    } else {
+      setSocialAccess(false)
+      setSocialConsentMessage('Ton accord est retiré. L’accès à la Communauté et aux Trades est fermé ; ta collection reste disponible.')
+    }
+    setWithdrawingSocialConsent(false)
+  }
 
   async function saveProfile(event) {
     event.preventDefault()
@@ -204,6 +227,22 @@ export default function ProfilePage() {
           <div><dt>Avatar</dt><dd className="profileAvatarDetail"><ProfileAvatar className="profileAvatarDetailMark" avatarKey={profile.avatar_key} aria-hidden="true" /><span>{avatar.label}</span></dd></div>
           <div><dt>Adresse e-mail du compte</dt><dd>{email || 'Non renseignée'}</dd></div>
         </dl>
+        <section className="profileEditPanel" style={{ margin: '20px 0', padding: 18, borderRadius: 16, background: '#f4f7fb' }}>
+          <h2 style={{ marginTop: 0, fontSize: 21 }}>Accès sociaux</h2>
+          {socialAccess === true ? (
+            <div style={{ display: 'grid', gap: 12 }}>
+              <p>Ton accord permet d’accéder à la Communauté et aux Trades.</p>
+              <button className="btn ghost" type="button" onClick={withdrawSocialConsent} disabled={withdrawingSocialConsent}>
+                {withdrawingSocialConsent ? 'Retrait…' : 'Retirer mon accord social'}
+              </button>
+            </div>
+          ) : socialAccess === false ? (
+            <p>Les fonctions sociales sont fermées. Ta collection et son transfert restent disponibles.</p>
+          ) : (
+            <p role="status">Impossible de vérifier le statut du consentement social.</p>
+          )}
+          {socialConsentMessage && <p role="status" className="message">{socialConsentMessage}</p>}
+        </section>
         <section className="profileEditPanel" style={{ margin: '20px 0', padding: 18, borderRadius: 16, background: '#f4f7fb' }}>
           <h2 style={{ marginTop: 0, fontSize: 21 }}>Modifier mon profil</h2>
           <form onSubmit={saveProfile} style={{ display: 'grid', gap: 14 }}>
