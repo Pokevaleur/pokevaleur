@@ -257,7 +257,12 @@ export default function CollectionPage() {
 
   async function createTransferLink(profile) {
     setFamilyMessage('')
-    const { data, error } = await supabase.rpc('create_collection_transfer_invite', { profile_id: profile.id })
+    const parentConsent = window.confirm('Si l’enfant a moins de 15 ans, confirme être son parent ou tuteur et autoriser son accès à la Communauté et aux Trades après son propre accord. Les règles demandent de rester respectueux, de ne pas partager ses coordonnées et de ne pas effectuer de paiement dans PokéValeur. Choisir « Annuler » crée quand même le lien de transfert, sans accès social.')
+    const { data, error } = await supabase.rpc('create_collection_transfer_invite_with_parent_consent', {
+      profile_id: profile.id,
+      p_parent_consent: parentConsent,
+      p_terms_version: 'social-v1-2026-10-03'
+    })
     if (error) return setFamilyMessage(error.message)
     const link = `${window.location.origin}/collection/rejoindre?token=${encodeURIComponent(data)}`
     setTransferLink(link)
