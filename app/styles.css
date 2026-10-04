@@ -1095,3 +1095,10 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
  .collectionFilesVisible .collectionFileActions > a,
  .collectionFilesVisible .collectionExportMenu > summary { font-size:.86rem; }
 }
+
+.collectionDemoAction { display:flex; align-items:center; justify-content:center; min-height:44px; padding:8px 12px; border:1px solid #d2d6dc; border-radius:10px; background:#fff; color:#253247 !important; font-weight:650; text-align:center; opacity:1 !important; }
+.collectionDemoExportOptions { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:8px; }
+.collectionDemoPage .collectionFilesVisible .collectionFileActions > .collectionDemoAction { width:100%; }
+.collectionDemoPage .collectionFilesVisible .collectionExportMenu > div { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:8px; }
+.collectionDemoPage .collectionFilesVisible .collectionExportMenu > div .collectionDemoAction { flex:1; }
+.collectionDemoPage label > .srOnly { display:none !important; }
