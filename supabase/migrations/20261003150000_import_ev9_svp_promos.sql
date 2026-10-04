@@ -9,7 +9,7 @@ with target_set as (
 ),
 set_note as (
   update public.card_sets
-  set checklist_scope_note = 'Checklist de travail EV9 : 190 cartes numérotées du set (001–190/159 ; 159 cartes officiellement annoncées), 343 variantes standard/reverse/holo et 42 variantes tamponnées TCGdex, plus 9 promos SVP en groupe séparé (181–189), dont 7 incluses au Master Set français et 2 hors périmètre (185–186, marché à confirmer). Les tampons TCGdex peuvent inclure plusieurs marchés ; langue et provenance restent à vérifier avant publication. Six variantes Jumbo restent exclues. Série privée.'
+  set checklist_scope_note = 'Checklist de travail EV9 : 190 cartes numérotées du set (001–190/159 ; 159 cartes officiellement annoncées), 343 variantes standard/reverse/holo et 42 variantes tamponnées TCGdex, plus 9 promos SVP en groupe séparé (181–189), dont 7 incluses au Master Set français et 2 hors périmètre (185–186, marché à confirmer). Les tampons TCGdex peuvent inclure plusieurs marchés ; langue et provenance restent à vérifier avant publication. Cinq versions Jumbo sont identifiées (024, 030, 069, 114 et SVP 193) et exclues du total de 369 ; la sixième reste à rapprocher. Série privée.'
   where set_code = 'SV09' and language = 'FR'
   returning id
 ),
