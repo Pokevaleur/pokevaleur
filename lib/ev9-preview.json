@@ -2403,12 +2403,6 @@
         "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo",
         "checklist_group": "stamp",
         "is_master_set_target": true
-      },
-      {
-        "finish_code": "jumbo",
-        "variant_label": "Carte Jumbo · grand format",
-        "checklist_group": "jumbo",
-        "is_master_set_target": false
       }
     ],
     "card_name": "Zacian-ex de Nabil",
