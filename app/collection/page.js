@@ -783,6 +783,19 @@ export default function CollectionPage() {
       </section>
       <button type="button" className="collectionAddCta" onClick={() => { setShowAddForm(true); setTimeout(() => document.getElementById('ajouter-produit')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0) }}>Ajouter un trésor</button>
 
+      <section className="panel collectionToolsPanel collectionFilesVisible" aria-label="Importer ou exporter la collection">
+        <h2>Mes fichiers</h2>
+        <div className="collectionFileActions">
+          <a className="miniBtn" href="/collection/import">Importer Excel / CSV</a>
+          <details className="collectionExportMenu">
+            <summary>Exporter ma collection</summary>
+            <div>
+              <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>Avec les prix</button>
+              <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>Sans les prix</button>
+            </div>
+          </details>
+        </div>
+      </section>
       <section className="panel collectionSearchPanel" aria-label="Recherche dans ma collection">
         <div className="collectionSearchHeading"><h2>Retrouver un objet</h2><button type="button" className="miniBtn primaryMini" onClick={() => setShowAddForm(true)}>＋ Ajouter</button></div>
             <div className="voiceSearchWrap collectionVoiceSearch">
@@ -816,19 +829,6 @@ export default function CollectionPage() {
         {hasCollectionSearch && <button type="button" className="miniBtn" onClick={() => { setQuery(''); setConditionFilter('all') }}>Effacer</button>}
         </div>
         <p className="muted collectionSearchStatus" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Saisis un nom ou choisis un filtre.'}</p>
-      </section>
-      <section className="panel collectionToolsPanel collectionFilesVisible" aria-label="Importer ou exporter la collection">
-        <h2>Mes fichiers</h2>
-        <div className="collectionFileActions">
-          <a className="miniBtn" href="/collection/import">Importer Excel / CSV</a>
-          <details className="collectionExportMenu">
-            <summary>Exporter ma collection</summary>
-            <div>
-              <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>Avec les prix</button>
-              <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>Sans les prix</button>
-            </div>
-          </details>
-        </div>
       </section>
       <details className="panel collectionToolsPanel collectionFamilyPanel">
         <summary>Collections de la famille</summary>
