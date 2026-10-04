@@ -1046,3 +1046,25 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .collectionFilesVisible .collectionFileActions { grid-template-columns:1fr; }
  .collectionSearchHeading { gap:8px; }
 }
+
+.collectionDemoPage { gap:14px; }
+.collectionDemoNotice { margin:0; padding:10px 14px; border:1px solid #cbd7e5; border-radius:12px; background:#f8fafc; color:#4c5e73; text-align:center; font-size:.88rem; }
+.collectionDemoCaption { display:block; margin-top:7px; color:#718096; text-align:right; }
+.collectionDemoAdd > summary { list-style:none; }
+.collectionDemoAdd > summary::-webkit-details-marker { display:none; }
+.collectionDemoPanel { margin-top:8px; padding:16px; border:1px solid #d8e0e9; border-radius:14px; background:white; }
+.collectionDemoPanel p { margin:6px 0 0; color:#627185; }
+.collectionDemoPage .collectionSearchPanel { padding:18px; }
+.collectionDemoPage .collectionSearchPanel h2 { margin:0 0 10px; font-size:1.15rem; }
+.collectionDemoPage .collectionSearchPanel .muted { margin:8px 0 0; }
+.collectionDemoObjects { display:grid; gap:8px; padding-top:12px; }
+.collectionDemoObjects article { display:flex; justify-content:space-between; gap:12px; padding:12px; border:1px solid #e1e6ed; border-radius:12px; background:#fff; }
+.collectionDemoObjects article span { color:#697789; text-align:right; }
+.collectionDemoObjects small { color:#718096; }
+.collectionDemoValue { scroll-margin-top:20px; }
+.collectionDemoValue p { margin:0; color:#526174; }
+@media (max-width:640px) {
+ .collectionDemoPage { gap:12px; }
+ .collectionDemoObjects article { flex-direction:column; gap:4px; }
+ .collectionDemoObjects article span { text-align:left; }
+}
