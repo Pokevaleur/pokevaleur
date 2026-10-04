@@ -19,6 +19,7 @@ export default function ProductDetailPage() {
   const [product, setProduct] = useState(null)
   const [history, setHistory] = useState([])
   const [contents, setContents] = useState([])
+  const [user, setUser] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
@@ -51,11 +52,13 @@ export default function ProductDetailPage() {
     let cardsById = {}
     if (linkedCardIds.length) {
       const { data: linkedCards } = await supabase.from('cards')
-        .select('id,card_set_id,collector_number,card_name,card_sets(id,set_code,set_name,is_public)')
+        .select('id,card_set_id,collector_number,card_name')
         .in('id', linkedCardIds)
       cardsById = Object.fromEntries((linkedCards || []).map(card => [card.id, card]))
     }
 
+    const { data: { user: viewer } } = await supabase.auth.getUser()
+    setUser(viewer || null)
     setProduct(productData || null)
     setHistory(historyData || [])
     setContents(contentRows.map(item => ({ ...item, card: cardsById[item.card_id] || null })))
@@ -154,11 +157,11 @@ export default function ProductDetailPage() {
               <div key={item.id} className="productContentRow">
                 <span>{item.quantity} × {item.item_name}</span>
                 <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
-                {item.card?.card_set_id && (
-                  <a className="detailLink" href={`/collection/cartes?set=${encodeURIComponent(item.card.card_set_id)}&card=${encodeURIComponent(item.card.collector_number)}`}>
-                    Voir cette carte dans la checklist →
-                  </a>
-                )}
+                {item.card?.card_set_id && (() => {
+                  const checklistUrl = `/collection/cartes?set=${encodeURIComponent(item.card.card_set_id)}&card=${encodeURIComponent(item.card.collector_number)}`
+                  const href = user ? checklistUrl : `/login?next=${encodeURIComponent(checklistUrl)}`
+                  return <a className="detailLink" href={href}>Voir cette carte dans la checklist →</a>
+                })()}
               </div>
             ))}
           </div>
