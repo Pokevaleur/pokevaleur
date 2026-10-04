@@ -1071,7 +1071,9 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
  .collectionHeroArtwork { height:155px; }
  .collectionFilesVisible .collectionFileActions { grid-template-columns:1fr 1fr; }
  .collectionFilesVisible .collectionFileActions > a,
- .collectionFilesVisible .collectionExportMenu > summary { font-size:.86rem; 
+ .collectionFilesVisible .collectionExportMenu > summary { font-size:.86rem; }
+}
+
 /* Catalogue: collection-first, compact and softly crystalline */
 .catalogPage{
   position:relative;
