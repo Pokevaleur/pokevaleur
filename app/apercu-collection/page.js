@@ -48,8 +48,8 @@ export default function CollectionMockupPreviewPage() {
         <h2>Mes fichiers</h2>
         <div className="collectionFileActions">
           <button className="miniBtn" type="button" disabled>Importer Excel / CSV</button>
-          <details className="collectionExportMenu">
-            <summary>Exporter ma collection</summary>
+          <details open className="collectionExportMenu">
+            <summary>Exporter avec ou sans prix</summary>
             <div><button className="miniBtn" type="button" disabled>Avec ou sans prix</button></div>
           </details>
         </div>
