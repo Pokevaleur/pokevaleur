@@ -140,9 +140,11 @@ export default function CataloguePage() {
         <div className="catalogCount" aria-live="polite">
           <strong>{loading ? '…' : loadError ? '—' : hasSearch ? filtered.length : products.length}</strong>
           <span>
-            {hasSearch
-              ? 'résultat' + (filtered.length > 1 ? 's trouvés' : ' trouvé')
-              : 'produit' + (products.length > 1 ? 's référencés' : ' référencé')}
+            {loading
+              ? (hasSearch ? 'recherche en cours' : 'produits référencés')
+              : hasSearch
+                ? 'résultat' + (filtered.length > 1 ? 's trouvés' : ' trouvé')
+                : 'produit' + (products.length > 1 ? 's référencés' : ' référencé')}
           </span>
         </div>
 
@@ -160,7 +162,7 @@ export default function CataloguePage() {
               className="catalogSearch"
               type="search"
               aria-label="Rechercher un produit ou une série"
-              aria-describedby="catalog-search-help"
+              aria-describedby={!hasSearch ? "catalog-search-help" : undefined}
               value={query}
               onChange={e => setQuery(e.target.value)}
               placeholder="Rechercher un produit"
