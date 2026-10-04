@@ -42,6 +42,26 @@ on conflict (card_id,variant_key) do update set
   variant_label=excluded.variant_label,finish_code=excluded.finish_code,guide_marker=excluded.guide_marker,
   checklist_group=excluded.checklist_group,is_master_set_target=excluded.is_master_set_target;
 
+-- Include the SVP 193 promo card so its large-format copy is trackable alongside the set Jumbo cards.
+insert into public.cards (card_set_id,collector_number,card_name,card_type,guide_category_label,guide_category_code,rarity_label,mechanic_label,guide_order,image_url,image_source_url,source_url)
+select s.id,'SVP 193','Zacian-ex de Nabil','Pokémon','Promo SVP','promo','Promo',null,191,
+  'https://assets.tcgdex.net/fr/sv/svp/193/low.webp',
+  'https://api.tcgdex.net/v2/fr/cards/svp-193',
+  'https://www.pokemon.com/fr/jcc-pokemon/cartes-pokemon/series/svp/193'
+from public.card_sets s where s.set_code='SV09' and s.language='FR'
+on conflict (card_set_id,collector_number) do update set
+  card_name=excluded.card_name,card_type=excluded.card_type,guide_category_label=excluded.guide_category_label,
+  guide_category_code=excluded.guide_category_code,rarity_label=excluded.rarity_label,
+  image_url=excluded.image_url,image_source_url=excluded.image_source_url,source_url=excluded.source_url;
+
+insert into public.card_print_variants (card_id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)
+select c.id,'normal','Promo brillante','holo',null,'promo',false
+from public.cards c join public.card_sets s on s.id=c.card_set_id
+where s.set_code='SV09' and s.language='FR' and c.collector_number='SVP 193'
+on conflict (card_id,variant_key) do update set
+  variant_label=excluded.variant_label,finish_code=excluded.finish_code,guide_marker=excluded.guide_marker,
+  checklist_group=excluded.checklist_group,is_master_set_target=excluded.is_master_set_target;
+
 -- The sixth Jumbo is a separate large-format copy of the SVP 193 product promo.
 insert into public.card_print_variants (card_id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)
 select c.id,'jumbo','Carte Jumbo · grand format','jumbo',null,'jumbo',false
