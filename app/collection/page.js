@@ -41,6 +41,8 @@ export default function CollectionPage() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState(emptyForm)
   const [query, setQuery] = useState('')
+  const [showCollectionItems, setShowCollectionItems] = useState(false)
+  const [showAddForm, setShowAddForm] = useState(false)
   const [conditionFilter, setConditionFilter] = useState('all')
   const [catalog, setCatalog] = useState([])
   const [catalogMatches, setCatalogMatches] = useState([])
@@ -742,6 +744,10 @@ export default function CollectionPage() {
 
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
   const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter)
+  const uniqueProductCount = new Set(items.map(item => item.product_id || normalizeSearch(item.custom_name)).filter(Boolean)).size
+  const uniqueSeriesCount = new Set(items.map(item => catalog.find(product => product.id === item.product_id)?.series).filter(Boolean)).size
+
+  useEffect(() => { if (hasCollectionSearch) setShowCollectionItems(true) }, [hasCollectionSearch])
 
   if (!user) {
     return (
@@ -757,12 +763,28 @@ export default function CollectionPage() {
 
   return (
     <main className="collectionWorkspace">
-      <div className="collectionHeader">
+      <div className="collectionHeader collectionHeaderNew">
         <h1>{activeCollectionProfile && !activeCollectionProfile.is_default ? `Collection de ${activeCollectionProfile.display_name}` : 'Ma collection'}</h1>
+        {collectionProfiles.length > 1 && <label className="collectionProfileSelectLabel"><span className="srOnly">Collection affichée</span><select aria-label="Collection affichée" value={activeProfileId || ''} onChange={event => selectCollectionProfile(event.target.value)} disabled={isSwitchingProfile}>{collectionProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.is_default ? 'Ma famille' : profile.display_name}</option>)}</select></label>}
       </div>
+      <div className="collectionHeroArtwork"><img src="/collection-hero.webp" alt="Classeur de cartes Pokémon ouvert, cartes protégées et coffret de collection" /></div>
+      <nav className="collectionTabs" aria-label="Sections de la collection">
+        <a className="active" href="#objets" aria-current="page">Mes objets</a>
+        <a href="#collection-stats">Stats collection</a>
+        <a href="/collection/statistiques" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
+      </nav>
+      <section className="collectionTotals" id="collection-stats" aria-label="Résumé de la collection">
+        <h2>Dans ta collection</h2>
+        <div className="collectionTotalGrid">
+          <div><strong>{itemCount}</strong><span>exemplaires</span></div>
+          <div><strong>{uniqueProductCount}</strong><span>produits</span></div>
+          <div><strong>{uniqueSeriesCount}</strong><span>séries</span></div>
+        </div>
+      </section>
+      <button type="button" className="collectionAddCta" onClick={() => { setShowAddForm(true); setTimeout(() => document.getElementById('ajouter-produit')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0) }}>Ajouter un trésor</button>
 
       <section className="panel collectionSearchPanel" aria-label="Recherche dans ma collection">
-        <div className="collectionSearchHeading"><h2>Retrouver un objet</h2><a href="#ajouter-produit" className="miniBtn primaryMini">＋ Ajouter</a></div>
+        <div className="collectionSearchHeading"><h2>Retrouver un objet</h2><button type="button" className="miniBtn primaryMini" onClick={() => setShowAddForm(true)}>＋ Ajouter</button></div>
             <div className="voiceSearchWrap collectionVoiceSearch">
               <input
                 className="searchInput"
@@ -795,11 +817,8 @@ export default function CollectionPage() {
         </div>
         <p className="muted collectionSearchStatus" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Saisis un nom ou choisis un filtre.'}</p>
       </section>
-      <div className="collectionQuickLinks" aria-label="Suivi de collection">
-        <a href="/collection/statistiques"><span aria-hidden="true">📊</span> Statistiques <span aria-hidden="true">→</span></a>
-      </div>
-      <details className="panel collectionToolsPanel">
-        <summary>Mes fichiers</summary>
+      <section className="panel collectionToolsPanel collectionFilesVisible" aria-label="Importer ou exporter la collection">
+        <h2>Mes fichiers</h2>
         <div className="collectionFileActions">
           <a className="miniBtn" href="/collection/import">Importer Excel / CSV</a>
           <details className="collectionExportMenu">
@@ -810,7 +829,7 @@ export default function CollectionPage() {
             </div>
           </details>
         </div>
-      </details>
+      </section>
       <details className="panel collectionToolsPanel collectionFamilyPanel">
         <summary>Collections de la famille</summary>
         <p className="muted">Chaque enfant peut commencer sans compte. Quand il en crée un, tu peux lui transférer toute sa collection avec un lien à usage unique.</p>
@@ -835,37 +854,11 @@ export default function CollectionPage() {
         {transferLink && <p><a href={transferLink}>{transferLink}</a></p>}
       </details>
 
-      {!isSwitchingProfile && <section className="stats">
-        <div>
-          <span>Investi</span>
-          <strong>{invested.toFixed(2)} €</strong>
-        </div>
-        <div>
-          <span>Valeur actuelle</span>
-          <strong>{current.toFixed(2)} €</strong>
-        </div>
-        <div>
-          <span>Évolution</span>
-          <strong className={difference >= 0 ? 'gain' : 'loss'}>
-            {difference == null ? '—' : `${difference >= 0 ? '+' : ''}${difference.toFixed(2)} €`}
-            <small>{invested > 0 ? ` (${percent >= 0 ? '+' : ''}${percent.toFixed(1)} %)` : ''}</small>
-          </strong>
-        </div>
-        <div>
-          <span>Items</span>
-          <strong>{itemCount}</strong>
-        </div>
-      </section>}
-
-      {!isSwitchingProfile && missingPurchaseCount > 0 && <p className="message" role="status">Prix d’achat non renseigné pour {missingPurchaseCount} exemplaire{missingPurchaseCount > 1 ? 's' : ''}. La plus-value porte uniquement sur les achats renseignés.</p>}
       <section className="contentGrid">
-        <div className="panel">
-          <div className="listHeader">
-            <h2>Mes produits</h2>
-
-          </div>
-
-          <div className="productList">
+        <div className="panel collectionObjectsPanel" id="objets">
+          <div className="listHeader"><h2>Mes objets</h2></div>
+          <button type="button" className="collectionShowObjects" aria-expanded={showCollectionItems} onClick={() => setShowCollectionItems(value => !value)}>{showCollectionItems ? 'Masquer mes objets' : `Voir mes objets (${items.length})`}</button>
+          {showCollectionItems && <div className="productList">
             {filteredItems.length === 0 ? (
               <p>{isSwitchingProfile ? 'Chargement de la collection…' : items.length === 0 ? 'Ta collection est vide pour le moment.' : !hasCollectionSearch ? 'Tes objets apparaîtront après une recherche ou un filtre.' : 'Aucun produit trouvé.'}</p>
             ) : (
@@ -1047,9 +1040,9 @@ export default function CollectionPage() {
                 )
               })
             )}
-          </div>
+          </div>}
         </div>
-        <div className="panel">
+        {showAddForm && <div className="panel collectionAddPanel">
           <h2 id="ajouter-produit" style={{ scrollMarginTop: 100 }}>Ajouter un produit</h2>
           <form onSubmit={addItem} className="formGrid">
             <div className="catalogPicker">
@@ -1284,7 +1277,7 @@ export default function CollectionPage() {
           </form>
 
           {message && <p className="message">{message}</p>}
-        </div>
+        </div>}
 
       </section>
     </main>

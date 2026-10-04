@@ -1006,3 +1006,43 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 
 /* One scalable crown is shared by the PokéValeur wordmark on every route. */
 .brandValue{position:relative;display:inline-block}.brandCrown{position:absolute;display:block;width:.58em;height:.4em;top:-.25em;right:.3em;overflow:visible;pointer-events:none}
+
+/* Dashboard collection validé — compact, lisible et mobile-first */
+.collectionWorkspace { max-width:1040px; margin:0 auto; padding:24px 20px 56px; gap:16px; }
+.collectionHeaderNew { display:flex; align-items:center; justify-content:space-between; gap:16px; margin:0; }
+.collectionHeaderNew h1 { margin:0; }
+.collectionProfileSelectLabel select { border:1px solid #d8dee8; border-radius:12px; background:#fff; padding:10px 14px; color:#15243a; font:inherit; }
+.collectionHeroArtwork { overflow:hidden; border-radius:20px; aspect-ratio:648 / 277; background:#e9f1fb; box-shadow:0 8px 24px rgba(12,34,59,.12); }
+.collectionHeroArtwork img { display:block; width:100%; height:100%; object-fit:cover; }
+.collectionTabs { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); border:1px solid #d7deea; background:#fff; border-radius:14px; overflow:hidden; }
+.collectionTabs a { display:flex; align-items:center; justify-content:center; gap:7px; min-height:52px; text-align:center; text-decoration:none; color:#172a43; border-right:1px solid #d7deea; font-weight:650; }
+.collectionTabs a:last-child { border-right:0; }
+.collectionTabs a.active { background:#dcecff; box-shadow:inset 0 -3px #167b9c; }
+.collectionEuroIcon { width:25px; height:25px; border:2px solid #d6a51e; border-radius:50%; display:inline-grid; place-items:center; font-weight:800; color:#926b08; font-size:15px; }
+.collectionTotals { padding:20px 24px 18px; border:1px solid #d6e3ef; border-radius:16px; background:linear-gradient(135deg,#f7fbff,#e9f5ff); }
+.collectionTotals h2 { margin:0 0 10px; font-size:1.25rem; }
+.collectionTotalGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+.collectionTotalGrid div { display:flex; flex-direction:column; align-items:center; gap:1px; border-right:1px solid #d3dfeb; }
+.collectionTotalGrid div:last-child { border-right:0; }
+.collectionTotalGrid strong { color:#1682a1; font-family:Georgia,serif; font-size:2.1rem; line-height:1.05; }
+.collectionTotalGrid span { color:#586678; font-size:.95rem; }
+.collectionAddCta { width:100%; border:0; border-radius:14px; padding:14px 20px; background:linear-gradient(110deg,#f2d67e,#ddb548); color:#15243a; font-family:inherit; font-size:1.06rem; font-weight:750; box-shadow:0 3px 9px rgba(110,82,19,.14); cursor:pointer; }
+.collectionFilesVisible { padding:12px; }
+.collectionFilesVisible h2 { margin:0 0 8px; font-size:1rem; }
+.collectionFilesVisible .collectionFileActions { display:grid; grid-template-columns:1fr 1fr; gap:10px; align-items:start; }
+.collectionFilesVisible .collectionFileActions > a,.collectionFilesVisible .collectionExportMenu > summary { display:flex; justify-content:center; align-items:center; min-height:44px; text-align:center; }
+.collectionObjectsPanel { grid-column:1/-1; }
+.collectionShowObjects { width:100%; padding:13px 16px; border:1px solid #b8d9ee; border-radius:12px; background:#e7f5ff; color:#18304e; font:inherit; font-weight:700; cursor:pointer; }
+.collectionAddPanel { grid-column:1/-1; scroll-margin-top:90px; }
+.collectionSearchPanel,.collectionFamilyPanel { margin:0; }
+@media (max-width:640px) {
+ .collectionWorkspace { padding:16px 16px 40px; gap:12px; }
+ .collectionHeaderNew h1 { font-size:1.7rem; }
+ .collectionHeroArtwork { border-radius:16px; }
+ .collectionTabs a { min-height:48px; padding:6px 4px; font-size:.9rem; }
+ .collectionTotals { padding:15px 14px; }
+ .collectionTotalGrid strong { font-size:1.75rem; }
+ .collectionTotalGrid span { font-size:.82rem; }
+ .collectionFilesVisible .collectionFileActions { grid-template-columns:1fr; }
+ .collectionSearchHeading { gap:8px; }
+}
