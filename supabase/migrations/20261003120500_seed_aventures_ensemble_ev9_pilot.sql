@@ -1,9 +1,9 @@
 -- EV9 Aventures Ensemble private pilot. Source snapshot: TCGdex cards-database c5c0a8a63fe81746d05b9c95e8f51ed6931f7e78 (MIT).
--- Scope: 190 numbered cards; keep global source variants visible, but count only 339 French main variants (333 base + 6 promo finishes) and 30 French stamps toward the 369-card Ultra Master checklist. Mark 4 extra cosmos and 11 non-French stamps outside the target. Six Jumbo variants and separately numbered SVP promos remain separate.
+-- Scope: 190 numbered cards; keep global source variants visible, but count only 339 French main variants (333 base + 6 promo finishes) and 30 French stamps toward the 369-card Ultra Master checklist. Mark 4 extra cosmos and 11 non-French stamps outside the target. Jumbo variants and separately numbered SVP promos remain separate; five Jumbo prints are identified so far, with the sixth still to reconcile.
 -- Stamped variants are provisional because the dataset includes several markets.
 with set_row as (
   insert into public.card_sets (series_name,set_name,set_code,language,release_date,advertised_card_count,checklist_source_url,checklist_scope_note,is_public)
-  values ('Écarlate et Violet','Écarlate et Violet – Aventures Ensemble','SV09','FR',date '2025-03-28',159,'https://www.pokemon.com/fr/jcc-pokemon/cartes-pokemon/series/sv09/1','Import TCGdex : 190 numéros (001–190/159 ; 159 cartes officiellement annoncées). La checklist Ultra Master française cible 369 variantes : 339 principales (333 de base + 6 promos de finition) et 30 stamps. Les autres versions TCGdex restent visibles mais hors compteur français (4 cosmos holo et 11 stamps hors périmètre). Les 6 Jumbo et promos SVP distinctes restent séparés. Série privée.',false)
+  values ('Écarlate et Violet','Écarlate et Violet – Aventures Ensemble','SV09','FR',date '2025-03-28',159,'https://www.pokemon.com/fr/jcc-pokemon/cartes-pokemon/series/sv09/1','Import TCGdex : 190 numéros (001–190/159 ; 159 cartes officiellement annoncées). La checklist Ultra Master française cible 369 variantes : 339 principales (333 de base + 6 promos de finition) et 30 stamps. Les autres versions TCGdex restent visibles mais hors compteur français (4 cosmos holo et 11 stamps hors périmètre). Les versions Jumbo et promos SVP distinctes restent séparées ; cinq Jumbo sont identifiées à ce stade, la sixième reste à rapprocher. Série privée.',false)
   on conflict (set_name,language) do update set
     series_name=excluded.series_name,set_code=excluded.set_code,release_date=excluded.release_date,
     advertised_card_count=excluded.advertised_card_count,checklist_source_url=excluded.checklist_source_url,
@@ -62,7 +62,7 @@ on conflict (card_id,variant_key) do update set
   variant_label=excluded.variant_label,finish_code=excluded.finish_code,guide_marker=excluded.guide_marker,
   checklist_group=excluded.checklist_group,is_master_set_target=excluded.is_master_set_target;
 
--- The sixth Jumbo is a separate large-format copy of the SVP 193 product promo.
+-- Track the SVP 193 product promo's large-format copy as a Jumbo variant.
 insert into public.card_print_variants (card_id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)
 select c.id,'jumbo','Carte Jumbo · grand format','jumbo',null,'jumbo',false
 from public.cards c
