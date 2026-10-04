@@ -80,7 +80,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
         <a className={styles.clear} href="/apercu/ev9">Effacer</a>
       </form>
 
-      {hasQuery && <p className={styles.note} role="status">Recherche étendue aux cartes principales, aux promos et aux versions tamponnées.</p>}
+      {hasQuery && <p className={styles.note} role="status">Recherche étendue aux cartes, aux promos, aux versions tamponnées et aux Jumbo.</p>}
       <p className={styles.note}>Aperçu fixe issu de la base de test. Le total de la checklist française (369 variantes du set) est calculé séparément ; les versions hors périmètre restent visibles et sont signalées. Les promos SVP et les six cartes Jumbo sont suivies séparément. Le filtre Jumbo n’entre pas dans le total français de 369 variantes.</p>
 
       <section className={styles.grid} aria-label="Checklist EV9 en lecture seule">
@@ -97,7 +97,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
             <div className={styles.variants}>
               {card.visibleVariants.map((variant, index) => {
                 const variantGroup = variant.checklist_group
-                const groupClass = variantGroup === 'promo' ? styles.groupPromo : variantGroup === 'stamp' ? styles.groupStamp : ''
+                const groupClass = variantGroup === 'promo' ? styles.groupPromo : variantGroup === 'stamp' ? styles.groupStamp : variantGroup === 'jumbo' ? styles.groupJumbo : ''
                 return (
                   <div className={styles.variant} key={variant.variant_label + index}>
                     <span>{variant.variant_label}</span>
