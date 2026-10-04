@@ -147,7 +147,10 @@ export default function CardChecklistPage() {
       checklistFilter === 'promos' ? variant.checklist_group === 'promo' :
       variant.checklist_group === 'main')
   )
-  const cardsWithIncludedVariants = cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
+  const isCatalogOnlySet = cards.length > 0 && cards.every(card => !(card.card_print_variants || []).length)
+  const cardsWithIncludedVariants = isCatalogOnlySet
+    ? cards
+    : cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
   const categories = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.guide_category_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const visibleCards = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('fr')
@@ -292,6 +295,12 @@ export default function CardChecklistPage() {
       {!sets.length && !error && <p className={styles.empty}>Aucune série de cartes n’est publiée pour le moment.</p>}
       {selectedSet && (
         <>
+          {isCatalogOnlySet ? (
+            <section className={styles.progressCard} aria-label="État du catalogue">
+              <strong>{cards.length} cartes répertoriées</strong>
+              <p className={styles.scope}>Première passe du catalogue : les noms et numéros sont importés. Les variantes et le suivi de collection seront ajoutés ensuite.</p>
+            </section>
+          ) : (
           <section className={styles.progressCard} aria-label="Progression du Master Set">
             <div className={styles.progressHeading}>
               <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>variantes du checklist possédées</span></div>
@@ -303,6 +312,7 @@ export default function CardChecklistPage() {
             </div>
             <p className={styles.scope}>{selectedSet.checklist_scope_note}</p>
           </section>
+          )}
 
           <section className={styles.filters} aria-label="Filtres de la checklist">
             <label className={styles.searchLabel}>
@@ -318,7 +328,7 @@ export default function CardChecklistPage() {
             </label>
             <label>
               Type de checklist
-              <select value={checklistFilter} onChange={event => setChecklistFilter(event.target.value)}>
+              <select value={checklistFilter} onChange={event => setChecklistFilter(event.target.value)} disabled={isCatalogOnlySet}>
                 <option value="main">Cartes et variantes principales</option>
                 <option value="promos">Promos SVP liées à la série</option>
                 <option value="stamps">Versions tamponnées</option>
@@ -355,6 +365,7 @@ export default function CardChecklistPage() {
                       </div>
                     </div>
                     <div className={styles.variantList}>
+                      {!cardVariants.length && isCatalogOnlySet && <p className={styles.scope}>Variantes à compléter avant le suivi de collection.</p>}
                       {cardVariants.map(variant => {
                         const copies = owned[variant.id] || []
                         const rawCopies = copies.filter(copy => copy.ownership_type === 'raw')
