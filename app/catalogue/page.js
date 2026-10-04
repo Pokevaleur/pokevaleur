@@ -150,7 +150,6 @@ export default function CataloguePage() {
 
         <div className="catalogSearchArea">
           <div className="voiceSearchWrap">
-            <label className="srOnly" htmlFor="catalog-search">Rechercher un produit</label>
             <span className="catalogSearchIcon" aria-hidden="true">
               <svg viewBox="0 0 24 24" focusable="false">
                 <circle cx="10.8" cy="10.8" r="6.8" />
@@ -184,7 +183,7 @@ export default function CataloguePage() {
           {!hasSearch && (
             <>
               <p id="catalog-search-help" className="catalogSearchHelp">
-                Saisis un nom, une série ou un format.
+                Saisis un nom, une série ou un format. Exemples :
               </p>
               <div className="catalogQuickSearch" aria-label="Exemples de recherche">
                 {['ETB', 'Display', 'Valisette', 'Coffret'].map(example => (
@@ -205,7 +204,17 @@ export default function CataloguePage() {
 
       {!hasSearch && (
         <section className="catalogEmptyState" aria-live="polite">
-          <span className="catalogSparkle" aria-hidden="true">✧</span>
+          <span className="catalogCrystalIcon" aria-hidden="true">
+            <svg viewBox="0 0 80 80" focusable="false">
+              <path d="M25 8h30l15 20-28 44L10 28 25 8Z" fill="#edf7ff" stroke="#77b7ec" strokeWidth="2" strokeLinejoin="round" />
+              <path d="m25 8 3 20H10L25 8Z" fill="#c5e4ff" />
+              <path d="M25 8h30l-2 20H28L25 8Z" fill="#fff" />
+              <path d="m55 8 15 20H53l2-20Z" fill="#a8d4f7" />
+              <path d="M10 28h18l14 44L10 28Z" fill="#d9edff" />
+              <path d="M28 28h25L42 72 28 28Z" fill="#a8d7fb" />
+              <path d="M53 28h17L42 72l11-44Z" fill="#d4ebff" />
+            </svg>
+          </span>
           <div>
             <h2>Quel trésor recherches-tu ?</h2>
             <p>Les produits apparaîtront ici au fil de ta recherche.</p>
