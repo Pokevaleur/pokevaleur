@@ -1046,3 +1046,30 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .collectionFilesVisible .collectionFileActions { grid-template-columns:1fr; }
  .collectionSearchHeading { gap:8px; }
 }
+
+/* Finition de la maquette validée : fond neutre, visuel présent, contrôles visibles */
+body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
+.collectionWorkspace { gap:12px; }
+.collectionHeroArtwork { height:clamp(150px,24vw,250px); aspect-ratio:auto; background:#fff; box-shadow:none; }
+.collectionTotals { background:#fffdfa; border-color:#e8dfcf; }
+.collectionTabs a.active { background:#fbf4e4; box-shadow:inset 0 -3px #d8ad3b; }
+.collectionShowObjects { background:#fbf8ef; border-color:#eadcb8; }
+.collectionFilesVisible { background:#fff; border:1px solid #e8e4da; }
+.collectionExportMenu[open] > div { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; padding:8px; }
+.collectionFilesVisible .collectionExportMenu > summary { min-height:44px; padding:6px 10px; border:1px solid #d8dce2; border-radius:10px; background:#fff; color:#172a43; font-weight:650; }
+.collectionExportMenu[open] > summary { border-color:#d8dce2; }
+.collectionFilesVisible .collectionFileActions { align-items:stretch; }
+.collectionFilesVisible .collectionFileActions > a { border-radius:10px; }
+.collectionFilesVisible .collectionFileActions > a,
+.collectionFilesVisible .collectionExportMenu > summary { min-height:46px; }
+.collectionHeaderNew .srOnly,.collectionDemoPage .srOnly { position:absolute !important; width:1px !important; height:1px !important; padding:0 !important; margin:-1px !important; overflow:hidden !important; clip:rect(0,0,0,0) !important; white-space:nowrap !important; border:0 !important; }
+.collectionDemoPage .collectionDemoNotice { padding:6px 12px; font-size:.82rem; }
+.collectionDemoPage .collectionTotalGrid strong { color:#916d1a; }
+.collectionDemoPage .collectionTabs a.active { background:#fbf4e4; box-shadow:inset 0 -3px #d8ad3b; }
+.collectionDemoPage .collectionDemoObjects article { background:#fffdfa; }
+@media (max-width:640px) {
+ .collectionHeroArtwork { height:155px; }
+ .collectionFilesVisible .collectionFileActions { grid-template-columns:1fr 1fr; }
+ .collectionFilesVisible .collectionFileActions > a,
+ .collectionFilesVisible .collectionExportMenu > summary { font-size:.86rem; }
+}
