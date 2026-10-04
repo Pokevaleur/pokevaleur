@@ -9,7 +9,7 @@ with target_set as (
 ),
 set_note as (
   update public.card_sets
-  set checklist_scope_note = 'Checklist française de travail EV9 : 369 variantes (339 principales = 333 de base + 6 finitions promo, 30 tampons français). Les 4 variantes cosmos et 11 tampons hors périmètre restent visibles sans compter. Les 9 promos SVP liées aux produits EV9 sont suivies à part ; sept sont françaises (181–184, 187–189) et deux restent hors périmètre français (185–186, marché à confirmer). Cinq versions Jumbo sont identifiées (024, 030, 069, 114 et SVP 193) et exclues du total de 369 ; la sixième reste à rapprocher. Série privée.'
+  set checklist_scope_note = 'Checklist française de travail EV9 : 369 variantes (339 principales = 333 de base + 6 finitions promo, 30 tampons français). Les 4 variantes cosmos et 11 tampons hors périmètre restent visibles sans compter. Les 9 promos SVP liées aux produits EV9 sont suivies à part ; sept sont françaises (181–184, 187–189) et deux restent hors périmètre français (185–186, marché à confirmer). Six versions Jumbo sont identifiées (024, 030 tamponnée, 030 non holo, 069, 114 et SVP 193) et exclues du total de 369 ; elles restent suivies à part. Série privée.'
   where set_code = 'SV09' and language = 'FR'
   returning id
 ),
