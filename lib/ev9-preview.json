@@ -2252,11 +2252,6 @@
         "checklist_group": "main"
       },
       {
-        "finish_code": "holo_cosmos",
-        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
-        "checklist_group": "stamp"
-      },
-      {
         "finish_code": "normal",
         "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
         "checklist_group": "stamp"
@@ -2293,11 +2288,6 @@
       {
         "finish_code": "holo",
         "variant_label": "Tampon logo de la série · Holo",
-        "checklist_group": "stamp"
-      },
-      {
-        "finish_code": "holo_cosmos",
-        "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo cosmos",
         "checklist_group": "stamp"
       },
       {
@@ -2694,6 +2684,11 @@
       {
         "finish_code": "holo",
         "variant_label": "Tampon logo de la série · Holo",
+        "checklist_group": "stamp"
+      },
+      {
+        "finish_code": "normal",
+        "variant_label": "Tampon programme de récompenses Play! Pokémon · Normale",
         "checklist_group": "stamp"
       }
     ],
