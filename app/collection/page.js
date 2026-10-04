@@ -787,8 +787,8 @@ export default function CollectionPage() {
         <h2>Mes fichiers</h2>
         <div className="collectionFileActions">
           <a className="miniBtn" href="/collection/import">Importer Excel / CSV</a>
-          <details className="collectionExportMenu">
-            <summary>Exporter ma collection</summary>
+          <details open className="collectionExportMenu">
+            <summary>Exporter avec ou sans prix</summary>
             <div>
               <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>Avec les prix</button>
               <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>Sans les prix</button>
