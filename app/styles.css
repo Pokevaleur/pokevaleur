@@ -1193,3 +1193,38 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
   .catalogDisclosure{padding:0 14px;border-radius:15px}
   .catalogDisclosure>summary{min-height:54px}
 }
+
+
+/* Sharper ice facets and the reusable crystal empty-state mark */
+.catalogPage{
+  background:
+    radial-gradient(ellipse at 0 5%,rgba(138,196,248,.24),transparent 24rem),
+    radial-gradient(ellipse at 100% 68%,rgba(150,205,251,.22),transparent 26rem),
+    linear-gradient(180deg,#f8fbff 0%,#f0f6fd 48%,#f7f9fc 100%);
+}
+.catalogPage:before,.catalogPage:after{
+  width:clamp(190px,30vw,360px);
+  height:420px;
+  opacity:.82;
+}
+.catalogPage:before{
+  top:90px;left:-82px;
+  background:
+    linear-gradient(145deg,rgba(123,188,245,.38) 0 22%,rgba(227,243,255,.12) 22% 45%,rgba(137,194,244,.23) 45% 68%,rgba(235,247,255,.14) 68%),
+    linear-gradient(35deg,rgba(117,182,239,.20),rgba(255,255,255,.03));
+  clip-path:polygon(0 0,100% 10%,74% 31%,96% 54%,67% 68%,83% 88%,37% 100%,16% 70%,30% 48%,6% 32%);
+}
+.catalogPage:after{
+  right:-90px;bottom:-18px;
+  background:
+    linear-gradient(35deg,rgba(119,183,239,.32) 0 24%,rgba(231,244,255,.13) 24% 48%,rgba(145,199,246,.24) 48% 72%,rgba(242,249,255,.12) 72%),
+    linear-gradient(145deg,rgba(121,183,239,.16),rgba(255,255,255,.04));
+  clip-path:polygon(24% 0,100% 14%,79% 37%,100% 59%,71% 78%,88% 92%,39% 100%,4% 70%,23% 48%,0 23%);
+}
+.catalogCrystalIcon{display:block;flex:0 0 48px;width:48px;height:48px;color:#5a9bd7;filter:drop-shadow(0 3px 5px rgba(72,139,197,.20))}
+@media(max-width:600px){
+  .catalogPage:before,.catalogPage:after{width:210px;height:340px;opacity:.76}
+  .catalogPage:before{top:72px;left:-62px}
+  .catalogPage:after{right:-65px;bottom:-8px}
+  .catalogCrystalIcon{flex-basis:42px;width:42px;height:42px}
+}
