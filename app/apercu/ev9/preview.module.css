@@ -26,7 +26,7 @@
 .card h2 { margin:0 0 6px; font-size:19px; line-height:1.2; }
 .category { margin:0; color:#748091; font-size:14px; }
 .variants { display:grid; gap:8px; margin-top:14px; }
-.variant { display:flex; justify-content:space-between; gap:12px; align-items:center; border-top:1px solid #edf0f3; padding-top:9px; font-size:14px; }
+.variant { display:flex; flex-wrap:wrap; justify-content:space-between; gap:12px; align-items:center; border-top:1px solid #edf0f3; padding-top:9px; font-size:14px; }
 .group { flex:none; border-radius:999px; padding:4px 8px; background:#edf3f8; color:#35526b; font-size:11px; font-weight:800; }
 .groupPromo { background:#fff1cc; color:#765308; }
 .groupStamp { background:#f0e9ff; color:#5d3c91; }
