@@ -495,6 +495,12 @@
         "variant_label": "Tampon logo de la série · Holo",
         "checklist_group": "stamp",
         "is_master_set_target": true
+      },
+      {
+        "finish_code": "jumbo",
+        "variant_label": "Carte Jumbo · grand format",
+        "checklist_group": "jumbo",
+        "is_master_set_target": false
       }
     ],
     "card_name": "Braségali-ex",
@@ -627,6 +633,12 @@
         "variant_label": "Tampon logo de la série · Holo",
         "checklist_group": "stamp",
         "is_master_set_target": true
+      },
+      {
+        "finish_code": "jumbo",
+        "variant_label": "Carte Jumbo · grand format",
+        "checklist_group": "jumbo",
+        "is_master_set_target": false
       }
     ],
     "card_name": "Reshiram-ex",
@@ -1490,6 +1502,12 @@
         "finish_code": "holo",
         "variant_label": "Tampon logo de la série · Holo",
         "checklist_group": "stamp",
+        "is_master_set_target": false
+      },
+      {
+        "finish_code": "jumbo",
+        "variant_label": "Carte Jumbo · grand format",
+        "checklist_group": "jumbo",
         "is_master_set_target": false
       }
     ],
@@ -2385,6 +2403,12 @@
         "variant_label": "Tampon programme de récompenses Play! Pokémon · Holo",
         "checklist_group": "stamp",
         "is_master_set_target": true
+      },
+      {
+        "finish_code": "jumbo",
+        "variant_label": "Carte Jumbo · grand format",
+        "checklist_group": "jumbo",
+        "is_master_set_target": false
       }
     ],
     "card_name": "Zacian-ex de Nabil",
@@ -2447,6 +2471,12 @@
         "finish_code": "holo",
         "variant_label": "Tampon logo de la série · Holo",
         "checklist_group": "stamp",
+        "is_master_set_target": false
+      },
+      {
+        "finish_code": "jumbo",
+        "variant_label": "Carte Jumbo · grand format",
+        "checklist_group": "jumbo",
         "is_master_set_target": false
       }
     ],
@@ -4298,6 +4328,12 @@
         "finish_code": "holo",
         "variant_label": "Promo brillante",
         "checklist_group": "promo"
+      },
+      {
+        "finish_code": "jumbo",
+        "variant_label": "Carte Jumbo · grand format",
+        "checklist_group": "jumbo",
+        "is_master_set_target": false
       }
     ],
     "product_sources": [
