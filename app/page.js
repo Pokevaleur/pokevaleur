@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '../lib/supabase-browser'
 import styles from './home.module.css'
+import BrandLogo from './brand-logo'
 
 const categories = [['sealed', 'Scellés'], ['graded', 'Cartes gradées'], ['binder', 'Master sets']]
 const avatars = ['Loutre', 'Chouette', 'Petit papillon', 'Panda roux', 'Raton laveur', 'Hérisson', 'Phoque', 'Petit galet', 'Alpaga', 'Renard', 'Petit nuage', 'Chat', 'Blaireau', 'Fennec', 'Macareux', 'Petite feuille']
