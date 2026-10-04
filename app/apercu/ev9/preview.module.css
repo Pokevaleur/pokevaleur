@@ -30,6 +30,7 @@
 .group { flex:none; border-radius:999px; padding:4px 8px; background:#edf3f8; color:#35526b; font-size:11px; font-weight:800; }
 .groupPromo { background:#fff1cc; color:#765308; }
 .groupStamp { background:#f0e9ff; color:#5d3c91; }
+.groupOutside { flex:none; border-radius:999px; padding:4px 8px; background:#fce8e6; color:#9b2c2c; font-size:11px; font-weight:800; }
 .note { color:#768394; font-size:13px; line-height:1.5; }
 @media (max-width:760px) {
   .filters { grid-template-columns:1fr 1fr; }
