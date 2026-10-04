@@ -14,7 +14,7 @@ export default function CollectionMockupPreviewPage() {
       <div className="collectionHeader collectionHeaderNew">
         <h1>Ma collection</h1>
         <label className="collectionProfileSelectLabel">
-          <span className="srOnly">Profil affiché</span>
+          
           <select aria-label="Profil affiché" disabled><option>Ma famille</option></select>
         </label>
       </div>
