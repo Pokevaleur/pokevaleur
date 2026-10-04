@@ -13,3 +13,14 @@
 
 /* One welcoming CTA, centered beneath the treasures on mobile. */
 @media(max-width:600px){.hero .join{left:50%;bottom:18px;transform:translateX(-50%);width:max-content;max-width:calc(100% - 40px);min-height:48px;padding:12px 24px;font-size:17px;box-shadow:0 4px 12px #476d9430}.heroArt{bottom:0;height:280px}.hero{padding-bottom:270px}}
+
+/* A discreet family nickname to discover by touching the mascot. */
+.lukuluSecret{display:block;width:100%;padding:0;border:0;border-radius:14px;background:none;cursor:pointer;box-shadow:none;color:inherit;-webkit-tap-highlight-color:transparent}
+.lukuluSecret:hover{background:none;filter:brightness(1.06)}.lukuluSecret:focus-visible{outline:3px solid #f7ca44;outline-offset:3px}
+.lukuluGreeting img{animation:lukulu-hello .65s ease-in-out;transform-origin:50% 85%}
+@keyframes lukulu-hello{0%,100%{transform:rotate(0)}25%{transform:rotate(-6deg)}60%{transform:rotate(5deg)}}
+.secretBubble{position:absolute;left:8px;right:8px;bottom:220px;z-index:3;padding:15px;background:#fff9eb;color:#082348;border:1px solid #ebcb76;border-radius:18px;box-shadow:0 8px 24px #0003}
+.secretBubble:after{content:'';position:absolute;bottom:-9px;left:45%;width:16px;height:16px;background:#fff9eb;border-right:1px solid #ebcb76;border-bottom:1px solid #ebcb76;transform:rotate(45deg)}
+.secretBubble p{min-height:0;margin:0 0 12px;color:#082348;font-size:15px;line-height:1.4}.secretBubble strong{display:block;margin-top:6px;color:#a46c05}.secretBubble button{border:0;border-radius:20px;background:#ffdf76;color:#082348;padding:9px 12px;min-height:44px;font-size:13px;font-weight:700;cursor:pointer}.secretBubble button:focus-visible{outline:3px solid #1476cb;outline-offset:2px}
+@media(max-width:600px){.secretBubble{bottom:155px;left:0;right:0;padding:12px}.secretBubble p{font-size:14px}}
+@media(prefers-reduced-motion:reduce){.lukuluGreeting img{animation:none}}

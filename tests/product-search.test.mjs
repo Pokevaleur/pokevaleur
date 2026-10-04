@@ -46,6 +46,27 @@ test('short anniversary searches recognize 30e without matching unrelated number
 test('punctuation, accents and whole alias words are handled', () => {
   assert.deepEqual(found('collection ko'), [products[8].name])
   assert.deepEqual(found('mini tin evoli'), [products[9].name])
-  assert.deepEqual(found('tin'), []) // “Destinées” or “mini tin” must not be inferred from substrings.
+  assert.deepEqual(found('tin'), [products[9].name]) // Generic metal-box search includes mini-tins, never Destinées.
   assert.deepEqual(found('produit inexistant'), [])
+})
+
+test('metal box formats stay distinct and tin includes the whole family', () => {
+  const boxes = [
+    {name:'Mini-tin 151', product_type:'Mini-tin'},
+    {name:'Mini-boîte Évoli', product_type:'Mini-tin'},
+    {name:'Pokébox Mew', product_type:'Pokébox'},
+    {name:'Boîte Lucario', product_type:'Tin'},
+    {name:'Valisette Arceus', product_type:'Valisette'},
+    {name:'Boîte Poké Ball', product_type:'Poké Ball tin'},
+    {name:'Coffret Destinées Radieuses'},
+    {name:'Boîte Énergies de base', product_type:'Boîte Énergies'},
+  ]
+  const search=q=>boxes.filter(createProductMatcher(q)).map(p=>p.name)
+  assert.deepEqual(search('mini-tin'),boxes.slice(0,2).map(p=>p.name))
+  assert.deepEqual(search('mini boîte'),search('mini-tin'))
+  assert.deepEqual(search('pokebox'),boxes.slice(2,4).map(p=>p.name))
+  assert.deepEqual(search('valizette'),[boxes[4].name])
+  assert.deepEqual(search('valisette'),[boxes[4].name])
+  assert.deepEqual(search('tin'),boxes.slice(0,6).map(p=>p.name))
+  assert.deepEqual(search('mini tin 151'),[boxes[0].name])
 })
