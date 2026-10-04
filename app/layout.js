@@ -16,6 +16,7 @@ const navLinks = [
   ['/', 'Accueil'],
   ['/catalogue', 'Catalogue'],
   ['/collection', 'Ma collection'],
+  ['/collection/cartes', 'Cartes / Master Set'],
   ['/opportunites', 'Watchlist'],
   ['/communaute', 'Communauté'],
   ['/trades', 'Trades'],

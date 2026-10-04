@@ -78,7 +78,9 @@ export default function Navigation({ links }) {
     window.location.href = '/'
   }
 
-  const visibleLinks = isAdmin ? [...links, ['/admin', 'Admin']] : links
+  const memberOnlyHrefs = new Set(['/catalogue', '/collection/cartes'])
+  const memberLinks = links.filter(([href]) => identity || !memberOnlyHrefs.has(href))
+  const visibleLinks = isAdmin ? [...memberLinks, ['/admin', 'Admin']] : memberLinks
   const items = visibleLinks.map(([href, label]) => <a href={href} key={href}>{label}</a>)
   const accountMenu = identity && (
     <details className="accountMenu">
