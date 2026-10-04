@@ -47,10 +47,10 @@ export default function CollectionMockupPreviewPage() {
       <section className="panel collectionToolsPanel collectionFilesVisible" aria-label="Importer ou exporter la collection">
         <h2>Mes fichiers</h2>
         <div className="collectionFileActions">
-          <button className="miniBtn" type="button" disabled>Importer Excel / CSV</button>
+          <span className="miniBtn collectionDemoAction">Importer Excel / CSV</span>
           <details open className="collectionExportMenu">
             <summary>Exporter avec ou sans prix</summary>
-            <div><button className="miniBtn" type="button" disabled>Avec ou sans prix</button></div>
+            <div className="collectionDemoExportOptions"><span className="miniBtn collectionDemoAction">Avec les prix</span><span className="miniBtn collectionDemoAction">Sans les prix</span></div>
           </details>
         </div>
       </section>
