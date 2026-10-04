@@ -337,87 +337,52 @@ revoke all on function public.trade_can_participate(uuid) from public, anon;
 grant execute on function public.trade_can_participate(uuid) to authenticated;
 
 -- Gate reads as well as writes. Admin-only policies remain independent.
-drop policy if exists "Authenticated read community channels" on public.community_channels;
-create policy "Consenting members read community channels"
-  on public.community_channels for select to authenticated
-  using (public.social_access_allowed() and is_public = true);
-
-drop policy if exists "Authenticated can read visible community messages" on public.community_messages;
-create policy "Consenting members read visible community messages"
-  on public.community_messages for select to authenticated
-  using (public.social_access_allowed() and is_hidden = false and not exists (
-    select 1 from public.community_blocks b
-    where b.blocker_id = (select auth.uid()) and b.blocked_id = community_messages.user_id
-  ));
-
-drop policy if exists "Authors can delete own community messages" on public.community_messages;
-create policy "Consenting authors delete own community messages"
-  on public.community_messages for delete to authenticated
-  using (public.social_access_allowed() and user_id = (select auth.uid()));
-
-drop policy if exists "Users manage own blocks" on public.community_blocks;
-create policy "Consenting users manage own blocks"
-  on public.community_blocks for all to authenticated
-  using (public.social_access_allowed() and blocker_id = (select auth.uid()))
-  with check (public.social_access_allowed() and blocker_id = (select auth.uid()));
-
-drop policy if exists "Users create own reports" on public.community_reports;
-create policy "Consenting users create own reports"
-  on public.community_reports for insert to authenticated
-  with check (public.social_access_allowed() and reporter_id = (select auth.uid()));
-drop policy if exists "Users read own reports" on public.community_reports;
-create policy "Consenting users read own reports"
-  on public.community_reports for select to authenticated
-  using (public.social_access_allowed() and reporter_id = (select auth.uid()));
-
-drop policy if exists "Authenticated can read active trade listings" on public.trade_listings;
-create policy "Consenting members read active trade listings"
-  on public.trade_listings for select to authenticated
-  using (public.social_access_allowed() and (status = 'active' or user_id = (select auth.uid())));
-drop policy if exists "Members update own trade listings" on public.trade_listings;
-create policy "Consenting members update own trade listings"
-  on public.trade_listings for update to authenticated
-  using (public.social_access_allowed() and user_id = (select auth.uid()))
-  with check (public.social_access_allowed() and user_id = (select auth.uid()) and exists (
-    select 1 from public.collection_items ci
-    join public.collection_profiles cp on cp.id = ci.collection_profile_id
-    where ci.id = trade_listings.collection_item_id
-      and ci.user_id = (select auth.uid()) and cp.profile_type = 'personal'
-  ));
-drop policy if exists "Members delete own trade listings" on public.trade_listings;
-create policy "Consenting members delete own trade listings"
-  on public.trade_listings for delete to authenticated
-  using (public.social_access_allowed() and user_id = (select auth.uid()));
-
-drop policy if exists "Trade participants read offers" on public.trade_offers;
-create policy "Consenting participants read offers"
-  on public.trade_offers for select to authenticated
-  using (public.social_access_allowed() and (sender_id = (select auth.uid()) or recipient_id = (select auth.uid())));
-drop policy if exists "Trade participants update offers" on public.trade_offers;
-create policy "Consenting participants update offers"
-  on public.trade_offers for update to authenticated
-  using (public.social_access_allowed() and (sender_id = (select auth.uid()) or recipient_id = (select auth.uid())))
-  with check (public.social_access_allowed() and (sender_id = (select auth.uid()) or recipient_id = (select auth.uid()))
-    and (offered_collection_item_id is null or exists (
-      select 1 from public.collection_items ci
-      join public.collection_profiles cp on cp.id = ci.collection_profile_id
-      where ci.id = trade_offers.offered_collection_item_id
-        and ci.user_id = trade_offers.sender_id and cp.profile_type = 'personal'
-    )));
-
-drop policy if exists "Trade participants read messages" on public.trade_messages;
-create policy "Consenting participants read messages"
-  on public.trade_messages for select to authenticated
-  using (public.social_access_allowed() and exists (
-    select 1 from public.trade_offers o
-    where o.id = trade_messages.trade_offer_id
-      and (o.sender_id = (select auth.uid()) or o.recipient_id = (select auth.uid()))
-  ));
-drop policy if exists "Trade participants send messages" on public.trade_messages;
-create policy "Consenting participants send messages"
-  on public.trade_messages for insert to authenticated
-  with check (public.social_access_allowed() and sender_id = (select auth.uid()) and exists (
-    select 1 from public.trade_offers o
-    where o.id = trade_messages.trade_offer_id
-      and (o.sender_id = (select auth.uid()) or o.recipient_id = (select auth.uid()))
-  ));
+-- Some preview databases omit community tables; skip only those unavailable policies.
+do $$
+begin
+  if to_regclass('public.community_channels') is not null then
+    execute 'drop policy if exists "Authenticated read community channels" on public.community_channels';
+    execute 'create policy "Consenting members read community channels" on public.community_channels for select to authenticated using (public.social_access_allowed() and is_public = true)';
+  end if;
+  if to_regclass('public.community_messages') is not null then
+    execute 'drop policy if exists "Authenticated can read visible community messages" on public.community_messages';
+    if to_regclass('public.community_blocks') is not null then
+      execute $sql$create policy "Consenting members read visible community messages" on public.community_messages for select to authenticated using (public.social_access_allowed() and is_hidden = false and not exists (select 1 from public.community_blocks b where b.blocker_id = (select auth.uid()) and b.blocked_id = community_messages.user_id))$sql$;
+    else
+      execute 'create policy "Consenting members read visible community messages" on public.community_messages for select to authenticated using (public.social_access_allowed() and is_hidden = false)';
+    end if;
+    execute 'drop policy if exists "Authors can delete own community messages" on public.community_messages';
+    execute 'create policy "Consenting authors delete own community messages" on public.community_messages for delete to authenticated using (public.social_access_allowed() and user_id = (select auth.uid()))';
+  end if;
+  if to_regclass('public.community_blocks') is not null then
+    execute 'drop policy if exists "Users manage own blocks" on public.community_blocks';
+    execute 'create policy "Consenting users manage own blocks" on public.community_blocks for all to authenticated using (public.social_access_allowed() and blocker_id = (select auth.uid())) with check (public.social_access_allowed() and blocker_id = (select auth.uid()))';
+  end if;
+  if to_regclass('public.community_reports') is not null then
+    execute 'drop policy if exists "Users create own reports" on public.community_reports';
+    execute 'create policy "Consenting users create own reports" on public.community_reports for insert to authenticated with check (public.social_access_allowed() and reporter_id = (select auth.uid()))';
+    execute 'drop policy if exists "Users read own reports" on public.community_reports';
+    execute 'create policy "Consenting users read own reports" on public.community_reports for select to authenticated using (public.social_access_allowed() and reporter_id = (select auth.uid()))';
+  end if;
+  if to_regclass('public.trade_listings') is not null then
+    execute 'drop policy if exists "Authenticated can read active trade listings" on public.trade_listings';
+    execute 'create policy "Consenting members read active trade listings" on public.trade_listings for select to authenticated using (public.social_access_allowed() and (status = ''active'' or user_id = (select auth.uid())))';
+    execute 'drop policy if exists "Members update own trade listings" on public.trade_listings';
+    execute $sql$create policy "Consenting members update own trade listings" on public.trade_listings for update to authenticated using (public.social_access_allowed() and user_id = (select auth.uid())) with check (public.social_access_allowed() and user_id = (select auth.uid()) and exists (select 1 from public.collection_items ci join public.collection_profiles cp on cp.id = ci.collection_profile_id where ci.id = trade_listings.collection_item_id and ci.user_id = (select auth.uid()) and cp.profile_type = 'personal'))$sql$;
+    execute 'drop policy if exists "Members delete own trade listings" on public.trade_listings';
+    execute 'create policy "Consenting members delete own trade listings" on public.trade_listings for delete to authenticated using (public.social_access_allowed() and user_id = (select auth.uid()))';
+  end if;
+  if to_regclass('public.trade_offers') is not null then
+    execute 'drop policy if exists "Trade participants read offers" on public.trade_offers';
+    execute 'create policy "Consenting participants read offers" on public.trade_offers for select to authenticated using (public.social_access_allowed() and (sender_id = (select auth.uid()) or recipient_id = (select auth.uid())))';
+    execute 'drop policy if exists "Trade participants update offers" on public.trade_offers';
+    execute $sql$create policy "Consenting participants update offers" on public.trade_offers for update to authenticated using (public.social_access_allowed() and (sender_id = (select auth.uid()) or recipient_id = (select auth.uid()))) with check (public.social_access_allowed() and (sender_id = (select auth.uid()) or recipient_id = (select auth.uid())) and (offered_collection_item_id is null or exists (select 1 from public.collection_items ci join public.collection_profiles cp on cp.id = ci.collection_profile_id where ci.id = trade_offers.offered_collection_item_id and ci.user_id = trade_offers.sender_id and cp.profile_type = 'personal')))$sql$;
+  end if;
+  if to_regclass('public.trade_messages') is not null then
+    execute 'drop policy if exists "Trade participants read messages" on public.trade_messages';
+    execute $sql$create policy "Consenting participants read messages" on public.trade_messages for select to authenticated using (public.social_access_allowed() and exists (select 1 from public.trade_offers o where o.id = trade_messages.trade_offer_id and (o.sender_id = (select auth.uid()) or o.recipient_id = (select auth.uid()))))$sql$;
+    execute 'drop policy if exists "Trade participants send messages" on public.trade_messages';
+    execute $sql$create policy "Consenting participants send messages" on public.trade_messages for insert to authenticated with check (public.social_access_allowed() and sender_id = (select auth.uid()) and exists (select 1 from public.trade_offers o where o.id = trade_messages.trade_offer_id and (o.sender_id = (select auth.uid()) or o.recipient_id = (select auth.uid()))))$sql$;
+  end if;
+end;
+$$;
