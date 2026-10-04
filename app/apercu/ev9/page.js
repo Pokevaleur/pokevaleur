@@ -61,7 +61,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
         <span><strong>{visibleCards.length}</strong> cartes affichées</span>
         <span><strong>{variantCount}</strong> variantes affichées</span>
         <span><strong>{frenchChecklistCountInFilter}</strong> variantes standard FR affichées</span>
-        <span><strong>{jumboCount}</strong> cartes Jumbo · hors total 369</span>
+        <span><strong>{jumboCount}</strong> variantes Jumbo · hors total 369</span>
         <span>Total checklist française : <strong>{frenchChecklistCount}</strong> · compteur officiel : <strong>159</strong></span>
       </div>
 
