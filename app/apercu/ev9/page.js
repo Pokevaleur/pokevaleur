@@ -9,13 +9,15 @@ export const metadata = {
 const groupLabels = {
   main: 'Principale',
   promo: 'Promo SVP',
-  stamp: 'Stamp'
+  stamp: 'Stamp',
+  jumbo: 'Jumbo'
 }
 
 const filters = [
   ['main', 'Cartes et variantes principales'],
   ['promos', 'Promos SVP'],
   ['stamps', 'Versions tamponnées'],
+  ['jumbo', 'Cartes Jumbo'],
   ['all', 'Tout afficher']
 ]
 
@@ -27,7 +29,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
     ? 'all'
     : filters.some(([key]) => key === requestedGroup) ? requestedGroup : 'main'
   const query = (requestedQuery || '').trim().toLocaleLowerCase('fr')
-  const targetGroup = group === 'all' ? null : group === 'promos' ? 'promo' : group === 'stamps' ? 'stamp' : 'main'
+  const targetGroup = group === 'all' ? null : group === 'promos' ? 'promo' : group === 'stamps' ? 'stamp' : group === 'jumbo' ? 'jumbo' : 'main'
 
   const visibleCards = catalog.map(card => ({
     ...card,
@@ -40,6 +42,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
     .reduce((total, card) => total + card.variants.filter(variant => variant.is_master_set_target).length, 0)
   const frenchChecklistCountInFilter = visibleCards.filter(card => card.collector_number.endsWith('/159'))
     .reduce((total, card) => total + card.visibleVariants.filter(variant => variant.is_master_set_target).length, 0)
+  const jumboCount = catalog.reduce((total, card) => total + card.variants.filter(variant => variant.checklist_group === 'jumbo').length, 0)
 
   return (
     <main className={styles.page}>
@@ -57,7 +60,8 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
       <div className={styles.summary}>
         <span><strong>{visibleCards.length}</strong> cartes affichées</span>
         <span><strong>{variantCount}</strong> variantes affichées</span>
-        <span><strong>{frenchChecklistCountInFilter}</strong> variantes du set dans le périmètre français</span>
+        <span><strong>{frenchChecklistCountInFilter}</strong> variantes standard FR affichées</span>
+        <span><strong>{jumboCount}</strong> cartes Jumbo · hors total 369</span>
         <span>Total checklist française : <strong>{frenchChecklistCount}</strong> · compteur officiel : <strong>159</strong></span>
       </div>
 
@@ -77,7 +81,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
       </form>
 
       {hasQuery && <p className={styles.note} role="status">Recherche étendue aux cartes principales, aux promos et aux versions tamponnées.</p>}
-      <p className={styles.note}>Aperçu fixe issu de la base de test. Le total de la checklist française (369 variantes du set) est calculé séparément ; les versions hors périmètre restent visibles et sont signalées. Les promos SVP et les six Jumbo sont suivies séparément.</p>
+      <p className={styles.note}>Aperçu fixe issu de la base de test. Le total de la checklist française (369 variantes du set) est calculé séparément ; les versions hors périmètre restent visibles et sont signalées. Les promos SVP et les six cartes Jumbo sont suivies séparément. Le filtre Jumbo n’entre pas dans le total français de 369 variantes.</p>
 
       <section className={styles.grid} aria-label="Checklist EV9 en lecture seule">
         {visibleCards.map(card => (
