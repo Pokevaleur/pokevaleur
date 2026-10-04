@@ -36,6 +36,10 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
     .filter(card => !query || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(query))
 
   const variantCount = visibleCards.reduce((total, card) => total + card.visibleVariants.length, 0)
+  const frenchChecklistCount = catalog.filter(card => card.collector_number.endsWith('/159'))
+    .reduce((total, card) => total + card.variants.filter(variant => variant.is_master_set_target).length, 0)
+  const frenchChecklistCountInFilter = visibleCards.filter(card => card.collector_number.endsWith('/159'))
+    .reduce((total, card) => total + card.visibleVariants.filter(variant => variant.is_master_set_target).length, 0)
 
   return (
     <main className={styles.page}>
@@ -52,8 +56,9 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
 
       <div className={styles.summary}>
         <span><strong>{visibleCards.length}</strong> cartes affichées</span>
-        <span><strong>{variantCount}</strong> variantes dans ce filtre</span>
-        <span>Compteur officiel du set : <strong>159</strong></span>
+        <span><strong>{variantCount}</strong> variantes affichées</span>
+        <span><strong>{frenchChecklistCountInFilter}</strong> variantes du set dans le périmètre français</span>
+        <span>Total checklist française : <strong>{frenchChecklistCount}</strong> · compteur officiel : <strong>159</strong></span>
       </div>
 
       <form className={styles.filters} action="/apercu/ev9" method="get">
@@ -72,7 +77,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
       </form>
 
       {hasQuery && <p className={styles.note} role="status">Recherche étendue aux cartes principales, aux promos et aux versions tamponnées.</p>}
-      <p className={styles.note}>Aperçu fixe issu de la base de test du 3 octobre 2026. Les variantes tampons peuvent inclure des versions d’autres marchés ; leur périmètre français reste à confirmer.</p>
+      <p className={styles.note}>Aperçu fixe issu de la base de test. Le total de la checklist française (369 variantes du set) est calculé séparément ; les versions hors périmètre restent visibles et sont signalées. Les promos SVP et les six Jumbo sont suivies séparément.</p>
 
       <section className={styles.grid} aria-label="Checklist EV9 en lecture seule">
         {visibleCards.map(card => (
@@ -93,6 +98,7 @@ export default function Ev9PreviewPage({ searchParams = {} }) {
                   <div className={styles.variant} key={variant.variant_label + index}>
                     <span>{variant.variant_label}</span>
                     <span className={styles.group + ' ' + groupClass}>{groupLabels[variantGroup] || variantGroup}</span>
+                    {variant.is_master_set_target === false && <span className={styles.groupOutside}>Hors compteur FR</span>}
                   </div>
                 )
               })}
