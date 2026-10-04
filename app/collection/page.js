@@ -765,7 +765,7 @@ export default function CollectionPage() {
     <main className="collectionWorkspace">
       <div className="collectionHeader collectionHeaderNew">
         <h1>{activeCollectionProfile && !activeCollectionProfile.is_default ? `Collection de ${activeCollectionProfile.display_name}` : 'Ma collection'}</h1>
-        {collectionProfiles.length > 1 && <label className="collectionProfileSelectLabel"><span className="srOnly">Collection affichée</span><select aria-label="Collection affichée" value={activeProfileId || ''} onChange={event => selectCollectionProfile(event.target.value)} disabled={isSwitchingProfile}>{collectionProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.is_default ? 'Ma famille' : profile.display_name}</option>)}</select></label>}
+        {collectionProfiles.length > 1 && <label className="collectionProfileSelectLabel"><select aria-label="Collection affichée" value={activeProfileId || ''} onChange={event => selectCollectionProfile(event.target.value)} disabled={isSwitchingProfile}>{collectionProfiles.map(profile => <option key={profile.id} value={profile.id}>{profile.is_default ? 'Ma famille' : profile.display_name}</option>)}</select></label>}
       </div>
       <div className="collectionHeroArtwork"><img src="/collection-hero.webp" alt="Classeur de cartes Pokémon ouvert, cartes protégées et coffret de collection" /></div>
       <nav className="collectionTabs" aria-label="Sections de la collection">
