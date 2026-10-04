@@ -29,7 +29,7 @@ export default function ProductDetailPage() {
   async function load() {
     setLoading(true)
 
-    const [{ data: productData }, { data: historyData }, { data: contentData }] = await Promise.all([
+    const [{ data: productData }, { data: historyData }, contentResult] = await Promise.all([
       supabase
         .from('products')
         .select('id,name,series,category,product_type,release_date,release_period,official_source_url,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
@@ -46,6 +46,21 @@ export default function ProductDetailPage() {
         .eq('product_id', params.id)
         .order('content_type')
     ])
+
+    let contentData = contentResult.data
+    if (contentResult.error && /card_id|column/i.test(contentResult.error.message || '')) {
+      // Preview databases may not have applied the card-link migration yet.
+      // Keep the public contents list visible while omitting only card links.
+      const { data: legacyContentData, error: legacyContentError } = await supabase
+        .from('product_contents')
+        .select('id,content_type,item_name,quantity,source_label,source_url,confidence')
+        .eq('product_id', params.id)
+        .order('content_type')
+      contentData = legacyContentData
+      if (legacyContentError) console.error('Unable to load product contents:', legacyContentError)
+    } else if (contentResult.error) {
+      console.error('Unable to load product contents:', contentResult.error)
+    }
 
     const contentRows = contentData || []
     const linkedCardIds = [...new Set(contentRows.map(item => item.card_id).filter(Boolean))]
