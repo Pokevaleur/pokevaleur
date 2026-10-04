@@ -636,7 +636,13 @@
       },
       {
         "finish_code": "jumbo",
-        "variant_label": "Carte Jumbo · grand format",
+        "variant_label": "Carte Jumbo · tampon logo de la série",
+        "checklist_group": "jumbo",
+        "is_master_set_target": false
+      },
+      {
+        "finish_code": "jumbo",
+        "variant_label": "Carte Jumbo · non holo",
         "checklist_group": "jumbo",
         "is_master_set_target": false
       }
