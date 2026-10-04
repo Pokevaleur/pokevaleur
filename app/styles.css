@@ -1002,3 +1002,7 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 
 .collectionProfileAvatar{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;vertical-align:middle;margin-right:4px;border-radius:50%;background:#fff4c7;font-size:16px}
 .collectionProfileAvatar.profileAvatarIllustrated{background-color:transparent!important}
+
+
+/* One scalable crown is shared by the PokéValeur wordmark on every route. */
+.brandValue{position:relative;display:inline-block}.brandCrown{position:absolute;display:block;width:.58em;height:.4em;top:-.25em;right:.3em;overflow:visible;pointer-events:none}
