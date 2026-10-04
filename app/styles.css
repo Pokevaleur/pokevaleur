@@ -1006,3 +1006,190 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 
 /* One scalable crown is shared by the PokéValeur wordmark on every route. */
 .brandValue{position:relative;display:inline-block}.brandCrown{position:absolute;display:block;width:.58em;height:.4em;top:-.25em;right:.3em;overflow:visible;pointer-events:none}
+
+
+/* Catalogue: collection-first, compact and softly crystalline */
+.catalogPage{
+  position:relative;
+  isolation:isolate;
+  max-width:1200px;
+  margin:0 auto;
+  padding:clamp(20px,3.5vw,34px) clamp(14px,4vw,24px);
+  overflow:hidden;
+  background:
+    radial-gradient(ellipse at 0 5%,rgba(161,205,249,.18),transparent 22rem),
+    radial-gradient(ellipse at 100% 70%,rgba(178,218,255,.16),transparent 24rem),
+    linear-gradient(180deg,#f8fbff,#f3f6fb);
+}
+.catalogPage>section,.catalogPage>.catalogStatus{position:relative;z-index:1}
+.catalogPage:before,.catalogPage:after{
+  content:"";
+  position:absolute;
+  z-index:0;
+  pointer-events:none;
+  width:clamp(150px,22vw,270px);
+  height:320px;
+  opacity:.7;
+  filter:blur(.1px);
+}
+.catalogPage:before{
+  top:150px;left:-58px;
+  background:linear-gradient(145deg,rgba(120,187,245,.28),rgba(223,241,255,.05));
+  clip-path:polygon(0 0,100% 12%,70% 38%,98% 68%,47% 100%,15% 55%);
+}
+.catalogPage:after{
+  right:-60px;bottom:0;
+  background:linear-gradient(35deg,rgba(105,172,237,.24),rgba(224,242,255,.04));
+  clip-path:polygon(18% 0,100% 16%,76% 53%,100% 82%,30% 100%,0 61%);
+}
+.catalogHero{
+  position:relative;
+  z-index:1;
+  padding:clamp(20px,4vw,34px);
+  margin:0 0 14px;
+  border:1px solid rgba(255,255,255,.88);
+  background:linear-gradient(135deg,rgba(255,255,255,.96),rgba(255,255,255,.86));
+  box-shadow:0 10px 28px rgba(24,51,85,.07);
+}
+.catalogHero h1{
+  max-width:820px;
+  margin:8px 0 10px;
+  font-size:clamp(30px,4.2vw,48px);
+  line-height:1.08;
+  letter-spacing:-.035em;
+}
+.catalogQuery{color:#9a6d00;overflow-wrap:anywhere}
+.catalogCount{margin:8px 0 12px;gap:7px}
+.catalogCount strong{font-size:clamp(24px,3vw,30px)}
+.catalogCount span{font-weight:700;color:var(--text)}
+.catalogCount small{width:auto;font-size:14px}
+.catalogSearchArea{max-width:760px}
+.voiceSearchWrap{position:relative;max-width:none;gap:10px}
+.voiceSearchWrap .catalogSearch{
+  min-height:58px;
+  margin:0;
+  max-width:none;
+  padding:14px 18px 14px 48px;
+  border-radius:15px;
+  font-size:18px;
+  background:rgba(255,255,255,.98);
+}
+.catalogSearchIcon{
+  position:absolute;left:16px;top:50%;z-index:1;
+  display:flex;align-items:center;justify-content:center;
+  width:23px;height:23px;transform:translateY(-50%);color:var(--navy);
+  pointer-events:none;
+}
+.catalogSearchIcon svg,.voiceSearchButton svg{
+  width:100%;height:100%;fill:none;stroke:currentColor;stroke-width:1.8;
+  stroke-linecap:round;stroke-linejoin:round;
+}
+.voiceSearchButton{flex-basis:52px;width:52px;height:52px;color:var(--navy)}
+.voiceSearchButton svg{width:23px;height:23px}
+.catalogSearchHelp{margin:9px 0 10px;color:var(--muted);font-size:15px}
+.catalogQuickSearch{display:flex;flex-wrap:wrap;gap:8px}
+.catalogExample{
+  min-height:38px;padding:7px 16px;border:1px solid #cfdef1;border-radius:999px;
+  background:rgba(238,246,255,.86);color:#254f7f;font:700 15px Arial,Helvetica,sans-serif;
+  cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .15s ease;
+}
+.catalogExample:hover{background:#e6f1ff;border-color:#9fc6ef;transform:translateY(-1px)}
+.catalogExample:focus-visible,.voiceSearchButton:focus-visible,.catalogDisclosure>summary:focus-visible,
+.catalogMarketDetails>summary:focus-visible{outline:3px solid #438bd1;outline-offset:3px}
+.catalogEmptyState{
+  display:flex;align-items:center;gap:16px;
+  margin:0 0 14px;padding:16px 22px;
+  border:1px solid rgba(255,255,255,.92);border-radius:18px;
+  background:rgba(255,255,255,.84);box-shadow:0 8px 22px rgba(24,51,85,.05);
+}
+.catalogSparkle{flex:0 0 auto;color:#68a9e7;font-size:38px;line-height:1}
+.catalogEmptyState h2{margin:0 0 4px;font-size:20px}
+.catalogEmptyState p{margin:0;color:var(--muted);line-height:1.4}
+.catalogStatus{margin:0 0 14px;color:var(--muted)}
+.catalogGrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.catalogResultCard{
+  display:grid;grid-template-columns:116px minmax(0,1fr);gap:14px;
+  align-content:start;padding:13px;border-color:rgba(218,228,240,.95);
+  border-radius:17px;box-shadow:0 6px 18px rgba(24,51,85,.055);
+}
+.catalogResultCard .productVisual{
+  grid-column:1;grid-row:1;
+  width:100%;aspect-ratio:1/1;margin:0;border:1px solid #edf1f6;border-radius:13px;
+  background:linear-gradient(145deg,#f8fbff,#edf4fb);
+}
+.catalogResultContent{grid-column:2;grid-row:1;display:flex;flex-direction:column;align-items:flex-start;gap:6px;min-width:0}
+.catalogResultContent .catalogBadge{padding:4px 9px}
+.catalogResultCard h2{margin:0;font-size:18px;line-height:1.22;overflow-wrap:anywhere}
+.catalogResultSeries{margin:0!important;color:var(--muted);font-size:14px;line-height:1.35}
+.catalogRelease{margin:0!important;color:var(--muted);font-size:12px}
+.catalogCardActions{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:4px}
+.catalogCardActions .btn{width:auto;text-align:center}
+.catalogCardActions .btn.small{padding:9px 12px;font-size:14px}
+.catalogCardActions .detailLink{margin:0;font-size:14px}
+.catalogMarketDetails{grid-column:1/-1;align-self:start;border-top:1px solid #edf0f4;padding-top:9px}
+.catalogMarketDetails>summary,.catalogDisclosure>summary{
+  list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:12px;
+}
+.catalogMarketDetails>summary::-webkit-details-marker,.catalogDisclosure>summary::-webkit-details-marker{display:none}
+.catalogMarketDetails>summary:after,.catalogDisclosure>summary:after{
+  content:"";width:9px;height:9px;flex:0 0 9px;
+  border-right:2px solid #71839a;border-bottom:2px solid #71839a;
+  transform:rotate(45deg) translateY(-2px);transition:transform .15s ease;
+}
+.catalogMarketDetails[open]>summary:after,.catalogDisclosure[open]>summary:after{transform:rotate(225deg) translate(-2px,-1px)}
+.catalogMarketDetails>summary{font-size:13px;font-weight:700;color:#53677f}
+.catalogMarketBody{padding-top:8px}
+.catalogMarketBody .catalogValue{margin-top:7px}
+.catalogDisclosure{position:relative;z-index:1;margin:12px 0 0;padding:0 18px}
+.catalogDisclosure>summary{min-height:58px;padding:10px 0}
+.catalogDisclosure>summary span{display:grid;gap:3px}
+.catalogDisclosure>summary strong{font-size:16px}
+.catalogDisclosure>summary small{font-size:13px;color:var(--muted)}
+.catalogDisclosureBody{padding:0 0 16px}
+.catalogDisclosureBody>p{margin:0 0 12px}
+.catalogDisclosureBody .suggestionForm{padding-top:5px}
+.catalogDisclosure.pricePolicy{margin-top:10px}
+.catalogDisclosure.pricePolicy>summary{justify-content:flex-start}
+.catalogDisclosure.pricePolicy>summary:after{margin-left:auto}
+.catalogDisclosure.pricePolicy p{margin:0;line-height:1.55}
+.catalogNoResults,.catalogError{
+  position:relative;z-index:1;
+  padding:20px;border:1px solid rgba(255,255,255,.92);
+  border-radius:18px;background:rgba(255,255,255,.9);
+}
+.catalogNoResults h2{margin:0 0 6px;font-size:20px;overflow-wrap:anywhere}
+.catalogNoResults p{margin:0 0 14px;color:var(--muted)}
+.catalogNoResults .miniBtn{cursor:pointer}
+.catalogPage .suggestionForm{margin-top:12px}
+.catalogPage .suggestionForm .btn{width:auto}
+@media(max-width:900px){
+  .catalogGrid{grid-template-columns:1fr}
+}
+@media(max-width:600px){
+  .catalogPage{padding:16px 12px 24px}
+  .catalogHero{padding:20px 17px;border-radius:19px;margin-bottom:11px}
+  .catalogHero h1{font-size:clamp(29px,8vw,38px);line-height:1.08}
+  .catalogCount{margin:7px 0 10px}
+  .catalogCount strong{font-size:26px}
+  .catalogCount span{font-size:15px}
+  .catalogCount small{font-size:13px}
+  .voiceSearchWrap{gap:7px}
+  .voiceSearchWrap .catalogSearch{min-height:52px;padding:12px 10px 12px 42px;font-size:16px}
+  .catalogSearchIcon{left:13px;width:19px;height:19px}
+  .voiceSearchButton{flex-basis:46px;width:46px;height:46px}
+  .catalogExample{min-height:36px;padding:6px 12px;font-size:14px}
+  .catalogEmptyState{padding:13px 15px;gap:10px;border-radius:15px}
+  .catalogEmptyState h2{font-size:18px}
+  .catalogEmptyState p{font-size:14px}
+  .catalogSparkle{font-size:30px}
+  .catalogGrid{gap:10px}
+  .catalogResultCard{grid-template-columns:82px minmax(0,1fr);gap:10px;padding:10px;border-radius:15px}
+  .catalogResultCard h2{font-size:16px}
+  .catalogResultSeries{font-size:13px}
+  .catalogRelease{font-size:11px}
+  .catalogCardActions{gap:6px}
+  .catalogCardActions .btn.small{padding:8px 9px;font-size:13px}
+  .catalogCardActions .detailLink{font-size:13px}
+  .catalogDisclosure{padding:0 14px;border-radius:15px}
+  .catalogDisclosure>summary{min-height:54px}
+}
