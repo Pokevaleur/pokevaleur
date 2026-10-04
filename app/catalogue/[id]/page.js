@@ -41,14 +41,24 @@ export default function ProductDetailPage() {
         .order('observed_at', { ascending: true }),
       supabase
         .from('product_contents')
-        .select('id,content_type,item_name,quantity,source_label,source_url,confidence')
+        .select('id,card_id,content_type,item_name,quantity,source_label,source_url,confidence')
         .eq('product_id', params.id)
         .order('content_type')
     ])
 
+    const contentRows = contentData || []
+    const linkedCardIds = [...new Set(contentRows.map(item => item.card_id).filter(Boolean))]
+    let cardsById = {}
+    if (linkedCardIds.length) {
+      const { data: linkedCards } = await supabase.from('cards')
+        .select('id,card_set_id,collector_number,card_name,card_sets(id,set_code,set_name,is_public)')
+        .in('id', linkedCardIds)
+      cardsById = Object.fromEntries((linkedCards || []).map(card => [card.id, card]))
+    }
+
     setProduct(productData || null)
     setHistory(historyData || [])
-    setContents(contentData || [])
+    setContents(contentRows.map(item => ({ ...item, card: cardsById[item.card_id] || null })))
     setLoading(false)
   }
 
@@ -144,6 +154,11 @@ export default function ProductDetailPage() {
               <div key={item.id} className="productContentRow">
                 <span>{item.quantity} × {item.item_name}</span>
                 <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
+                {item.card?.card_set_id && (
+                  <a className="detailLink" href={`/collection/cartes?set=${encodeURIComponent(item.card.card_set_id)}&card=${encodeURIComponent(item.card.collector_number)}`}>
+                    Voir cette carte dans la checklist →
+                  </a>
+                )}
               </div>
             ))}
           </div>
