@@ -807,9 +807,9 @@ export default function CollectionPage() {
         </div>
         <div className="collectionTotalGrid">
           <div><strong>{totalCollectionCount ?? '—'}</strong><span>éléments au total</span></div>
-          <div><strong>{sealedItemCount}</strong><span>produits scellés</span></div>
-          <div><strong>{cardCount ?? '—'}</strong><span>cartes (gradées incluses)</span></div>
-          <div><strong>{gradedCardCount ?? '—'}</strong><span>cartes gradées</span></div>
+          <a className="collectionTotalLink collectionTotalSealed" href="/collection/stats?category=sealed"><strong>{sealedItemCount}</strong><span>produits scellés</span></a>
+          <a className="collectionTotalLink collectionTotalCards" href="/collection/stats?category=cards"><strong>{cardCount ?? '—'}</strong><span>cartes (gradées incluses)</span></a>
+          <a className="collectionTotalLink collectionTotalGraded" href="/collection/stats?category=graded"><strong>{gradedCardCount ?? '—'}</strong><span>cartes gradées</span></a>
         </div>
       </section>
       <button type="button" className="collectionAddCta" onClick={() => { setShowAddForm(true); setTimeout(() => document.getElementById('ajouter-produit')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0) }}>Ajouter un trésor</button>
