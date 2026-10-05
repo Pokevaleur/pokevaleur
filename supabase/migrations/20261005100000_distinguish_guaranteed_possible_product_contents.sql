@@ -148,3 +148,132 @@ where p.name = 'Pack Récompense Play! Pokémon – Série 7'
       and existing.card_id = pool_cards.card_id
       and existing.content_role = 'possible'
   );
+
+
+-- Official Series Six checklist: record its 94 possible card identities.
+with wanted(set_code, collector_number) as (
+  values
+('sv03', '125'),
+('sv03', '164'),
+('sv03', '196'),
+('sv03.5', '132'),
+('sv03.5', '151'),
+('sv04', '70'),
+('sv04', '121'),
+('sv04', '124'),
+('sv04', '160'),
+('sv04', '163'),
+('sv04', '170'),
+('sv04', '171'),
+('sv04', '176'),
+('sv04', '177'),
+('sv04', '178'),
+('sv04', '179'),
+('sv04', '180'),
+('sv04.5', '90'),
+('sv05', '81'),
+('sv05', '97'),
+('sv05', '109'),
+('sv05', '114'),
+('sv05', '119'),
+('sv05', '121'),
+('sv05', '123'),
+('sv05', '144'),
+('sv05', '145'),
+('sv05', '147'),
+('sv05', '154'),
+('sv05', '155'),
+('sv05', '157'),
+('sv05', '159'),
+('sv06', '25'),
+('sv06', '33'),
+('sv06', '40'),
+('sv06', '53'),
+('sv06', '64'),
+('sv06', '72'),
+('sv06', '77'),
+('sv06', '84'),
+('sv06', '95'),
+('sv06', '96'),
+('sv06', '111'),
+('sv06', '112'),
+('sv06', '123'),
+('sv06', '129'),
+('sv06', '130'),
+('sv06', '131'),
+('sv06', '141'),
+('sv06', '143'),
+('sv06', '145'),
+('sv06', '148'),
+('sv06', '152'),
+('sv06', '153'),
+('sv06', '159'),
+('sv06', '162'),
+('sv06', '164'),
+('sv06', '165'),
+('sv06', '167'),
+('sv06.5', '2'),
+('sv06.5', '36'),
+('sv06.5', '37'),
+('sv06.5', '38'),
+('sv06.5', '39'),
+('sv06.5', '40'),
+('sv06.5', '42'),
+('sv06.5', '55'),
+('sv06.5', '57'),
+('sv06.5', '59'),
+('sv06.5', '60'),
+('sv06.5', '61'),
+('sv06.5', '63'),
+('sv07', '3'),
+('sv07', '51'),
+('sv07', '71'),
+('sv07', '107'),
+('sv07', '111'),
+('sv07', '115'),
+('sv07', '118'),
+('sv07', '119'),
+('sv07', '128'),
+('sv07', '131'),
+('sv07', '133'),
+('sv07', '135'),
+('sv07', '136'),
+('sv07', '142'),
+('sve', '9'),
+('sve', '10'),
+('sve', '11'),
+('sve', '12'),
+('sve', '13'),
+('sve', '14'),
+('sve', '15'),
+('sve', '16')
+), pool_cards as (
+  select distinct c.id as card_id,
+         c.card_name || ' — ' || cs.set_name || ' ' || c.collector_number || ' (estampille Play! Pokémon)' as item_name
+  from wanted w
+  join public.card_sets cs on cs.set_code = w.set_code and cs.language = 'FR'
+  join public.cards c on c.card_set_id = cs.id
+    and ltrim(split_part(c.collector_number, '/', 1), '0') = w.collector_number
+)
+insert into public.product_contents (
+  product_id, content_type, item_name, quantity, source_url, source_label, confidence, card_id, content_role
+)
+select p.id,
+       'other',
+       pool_cards.item_name,
+       1,
+       'https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/checklist/prize_pack_series_6_web_cardlist_en.pdf',
+       'Pokémon — checklist officielle du Pack Récompense série 6',
+       'verified',
+       pool_cards.card_id,
+       'possible'
+from public.products p
+cross join pool_cards
+where p.name = 'Pack Récompense Play! Pokémon – Série 6'
+  and not exists (
+    select 1
+    from public.product_contents existing
+    where existing.product_id = p.id
+      and existing.card_id = pool_cards.card_id
+      and existing.content_role = 'possible'
+  );
