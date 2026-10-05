@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
 import { collectionItemKind } from '../../../lib/collection-statistics.mjs'
+import { buildCardRarityBreakdown } from '../../../lib/card-rarity-statistics.mjs'
 
 function buildBreakdown(holdings, groupFor, unlabelled = 'Autres') {
   const totals = new Map()
@@ -24,11 +25,15 @@ export default function CollectionStatsPage() {
   const [products, setProducts] = useState([])
   const [cardCopies, setCardCopies] = useState([])
   const [cardSetVariantTotals, setCardSetVariantTotals] = useState({})
+  const [cardSetRarityBreakdowns, setCardSetRarityBreakdowns] = useState({})
   const [category, setCategory] = useState('all')
+  const [selectedSetId, setSelectedSetId] = useState('')
 
   useEffect(() => {
-    const requested = new URLSearchParams(window.location.search).get('category')
+    const params = new URLSearchParams(window.location.search)
+    const requested = params.get('category')
     if (['sealed', 'other', 'cards', 'graded'].includes(requested)) setCategory(requested)
+    if (requested === 'cards' && params.get('set')) setSelectedSetId(params.get('set'))
   }, [])
 
   useEffect(() => {
@@ -97,7 +102,7 @@ export default function CollectionStatsPage() {
         const cards = []
         for (let offset = 0; offset < cardIds.length; offset += 100) {
           const { data, error } = await supabase.from('cards')
-            .select('id,card_set_id,collector_number,card_name,card_type,guide_category_label')
+            .select('id,card_set_id,collector_number,card_name,card_type,guide_category_label,rarity_label')
             .in('id', cardIds.slice(offset, offset + 100))
           if (error) throw error
           cards.push(...(data || []))
@@ -116,7 +121,7 @@ export default function CollectionStatsPage() {
         const cardSetCards = []
         for (let offset = 0; offset < setIds.length; offset += 100) {
           const { data, error } = await fetchAllRows(() => supabase.from('cards')
-            .select('id,card_set_id')
+            .select('id,card_set_id,collector_number,card_name,rarity_label')
             .in('card_set_id', setIds.slice(offset, offset + 100)))
           if (error) throw error
           cardSetCards.push(...(data || []))
@@ -139,6 +144,24 @@ export default function CollectionStatsPage() {
           if (setId) variantTotals[setId] = (variantTotals[setId] || 0) + 1
         }
 
+        const ownedVariantIds = new Set((copies || []).map(copy => copy.card_print_variant_id))
+        const variantsBySet = new Map()
+        for (const variant of catalogVariants) {
+          const setId = cardSetByCardId.get(variant.card_id)
+          if (!setId) continue
+          if (!variantsBySet.has(setId)) variantsBySet.set(setId, [])
+          variantsBySet.get(setId).push(variant)
+        }
+        const cardsBySet = new Map()
+        for (const card of cardSetCards) {
+          if (!cardsBySet.has(card.card_set_id)) cardsBySet.set(card.card_set_id, [])
+          cardsBySet.get(card.card_set_id).push(card)
+        }
+        const rarityBreakdowns = Object.fromEntries(setIds.map(setId => [
+          setId,
+          buildCardRarityBreakdown(cardsBySet.get(setId) || [], variantsBySet.get(setId) || [], ownedVariantIds)
+        ]))
+
         const variantById = new Map(variants.map(variant => [variant.id, variant]))
         const cardById = new Map(cards.map(card => [card.id, card]))
         const setById = new Map(sets.map(set => [set.id, set]))
@@ -154,6 +177,7 @@ export default function CollectionStatsPage() {
         setProducts(catalog)
         setCardCopies(inventoryCards)
         setCardSetVariantTotals(variantTotals)
+        setCardSetRarityBreakdowns(rarityBreakdowns)
       } catch {
         if (active) setLoadError('Impossible de charger les statistiques. Réessaie dans un instant.')
       } finally {
@@ -184,6 +208,7 @@ export default function CollectionStatsPage() {
       || (category === 'other' && holding.kind === 'other')
       || (category === 'cards' && holding.kind === 'card')
       || (category === 'graded' && holding.kind === 'card' && holding.record.ownership_type === 'graded'))
+      .filter(holding => !selectedSetId || (holding.kind === 'card' && holding.record.set?.id === selectedSetId))
     const sealedCopies = holdings.filter(holding => holding.kind === 'sealed').reduce((sum, holding) => sum + holding.quantity, 0)
     const otherCopies = holdings.filter(holding => holding.kind === 'other').reduce((sum, holding) => sum + holding.quantity, 0)
     const cards = holdings.filter(holding => holding.kind === 'card').length
@@ -243,6 +268,7 @@ export default function CollectionStatsPage() {
       gradedCards,
       seriesDetails: buildDetails(seriesFor, 'Série non renseignée'),
       typeDetails: buildDetails(typeFor, 'Autres'),
+      byRarity: selectedSetId ? (cardSetRarityBreakdowns[selectedSetId] || []) : [],
       bySeries: category === 'cards' || category === 'graded'
         ? (() => {
             const variantsBySet = new Map()
@@ -250,6 +276,7 @@ export default function CollectionStatsPage() {
               if (holding.kind !== 'card' || !holding.record.variant?.is_master_set_target || !holding.record.set?.id) continue
               const set = holding.record.set
               if (!variantsBySet.has(set.id)) variantsBySet.set(set.id, {
+                setId: set.id,
                 label: set.set_name || 'Série sans nom',
                 owned: new Set(),
                 total: Number(cardSetVariantTotals[set.id]) || 0
@@ -257,6 +284,7 @@ export default function CollectionStatsPage() {
               variantsBySet.get(set.id).owned.add(holding.record.variant.id)
             }
             return [...variantsBySet.values()].map(entry => ({
+              setId: entry.setId,
               label: entry.label,
               count: entry.owned.size,
               total: entry.total || null
@@ -265,11 +293,14 @@ export default function CollectionStatsPage() {
         : buildBreakdown(holdings, seriesFor, 'Série non renseignée'),
       byCategory: buildBreakdown(holdings, typeFor)
     }
-  }, [items, products, cardCopies, cardSetVariantTotals, category])
+  }, [items, products, cardCopies, cardSetVariantTotals, cardSetRarityBreakdowns, category, selectedSetId])
 
-  const categoryLabel = category === 'sealed' ? 'Produits scellés' : category === 'other' ? 'Autres / à classer' : category === 'cards' ? 'Cartes' : category === 'graded' ? 'Cartes gradées' : ''
-  const kpis = category === 'all'
-    ? [['Éléments au total', stats.copies], ['Produits scellés', stats.sealedCopies], ['Autres / à classer', stats.otherCopies], ['Cartes (gradées incluses)', stats.cards], ['Cartes gradées', stats.gradedCards]]
+  const selectedSetName = selectedSetId ? cardCopies.find(record => record.set?.id === selectedSetId)?.set?.set_name : ''
+  const categoryLabel = selectedSetName || (category === 'sealed' ? 'Produits scellés' : category === 'other' ? 'Autres / à classer' : category === 'cards' ? 'Cartes' : category === 'graded' ? 'Cartes gradées' : '')
+  const kpis = selectedSetId
+    ? [['Cartes possédées dans la série', stats.byRarity.reduce((sum, entry) => sum + entry.count, 0)], ['Cartes recensées dans la série', stats.byRarity.reduce((sum, entry) => sum + entry.total, 0)], ['Raretés', stats.byRarity.length]]
+    : category === 'all'
+      ? [['Éléments au total', stats.copies], ['Produits scellés', stats.sealedCopies], ['Autres / à classer', stats.otherCopies], ['Cartes (gradées incluses)', stats.cards], ['Cartes gradées', stats.gradedCards]]
     : category === 'sealed'
       ? [['Produits scellés', stats.sealedCopies], ['Types de produits', stats.byCategory.length], ['Séries concernées', stats.bySeries.length]]
       : category === 'other'
@@ -281,7 +312,7 @@ export default function CollectionStatsPage() {
   if (loading) return <main className="collectionStatsPage"><section className="collectionStatsHero"><p role="status">Chargement de tes statistiques…</p></section></main>
   if (loadError) return <main className="collectionStatsPage"><section className="collectionStatsHero"><span className="collectionStatsEyebrow">En un coup d’œil</span><h1>Stats collection</h1><p role="alert">{loadError}</p><button type="button" className="btn" onClick={() => window.location.reload()}>Réessayer</button></section></main>
 
-  const distribution = (entries, detailsByGroup = null, detailLabel = 'groupe') => entries.length
+  const distribution = (entries, detailsByGroup = null, detailLabel = 'groupe', linkForEntry = null) => entries.length
     ? <div className="collectionStatsBars">{entries.map(entry => {
       const hasDenominator = entry.total === undefined || entry.total !== null
       const denominator = hasDenominator ? entry.total ?? stats.copies : 0
@@ -291,7 +322,11 @@ export default function CollectionStatsPage() {
       const ratioLabel = denominator
         ? `${entry.count} / ${denominator} · ${shareLabel} %`
         : `${entry.count} variantes · total du checklist indisponible`
-      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{ratioLabel}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
+      const entryHref = linkForEntry?.(entry)
+      const ratio = entryHref
+        ? <a href={entryHref} aria-label={`Afficher ${entry.count} cartes ${entry.label} possédées`} style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}>{ratioLabel}</a>
+        : ratioLabel
+      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{ratio}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
       if (!detailsByGroup) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
 
       const details = detailsByGroup[entry.label] || []
@@ -333,8 +368,14 @@ export default function CollectionStatsPage() {
       <section className="collectionStatsHero">
         <span className="collectionStatsEyebrow">{category === 'all' ? 'En un coup d’œil' : 'Statistiques ciblées'}</span>
         <h1>{category === 'all' ? 'Stats collection' : categoryLabel}</h1>
-        <p>{category === 'all' ? <>Un aperçu simple de tout ce que tu as réuni dans {profileName}.</> : <>Répartition de tes {categoryLabel.toLocaleLowerCase('fr')} dans {profileName}.</>}</p>
-        {category !== 'all' && <a className="collectionStatsScopeReset" href="/collection/stats">Toutes les statistiques</a>}
+        <p>{selectedSetId
+          ? <>Cartes possédées par rareté dans {selectedSetName || 'cette série'}.</>
+          : category === 'all'
+            ? <>Un aperçu simple de tout ce que tu as réuni dans {profileName}.</>
+            : <>Répartition de tes {categoryLabel.toLocaleLowerCase('fr')} dans {profileName}.</>}</p>
+        {selectedSetId
+          ? <a className="collectionStatsScopeReset" href="/collection/stats?category=cards">← Toutes les séries de cartes</a>
+          : category !== 'all' && <a className="collectionStatsScopeReset" href="/collection/stats">Toutes les statistiques</a>}
       </section>
 
       <section className="stats collectionStatsKpis" aria-label="Chiffres clés">
@@ -345,8 +386,12 @@ export default function CollectionStatsPage() {
         <section className="panel collectionStatsEmpty"><h2>{category === 'all' ? 'Ta collection commence ici' : 'Aucun élément dans cette rubrique'}</h2><p>{category === 'all' ? 'Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.' : <>Cette rubrique est vide dans {profileName}. <a href="/collection/stats">Voir toutes les statistiques</a></>}</p></section>
       ) : (
         <div className={category === 'graded' ? 'collectionStatsBreakdowns collectionStatsBreakdownsSingle' : 'collectionStatsBreakdowns'}>
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
-          {category !== 'graded' && (
+          {selectedSetId ? (
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par rareté</h2><p className="muted collectionStatsDescription">Chaque rareté indique le nombre de cartes distinctes que tu possèdes sur le total répertorié. Appuie sur le nombre possédé pour afficher tes cartes et leurs variantes.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.byRarity, null, 'rareté', entry => `/collection/cartes?set=${encodeURIComponent(selectedSetId)}&rarity=${encodeURIComponent(entry.label)}&owned=1&checklist=all`)}<p className="muted collectionStatsFootnote">Une carte compte une seule fois, même si tu possèdes plusieurs variantes ou exemplaires.</p></section>
+          ) : (
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série', entry => category === 'cards' && entry.setId ? `/collection/stats?category=cards&set=${encodeURIComponent(entry.setId)}` : null)}<p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
+          )}
+          {category !== 'graded' && !selectedSetId && (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les éléments associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
           )}
         </div>

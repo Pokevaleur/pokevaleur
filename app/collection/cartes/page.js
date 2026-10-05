@@ -46,6 +46,8 @@ export default function CardChecklistPage() {
   const [companies, setCompanies] = useState([])
   const [query, setQuery] = useState('')
   const [category, setCategory] = useState('')
+  const [rarity, setRarity] = useState('')
+  const [ownedOnly, setOwnedOnly] = useState(false)
   const [checklistFilter, setChecklistFilter] = useState('main')
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
@@ -58,7 +60,13 @@ export default function CardChecklistPage() {
   useEffect(() => {
     let cancelled = false
     async function initialize() {
-      const requestedSetId = new URLSearchParams(window.location.search).get('set') || ''
+      const params = new URLSearchParams(window.location.search)
+      const requestedSetId = params.get('set') || ''
+      const requestedRarity = params.get('rarity') || ''
+      const requestedChecklist = params.get('checklist')
+      setRarity(requestedRarity)
+      setOwnedOnly(params.get('owned') === '1')
+      if (['main', 'promos', 'stamps', 'all'].includes(requestedChecklist)) setChecklistFilter(requestedChecklist)
       setLoading(true)
       const { data: { user: signedInUser }, error: authError } = await supabase.auth.getUser()
       if (cancelled) return
@@ -118,7 +126,7 @@ export default function CardChecklistPage() {
       setCards([])
       setOwned({})
       const { data: cardRows, error: cardError } = await supabase.from('cards')
-        .select('id,collector_number,card_name,card_type,guide_category_label,guide_category_code,mechanic_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
+        .select('id,collector_number,card_name,card_type,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
         .eq('card_set_id', setId).order('guide_order', { ascending: true })
       if (cardError) throw cardError
       if (cancelled) return
@@ -152,14 +160,17 @@ export default function CardChecklistPage() {
     ? cards
     : cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
   const categories = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.guide_category_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
+  const rarities = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.rarity_label?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const visibleCards = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('fr')
     return cardsWithIncludedVariants.filter(card => {
       const matchesQuery = !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
       const matchesCategory = !category || card.guide_category_label === category
-      return matchesQuery && matchesCategory
+      const matchesRarity = !rarity || card.rarity_label?.trim() === rarity
+      const matchesOwned = !ownedOnly || (card.card_print_variants || []).some(variant => isIncludedVariant(variant) && (owned[variant.id] || []).length > 0)
+      return matchesQuery && matchesCategory && matchesRarity && matchesOwned
     })
-  }, [cardsWithIncludedVariants, query, category])
+  }, [cardsWithIncludedVariants, query, category, rarity, ownedOnly, owned, checklistFilter])
 
   const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isIncludedVariant))
   const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
@@ -171,8 +182,28 @@ export default function CardChecklistPage() {
 
   function selectSet(nextSetId) {
     setSetId(nextSetId)
+    setRarity('')
+    setOwnedOnly(false)
     const url = new URL(window.location.href)
     url.searchParams.set('set', nextSetId)
+    url.searchParams.delete('rarity')
+    url.searchParams.delete('owned')
+    window.history.replaceState({}, '', url)
+  }
+
+  function selectRarity(nextRarity) {
+    setRarity(nextRarity)
+    const url = new URL(window.location.href)
+    if (nextRarity) url.searchParams.set('rarity', nextRarity)
+    else url.searchParams.delete('rarity')
+    window.history.replaceState({}, '', url)
+  }
+
+  function selectOwnedOnly(nextOwnedOnly) {
+    setOwnedOnly(nextOwnedOnly)
+    const url = new URL(window.location.href)
+    if (nextOwnedOnly) url.searchParams.set('owned', '1')
+    else url.searchParams.delete('owned')
     window.history.replaceState({}, '', url)
   }
 
@@ -327,6 +358,17 @@ export default function CardChecklistPage() {
               </select>
             </label>
             <label>
+              Rareté
+              <select value={rarity} onChange={event => selectRarity(event.target.value)}>
+                <option value="">Toutes les raretés</option>
+                {rarities.map(value => <option key={value} value={value}>{value}</option>)}
+              </select>
+            </label>
+            <label className={styles.stampToggle}>
+              <input type="checkbox" checked={ownedOnly} onChange={event => selectOwnedOnly(event.target.checked)} />
+              Uniquement possédées
+            </label>
+            <label>
               Type de checklist
               <select value={checklistFilter} onChange={event => setChecklistFilter(event.target.value)} disabled={isCatalogOnlySet}>
                 <option value="main">Cartes et variantes principales</option>
@@ -345,8 +387,9 @@ export default function CardChecklistPage() {
 
           {cardsLoading ? <p className={styles.status}>Chargement des cartes…</p> : (
             <section className={styles.cardGrid} aria-label="Cartes de la série">
+              {!visibleCards.length && <p className={styles.empty}>{ownedOnly ? 'Aucune carte possédée avec ces filtres.' : 'Aucune carte ne correspond aux filtres.'}</p>}
               {visibleCards.map(card => {
-                const cardVariants = (card.card_print_variants || []).filter(isIncludedVariant)
+                const cardVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!ownedOnly || (owned[variant.id] || []).length > 0))
                 return (
                   <article className={styles.card} key={card.id}>
                     <div className={styles.cardTop}>
@@ -360,7 +403,8 @@ export default function CardChecklistPage() {
                       <div className={styles.cardHeading}>
                         <span className={styles.number}>{card.collector_number}</span>
                         <h2>{card.card_name}</h2>
-                        <p className={styles.rarity}>{card.guide_category_label || card.guide_category_code || 'Catégorie à préciser'}</p>
+                        <p className={styles.rarity}>{card.rarity_label || 'Rareté à préciser'}</p>
+                        <small>Catégorie du guide : {card.guide_category_label || card.guide_category_code || 'à préciser'}</small>
                         {card.mechanic_label && <small>{card.mechanic_label}</small>}
                       </div>
                     </div>
