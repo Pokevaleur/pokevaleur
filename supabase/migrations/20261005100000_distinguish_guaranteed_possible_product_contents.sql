@@ -522,7 +522,7 @@ where p.name = 'Pack Récompense Play! Pokémon – Série 4'
 
 
 
--- Official Series Three checklist: record its 163 possible card identities.
+-- Official Series Three checklist: record 155 card identities and eight unnamed basic energy prints.
 with wanted(set_code, collector_number) as (
   values
 ('swsh9', '7'),
@@ -680,13 +680,6 @@ with wanted(set_code, collector_number) as (
 ('sv01', '194'),
 ('sv01', '195'),
 ('sv01', '196'),
-('sve', '1'),
-('sve', '2'),
-('sve', '3'),
-('sve', '4'),
-('sve', '5'),
-('sve', '6'),
-('sve', '7'),
 ('sve', '8')
 ), pool_cards as (
   select distinct c.id as card_id,
@@ -716,5 +709,41 @@ where p.name = 'Pack Récompense Play! Pokémon – Série 3'
     from public.product_contents existing
     where existing.product_id = p.id
       and existing.card_id = pool_cards.card_id
+      and existing.content_role = 'possible'
+  );
+
+
+
+-- Basic Energy cards appear on the official Series Three checklist without collector numbers.
+with energy_names(product_name, item_name) as (
+  values
+('Pack Récompense série 3', 'Énergie Plante (estampille Play! Pokémon)'),
+('Pack Récompense série 3', 'Énergie Feu (estampille Play! Pokémon)'),
+('Pack Récompense série 3', 'Énergie Eau (estampille Play! Pokémon)'),
+('Pack Récompense série 3', 'Énergie Électrique (estampille Play! Pokémon)'),
+('Pack Récompense série 3', 'Énergie Psy (estampille Play! Pokémon)'),
+('Pack Récompense série 3', 'Énergie Combat (estampille Play! Pokémon)'),
+('Pack Récompense série 3', 'Énergie Obscurité (estampille Play! Pokémon)'),
+('Pack Récompense série 3', 'Énergie Métal (estampille Play! Pokémon)')
+)
+insert into public.product_contents (
+  product_id, content_type, item_name, quantity, source_url, source_label, confidence, content_role
+)
+select p.id,
+       'other',
+       e.item_name,
+       1,
+       'https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/checklist/prize_pack_series_3_web_cardlist_en.pdf',
+       'Pokémon — checklist officielle du Pack Récompense série 3',
+       'verified',
+       'possible'
+from public.products p
+cross join energy_names e
+where p.name = e.product_name
+  and not exists (
+    select 1
+    from public.product_contents existing
+    where existing.product_id = p.id
+      and existing.item_name = e.item_name
       and existing.content_role = 'possible'
   );
