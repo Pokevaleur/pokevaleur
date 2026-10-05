@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { calculateCollectionStatistics, hasPurchasePrice } from '../lib/collection-statistics.mjs'
+import { calculateCollectionItemCounts, calculateCollectionStatistics, hasPurchasePrice } from '../lib/collection-statistics.mjs'
 const getValue = item => item.value
 
 test('An unknown purchase price does not invent a profit', () => {
@@ -23,4 +23,25 @@ test('An explicitly free item differs from a missing purchase price', () => {
   assert.equal(free.evolution, null)
   const unknown = calculateCollectionStatistics([{ purchase_price: null, value: 20 }], getValue)
   assert.equal(unknown.difference, null)
+})
+
+
+test('Only catalog-linked sealed products count as sealed; other entries stay in the total', () => {
+  const counts = calculateCollectionItemCounts([
+    { product_id: 'etb', quantity: 2 },
+    { product_id: null, custom_name: 'Objet non rattaché', quantity: 3 },
+    { product_id: 'unknown', quantity: 4 },
+    { product_id: 'card', quantity: 1 },
+  ], [
+    { id: 'etb', category: 'sealed' },
+    { id: 'card', category: 'single' },
+  ])
+  assert.deepEqual(counts, { sealed: 2, other: 8, total: 10 })
+})
+
+test('A catalog sealed category is case and whitespace tolerant, with quantity fallback', () => {
+  const counts = calculateCollectionItemCounts([
+    { product_id: 'etb', quantity: 0 },
+  ], [{ id: 'etb', category: ' Sealed ' }])
+  assert.deepEqual(counts, { sealed: 1, other: 0, total: 1 })
 })
