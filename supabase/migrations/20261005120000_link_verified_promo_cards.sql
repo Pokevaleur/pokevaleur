@@ -1,4 +1,4 @@
--- Link two individually verified promo-card identities to their sealed products.
+-- Link verified promotional-card identities to their sealed products.
 -- Evidence:
 -- * Pokémon Legendary Collection includes Pikachu-EX; Pokémon's card database lists XY174 as Pikachu-EX.
 --   https://www.pokemon.com/us/pokemon-tcg/product-gallery/legendary-collection
@@ -7,6 +7,9 @@
 --   the corresponding XY promo as XY150.
 --   https://www.pokemon.com/uk/pokemon-tcg/product-gallery/shiny-kalos-tin
 --   https://www.pokemon.com/us/play-pokemon/regionals/2017/athens/tcg-juniors
+-- * The French Coffret Némélios contains Némélios XY26.
+--   https://www.pokemon.com/uk/pokemon-tcg/product-gallery/xy-pyroar-box
+--   https://www.pokepedia.fr/Coffret_N%C3%A9m%C3%A9lios_(Carrefour)
 
 do $$
 declare
@@ -34,6 +37,20 @@ begin
   get diagnostics changed_rows = row_count;
   if changed_rows <> 1 then
     raise exception 'Expected one verified Yveltal-EX content row for Shiny Kalos Tin, updated %', changed_rows;
+  end if;
+
+  update public.product_contents
+  set card_id = 'ff3ae004-2d04-4795-8857-a8fc9feb6e76',
+      source_url = 'https://www.pokepedia.fr/Coffret_N%C3%A9m%C3%A9lios_(Carrefour)',
+      source_label = 'Poképédia – Coffret Némélios (Carrefour), promo XY26'
+  where id = '8131e83d-14f5-495e-9340-ee4da16379b9'
+    and card_id is null
+    and item_name = 'Némélios'
+    and content_type = 'promo'
+    and confidence = 'verified';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 1 then
+    raise exception 'Expected one verified Némélios content row for Coffret Némélios, updated %', changed_rows;
   end if;
 end
 $$;
