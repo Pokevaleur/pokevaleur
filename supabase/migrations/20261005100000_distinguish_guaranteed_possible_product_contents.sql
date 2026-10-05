@@ -679,8 +679,7 @@ with wanted(set_code, collector_number) as (
 ('sv01', '191'),
 ('sv01', '194'),
 ('sv01', '195'),
-('sv01', '196'),
-('sve', '8')
+('sv01', '196')
 ), pool_cards as (
   select distinct c.id as card_id,
          c.card_name || ' — ' || cs.set_name || ' ' || c.collector_number || ' (estampille Play! Pokémon)' as item_name
@@ -715,16 +714,16 @@ where p.name = 'Pack Récompense Play! Pokémon – Série 3'
 
 
 -- Basic Energy cards appear on the official Series Three checklist without collector numbers.
-with energy_names(product_name, item_name) as (
+with energy_names(item_name) as (
   values
-('Pack Récompense série 3', 'Énergie Plante (estampille Play! Pokémon)'),
-('Pack Récompense série 3', 'Énergie Feu (estampille Play! Pokémon)'),
-('Pack Récompense série 3', 'Énergie Eau (estampille Play! Pokémon)'),
-('Pack Récompense série 3', 'Énergie Électrique (estampille Play! Pokémon)'),
-('Pack Récompense série 3', 'Énergie Psy (estampille Play! Pokémon)'),
-('Pack Récompense série 3', 'Énergie Combat (estampille Play! Pokémon)'),
-('Pack Récompense série 3', 'Énergie Obscurité (estampille Play! Pokémon)'),
-('Pack Récompense série 3', 'Énergie Métal (estampille Play! Pokémon)')
+('Énergie Plante (estampille Play! Pokémon)'),
+('Énergie Feu (estampille Play! Pokémon)'),
+('Énergie Eau (estampille Play! Pokémon)'),
+('Énergie Électrique (estampille Play! Pokémon)'),
+('Énergie Psy (estampille Play! Pokémon)'),
+('Énergie Combat (estampille Play! Pokémon)'),
+('Énergie Obscurité (estampille Play! Pokémon)'),
+('Énergie Métal (estampille Play! Pokémon)')
 )
 insert into public.product_contents (
   product_id, content_type, item_name, quantity, source_url, source_label, confidence, content_role
@@ -739,7 +738,7 @@ select p.id,
        'possible'
 from public.products p
 cross join energy_names e
-where p.name = e.product_name
+where p.name = 'Pack Récompense Play! Pokémon – Série 3'
   and not exists (
     select 1
     from public.product_contents existing
