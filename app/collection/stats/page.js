@@ -14,7 +14,7 @@ function buildBreakdown(items, products, keyFor) {
   }
   return [...totals.entries()].map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'))
-    .slice(0, 6)
+    
 }
 
 export default function CollectionStatsPage() {
@@ -97,7 +97,7 @@ export default function CollectionStatsPage() {
       products: uniqueProducts.size,
       series: series.size,
       bySeries: buildBreakdown(items, products, (_item, product) => product?.series?.trim()),
-      byCategory: buildBreakdown(items, products, (_item, product) => product?.category?.trim() || product?.product_type?.trim())
+      byCategory: buildBreakdown(items, products, (_item, product) => product?.product_type?.trim() || product?.category?.trim())
     }
   }, [items, products])
 
@@ -136,7 +136,7 @@ export default function CollectionStatsPage() {
       ) : (
         <div className="collectionStatsBreakdowns">
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries)}</section>
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par catégorie</h2></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory)}</section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory)}</section>
         </div>
       )}
     </main>
