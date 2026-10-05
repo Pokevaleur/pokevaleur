@@ -774,11 +774,18 @@ export default function CollectionPage() {
         <a href="/collection/statistiques" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
       </nav>
       <section className="collectionTotals" id="collection-stats" aria-label="Résumé de la collection">
-        <h2>Dans ta collection</h2>
+        <div className="collectionTotalsHead">
+          <div>
+            <span className="collectionStatsEyebrow">En un coup d’œil</span>
+            <h2>Stats collection</h2>
+            <p>Un aperçu simple de tout ce que tu as réuni.</p>
+          </div>
+          <a className="collectionStatsMore" href="/collection/statistiques">Voir la valeur et les statistiques <span aria-hidden="true">→</span></a>
+        </div>
         <div className="collectionTotalGrid">
           <div><strong>{itemCount}</strong><span>exemplaires</span></div>
-          <div><strong>{uniqueProductCount}</strong><span>produits</span></div>
-          <div><strong>{uniqueSeriesCount}</strong><span>séries</span></div>
+          <div><strong>{uniqueProductCount}</strong><span>produits différents</span></div>
+          <div><strong>{uniqueSeriesCount}</strong><span>séries représentées</span></div>
         </div>
       </section>
       <button type="button" className="collectionAddCta" onClick={() => { setShowAddForm(true); setTimeout(() => document.getElementById('ajouter-produit')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0) }}>Ajouter un trésor</button>
