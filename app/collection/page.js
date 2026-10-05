@@ -36,6 +36,7 @@ export default function CollectionPage() {
   const [familyMessage, setFamilyMessage] = useState('')
   const [transferLink, setTransferLink] = useState('')
   const [items, setItems] = useState([])
+  const [collectionCardCopies, setCollectionCardCopies] = useState(null)
   const [form, setForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
   const [editingId, setEditingId] = useState(null)
@@ -146,13 +147,30 @@ export default function CollectionPage() {
     setActiveProfileId(selectedProfile.id)
     if (typeof window !== 'undefined') window.localStorage.setItem(`pokevaleur-collection:${user.id}`, selectedProfile.id)
 
-    const { data, error } = await fetchAllRows(() => supabase
-      .from('collection_items')
-      .select('*')
-      .eq('collection_profile_id', selectedProfile.id)
-      .order('created_at', { ascending: false })
-      .order('id', { ascending: true }))
+    const [itemsResult, cardCopiesResult] = await Promise.all([
+      fetchAllRows(() => supabase
+        .from('collection_items')
+        .select('*')
+        .eq('collection_profile_id', selectedProfile.id)
+        .order('created_at', { ascending: false })
+        .order('id', { ascending: true })),
+      fetchAllRows(() => supabase
+        .from('collection_cards')
+        .select('id,ownership_type')
+        .eq('collection_profile_id', selectedProfile.id)
+        .order('created_at', { ascending: true })
+        .order('id', { ascending: true }))
+    ])
+    const { data, error } = itemsResult
+    const { data: cardCopies, error: cardCopiesError } = cardCopiesResult
     if (!isCurrentRequest()) return
+
+    if (cardCopiesError) {
+      setCollectionCardCopies(null)
+      setMessage('Impossible de charger le total des cartes pour le moment.')
+    } else {
+      setCollectionCardCopies(cardCopies || [])
+    }
 
     if (error) {
       setMessage(error.message)
@@ -230,6 +248,7 @@ export default function CollectionPage() {
     setActiveProfileId(profileId)
     if (user) window.localStorage.setItem(`pokevaleur-collection:${user.id}`, profileId)
     setItems([])
+    setCollectionCardCopies(null)
     setCatalog([])
     setPhotoUrls({})
     setEditingId(null)
@@ -740,12 +759,16 @@ export default function CollectionPage() {
     URL.revokeObjectURL(url)
   }
 
-  const { invested, current, difference, evolution: percent, itemCount, missingPurchaseCount } = calculateCollectionStatistics(items, getCurrentValue)
+  const { invested, current, difference, evolution: percent, missingPurchaseCount } = calculateCollectionStatistics(items, getCurrentValue)
 
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
   const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter)
-  const uniqueProductCount = new Set(items.map(item => item.product_id || normalizeSearch(item.custom_name)).filter(Boolean)).size
-  const uniqueSeriesCount = new Set(items.map(item => catalog.find(product => product.id === item.product_id)?.series).filter(Boolean)).size
+  const sealedItemCount = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
+  const cardCount = collectionCardCopies?.length ?? null
+  const gradedCardCount = collectionCardCopies === null
+    ? null
+    : collectionCardCopies.filter(copy => copy.ownership_type === 'graded').length
+  const totalCollectionCount = cardCount === null ? null : sealedItemCount + cardCount
 
   useEffect(() => { if (hasCollectionSearch) setShowCollectionItems(true) }, [hasCollectionSearch])
 
@@ -777,15 +800,16 @@ export default function CollectionPage() {
         <div className="collectionTotalsHead">
           <div>
             <span className="collectionStatsEyebrow">En un coup d’œil</span>
-            <h2>Stats collection</h2>
-            <p>Un aperçu simple de tout ce que tu as réuni.</p>
+            <h2>Ma collection en chiffres</h2>
+            <p>Scellés et cartes réunis, d’un seul coup d’œil.</p>
           </div>
           <a className="collectionStatsMore" href="/collection/stats">Voir toutes les statistiques <span aria-hidden="true">→</span></a>
         </div>
         <div className="collectionTotalGrid">
-          <div><strong>{itemCount}</strong><span>exemplaires</span></div>
-          <div><strong>{uniqueProductCount}</strong><span>produits différents</span></div>
-          <div><strong>{uniqueSeriesCount}</strong><span>séries représentées</span></div>
+          <div><strong>{totalCollectionCount ?? '—'}</strong><span>éléments au total</span></div>
+          <div><strong>{sealedItemCount}</strong><span>produits scellés</span></div>
+          <div><strong>{cardCount ?? '—'}</strong><span>cartes (gradées incluses)</span></div>
+          <div><strong>{gradedCardCount ?? '—'}</strong><span>cartes gradées</span></div>
         </div>
       </section>
       <button type="button" className="collectionAddCta" onClick={() => { setShowAddForm(true); setTimeout(() => document.getElementById('ajouter-produit')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0) }}>Ajouter un trésor</button>

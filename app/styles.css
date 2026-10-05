@@ -1021,7 +1021,7 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .collectionEuroIcon { width:25px; height:25px; border:2px solid #d6a51e; border-radius:50%; display:inline-grid; place-items:center; font-weight:800; color:#926b08; font-size:15px; }
 .collectionTotals { padding:20px 24px 18px; border:1px solid #d6e3ef; border-radius:16px; background:linear-gradient(135deg,#f7fbff,#e9f5ff); }
 .collectionTotals h2 { margin:0 0 10px; font-size:1.25rem; }
-.collectionTotalGrid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); }
+.collectionTotalGrid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; }
 .collectionTotalGrid div { display:flex; flex-direction:column; align-items:center; gap:1px; border-right:1px solid #d3dfeb; }
 .collectionTotalGrid div:last-child { border-right:0; }
 .collectionTotalGrid strong { color:#1682a1; font-family:Georgia,serif; font-size:2.1rem; line-height:1.05; }
@@ -1041,6 +1041,7 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
  .collectionHeroArtwork { border-radius:16px; }
  .collectionTabs a { min-height:48px; padding:6px 4px; font-size:.9rem; }
  .collectionTotals { padding:15px 14px; }
+ .collectionTotalGrid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
  .collectionTotalGrid strong { font-size:1.75rem; }
  .collectionTotalGrid span { font-size:.82rem; }
  .collectionFilesVisible .collectionFileActions { grid-template-columns:1fr; }
@@ -1305,9 +1306,10 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .collectionStatsMore{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:13px;background:#172b43;color:#fff;font-weight:800;white-space:nowrap}
 .collectionStatsMore span{color:#f4c65e;font-size:1.2rem}
 .collectionTotalGrid{position:relative;z-index:1}
-.collectionTotalGrid>div{padding:17px 18px;border:1px solid rgba(223,213,191,.7);border-radius:16px;background:rgba(255,255,255,.86)}
+.collectionTotalGrid>div{min-width:0;min-height:94px;padding:14px 10px;justify-content:center;text-align:center;border:1px solid rgba(223,213,191,.7);border-radius:16px;background:rgba(255,255,255,.86)}
 .collectionTotalGrid>div:nth-child(2){border-top:3px solid #e8bd54}
 .collectionTotalGrid>div:nth-child(3){border-top:3px solid #a68acb}
+.collectionTotalGrid>div:nth-child(4){border-top:3px solid #70b9b5}
 .collectionTotalGrid strong{font-size:clamp(1.7rem,3vw,2.35rem);color:#172b43}
 .collectionTotalGrid span{font-size:.9rem}
 .valueDashboard{max-width:1200px}
