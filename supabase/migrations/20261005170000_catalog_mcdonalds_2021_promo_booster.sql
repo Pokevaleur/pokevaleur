@@ -35,6 +35,11 @@ BEGIN
   WHERE id = v_set_id
     AND release_date = DATE '2021-02-09';
 
+  IF (SELECT cs.release_date FROM public.card_sets cs WHERE cs.id = v_set_id)
+       IS DISTINCT FROM DATE '2021-04-14' THEN
+    RAISE EXCEPTION 'French McDonald''s 2021 set release date is not 2021-04-14';
+  END IF;
+
   SELECT count(*) INTO v_card_count
   FROM public.cards c
   WHERE c.card_set_id = v_set_id
