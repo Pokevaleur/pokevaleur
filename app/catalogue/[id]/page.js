@@ -44,6 +44,7 @@ export default function ProductDetailPage() {
         .select('id,content_type,item_name,quantity,source_label,source_url,confidence,content_role')
         .eq('product_id', params.id)
         .order('content_type')
+        .order('item_name', { ascending: true })
     ])
 
     setProduct(productData || null)
@@ -156,15 +157,18 @@ export default function ProductDetailPage() {
       {possibleContents.length > 0 && (
         <section className="panel productContentsPanel">
           <h2>Cartes pouvant apparaître</h2>
-          <p className="muted">Ces cartes font partie des possibilités du produit. La présence de chaque carte n’est pas garantie.</p>
-          <div className="productContentsList">
-            {possibleContents.map(item => (
-              <div key={item.id} className="productContentRow">
-                <span>{item.quantity > 1 ? `${item.quantity} × ` : ''}{item.item_name}</span>
-                <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
-              </div>
-            ))}
-          </div>
+          <p className="muted">Le pack contient 6 cartes tirées au hasard parmi cette sélection. Les cartes listées ne sont pas toutes présentes dans chaque pack.</p>
+          <details className="possibleContentsDetails">
+            <summary>Afficher les {possibleContents.length} cartes recensées</summary>
+            <div className="productContentsList">
+              {possibleContents.map(item => (
+                <div key={item.id} className="productContentRow">
+                  <span>{item.quantity > 1 ? `${item.quantity} × ` : ''}{item.item_name}</span>
+                  <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
+                </div>
+              ))}
+            </div>
+          </details>
         </section>
       )}
 
