@@ -10,6 +10,10 @@
 -- * The French Coffret Némélios contains Némélios XY26.
 --   https://www.pokemon.com/uk/pokemon-tcg/product-gallery/xy-pyroar-box
 --   https://www.pokepedia.fr/Coffret_N%C3%A9m%C3%A9lios_(Carrefour)
+-- * The Autumn 2014 Collector Chest contains foil Treecko, Torchic, and Mudkip preview cards.
+--   https://www.codedyellow.com/pokemon-collector-chest-history/
+--   Pokémon's Hoenn Collection page confirms foil cards of the same three Pokémon.
+--   https://www.pokemon.com/us/pokemon-tcg/product-gallery/pokemon-tcg-hoenn-collection/
 
 do $$
 declare
@@ -63,6 +67,48 @@ begin
   get diagnostics changed_rows = row_count;
   if changed_rows <> 1 then
     raise exception 'Expected one verified Xerneas-EX content row for Shiny Kalos Tin, updated %', changed_rows;
+  end if;
+
+  update public.product_contents
+  set card_id = '180d693e-7171-403e-9f91-bfa07753957d',
+      source_url = 'https://www.codedyellow.com/pokemon-collector-chest-history/',
+      source_label = 'Coded Yellow – Autumn 2014 Collector Chest'
+  where id = '007eb612-78d7-4a60-b1ed-057d93fe574d'
+    and card_id is null
+    and item_name = 'Arcko'
+    and content_type = 'promo'
+    and confidence = 'verified';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 1 then
+    raise exception 'Expected one verified Arcko content row for Autumn 2014 Collector Chest, updated %', changed_rows;
+  end if;
+
+  update public.product_contents
+  set card_id = '7948c7e7-8c3a-4e2a-a59b-55fe6cf2adca',
+      source_url = 'https://www.codedyellow.com/pokemon-collector-chest-history/',
+      source_label = 'Coded Yellow – Autumn 2014 Collector Chest'
+  where id = '4e7c5c7f-db03-49f5-abae-6fdba5b40a18'
+    and card_id is null
+    and item_name = 'Poussifeu'
+    and content_type = 'promo'
+    and confidence = 'verified';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 1 then
+    raise exception 'Expected one verified Poussifeu content row for Autumn 2014 Collector Chest, updated %', changed_rows;
+  end if;
+
+  update public.product_contents
+  set card_id = 'ac504737-5940-4bc1-bf5e-21ed89e8a003',
+      source_url = 'https://www.codedyellow.com/pokemon-collector-chest-history/',
+      source_label = 'Coded Yellow – Autumn 2014 Collector Chest'
+  where id = 'd6f3cf1d-6cab-4aea-84a4-3818a4a2300e'
+    and card_id is null
+    and item_name = 'Gobou'
+    and content_type = 'promo'
+    and confidence = 'verified';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 1 then
+    raise exception 'Expected one verified Gobou content row for Autumn 2014 Collector Chest, updated %', changed_rows;
   end if;
 end
 $$;
