@@ -746,3 +746,449 @@ where p.name = 'Pack Récompense Play! Pokémon – Série 3'
       and existing.item_name = e.item_name
       and existing.content_role = 'possible'
   );
+
+
+-- Official Series One checklist: 162 numbered card identities and eight unnumbered Basic Energy prints.
+with wanted(set_code, collector_number) as (
+  values
+('swshp', '111'),
+('swshp', '149'),
+('swshp', '150'),
+('swshp', '151'),
+('swsh1', '14'),
+('swsh1', '25'),
+('swsh1', '34'),
+('swsh1', '56'),
+('swsh1', '58'),
+('swsh1', '64'),
+('swsh1', '117'),
+('swsh1', '138'),
+('swsh1', '139'),
+('swsh1', '147'),
+('swsh1', '148'),
+('swsh1', '156'),
+('swsh1', '158'),
+('swsh1', '159'),
+('swsh1', '162'),
+('swsh1', '163'),
+('swsh1', '164'),
+('swsh1', '169'),
+('swsh1', '170'),
+('swsh1', '171'),
+('swsh1', '179'),
+('swsh1', '180'),
+('swsh1', '183'),
+('swsh1', '186'),
+('swsh2', '19'),
+('swsh2', '109'),
+('swsh2', '113'),
+('swsh2', '156'),
+('swsh2', '165'),
+('swsh2', '171'),
+('swsh2', '174'),
+('swsh3', '13'),
+('swsh3', '19'),
+('swsh3', '20'),
+('swsh3', '36'),
+('swsh3', '78'),
+('swsh3', '83'),
+('swsh3', '104'),
+('swsh3', '111'),
+('swsh3', '116'),
+('swsh3', '117'),
+('swsh3', '150'),
+('swsh3', '157'),
+('swsh3', '159'),
+('swsh3', '160'),
+('swsh3', '172'),
+('swsh3.5', '22'),
+('swsh3.5', '23'),
+('swsh3.5', '49'),
+('swsh4', '25'),
+('swsh4', '43'),
+('swsh4', '44'),
+('swsh4', '76'),
+('swsh4', '131'),
+('swsh4', '140'),
+('swsh4', '141'),
+('swsh4', '157'),
+('swsh4.5', '58'),
+('swsh4.5', '60'),
+('swsh5', '6'),
+('swsh5', '8'),
+('swsh5', '22'),
+('swsh5', '37'),
+('swsh5', '40'),
+('swsh5', '65'),
+('swsh5', '85'),
+('swsh5', '86'),
+('swsh5', '87'),
+('swsh5', '88'),
+('swsh5', '91'),
+('swsh5', '96'),
+('swsh5', '97'),
+('swsh5', '102'),
+('swsh5', '109'),
+('swsh5', '110'),
+('swsh5', '121'),
+('swsh5', '123'),
+('swsh5', '125'),
+('swsh5', '126'),
+('swsh5', '127'),
+('swsh5', '128'),
+('swsh5', '129'),
+('swsh5', '130'),
+('swsh5', '136'),
+('swsh5', '137'),
+('swsh5', '138'),
+('swsh5', '139'),
+('swsh5', '140'),
+('swsh5', '141'),
+('swsh6', '20'),
+('swsh6', '21'),
+('swsh6', '36'),
+('swsh6', '43'),
+('swsh6', '45'),
+('swsh6', '46'),
+('swsh6', '53'),
+('swsh6', '58'),
+('swsh6', '61'),
+('swsh6', '64'),
+('swsh6', '70'),
+('swsh6', '74'),
+('swsh6', '75'),
+('swsh6', '80'),
+('swsh6', '87'),
+('swsh6', '88'),
+('swsh6', '97'),
+('swsh6', '103'),
+('swsh6', '108'),
+('swsh6', '119'),
+('swsh6', '130'),
+('swsh6', '136'),
+('swsh6', '140'),
+('swsh6', '145'),
+('swsh6', '146'),
+('swsh6', '148'),
+('swsh6', '149'),
+('swsh6', '150'),
+('swsh6', '157'),
+('swsh6', '159'),
+('swsh7', '7'),
+('swsh7', '8'),
+('swsh7', '16'),
+('swsh7', '18'),
+('swsh7', '30'),
+('swsh7', '31'),
+('swsh7', '40'),
+('swsh7', '41'),
+('swsh7', '51'),
+('swsh7', '55'),
+('swsh7', '60'),
+('swsh7', '63'),
+('swsh7', '64'),
+('swsh7', '65'),
+('swsh7', '74'),
+('swsh7', '75'),
+('swsh7', '76'),
+('swsh7', '82'),
+('swsh7', '93'),
+('swsh7', '94'),
+('swsh7', '95'),
+('swsh7', '103'),
+('swsh7', '106'),
+('swsh7', '110'),
+('swsh7', '111'),
+('swsh7', '112'),
+('swsh7', '116'),
+('swsh7', '122'),
+('swsh7', '123'),
+('swsh7', '124'),
+('swsh7', '128'),
+('swsh7', '142'),
+('swsh7', '143'),
+('swsh7', '144'),
+('swsh7', '146'),
+('swsh7', '152'),
+('swsh7', '154'),
+('swsh7', '161'),
+('swsh7', '164')
+), pool_cards as (
+  select distinct c.id as card_id,
+         c.card_name || ' — ' || cs.set_name || ' ' || c.collector_number || ' (estampille Play! Pokémon)' as item_name
+  from wanted w
+  join public.card_sets cs on cs.set_code = w.set_code and cs.language = 'FR'
+  join public.cards c on c.card_set_id = cs.id
+    and ltrim(regexp_replace(split_part(c.collector_number, '/', 1), '[^0-9]', '', 'g'), '0') = w.collector_number
+)
+insert into public.product_contents (
+  product_id, content_type, item_name, quantity, source_url, source_label, confidence, card_id, content_role
+)
+select p.id,
+       'other',
+       pool_cards.item_name,
+       1,
+       'https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/checklist/prize_pack_series_1_web_cardlist_en.pdf',
+       'Pokémon — checklist officielle du Pack Récompense série 1',
+       'verified',
+       pool_cards.card_id,
+       'possible'
+from public.products p
+cross join pool_cards
+where p.name = 'Pack Récompense Play! Pokémon – Série 1'
+  and not exists (
+    select 1
+    from public.product_contents existing
+    where existing.product_id = p.id
+      and existing.card_id = pool_cards.card_id
+      and existing.content_role = 'possible'
+  );
+
+-- Basic Energy cards are listed without collector numbers; keep their print identity generic.
+with energy_names(item_name) as (
+  values
+('Énergie Plante (estampille Play! Pokémon)'),
+('Énergie Feu (estampille Play! Pokémon)'),
+('Énergie Eau (estampille Play! Pokémon)'),
+('Énergie Électrique (estampille Play! Pokémon)'),
+('Énergie Psy (estampille Play! Pokémon)'),
+('Énergie Combat (estampille Play! Pokémon)'),
+('Énergie Obscurité (estampille Play! Pokémon)'),
+('Énergie Métal (estampille Play! Pokémon)')
+)
+insert into public.product_contents (
+  product_id, content_type, item_name, quantity, source_url, source_label, confidence, content_role
+)
+select p.id,
+       'other',
+       e.item_name,
+       1,
+       'https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/checklist/prize_pack_series_1_web_cardlist_en.pdf',
+       'Pokémon — checklist officielle du Pack Récompense série 1',
+       'verified',
+       'possible'
+from public.products p
+cross join energy_names e
+where p.name = 'Pack Récompense Play! Pokémon – Série 1'
+  and not exists (
+    select 1
+    from public.product_contents existing
+    where existing.product_id = p.id
+      and existing.item_name = e.item_name
+      and existing.content_role = 'possible'
+  );
+
+
+-- Official Series Two checklist: 146 numbered card identities and eight unnumbered Basic Energy prints.
+with wanted(set_code, collector_number) as (
+  values
+('swshp', '111'),
+('swshp', '149'),
+('swshp', '150'),
+('swshp', '151'),
+('swshp', '195'),
+('swshp', '197'),
+('swsh1', '159'),
+('swsh1', '162'),
+('swsh1', '164'),
+('swsh1', '180'),
+('swsh1', '183'),
+('swsh5', '6'),
+('swsh5', '8'),
+('swsh5', '37'),
+('swsh5', '85'),
+('swsh5', '86'),
+('swsh5', '87'),
+('swsh5', '88'),
+('swsh5', '96'),
+('swsh5', '102'),
+('swsh5', '121'),
+('swsh5', '123'),
+('swsh5', '125'),
+('swsh5', '127'),
+('swsh5', '128'),
+('swsh5', '129'),
+('swsh5', '130'),
+('swsh5', '136'),
+('swsh5', '137'),
+('swsh5', '138'),
+('swsh5', '139'),
+('swsh5', '140'),
+('swsh5', '141'),
+('swsh6', '43'),
+('swsh6', '45'),
+('swsh6', '46'),
+('swsh6', '58'),
+('swsh6', '64'),
+('swsh6', '70'),
+('swsh6', '74'),
+('swsh6', '75'),
+('swsh6', '80'),
+('swsh6', '88'),
+('swsh6', '97'),
+('swsh6', '119'),
+('swsh6', '136'),
+('swsh6', '140'),
+('swsh6', '145'),
+('swsh6', '146'),
+('swsh6', '148'),
+('swsh6', '149'),
+('swsh6', '150'),
+('swsh7', '7'),
+('swsh7', '8'),
+('swsh7', '18'),
+('swsh7', '30'),
+('swsh7', '31'),
+('swsh7', '34'),
+('swsh7', '40'),
+('swsh7', '41'),
+('swsh7', '51'),
+('swsh7', '55'),
+('swsh7', '63'),
+('swsh7', '64'),
+('swsh7', '65'),
+('swsh7', '74'),
+('swsh7', '75'),
+('swsh7', '82'),
+('swsh7', '83'),
+('swsh7', '93'),
+('swsh7', '94'),
+('swsh7', '95'),
+('swsh7', '103'),
+('swsh7', '106'),
+('swsh7', '110'),
+('swsh7', '111'),
+('swsh7', '122'),
+('swsh7', '123'),
+('swsh7', '142'),
+('swsh7', '143'),
+('swsh7', '144'),
+('swsh7', '146'),
+('swsh7', '152'),
+('swsh7', '154'),
+('swsh7', '161'),
+('swsh8', '42'),
+('swsh8', '78'),
+('swsh8', '79'),
+('swsh8', '103'),
+('swsh8', '104'),
+('swsh8', '113'),
+('swsh8', '114'),
+('swsh8', '124'),
+('swsh8', '156'),
+('swsh8', '157'),
+('swsh8', '185'),
+('swsh8', '193'),
+('swsh8', '194'),
+('swsh8', '207'),
+('swsh8', '224'),
+('swsh8', '225'),
+('swsh8', '229'),
+('swsh8', '233'),
+('swsh8', '236'),
+('swsh8', '244'),
+('swsh9', '7'),
+('swsh9', '8'),
+('swsh9', '10'),
+('swsh9', '13'),
+('swsh9', '14'),
+('swsh9', '17'),
+('swsh9', '18'),
+('swsh9', '21'),
+('swsh9', '22'),
+('swsh9', '40'),
+('swsh9', '41'),
+('swsh9', '44'),
+('swsh9', '48'),
+('swsh9', '52'),
+('swsh9', '62'),
+('swsh9', '64'),
+('swsh9', '65'),
+('swsh9', '77'),
+('swsh9', '79'),
+('swsh9', '88'),
+('swsh9', '91'),
+('swsh9', '98'),
+('swsh9', '105'),
+('swsh9', '109'),
+('swsh9', '121'),
+('swsh9', '122'),
+('swsh9', '123'),
+('swsh9', '126'),
+('swsh9', '132'),
+('swsh9', '134'),
+('swsh9', '135'),
+('swsh9', '137'),
+('swsh9', '138'),
+('swsh9', '141'),
+('swsh9', '143'),
+('swsh9', '144'),
+('swsh9', '147'),
+('swsh9', '148'),
+('swsh9', '149'),
+('swsh9', '150'),
+('swsh9', '151')
+), pool_cards as (
+  select distinct c.id as card_id,
+         c.card_name || ' — ' || cs.set_name || ' ' || c.collector_number || ' (estampille Play! Pokémon)' as item_name
+  from wanted w
+  join public.card_sets cs on cs.set_code = w.set_code and cs.language = 'FR'
+  join public.cards c on c.card_set_id = cs.id
+    and ltrim(regexp_replace(split_part(c.collector_number, '/', 1), '[^0-9]', '', 'g'), '0') = w.collector_number
+)
+insert into public.product_contents (
+  product_id, content_type, item_name, quantity, source_url, source_label, confidence, card_id, content_role
+)
+select p.id,
+       'other',
+       pool_cards.item_name,
+       1,
+       'https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/checklist/prize_pack_series_2_web_cardlist_en.pdf',
+       'Pokémon — checklist officielle du Pack Récompense série 2',
+       'verified',
+       pool_cards.card_id,
+       'possible'
+from public.products p
+cross join pool_cards
+where p.name = 'Pack Récompense Play! Pokémon – Série 2'
+  and not exists (
+    select 1
+    from public.product_contents existing
+    where existing.product_id = p.id
+      and existing.card_id = pool_cards.card_id
+      and existing.content_role = 'possible'
+  );
+
+-- Basic Energy cards are listed without collector numbers; keep their print identity generic.
+with energy_names(item_name) as (
+  values
+('Énergie Plante (estampille Play! Pokémon)'),
+('Énergie Feu (estampille Play! Pokémon)'),
+('Énergie Eau (estampille Play! Pokémon)'),
+('Énergie Électrique (estampille Play! Pokémon)'),
+('Énergie Psy (estampille Play! Pokémon)'),
+('Énergie Combat (estampille Play! Pokémon)'),
+('Énergie Obscurité (estampille Play! Pokémon)'),
+('Énergie Métal (estampille Play! Pokémon)')
+)
+insert into public.product_contents (
+  product_id, content_type, item_name, quantity, source_url, source_label, confidence, content_role
+)
+select p.id,
+       'other',
+       e.item_name,
+       1,
+       'https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/checklist/prize_pack_series_2_web_cardlist_en.pdf',
+       'Pokémon — checklist officielle du Pack Récompense série 2',
+       'verified',
+       'possible'
+from public.products p
+cross join energy_names e
+where p.name = 'Pack Récompense Play! Pokémon – Série 2'
+  and not exists (
+    select 1
+    from public.product_contents existing
+    where existing.product_id = p.id
+      and existing.item_name = e.item_name
+      and existing.content_role = 'possible'
+  );
