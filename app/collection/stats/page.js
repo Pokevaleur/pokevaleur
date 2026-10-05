@@ -4,12 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
 
-function buildBreakdown(items, products, keyFor) {
+function buildBreakdown(items, products, keyFor, unlabelled = 'Autres') {
   const byId = new Map(products.map(product => [product.id, product]))
   const totals = new Map()
   for (const item of items) {
     const product = byId.get(item.product_id)
-    const label = keyFor(item, product) || 'Autres'
+    const label = keyFor(item, product) || unlabelled
     totals.set(label, (totals.get(label) || 0) + (Number(item.quantity) || 1))
   }
   return [...totals.entries()].map(([label, count]) => ({ label, count }))
@@ -96,7 +96,7 @@ export default function CollectionStatsPage() {
       copies,
       products: uniqueProducts.size,
       series: series.size,
-      bySeries: buildBreakdown(items, products, (_item, product) => product?.series?.trim()),
+      bySeries: buildBreakdown(items, products, (_item, product) => product?.series?.trim(), 'Série non renseignée'),
       byCategory: buildBreakdown(items, products, (_item, product) => product?.product_type?.trim() || product?.category?.trim())
     }
   }, [items, products])
@@ -106,8 +106,10 @@ export default function CollectionStatsPage() {
 
   const distribution = (entries) => entries.length
     ? <div className="collectionStatsBars">{entries.map(entry => {
-      const width = Math.max(4, Math.round(entry.count / entries[0].count * 100))
-      return <div className="collectionStatsBar" key={entry.label}><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{entry.count}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></div>
+      const share = stats.copies ? entry.count / stats.copies * 100 : 0
+      const width = Math.max(1, Math.round(share * 10) / 10)
+      const shareLabel = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(share)
+      return <div className="collectionStatsBar" key={entry.label}><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{entry.count} · {shareLabel} %</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></div>
     })}</div>
     : <p className="muted">Les données ne sont pas encore suffisantes pour afficher cette répartition.</p>
 
@@ -135,8 +137,8 @@ export default function CollectionStatsPage() {
         <section className="panel collectionStatsEmpty"><h2>Ta collection commence ici</h2><p>Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.</p></section>
       ) : (
         <div className="collectionStatsBreakdowns">
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries)}</section>
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory)}</section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Exemplaires possédés · part du total de tes {stats.copies} exemplaires.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries)}<p className="muted collectionStatsFootnote">Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.</p></section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Nombre d’exemplaires possédés · part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory)}</section>
         </div>
       )}
     </main>
