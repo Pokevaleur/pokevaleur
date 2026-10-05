@@ -135,7 +135,7 @@ export default function CollectionStatsPage() {
       const share = stats.copies ? entry.count / stats.copies * 100 : 0
       const width = Math.max(1, Math.round(share * 10) / 10)
       const shareLabel = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(share)
-      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{entry.count} · {shareLabel} %</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
+      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{entry.count} / {stats.copies} · {shareLabel} %</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
       if (!detailsByGroup) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
 
       const details = detailsByGroup[entry.label] || []
@@ -156,7 +156,7 @@ export default function CollectionStatsPage() {
                     {detail.name}
                     {detail.type && <small style={{ display: 'block', marginTop: 3, color: '#65758b' }}>{detail.type}</small>}
                   </span>
-                  <strong style={{ flex: '0 0 auto' }}>× {detail.count}</strong>
+                  <strong style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>{detail.count} / {entry.count} · {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(entry.count ? detail.count / entry.count * 100 : 0)} %</strong>
                 </li>
               ))}
             </ul>
