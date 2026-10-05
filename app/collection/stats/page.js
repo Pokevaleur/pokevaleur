@@ -250,7 +250,7 @@ export default function CollectionStatsPage() {
             return [...variantsBySet.values()].map(entry => ({
               label: entry.label,
               count: entry.owned.size,
-              total: entry.total || entry.owned.size
+              total: entry.total || null
             })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'))
           })()
         : buildBreakdown(holdings, seriesFor, 'Série non renseignée'),
@@ -272,11 +272,15 @@ export default function CollectionStatsPage() {
 
   const distribution = (entries, detailsByGroup = null, detailLabel = 'groupe') => entries.length
     ? <div className="collectionStatsBars">{entries.map(entry => {
-      const denominator = entry.total ?? stats.copies
+      const hasDenominator = entry.total === undefined || entry.total !== null
+      const denominator = hasDenominator ? entry.total ?? stats.copies : 0
       const share = denominator ? entry.count / denominator * 100 : 0
-      const width = Math.max(1, Math.round(share * 10) / 10)
+      const width = denominator ? Math.max(1, Math.round(share * 10) / 10) : 1
       const shareLabel = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(share)
-      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{entry.count} / {denominator} · {shareLabel} %</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
+      const ratioLabel = denominator
+        ? `${entry.count} / ${denominator} · ${shareLabel} %`
+        : `${entry.count} variantes · total du checklist indisponible`
+      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{ratioLabel}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
       if (!detailsByGroup) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
 
       const details = detailsByGroup[entry.label] || []
@@ -330,7 +334,7 @@ export default function CollectionStatsPage() {
         <section className="panel collectionStatsEmpty"><h2>{category === 'all' ? 'Ta collection commence ici' : 'Aucun élément dans cette rubrique'}</h2><p>{category === 'all' ? 'Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.' : <>Cette rubrique est vide dans {profileName}. <a href="/collection/stats">Voir toutes les statistiques</a></>}</p></section>
       ) : (
         <div className={category === 'graded' ? 'collectionStatsBreakdowns collectionStatsBreakdownsSingle' : 'collectionStatsBreakdowns'}>
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.</p></section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
           {category !== 'graded' && (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les éléments associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
           )}
