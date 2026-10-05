@@ -158,6 +158,9 @@ export default function ProductDetailPage() {
         <section className="panel productContentsPanel">
           <h2>Cartes pouvant apparaître</h2>
           <p className="muted">Le pack contient 6 cartes tirées au hasard parmi cette sélection. Les cartes listées ne sont pas toutes présentes dans chaque pack.</p>
+          {possibleContents[0]?.source_url && (
+            <p><a className="detailLink" href={possibleContents[0].source_url} target="_blank" rel="noreferrer">Consulter la checklist source →</a></p>
+          )}
           <details className="possibleContentsDetails">
             <summary>Afficher les {possibleContents.length} cartes recensées</summary>
             <div className="productContentsList">
