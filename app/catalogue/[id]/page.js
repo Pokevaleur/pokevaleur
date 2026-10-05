@@ -41,7 +41,7 @@ export default function ProductDetailPage() {
         .order('observed_at', { ascending: true }),
       supabase
         .from('product_contents')
-        .select('id,content_type,item_name,quantity,source_label,source_url,confidence')
+        .select('id,content_type,item_name,quantity,source_label,source_url,confidence,content_role')
         .eq('product_id', params.id)
         .order('content_type')
     ])
@@ -59,6 +59,9 @@ export default function ProductDetailPage() {
   if (!product) {
     return <main><section className="panel"><h1>Produit introuvable</h1></section></main>
   }
+
+  const guaranteedContents = contents.filter(item => (item.content_role || 'guaranteed') === 'guaranteed')
+  const possibleContents = contents.filter(item => item.content_role === 'possible')
 
   const confirmedSales = history.filter(item => (item.observation_type || 'confirmed_sale') === 'confirmed_sale')
   const observedListings = history.filter(item => item.observation_type === 'observed_listing')
@@ -136,13 +139,28 @@ export default function ProductDetailPage() {
         </div>
       </section>
 
-      {contents.length > 0 && (
+      {guaranteedContents.length > 0 && (
         <section className="panel productContentsPanel">
-          <h2>Contenu du coffret</h2>
+          <h2>Contenu garanti</h2>
           <div className="productContentsList">
-            {contents.map(item => (
+            {guaranteedContents.map(item => (
               <div key={item.id} className="productContentRow">
-                <span>{item.quantity} × {item.item_name}</span>
+                <span>{item.quantity > 1 ? `${item.quantity} × ` : ''}{item.item_name}</span>
+                <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
+
+      {possibleContents.length > 0 && (
+        <section className="panel productContentsPanel">
+          <h2>Cartes pouvant apparaître</h2>
+          <p className="muted">Ces cartes font partie des possibilités du produit. La présence de chaque carte n’est pas garantie.</p>
+          <div className="productContentsList">
+            {possibleContents.map(item => (
+              <div key={item.id} className="productContentRow">
+                <span>{item.quantity > 1 ? `${item.quantity} × ` : ''}{item.item_name}</span>
                 <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
               </div>
             ))}
