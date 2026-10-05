@@ -22,6 +22,12 @@ export default function CollectionStatsPage() {
   const [items, setItems] = useState([])
   const [products, setProducts] = useState([])
   const [cardCopies, setCardCopies] = useState([])
+  const [category, setCategory] = useState('all')
+
+  useEffect(() => {
+    const requested = new URLSearchParams(window.location.search).get('category')
+    if (['sealed', 'cards', 'graded'].includes(requested)) setCategory(requested)
+  }, [])
 
   useEffect(() => {
     let active = true
@@ -33,7 +39,7 @@ export default function CollectionStatsPage() {
         const { data: { user }, error: authError } = await supabase.auth.getUser()
         if (authError) throw authError
         if (!user) {
-          window.location.href = '/login?next=%2Fcollection%2Fstats'
+          window.location.href = '/login?next=' + encodeURIComponent(window.location.pathname + window.location.search)
           return
         }
 
@@ -132,10 +138,7 @@ export default function CollectionStatsPage() {
 
   const stats = useMemo(() => {
     const productById = new Map(products.map(product => [product.id, product]))
-    const sealedCopies = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
-    const cards = cardCopies.length
-    const gradedCards = cardCopies.filter(copy => copy.ownership_type === 'graded').length
-    const holdings = [
+    const allHoldings = [
       ...items.map(item => ({
         kind: 'sealed',
         item,
@@ -144,7 +147,14 @@ export default function CollectionStatsPage() {
       })),
       ...cardCopies.map(record => ({ kind: 'card', record, quantity: 1 }))
     ]
-    const copies = sealedCopies + cards
+    const holdings = allHoldings.filter(holding => category === 'all'
+      || (category === 'sealed' && holding.kind === 'sealed')
+      || (category === 'cards' && holding.kind === 'card')
+      || (category === 'graded' && holding.kind === 'card' && holding.record.ownership_type === 'graded'))
+    const sealedCopies = holdings.filter(holding => holding.kind === 'sealed').reduce((sum, holding) => sum + holding.quantity, 0)
+    const cards = holdings.filter(holding => holding.kind === 'card').length
+    const gradedCards = holdings.filter(holding => holding.kind === 'card' && holding.record.ownership_type === 'graded').length
+    const copies = holdings.reduce((sum, holding) => sum + holding.quantity, 0)
     const seriesFor = holding => holding.kind === 'card'
       ? holding.record.set?.set_name?.trim()
       : holding.product?.series?.trim()
@@ -199,7 +209,16 @@ export default function CollectionStatsPage() {
       bySeries: buildBreakdown(holdings, seriesFor, 'Série non renseignée'),
       byCategory: buildBreakdown(holdings, typeFor)
     }
-  }, [items, products, cardCopies])
+  }, [items, products, cardCopies, category])
+
+  const categoryLabel = category === 'sealed' ? 'Produits scellés' : category === 'cards' ? 'Cartes' : category === 'graded' ? 'Cartes gradées' : ''
+  const kpis = category === 'all'
+    ? [['Éléments au total', stats.copies], ['Produits scellés', stats.sealedCopies], ['Cartes (gradées incluses)', stats.cards], ['Cartes gradées', stats.gradedCards]]
+    : category === 'sealed'
+      ? [['Produits scellés', stats.sealedCopies], ['Types de produits', stats.byCategory.length], ['Séries concernées', stats.bySeries.length]]
+      : category === 'cards'
+        ? [['Cartes', stats.cards], ['Cartes non gradées', stats.cards - stats.gradedCards], ['Cartes gradées', stats.gradedCards], ['Séries concernées', stats.bySeries.length]]
+        : [['Cartes gradées', stats.gradedCards], ['Séries concernées', stats.bySeries.length]]
 
   if (loading) return <main className="collectionStatsPage"><section className="collectionStatsHero"><p role="status">Chargement de tes statistiques…</p></section></main>
   if (loadError) return <main className="collectionStatsPage"><section className="collectionStatsHero"><span className="collectionStatsEyebrow">En un coup d’œil</span><h1>Stats collection</h1><p role="alert">{loadError}</p><button type="button" className="btn" onClick={() => window.location.reload()}>Réessayer</button></section></main>
@@ -249,24 +268,24 @@ export default function CollectionStatsPage() {
       </nav>
 
       <section className="collectionStatsHero">
-        <span className="collectionStatsEyebrow">En un coup d’œil</span>
-        <h1>Stats collection</h1>
-        <p>Un aperçu simple de tout ce que tu as réuni dans {profileName}.</p>
+        <span className="collectionStatsEyebrow">{category === 'all' ? 'En un coup d’œil' : 'Statistiques ciblées'}</span>
+        <h1>{category === 'all' ? 'Stats collection' : categoryLabel}</h1>
+        <p>{category === 'all' ? <>Un aperçu simple de tout ce que tu as réuni dans {profileName}.</> : <>Répartition de tes {categoryLabel.toLocaleLowerCase('fr')} dans {profileName}.</>}</p>
+        {category !== 'all' && <a className="collectionStatsScopeReset" href="/collection/stats">Toutes les statistiques</a>}
       </section>
 
       <section className="stats collectionStatsKpis" aria-label="Chiffres clés">
-        <div><span>Éléments au total</span><strong>{stats.copies}</strong></div>
-        <div><span>Produits scellés</span><strong>{stats.sealedCopies}</strong></div>
-        <div><span>Cartes (gradées incluses)</span><strong>{stats.cards}</strong></div>
-        <div><span>Cartes gradées</span><strong>{stats.gradedCards}</strong></div>
+        {kpis.map(([label, count]) => <div key={label}><span>{label}</span><strong>{count}</strong></div>)}
       </section>
 
-      {items.length === 0 && cardCopies.length === 0 ? (
-        <section className="panel collectionStatsEmpty"><h2>Ta collection commence ici</h2><p>Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.</p></section>
+      {stats.copies === 0 ? (
+        <section className="panel collectionStatsEmpty"><h2>{category === 'all' ? 'Ta collection commence ici' : 'Aucun élément dans cette rubrique'}</h2><p>{category === 'all' ? 'Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.' : <>Cette rubrique est vide dans {profileName}. <a href="/collection/stats">Voir toutes les statistiques</a></>}</p></section>
       ) : (
-        <div className="collectionStatsBreakdowns">
+        <div className={category === 'graded' ? 'collectionStatsBreakdowns collectionStatsBreakdownsSingle' : 'collectionStatsBreakdowns'}>
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. Part de tes {stats.copies} éléments au total.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.</p></section>
+          {category !== 'graded' && (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les éléments associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
+          )}
         </div>
       )}
     </main>
