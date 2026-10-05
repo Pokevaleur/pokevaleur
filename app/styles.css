@@ -1294,3 +1294,72 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
   .catalogPage:after{right:-65px;bottom:-8px}
   .catalogCrystalIcon{flex-basis:42px;width:42px;height:42px}
 }
+
+/* Collection statistics and value overview */
+.collectionTotals{position:relative;overflow:hidden;margin:24px 0;padding:clamp(20px,3vw,30px);border:1px solid #e9dfc6;border-radius:22px;background:linear-gradient(115deg,#fff 0%,#fffdf8 65%,#fff5dc 100%);box-shadow:0 12px 28px rgba(39,46,61,.07)}
+.collectionTotals:after{content:"";position:absolute;right:-24px;top:-32px;width:176px;height:208px;pointer-events:none;opacity:.55;background:linear-gradient(145deg,rgba(247,194,83,.32),rgba(231,206,247,.14));clip-path:polygon(50% 0,100% 33%,72% 100%,24% 80%,0 32%)}
+.collectionTotalsHead{position:relative;z-index:1;display:flex;align-items:center;justify-content:space-between;gap:20px;margin-bottom:20px}
+.collectionStatsEyebrow{font-size:.75rem;font-weight:800;letter-spacing:.11em;text-transform:uppercase;color:#946d24}
+.collectionTotalsHead h2{margin:5px 0 3px;font-size:clamp(1.35rem,2.2vw,1.8rem)}
+.collectionTotalsHead p{margin:0;color:#65758b}
+.collectionStatsMore{display:inline-flex;align-items:center;gap:10px;padding:12px 16px;border-radius:13px;background:#172b43;color:#fff;font-weight:800;white-space:nowrap}
+.collectionStatsMore span{color:#f4c65e;font-size:1.2rem}
+.collectionTotalGrid{position:relative;z-index:1}
+.collectionTotalGrid>div{padding:17px 18px;border:1px solid rgba(223,213,191,.7);border-radius:16px;background:rgba(255,255,255,.86)}
+.collectionTotalGrid>div:nth-child(2){border-top:3px solid #e8bd54}
+.collectionTotalGrid>div:nth-child(3){border-top:3px solid #a68acb}
+.collectionTotalGrid strong{font-size:clamp(1.7rem,3vw,2.35rem);color:#172b43}
+.collectionTotalGrid span{font-size:.9rem}
+.valueDashboard{max-width:1200px}
+.valuePageTabs{margin:2px 0 22px}
+.valuePageTabs a{padding:12px 16px}
+.valuePageTabs a.active{color:#18334d;background:#fff8e6;box-shadow:inset 0 -3px #e2b64e}
+.valueHero{position:relative;overflow:hidden;padding:clamp(25px,4vw,40px);border:1px solid #e7dfd0;border-radius:24px;background:linear-gradient(115deg,#fff 0%,#fffdf9 66%,#f5edff 100%);box-shadow:0 12px 28px rgba(39,46,61,.07)}
+.valueHero:after{content:"€";position:absolute;right:clamp(24px,7vw,90px);top:50%;transform:translateY(-50%) rotate(-9deg);font-size:clamp(5rem,11vw,9rem);line-height:1;font-weight:900;color:rgba(212,169,74,.12);pointer-events:none}
+.valueHero>*{position:relative;z-index:1}
+.valueHero h1{font-size:clamp(2rem,4vw,3.2rem);margin:10px 0}
+.valueHero p{max-width:58ch;margin:0}
+.valueKpiGrid{margin:22px 0;gap:14px}
+.valueKpiGrid>div{position:relative;overflow:hidden;border:1px solid #e8e2d7;box-shadow:0 8px 20px rgba(28,44,62,.055)}
+.valueKpiGrid>div:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#efc85a,#d7b4dd)}
+.valueKpiGrid>div:nth-child(2):before{background:linear-gradient(#76b99a,#bddfae)}
+.valueKpiGrid>div:nth-child(3):before{background:linear-gradient(#d7a658,#f0cc74)}
+.valueKpiGrid>div:nth-child(4):before{background:linear-gradient(#9d87c9,#c9b8e4)}
+.valueKpiGrid>div>strong{display:block;font-size:clamp(1.35rem,2.4vw,2rem);line-height:1.2}
+.valueKpiGrid>div>strong small{display:block;margin-top:6px;font-size:.8rem;font-weight:700}
+.statsTrendPanel{border:1px solid #e7dfd0;box-shadow:0 12px 26px rgba(39,46,61,.06)}
+.statsTrendPanel .statsSectionHead{align-items:flex-start}
+.statsTrendPanel .statsSectionHead>strong{padding:10px 14px;border-radius:12px;background:#fff7e4;color:#715313}
+.statsDashboardGrid>.panel{border:1px solid #e8e2d7;box-shadow:0 9px 22px rgba(28,44,62,.05)}
+.statsDashboardGrid h2{letter-spacing:-.02em}
+.statsBars>div i{background:#f0edf5}
+.statsBars>div i b{background:linear-gradient(90deg,#d6b052,#ad91cc)}
+.statsRanking a{border-radius:12px}
+@media(max-width:700px){
+ .collectionTotalsHead{align-items:flex-start;flex-direction:column}
+ .collectionStatsMore{width:100%;justify-content:space-between}
+ .valueHero:after{right:14px;top:25px;transform:none}
+ .valueHero h1,.valueHero p{max-width:75%}
+ .valueKpiGrid{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .valuePageTabs{overflow:auto}
+ .valuePageTabs a{white-space:nowrap}
+}
+
+/* Ready for the collection statistics preview */
+
+/* Crystal backdrop continuation: collection overview and value dashboard */
+.collectionTotals{background:radial-gradient(ellipse at 91% 45%,rgba(176,142,211,.18),transparent 17rem),radial-gradient(ellipse at 100% 100%,rgba(232,185,77,.16),transparent 19rem),linear-gradient(125deg,#fffdf8 0%,#fff 54%,#fbf5ff 100%)}
+.collectionTotals:before{content:"";position:absolute;right:154px;top:-22px;width:142px;height:198px;z-index:0;pointer-events:none;opacity:.62;background:linear-gradient(138deg,rgba(94,188,190,.34) 0 29%,rgba(228,214,247,.38) 29% 55%,rgba(234,190,85,.29) 55% 78%,rgba(255,255,255,.30) 78%);clip-path:polygon(28% 0,76% 6%,100% 42%,73% 100%,22% 85%,0 37%)}
+.collectionTotals:after{right:-12px;top:-28px;width:162px;height:220px;opacity:.72;background:linear-gradient(37deg,rgba(173,140,210,.38) 0 28%,rgba(255,255,255,.24) 28% 48%,rgba(238,190,77,.36) 48% 70%,rgba(98,187,183,.25) 70%);clip-path:polygon(31% 0,100% 20%,82% 61%,100% 78%,48% 100%,7% 65%,0 27%)}
+.valueDashboard{position:relative;isolation:isolate}
+.valueDashboard:before,.valueDashboard:after{content:"";position:absolute;z-index:-1;pointer-events:none;width:clamp(120px,18vw,210px);height:420px;opacity:.6;filter:drop-shadow(0 12px 18px rgba(64,54,97,.05))}
+.valueDashboard:before{top:170px;left:-52px;background:linear-gradient(145deg,rgba(99,190,190,.16) 0 24%,rgba(229,216,247,.22) 24% 50%,rgba(238,190,81,.16) 50% 72%,rgba(255,255,255,.15) 72%);clip-path:polygon(0 8%,83% 0,100% 32%,73% 46%,91% 72%,38% 100%,14% 69%,28% 43%)}
+.valueDashboard:after{top:295px;right:-58px;background:linear-gradient(35deg,rgba(173,140,210,.19) 0 27%,rgba(255,255,255,.12) 27% 47%,rgba(87,185,183,.17) 47% 72%,rgba(238,190,81,.18) 72%);clip-path:polygon(21% 0,100% 12%,81% 39%,100% 63%,69% 83%,86% 96%,35% 100%,0 69%,22% 45%)}
+.valueDashboard>nav,.valueDashboard>section{position:relative;z-index:1}
+.valueHero{background:radial-gradient(ellipse at 89% 52%,rgba(169,139,203,.18),transparent 15rem),radial-gradient(ellipse at 100% 0%,rgba(237,192,83,.21),transparent 17rem),linear-gradient(120deg,#fffefa 0%,#fff 52%,#f8f1ff 100%)}
+.valueHero:before{content:"";position:absolute;right:clamp(65px,12vw,150px);top:-40px;width:210px;height:205px;z-index:0;pointer-events:none;opacity:.68;background:linear-gradient(145deg,rgba(93,184,188,.38) 0 24%,rgba(244,235,255,.30) 24% 43%,rgba(172,139,205,.32) 43% 68%,rgba(237,190,76,.34) 68%);clip-path:polygon(30% 0,75% 10%,100% 48%,69% 100%,19% 82%,0 37%)}
+.valueHero:after{z-index:0;color:rgba(194,151,57,.16)}
+.valueHero>*{z-index:1}
+.statsTrendPanel{background:radial-gradient(ellipse at 99% 0%,rgba(169,139,203,.09),transparent 15rem),#fff}
+.statsDashboardGrid>.panel{background:radial-gradient(ellipse at 100% 0%,rgba(235,193,88,.07),transparent 13rem),#fff}
+@media(max-width:700px){.valueDashboard:before{left:-82px;width:125px;opacity:.42}.valueDashboard:after{right:-82px;width:125px;opacity:.42}.valueHero:before{right:44px;width:132px;height:155px;opacity:.5}}
