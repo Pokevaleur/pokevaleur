@@ -3,10 +3,10 @@
 -- * Pokémon Legendary Collection includes Pikachu-EX; Pokémon's card database lists XY174 as Pikachu-EX.
 --   https://www.pokemon.com/us/pokemon-tcg/product-gallery/legendary-collection
 --   https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xyp/XY174/
--- * Pokémon's Shiny Kalos Tin includes a special foil Shiny Yveltal-EX; Pokémon's tournament deck database records
---   the corresponding XY promo as XY150.
+-- * Pokémon's Shiny Kalos Tin includes special foil Xerneas-EX and Yveltal-EX cards; Pokémon's tournament deck database
+--   identifies the corresponding XY promos as XY149 and XY150.
 --   https://www.pokemon.com/uk/pokemon-tcg/product-gallery/shiny-kalos-tin
---   https://www.pokemon.com/us/play-pokemon/regionals/2017/athens/tcg-juniors
+--   https://www.pokemon.com/us/play-pokemon/internationals/2017/oceania/tcg-juniors
 -- * The French Coffret Némélios contains Némélios XY26.
 --   https://www.pokemon.com/uk/pokemon-tcg/product-gallery/xy-pyroar-box
 --   https://www.pokepedia.fr/Coffret_N%C3%A9m%C3%A9lios_(Carrefour)
@@ -51,6 +51,18 @@ begin
   get diagnostics changed_rows = row_count;
   if changed_rows <> 1 then
     raise exception 'Expected one verified Némélios content row for Coffret Némélios, updated %', changed_rows;
+  end if;
+
+  update public.product_contents
+  set card_id = 'c634d84d-b57d-4f7e-b03c-b0f6b013db63'
+  where id = '2aa8351b-48c2-40de-a6fc-23ab077fba5f'
+    and card_id is null
+    and item_name = 'Xerneas-EX'
+    and content_type = 'promo'
+    and confidence = 'verified';
+  get diagnostics changed_rows = row_count;
+  if changed_rows <> 1 then
+    raise exception 'Expected one verified Xerneas-EX content row for Shiny Kalos Tin, updated %', changed_rows;
   end if;
 end
 $$;
