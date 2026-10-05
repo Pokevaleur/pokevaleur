@@ -1378,11 +1378,12 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .collectionStatsHero>*{position:relative;z-index:1}
 .collectionStatsHero h1{margin:9px 0;font-size:clamp(2rem,4vw,3rem);color:#172b43}
 .collectionStatsHero p{max-width:58ch;margin:0;color:#65758b;line-height:1.55}
-.collectionStatsKpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 22px}
+.collectionStatsKpis{grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin:0 0 22px}
 .collectionStatsKpis>div{position:relative;overflow:hidden;border:1px solid #e8e2d7;box-shadow:0 8px 20px rgba(28,44,62,.055)}
 .collectionStatsKpis>div:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#e7bf55,#d5b5df)}
 .collectionStatsKpis>div:nth-child(2):before{background:linear-gradient(#6dbbb8,#b7dfd5)}
 .collectionStatsKpis>div:nth-child(3):before{background:linear-gradient(#9d87c9,#d0c0e5)}
+.collectionStatsKpis>div:nth-child(4):before{background:linear-gradient(#d7a658,#70b9b5)}
 .collectionStatsKpis>div>strong{display:block;font-size:clamp(1.7rem,3vw,2.5rem);line-height:1.15;color:#172b43}
 .collectionStatsBreakdowns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
 .collectionStatsBreakdown{border:1px solid #e8e2d7;background:radial-gradient(ellipse at 100% 0%,rgba(174,142,209,.08),transparent 14rem),rgba(255,255,255,.94);box-shadow:0 9px 22px rgba(28,44,62,.05)}
@@ -1397,7 +1398,7 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .collectionStatsTrack i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d6b052,#ad91cc 62%,#70bbb7)}
 .collectionStatsEmpty{border:1px solid #e8e2d7;background:rgba(255,255,255,.92)}
 .collectionStatsEmpty h2{margin-top:0}
-@media(max-width:700px){.collectionStatsPage:before{left:-82px;width:130px;opacity:.35}.collectionStatsPage:after{right:-88px;width:130px;opacity:.34}.collectionStatsHero:after{right:14px;top:16px;transform:none}.collectionStatsHero h1,.collectionStatsHero p{max-width:74%}.collectionStatsKpis{grid-template-columns:1fr}.collectionStatsBreakdowns{grid-template-columns:1fr}.collectionStatsPage .valuePageTabs{overflow:auto}.collectionStatsPage .valuePageTabs a{white-space:nowrap}}
+@media(max-width:700px){.collectionStatsPage:before{left:-82px;width:130px;opacity:.35}.collectionStatsPage:after{right:-88px;width:130px;opacity:.34}.collectionStatsHero:after{right:14px;top:16px;transform:none}.collectionStatsHero h1,.collectionStatsHero p{max-width:74%}.collectionStatsKpis{grid-template-columns:repeat(2,minmax(0,1fr))}.collectionStatsBreakdowns{grid-template-columns:1fr}.collectionStatsPage .valuePageTabs{overflow:auto}.collectionStatsPage .valuePageTabs a{white-space:nowrap}}
 
 
 /* Compact mobile layout for the dedicated collection stats view */
@@ -1411,7 +1412,7 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
   .collectionStatsHero h1{max-width:100%;margin:5px 0 6px;font-size:1.72rem;line-height:1.08}
   .collectionStatsHero p{max-width:100%;font-size:.95rem;line-height:1.35}
   .collectionStatsHero:after{top:8px;right:12px;transform:none;font-size:3.5rem;opacity:.7}
-  .collectionStatsKpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin:0 0 14px}
+  .collectionStatsKpis{grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:0 0 14px}
   .collectionStatsKpis>div{min-width:0;padding:12px 9px 11px;border-radius:15px}
   .collectionStatsKpis>div>span{min-height:2.3em;margin-bottom:5px;font-size:.72rem;line-height:1.2}
   .collectionStatsKpis>div>strong{font-size:1.38rem;line-height:1.05;overflow-wrap:anywhere}

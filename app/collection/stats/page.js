@@ -4,17 +4,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
 
-function buildBreakdown(items, products, keyFor, unlabelled = 'Autres') {
-  const byId = new Map(products.map(product => [product.id, product]))
+function buildBreakdown(holdings, groupFor, unlabelled = 'Autres') {
   const totals = new Map()
-  for (const item of items) {
-    const product = byId.get(item.product_id)
-    const label = keyFor(item, product) || unlabelled
-    totals.set(label, (totals.get(label) || 0) + (Number(item.quantity) || 1))
+  for (const holding of holdings) {
+    const label = groupFor(holding) || unlabelled
+    totals.set(label, (totals.get(label) || 0) + holding.quantity)
   }
   return [...totals.entries()].map(([label, count]) => ({ label, count }))
     .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'))
-    
 }
 
 export default function CollectionStatsPage() {
@@ -24,6 +21,7 @@ export default function CollectionStatsPage() {
   const [profileName, setProfileName] = useState('Ma collection')
   const [items, setItems] = useState([])
   const [products, setProducts] = useState([])
+  const [cardCopies, setCardCopies] = useState([])
 
   useEffect(() => {
     let active = true
@@ -69,10 +67,58 @@ export default function CollectionStatsPage() {
           catalog.push(...(data || []))
         }
 
+        const { data: copies, error: copiesError } = await fetchAllRows(() => supabase
+          .from('collection_cards')
+          .select('id,card_print_variant_id,ownership_type,grade,grade_label')
+          .eq('collection_profile_id', profile.id)
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true }))
+        if (copiesError) throw copiesError
+
+        const variantIds = [...new Set((copies || []).map(copy => copy.card_print_variant_id).filter(Boolean))]
+        const variants = []
+        for (let offset = 0; offset < variantIds.length; offset += 100) {
+          const { data, error } = await supabase.from('card_print_variants')
+            .select('id,card_id,variant_key,variant_label')
+            .in('id', variantIds.slice(offset, offset + 100))
+          if (error) throw error
+          variants.push(...(data || []))
+        }
+
+        const cardIds = [...new Set(variants.map(variant => variant.card_id).filter(Boolean))]
+        const cards = []
+        for (let offset = 0; offset < cardIds.length; offset += 100) {
+          const { data, error } = await supabase.from('cards')
+            .select('id,card_set_id,collector_number,card_name,card_type,guide_category_label')
+            .in('id', cardIds.slice(offset, offset + 100))
+          if (error) throw error
+          cards.push(...(data || []))
+        }
+
+        const setIds = [...new Set(cards.map(card => card.card_set_id).filter(Boolean))]
+        const sets = []
+        for (let offset = 0; offset < setIds.length; offset += 100) {
+          const { data, error } = await supabase.from('card_sets')
+            .select('id,series_name,set_name')
+            .in('id', setIds.slice(offset, offset + 100))
+          if (error) throw error
+          sets.push(...(data || []))
+        }
+
+        const variantById = new Map(variants.map(variant => [variant.id, variant]))
+        const cardById = new Map(cards.map(card => [card.id, card]))
+        const setById = new Map(sets.map(set => [set.id, set]))
+        const inventoryCards = (copies || []).map(copy => {
+          const variant = variantById.get(copy.card_print_variant_id)
+          const card = cardById.get(variant?.card_id)
+          return { ...copy, variant, card, set: setById.get(card?.card_set_id) }
+        })
+
         if (!active) return
         setProfileName(profile.display_name || 'Ma collection')
         setItems(rows || [])
         setProducts(catalog)
+        setCardCopies(inventoryCards)
       } catch {
         if (active) setLoadError('Impossible de charger les statistiques. Réessaie dans un instant.')
       } finally {
@@ -86,46 +132,74 @@ export default function CollectionStatsPage() {
 
   const stats = useMemo(() => {
     const productById = new Map(products.map(product => [product.id, product]))
-    const copies = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
-    const uniqueProducts = new Set(items.map(item => item.product_id
-      ? `product:${item.product_id}`
-      : `custom:${(item.custom_name || '').trim().toLocaleLowerCase('fr')}`).filter(key => !key.endsWith(':')))
-    const series = new Set(items.map(item => productById.get(item.product_id)?.series?.trim()).filter(Boolean))
+    const sealedCopies = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
+    const cards = cardCopies.length
+    const gradedCards = cardCopies.filter(copy => copy.ownership_type === 'graded').length
+    const holdings = [
+      ...items.map(item => ({
+        kind: 'sealed',
+        item,
+        product: productById.get(item.product_id),
+        quantity: Number(item.quantity) || 1
+      })),
+      ...cardCopies.map(record => ({ kind: 'card', record, quantity: 1 }))
+    ]
+    const copies = sealedCopies + cards
+    const seriesFor = holding => holding.kind === 'card'
+      ? holding.record.set?.set_name?.trim()
+      : holding.product?.series?.trim()
+    const typeFor = holding => holding.kind === 'card'
+      ? holding.record.ownership_type === 'graded' ? 'Cartes gradées' : 'Cartes non gradées'
+      : holding.product?.product_type?.trim() || holding.product?.category?.trim()
+
     const buildDetails = (groupFor, unlabelled) => {
       const groups = new Map()
-      for (const item of items) {
-        const product = productById.get(item.product_id)
-        const groupName = groupFor(item, product) || unlabelled
-        const name = product?.name?.trim() || item.custom_name?.trim() || 'Objet sans nom'
-        const detailKey = item.product_id ? `product:${item.product_id}` : `custom:${name.toLocaleLowerCase('fr')}`
+      for (const holding of holdings) {
+        const groupName = groupFor(holding) || unlabelled
+        let detailKey
+        let detail
+        if (holding.kind === 'card') {
+          const record = holding.record
+          const cardName = [record.card?.collector_number, record.card?.card_name].filter(Boolean).join(' · ') || 'Carte sans nom'
+          const variantLabel = record.variant?.variant_label
+          const grade = record.grade_label || (record.grade ? `${record.grade}/10` : '')
+          const stateLabel = record.ownership_type === 'graded' ? [`Gradée ${grade}`.trim(), record.card?.guide_category_label].filter(Boolean).join(' · ') : ['Non gradée', record.card?.guide_category_label, variantLabel].filter(Boolean).join(' · ')
+          detailKey = `card:${record.card_print_variant_id}:${record.ownership_type}:${grade}`
+          detail = { name: variantLabel ? `${cardName} — ${variantLabel}` : cardName, type: stateLabel, count: 1 }
+        } else {
+          const item = holding.item
+          const product = holding.product
+          const name = product?.name?.trim() || item.custom_name?.trim() || 'Objet sans nom'
+          detailKey = item.product_id ? `product:${item.product_id}` : `custom:${name.toLocaleLowerCase('fr')}`
+          detail = {
+            name,
+            type: product?.product_type?.trim() || product?.category?.trim() || '',
+            count: holding.quantity
+          }
+        }
         if (!groups.has(groupName)) groups.set(groupName, new Map())
-        const productsInGroup = groups.get(groupName)
-        const detail = productsInGroup.get(detailKey)
-        if (detail) detail.count += Number(item.quantity) || 1
-        else productsInGroup.set(detailKey, {
-          name,
-          type: product?.product_type?.trim() || product?.category?.trim() || '',
-          count: Number(item.quantity) || 1
-        })
+        const entries = groups.get(groupName)
+        const existing = entries.get(detailKey)
+        if (existing) existing.count += holding.quantity
+        else entries.set(detailKey, detail)
       }
-      return Object.fromEntries([...groups.entries()].map(([groupName, productsInGroup]) => [
+      return Object.fromEntries([...groups.entries()].map(([groupName, entries]) => [
         groupName,
-        [...productsInGroup.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fr'))
+        [...entries.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fr'))
       ]))
     }
-    const seriesDetails = buildDetails((_item, product) => product?.series?.trim(), 'Série non renseignée')
-    const typeDetails = buildDetails((_item, product) => product?.product_type?.trim() || product?.category?.trim(), 'Autres')
 
     return {
       copies,
-      products: uniqueProducts.size,
-      series: series.size,
-      seriesDetails,
-      typeDetails,
-      bySeries: buildBreakdown(items, products, (_item, product) => product?.series?.trim(), 'Série non renseignée'),
-      byCategory: buildBreakdown(items, products, (_item, product) => product?.product_type?.trim() || product?.category?.trim())
+      sealedCopies,
+      cards,
+      gradedCards,
+      seriesDetails: buildDetails(seriesFor, 'Série non renseignée'),
+      typeDetails: buildDetails(typeFor, 'Autres'),
+      bySeries: buildBreakdown(holdings, seriesFor, 'Série non renseignée'),
+      byCategory: buildBreakdown(holdings, typeFor)
     }
-  }, [items, products])
+  }, [items, products, cardCopies])
 
   if (loading) return <main className="collectionStatsPage"><section className="collectionStatsHero"><p role="status">Chargement de tes statistiques…</p></section></main>
   if (loadError) return <main className="collectionStatsPage"><section className="collectionStatsHero"><span className="collectionStatsEyebrow">En un coup d’œil</span><h1>Stats collection</h1><p role="alert">{loadError}</p><button type="button" className="btn" onClick={() => window.location.reload()}>Réessayer</button></section></main>
@@ -140,8 +214,8 @@ export default function CollectionStatsPage() {
 
       const details = detailsByGroup[entry.label] || []
       const detailPrompt = detailLabel === 'série'
-        ? 'Toucher pour voir les produits de cette série ▾'
-        : 'Toucher pour voir les produits de ce type d’objet ▾'
+        ? 'Toucher pour voir les produits et cartes de cette série ▾'
+        : 'Toucher pour voir les éléments de ce type ▾'
       return (
         <details className="collectionStatsBar" key={entry.label}>
           <summary style={{ cursor: 'pointer' }}>
@@ -181,17 +255,18 @@ export default function CollectionStatsPage() {
       </section>
 
       <section className="stats collectionStatsKpis" aria-label="Chiffres clés">
-        <div><span>Exemplaires</span><strong>{stats.copies}</strong></div>
-        <div><span>Produits différents</span><strong>{stats.products}</strong></div>
-        <div><span>Séries représentées</span><strong>{stats.series}</strong></div>
+        <div><span>Éléments au total</span><strong>{stats.copies}</strong></div>
+        <div><span>Produits scellés</span><strong>{stats.sealedCopies}</strong></div>
+        <div><span>Cartes (gradées incluses)</span><strong>{stats.cards}</strong></div>
+        <div><span>Cartes gradées</span><strong>{stats.gradedCards}</strong></div>
       </section>
 
-      {items.length === 0 ? (
+      {items.length === 0 && cardCopies.length === 0 ? (
         <section className="panel collectionStatsEmpty"><h2>Ta collection commence ici</h2><p>Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.</p></section>
       ) : (
         <div className="collectionStatsBreakdowns">
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits associés et leur quantité. Part du total de tes {stats.copies} exemplaires.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.</p></section>
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les produits associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. Part de tes {stats.copies} éléments au total.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.</p></section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les éléments associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
         </div>
       )}
     </main>
