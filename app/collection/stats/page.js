@@ -22,6 +22,7 @@ export default function CollectionStatsPage() {
   const [items, setItems] = useState([])
   const [products, setProducts] = useState([])
   const [cardCopies, setCardCopies] = useState([])
+  const [cardSetVariantTotals, setCardSetVariantTotals] = useState({})
   const [category, setCategory] = useState('all')
 
   useEffect(() => {
@@ -85,7 +86,7 @@ export default function CollectionStatsPage() {
         const variants = []
         for (let offset = 0; offset < variantIds.length; offset += 100) {
           const { data, error } = await supabase.from('card_print_variants')
-            .select('id,card_id,variant_key,variant_label')
+            .select('id,card_id,variant_key,variant_label,is_master_set_target')
             .in('id', variantIds.slice(offset, offset + 100))
           if (error) throw error
           variants.push(...(data || []))
@@ -111,6 +112,32 @@ export default function CollectionStatsPage() {
           sets.push(...(data || []))
         }
 
+        const cardSetCards = []
+        for (let offset = 0; offset < setIds.length; offset += 100) {
+          const { data, error } = await fetchAllRows(() => supabase.from('cards')
+            .select('id,card_set_id')
+            .in('card_set_id', setIds.slice(offset, offset + 100)))
+          if (error) throw error
+          cardSetCards.push(...(data || []))
+        }
+
+        const cardSetCardIds = [...new Set(cardSetCards.map(card => card.id))]
+        const catalogVariants = []
+        for (let offset = 0; offset < cardSetCardIds.length; offset += 100) {
+          const { data, error } = await fetchAllRows(() => supabase.from('card_print_variants')
+            .select('id,card_id,is_master_set_target')
+            .in('card_id', cardSetCardIds.slice(offset, offset + 100)))
+          if (error) throw error
+          catalogVariants.push(...(data || []))
+        }
+        const cardSetByCardId = new Map(cardSetCards.map(card => [card.id, card.card_set_id]))
+        const variantTotals = {}
+        for (const variant of catalogVariants) {
+          if (!variant.is_master_set_target) continue
+          const setId = cardSetByCardId.get(variant.card_id)
+          if (setId) variantTotals[setId] = (variantTotals[setId] || 0) + 1
+        }
+
         const variantById = new Map(variants.map(variant => [variant.id, variant]))
         const cardById = new Map(cards.map(card => [card.id, card]))
         const setById = new Map(sets.map(set => [set.id, set]))
@@ -125,6 +152,7 @@ export default function CollectionStatsPage() {
         setItems(rows || [])
         setProducts(catalog)
         setCardCopies(inventoryCards)
+        setCardSetVariantTotals(variantTotals)
       } catch {
         if (active) setLoadError('Impossible de charger les statistiques. Réessaie dans un instant.')
       } finally {
@@ -206,10 +234,29 @@ export default function CollectionStatsPage() {
       gradedCards,
       seriesDetails: buildDetails(seriesFor, 'Série non renseignée'),
       typeDetails: buildDetails(typeFor, 'Autres'),
-      bySeries: buildBreakdown(holdings, seriesFor, 'Série non renseignée'),
+      bySeries: category === 'cards' || category === 'graded'
+        ? (() => {
+            const variantsBySet = new Map()
+            for (const holding of holdings) {
+              if (holding.kind !== 'card' || !holding.record.variant?.is_master_set_target || !holding.record.set?.id) continue
+              const set = holding.record.set
+              if (!variantsBySet.has(set.id)) variantsBySet.set(set.id, {
+                label: set.set_name || 'Série sans nom',
+                owned: new Set(),
+                total: Number(cardSetVariantTotals[set.id]) || 0
+              })
+              variantsBySet.get(set.id).owned.add(holding.record.variant.id)
+            }
+            return [...variantsBySet.values()].map(entry => ({
+              label: entry.label,
+              count: entry.owned.size,
+              total: entry.total || null
+            })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'))
+          })()
+        : buildBreakdown(holdings, seriesFor, 'Série non renseignée'),
       byCategory: buildBreakdown(holdings, typeFor)
     }
-  }, [items, products, cardCopies, category])
+  }, [items, products, cardCopies, cardSetVariantTotals, category])
 
   const categoryLabel = category === 'sealed' ? 'Produits scellés' : category === 'cards' ? 'Cartes' : category === 'graded' ? 'Cartes gradées' : ''
   const kpis = category === 'all'
@@ -225,10 +272,15 @@ export default function CollectionStatsPage() {
 
   const distribution = (entries, detailsByGroup = null, detailLabel = 'groupe') => entries.length
     ? <div className="collectionStatsBars">{entries.map(entry => {
-      const share = stats.copies ? entry.count / stats.copies * 100 : 0
-      const width = Math.max(1, Math.round(share * 10) / 10)
+      const hasDenominator = entry.total === undefined || entry.total !== null
+      const denominator = hasDenominator ? entry.total ?? stats.copies : 0
+      const share = denominator ? entry.count / denominator * 100 : 0
+      const width = denominator ? Math.max(1, Math.round(share * 10) / 10) : 1
       const shareLabel = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(share)
-      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{entry.count} / {stats.copies} · {shareLabel} %</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
+      const ratioLabel = denominator
+        ? `${entry.count} / ${denominator} · ${shareLabel} %`
+        : `${entry.count} variantes · total du checklist indisponible`
+      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{ratioLabel}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
       if (!detailsByGroup) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
 
       const details = detailsByGroup[entry.label] || []
@@ -282,7 +334,7 @@ export default function CollectionStatsPage() {
         <section className="panel collectionStatsEmpty"><h2>{category === 'all' ? 'Ta collection commence ici' : 'Aucun élément dans cette rubrique'}</h2><p>{category === 'all' ? 'Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.' : <>Cette rubrique est vide dans {profileName}. <a href="/collection/stats">Voir toutes les statistiques</a></>}</p></section>
       ) : (
         <div className={category === 'graded' ? 'collectionStatsBreakdowns collectionStatsBreakdownsSingle' : 'collectionStatsBreakdowns'}>
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. Part de tes {stats.copies} éléments au total.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.</p></section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
           {category !== 'graded' && (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les éléments associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
           )}
