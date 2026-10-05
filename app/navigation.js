@@ -78,10 +78,26 @@ export default function Navigation({ links }) {
     window.location.href = '/'
   }
 
-  const memberOnlyHrefs = new Set(['/catalogue', '/collection/cartes'])
-  const memberLinks = links.filter(([href]) => identity || !memberOnlyHrefs.has(href))
-  const visibleLinks = isAdmin ? [...memberLinks, ['/admin', 'Admin']] : memberLinks
-  const items = visibleLinks.map(([href, label]) => <a href={href} key={href}>{label}</a>)
+  const visibleLinks = links
+    .map(link => link.children
+      ? { ...link, children: link.children.filter(child => identity || !child.memberOnly) }
+      : link)
+    .filter(link => !link.memberOnly || identity)
+    .filter(link => !link.children || link.children.length > 0)
+  if (isAdmin) visibleLinks.push({ href: '/admin', label: 'Admin' })
+
+  function renderLinks() {
+    return visibleLinks.map(link => link.children
+      ? (
+        <details className="collectionNavGroup" key={link.label}>
+          <summary>{link.label}<span aria-hidden="true">⌄</span></summary>
+          <div className="collectionNavPanel">
+            {link.children.map(child => <a href={child.href} key={child.href}>{child.label}</a>)}
+          </div>
+        </details>
+      )
+      : <a href={link.href} key={link.href}>{link.label}</a>)
+  }
   const accountMenu = identity && (
     <details className="accountMenu">
       <summary aria-label={`Compte de ${identity.displayName}`}>
@@ -102,7 +118,7 @@ export default function Navigation({ links }) {
   return (
     <>
       <nav className="desktopNav">
-        {items}
+        {renderLinks()}
         {accountMenu || (authState === 'signed-out' && <a href="/login" className="btn small">Connexion</a>)}
       </nav>
       <details className="mobileMenu">
@@ -118,7 +134,7 @@ export default function Navigation({ links }) {
               <button className="mobileAccountSignOut" type="button" onClick={signOut}>Se déconnecter</button>
             </section>
           )}
-          {items}
+          {renderLinks()}
           {!identity && authState === 'signed-out' && <a href="/login" className="btn small">Connexion</a>}
         </div>
       </details>
