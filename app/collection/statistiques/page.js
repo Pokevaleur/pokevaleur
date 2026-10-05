@@ -184,16 +184,20 @@ export default function CollectionStatisticsPage() {
   </section></main>
 
   return (
-    <main>
-      <a href="/collection" className="backLink">← Retour à ma collection</a>
+    <main className="valueDashboard">
+      <nav className="collectionTabs valuePageTabs" aria-label="Sections de la collection">
+        <a href="/collection">Ma collection</a>
+        <a href="/collection#collection-stats">Stats collection</a>
+        <a className="active" href="/collection/statistiques" aria-current="page"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
+      </nav>
 
-      <section className="catalogHero statsHero">
+      <section className="catalogHero statsHero valueHero">
         <span className="eyebrow dark">Tableau de bord personnel</span>
-        <h1>Statistiques : {profileName}</h1>
-        <p className="muted">Valeur, performance et répartition de cette collection.</p>
+        <h1>Valeur de {profileName}</h1>
+        <p className="muted">Une vue claire de la valeur estimée, de ton évolution et de la composition de ta collection.</p>
       </section>
 
-      <section className="stats collectionStatsCards">
+      <section className="stats collectionStatsCards valueKpiGrid">
         <div><span>Investi</span><strong>{euro(invested)}</strong></div>
         <div><span>Valeur actuelle</span><strong>{euro(current)}</strong></div>
         <div><span>Plus-value</span><strong className={difference >= 0 ? 'gain' : 'loss'}>{difference != null && difference >= 0 ? '+' : ''}{euro(difference)}<small> {percent(evolution)}</small></strong></div>
