@@ -1392,6 +1392,7 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .collectionStatsKpis>div:nth-child(4):before{background:linear-gradient(#d7a658,#70b9b5)}
 .collectionStatsKpis>div>strong{display:block;font-size:clamp(1.7rem,3vw,2.5rem);line-height:1.15;color:#172b43}
 .collectionStatsBreakdowns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.collectionStatsBreakdownsSingle{grid-template-columns:1fr}
 .collectionStatsBreakdown{border:1px solid #e8e2d7;background:radial-gradient(ellipse at 100% 0%,rgba(174,142,209,.08),transparent 14rem),rgba(255,255,255,.94);box-shadow:0 9px 22px rgba(28,44,62,.05)}
 .collectionStatsPanelTitle{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
 .collectionStatsPanelTitle h2{margin:4px 0 0;font-size:1.3rem}
