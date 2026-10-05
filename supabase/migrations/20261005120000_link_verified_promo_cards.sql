@@ -10,9 +10,9 @@
 -- * The French Coffret Némélios contains Némélios XY26.
 --   https://www.pokemon.com/uk/pokemon-tcg/product-gallery/xy-pyroar-box
 --   https://www.pokepedia.fr/Coffret_N%C3%A9m%C3%A9lios_(Carrefour)
--- * The Autumn 2014 Collector Chest contains foil Treecko, Torchic, and Mudkip preview cards.
+-- * The Autumn 2014 Collector Chest contains preview cards featuring Treecko, Torchic, and Mudkip.
 --   https://www.codedyellow.com/pokemon-collector-chest-history/
---   Pokémon's Hoenn Collection page confirms foil cards of the same three Pokémon.
+--   Pokémon's Hoenn Collection page independently confirms cards of the same three Pokémon.
 --   https://www.pokemon.com/us/pokemon-tcg/product-gallery/pokemon-tcg-hoenn-collection/
 
 do $$
