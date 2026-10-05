@@ -187,7 +187,7 @@ export default function CollectionStatisticsPage() {
     <main className="valueDashboard">
       <nav className="collectionTabs valuePageTabs" aria-label="Sections de la collection">
         <a href="/collection">Ma collection</a>
-        <a href="/collection#collection-stats">Stats collection</a>
+        <a href="/collection/stats">Stats collection</a>
         <a className="active" href="/collection/statistiques" aria-current="page"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
       </nav>
 
