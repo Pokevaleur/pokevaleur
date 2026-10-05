@@ -770,7 +770,7 @@ export default function CollectionPage() {
       <div className="collectionHeroArtwork"><img src="/collection-hero.webp" alt="Classeur de cartes Pokémon ouvert, cartes protégées et coffret de collection" /></div>
       <nav className="collectionTabs" aria-label="Sections de la collection">
         <a className="active" href="#objets" aria-current="page">Mes objets</a>
-        <a href="#collection-stats">Stats collection</a>
+        <a href="/collection/stats">Stats collection</a>
         <a href="/collection/statistiques" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
       </nav>
       <section className="collectionTotals" id="collection-stats" aria-label="Résumé de la collection">
@@ -780,7 +780,7 @@ export default function CollectionPage() {
             <h2>Stats collection</h2>
             <p>Un aperçu simple de tout ce que tu as réuni.</p>
           </div>
-          <a className="collectionStatsMore" href="/collection/statistiques">Voir la valeur et les statistiques <span aria-hidden="true">→</span></a>
+          <a className="collectionStatsMore" href="/collection/stats">Voir toutes les statistiques <span aria-hidden="true">→</span></a>
         </div>
         <div className="collectionTotalGrid">
           <div><strong>{itemCount}</strong><span>exemplaires</span></div>

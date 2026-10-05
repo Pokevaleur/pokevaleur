@@ -1363,3 +1363,36 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .statsTrendPanel{background:radial-gradient(ellipse at 99% 0%,rgba(169,139,203,.09),transparent 15rem),#fff}
 .statsDashboardGrid>.panel{background:radial-gradient(ellipse at 100% 0%,rgba(235,193,88,.07),transparent 13rem),#fff}
 @media(max-width:700px){.valueDashboard:before{left:-82px;width:125px;opacity:.42}.valueDashboard:after{right:-82px;width:125px;opacity:.42}.valueHero:before{right:44px;width:132px;height:155px;opacity:.5}}
+
+
+/* Dedicated collection statistics view */
+.collectionStatsPage{position:relative;isolation:isolate;max-width:1200px;min-height:70vh;overflow:hidden;background:radial-gradient(ellipse at 0 12%,rgba(93,184,188,.11),transparent 23rem),radial-gradient(ellipse at 100% 75%,rgba(174,142,209,.14),transparent 25rem),linear-gradient(180deg,#fbfaff 0%,#f8f8fc 54%,#fffaf0 100%)}
+.collectionStatsPage:before,.collectionStatsPage:after{content:"";position:absolute;z-index:-1;pointer-events:none;width:clamp(120px,20vw,230px);height:460px;opacity:.48}
+.collectionStatsPage:before{top:165px;left:-58px;background:linear-gradient(145deg,rgba(93,184,188,.28) 0 23%,rgba(255,255,255,.14) 23% 43%,rgba(232,190,80,.24) 43% 67%,rgba(174,142,209,.22) 67%);clip-path:polygon(0 8%,78% 0,100% 26%,76% 48%,91% 73%,38% 100%,12% 68%,29% 41%)}
+.collectionStatsPage:after{top:325px;right:-70px;background:linear-gradient(35deg,rgba(174,142,209,.25) 0 27%,rgba(255,255,255,.12) 27% 47%,rgba(93,184,188,.20) 47% 70%,rgba(232,190,80,.23) 70%);clip-path:polygon(21% 0,100% 11%,80% 38%,100% 64%,69% 84%,85% 97%,35% 100%,0 69%,22% 45%)}
+.collectionStatsPage>nav,.collectionStatsPage>section,.collectionStatsPage>div{position:relative;z-index:1}
+.collectionStatsHero{position:relative;overflow:hidden;margin:10px 0 22px;padding:clamp(24px,4vw,42px);border:1px solid #e7dfd0;border-radius:24px;background:radial-gradient(ellipse at 90% 30%,rgba(174,142,209,.16),transparent 18rem),radial-gradient(ellipse at 5% 100%,rgba(93,184,188,.11),transparent 20rem),linear-gradient(120deg,#fffefa 0%,#fff 55%,#fbf4ff 100%);box-shadow:0 12px 28px rgba(39,46,61,.06)}
+.collectionStatsHero:after{content:"✧";position:absolute;right:clamp(24px,7vw,82px);top:50%;transform:translateY(-50%) rotate(-10deg);font-size:clamp(5rem,11vw,9rem);font-weight:900;color:rgba(210,171,79,.16);pointer-events:none}
+.collectionStatsHero>*{position:relative;z-index:1}
+.collectionStatsHero h1{margin:9px 0;font-size:clamp(2rem,4vw,3rem);color:#172b43}
+.collectionStatsHero p{max-width:58ch;margin:0;color:#65758b;line-height:1.55}
+.collectionStatsKpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:0 0 22px}
+.collectionStatsKpis>div{position:relative;overflow:hidden;border:1px solid #e8e2d7;box-shadow:0 8px 20px rgba(28,44,62,.055)}
+.collectionStatsKpis>div:before{content:"";position:absolute;left:0;top:0;bottom:0;width:4px;background:linear-gradient(#e7bf55,#d5b5df)}
+.collectionStatsKpis>div:nth-child(2):before{background:linear-gradient(#6dbbb8,#b7dfd5)}
+.collectionStatsKpis>div:nth-child(3):before{background:linear-gradient(#9d87c9,#d0c0e5)}
+.collectionStatsKpis>div>strong{display:block;font-size:clamp(1.7rem,3vw,2.5rem);line-height:1.15;color:#172b43}
+.collectionStatsBreakdowns{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+.collectionStatsBreakdown{border:1px solid #e8e2d7;background:radial-gradient(ellipse at 100% 0%,rgba(174,142,209,.08),transparent 14rem),rgba(255,255,255,.94);box-shadow:0 9px 22px rgba(28,44,62,.05)}
+.collectionStatsPanelTitle{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.collectionStatsPanelTitle h2{margin:4px 0 0;font-size:1.3rem}
+.collectionStatsPanelTitle>span{font-size:2rem;color:#b494ce}
+.collectionStatsBars{display:grid;gap:15px}
+.collectionStatsBarLabel{display:flex;justify-content:space-between;gap:16px;margin-bottom:6px}
+.collectionStatsBarLabel span{color:#35445a;overflow-wrap:anywhere}
+.collectionStatsBarLabel strong{color:#172b43}
+.collectionStatsTrack{height:9px;border-radius:99px;background:#f0edf5;overflow:hidden}
+.collectionStatsTrack i{display:block;height:100%;border-radius:inherit;background:linear-gradient(90deg,#d6b052,#ad91cc 62%,#70bbb7)}
+.collectionStatsEmpty{border:1px solid #e8e2d7;background:rgba(255,255,255,.92)}
+.collectionStatsEmpty h2{margin-top:0}
+@media(max-width:700px){.collectionStatsPage:before{left:-82px;width:130px;opacity:.35}.collectionStatsPage:after{right:-88px;width:130px;opacity:.34}.collectionStatsHero:after{right:14px;top:16px;transform:none}.collectionStatsHero h1,.collectionStatsHero p{max-width:74%}.collectionStatsKpis{grid-template-columns:1fr}.collectionStatsBreakdowns{grid-template-columns:1fr}.collectionStatsPage .valuePageTabs{overflow:auto}.collectionStatsPage .valuePageTabs a{white-space:nowrap}}
