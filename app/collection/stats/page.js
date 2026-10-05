@@ -91,34 +91,37 @@ export default function CollectionStatsPage() {
       ? `product:${item.product_id}`
       : `custom:${(item.custom_name || '').trim().toLocaleLowerCase('fr')}`).filter(key => !key.endsWith(':')))
     const series = new Set(items.map(item => productById.get(item.product_id)?.series?.trim()).filter(Boolean))
-    const detailGroups = new Map()
-
-    for (const item of items) {
-      const product = productById.get(item.product_id)
-      const seriesName = product?.series?.trim() || 'Série non renseignée'
-      const name = product?.name?.trim() || item.custom_name?.trim() || 'Objet sans nom'
-      const detailKey = item.product_id ? `product:${item.product_id}` : `custom:${name.toLocaleLowerCase('fr')}`
-      if (!detailGroups.has(seriesName)) detailGroups.set(seriesName, new Map())
-      const productsInSeries = detailGroups.get(seriesName)
-      const detail = productsInSeries.get(detailKey)
-      if (detail) detail.count += Number(item.quantity) || 1
-      else productsInSeries.set(detailKey, {
-        name,
-        type: product?.product_type?.trim() || product?.category?.trim() || '',
-        count: Number(item.quantity) || 1
-      })
+    const buildDetails = (groupFor, unlabelled) => {
+      const groups = new Map()
+      for (const item of items) {
+        const product = productById.get(item.product_id)
+        const groupName = groupFor(item, product) || unlabelled
+        const name = product?.name?.trim() || item.custom_name?.trim() || 'Objet sans nom'
+        const detailKey = item.product_id ? `product:${item.product_id}` : `custom:${name.toLocaleLowerCase('fr')}`
+        if (!groups.has(groupName)) groups.set(groupName, new Map())
+        const productsInGroup = groups.get(groupName)
+        const detail = productsInGroup.get(detailKey)
+        if (detail) detail.count += Number(item.quantity) || 1
+        else productsInGroup.set(detailKey, {
+          name,
+          type: product?.product_type?.trim() || product?.category?.trim() || '',
+          count: Number(item.quantity) || 1
+        })
+      }
+      return Object.fromEntries([...groups.entries()].map(([groupName, productsInGroup]) => [
+        groupName,
+        [...productsInGroup.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fr'))
+      ]))
     }
-
-    const seriesDetails = Object.fromEntries([...detailGroups.entries()].map(([seriesName, productsInSeries]) => [
-      seriesName,
-      [...productsInSeries.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fr'))
-    ]))
+    const seriesDetails = buildDetails((_item, product) => product?.series?.trim(), 'Série non renseignée')
+    const typeDetails = buildDetails((_item, product) => product?.product_type?.trim() || product?.category?.trim(), 'Autres')
 
     return {
       copies,
       products: uniqueProducts.size,
       series: series.size,
       seriesDetails,
+      typeDetails,
       bySeries: buildBreakdown(items, products, (_item, product) => product?.series?.trim(), 'Série non renseignée'),
       byCategory: buildBreakdown(items, products, (_item, product) => product?.product_type?.trim() || product?.category?.trim())
     }
@@ -127,20 +130,23 @@ export default function CollectionStatsPage() {
   if (loading) return <main className="collectionStatsPage"><section className="collectionStatsHero"><p role="status">Chargement de tes statistiques…</p></section></main>
   if (loadError) return <main className="collectionStatsPage"><section className="collectionStatsHero"><span className="collectionStatsEyebrow">En un coup d’œil</span><h1>Stats collection</h1><p role="alert">{loadError}</p><button type="button" className="btn" onClick={() => window.location.reload()}>Réessayer</button></section></main>
 
-  const distribution = (entries, expandable = false) => entries.length
+  const distribution = (entries, detailsByGroup = null, detailLabel = 'groupe') => entries.length
     ? <div className="collectionStatsBars">{entries.map(entry => {
       const share = stats.copies ? entry.count / stats.copies * 100 : 0
       const width = Math.max(1, Math.round(share * 10) / 10)
       const shareLabel = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(share)
       const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{entry.count} · {shareLabel} %</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
-      if (!expandable) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
+      if (!detailsByGroup) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
 
-      const details = stats.seriesDetails[entry.label] || []
+      const details = detailsByGroup[entry.label] || []
+      const detailPrompt = detailLabel === 'série'
+        ? 'Toucher pour voir les produits de cette série ▾'
+        : 'Toucher pour voir les produits de ce type d’objet ▾'
       return (
         <details className="collectionStatsBar" key={entry.label}>
           <summary style={{ cursor: 'pointer' }}>
             {heading}
-            <span style={{ display: 'block', marginTop: 6, fontSize: '.82rem', color: '#65758b' }}>Toucher pour voir les produits de cette série ▾</span>
+            <span style={{ display: 'block', marginTop: 6, fontSize: '.82rem', color: '#65758b' }}>{detailPrompt}</span>
           </summary>
           {details.length ? (
             <ul style={{ listStyle: 'none', margin: '10px 0 0', padding: 0 }}>
@@ -154,7 +160,7 @@ export default function CollectionStatsPage() {
                 </li>
               ))}
             </ul>
-          ) : <p className="muted">Aucun produit détaillé dans cette série.</p>}
+          ) : <p className="muted">Aucun produit détaillé dans ce regroupement.</p>}
         </details>
       )
     })}</div>
@@ -184,8 +190,8 @@ export default function CollectionStatsPage() {
         <section className="panel collectionStatsEmpty"><h2>Ta collection commence ici</h2><p>Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.</p></section>
       ) : (
         <div className="collectionStatsBreakdowns">
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits associés et leur quantité. Part du total de tes {stats.copies} exemplaires.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, true)}<p className="muted collectionStatsFootnote">Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.</p></section>
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Nombre d’exemplaires possédés · part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory)}</section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits associés et leur quantité. Part du total de tes {stats.copies} exemplaires.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série')}<p className="muted collectionStatsFootnote">Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.</p></section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les produits associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
         </div>
       )}
     </main>
