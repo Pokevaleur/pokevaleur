@@ -3,7 +3,7 @@ alter table public.product_contents
   check (content_role in ('guaranteed', 'possible'));
 
 update public.product_contents pc
-set item_name = 'Cartes du JCC portant l’estampille Play! Pokémon',
+set item_name = 'Cartes aléatoires estampillées Play! Pokémon',
     quantity = 6,
     content_role = 'guaranteed'
 from public.products p
