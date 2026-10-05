@@ -3,9 +3,9 @@
 -- * Pokémon Legendary Collection includes Pikachu-EX; Pokémon's card database lists XY174 as Pikachu-EX.
 --   https://www.pokemon.com/us/pokemon-tcg/product-gallery/legendary-collection
 --   https://www.pokemon.com/us/pokemon-tcg/pokemon-cards/series/xyp/XY174/
--- * Pokémon's Shiny Kalos Tin includes a special foil Shiny Yveltal-EX; the corresponding XY promo is XY150a.
+-- * Pokémon's Shiny Kalos Tin includes a special foil Shiny Yveltal-EX; Pokémon's tournament deck database records
+--   the corresponding XY promo as XY150.
 --   https://www.pokemon.com/uk/pokemon-tcg/product-gallery/shiny-kalos-tin
---   Pokémon tournament deck records identify Yveltal-EX XY150 as PR-XY; XY150a is the Shiny Kalos Tin print.
 --   https://www.pokemon.com/us/play-pokemon/regionals/2017/athens/tcg-juniors
 
 do $$
@@ -25,7 +25,7 @@ begin
   end if;
 
   update public.product_contents
-  set card_id = '14506668-cd62-46a2-b693-639caf0662ac'
+  set card_id = '2cc9e816-be65-466c-a4ea-41dda1e86c6a'
   where id = '6b97a3ce-bd09-4c94-90f8-7d4c2350a4f7'
     and card_id is null
     and item_name = 'Yveltal-EX'
