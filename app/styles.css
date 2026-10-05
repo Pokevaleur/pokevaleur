@@ -1428,3 +1428,22 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
   .collectionStatsKpis>div{padding:10px 7px}
   .collectionStatsKpis>div>span{font-size:.66rem}
 }
+
+
+/* Group sealed products and cards under the personal collection menu */
+.collectionNavGroup{position:relative}
+.collectionNavGroup>summary{display:flex;align-items:center;gap:6px;list-style:none;cursor:pointer}
+.collectionNavGroup>summary::-webkit-details-marker{display:none}
+.collectionNavGroup>summary span{font-size:12px;opacity:.8}
+.collectionNavPanel{position:absolute;z-index:80;top:calc(100% + 8px);left:0;display:grid;gap:4px;min-width:220px;padding:8px;border:1px solid #dce2e9;border-radius:12px;background:#fff;color:var(--text);box-shadow:0 14px 36px rgba(4,20,38,.2)}
+.collectionNavPanel a{display:block;padding:10px 12px;border-radius:8px;white-space:nowrap}
+.collectionNavPanel a:hover{background:#f0f4f9}
+@media(min-width:701px){
+  .desktopNav{flex-wrap:wrap;justify-content:flex-end;gap:12px}
+}
+@media(max-width:700px){
+  .mobileMenuPanel>.collectionNavGroup{grid-column:1/-1}
+  .mobileMenuPanel>.collectionNavGroup>summary{justify-content:center;min-height:42px;padding:9px 10px;border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;background:rgba(255,255,255,.06);font-size:14px}
+  .mobileMenuPanel .collectionNavPanel{position:static;grid-template-columns:1fr 1fr;gap:8px;min-width:0;padding:8px 0 0;border:0;border-radius:0;background:transparent;box-shadow:none}
+  .mobileMenuPanel .collectionNavPanel a{min-width:0;padding:9px 8px;border-radius:10px;background:rgba(255,255,255,.08);white-space:normal;font-size:13px}
+}
