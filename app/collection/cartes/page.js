@@ -58,7 +58,10 @@ export default function CardChecklistPage() {
   useEffect(() => {
     let cancelled = false
     async function initialize() {
-      const requestedSetId = new URLSearchParams(window.location.search).get('set') || ''
+      const requestedParams = new URLSearchParams(window.location.search)
+      const requestedSetId = requestedParams.get('set') || ''
+      const requestedCard = requestedParams.get('card') || ''
+      if (requestedCard) setQuery(requestedCard)
       setLoading(true)
       const { data: { user: signedInUser }, error: authError } = await supabase.auth.getUser()
       if (cancelled) return
