@@ -13,15 +13,20 @@ export const metadata = {
 }
 
 const navLinks = [
-  ['/', 'Accueil'],
-  ['/catalogue', 'Catalogue'],
-  ['/collection', 'Ma collection'],
-  ['/collection/cartes', 'Cartes / Master Set'],
-  ['/opportunites', 'Watchlist'],
-  ['/communaute', 'Communauté'],
-  ['/trades', 'Trades'],
-  ['/progression', 'Mon grade'],
-  ['/coffre', 'Coffre de Lukulu']
+  { href: '/', label: 'Accueil' },
+  {
+    label: 'Ma collection',
+    children: [
+      { href: '/collection', label: 'Produits scellés' },
+      { href: '/collection/cartes', label: 'Cartes & Master Set', memberOnly: true }
+    ]
+  },
+  { href: '/catalogue', label: 'Catalogue', memberOnly: true },
+  { href: '/opportunites', label: 'Watchlist' },
+  { href: '/communaute', label: 'Communauté' },
+  { href: '/trades', label: 'Trades' },
+  { href: '/progression', label: 'Mon grade' },
+  { href: '/coffre', label: 'Coffre de Lukulu' }
 ]
 
 export default function RootLayout({ children }) {
