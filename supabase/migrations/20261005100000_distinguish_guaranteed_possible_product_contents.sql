@@ -17,3 +17,134 @@ set item_name = 'Cartes promotionnelles aléatoires (au moins une brillante)',
 from public.products p
 where p.id = pc.product_id
   and p.name = 'Booster promotionnel McDonald’s Pokémon 2024 (M24FR)';
+
+
+-- Official Series Seven checklist: record the 96 card identities that may appear.
+with wanted(set_code, collector_number) as (
+  values
+('sv05', '24'),
+('sv05', '85'),
+('sv05', '114'),
+('sv05', '129'),
+('sv05', '142'),
+('sv05', '144'),
+('sv05', '157'),
+('sv06', '25'),
+('sv06', '53'),
+('sv06', '77'),
+('sv06', '95'),
+('sv06', '105'),
+('sv06', '106'),
+('sv06', '131'),
+('sv06', '134'),
+('sv06', '141'),
+('sv06', '143'),
+('sv06', '145'),
+('sv06', '148'),
+('sv06', '153'),
+('sv06.5', '2'),
+('sv06.5', '19'),
+('sv06.5', '20'),
+('sv06.5', '38'),
+('sv06.5', '57'),
+('sv06.5', '61'),
+('sv06.5', '63'),
+('sv07', '50'),
+('sv07', '107'),
+('sv07', '115'),
+('sv07', '118'),
+('sv07', '119'),
+('sv07', '128'),
+('sv07', '131'),
+('sv07', '132'),
+('sv07', '133'),
+('sv07', '135'),
+('sv07', '142'),
+('sv08', '19'),
+('sv08', '36'),
+('sv08', '57'),
+('sv08', '59'),
+('sv08', '65'),
+('sv08', '74'),
+('sv08', '76'),
+('sv08', '86'),
+('sv08', '107'),
+('sv08', '130'),
+('sv08', '143'),
+('sv08', '161'),
+('sv08', '164'),
+('sv08', '169'),
+('sv08', '177'),
+('sv08', '186'),
+('sv08', '189'),
+('sv08.5', '4'),
+('sv08.5', '6'),
+('sv08.5', '14'),
+('sv08.5', '23'),
+('sv08.5', '26'),
+('sv08.5', '30'),
+('sv08.5', '34'),
+('sv08.5', '60'),
+('sv08.5', '75'),
+('sv08.5', '86'),
+('sv08.5', '116'),
+('SV09', '27'),
+('SV09', '47'),
+('SV09', '53'),
+('SV09', '55'),
+('SV09', '56'),
+('SV09', '67'),
+('SV09', '79'),
+('SV09', '95'),
+('SV09', '98'),
+('SV09', '111'),
+('SV09', '116'),
+('SV09', '117'),
+('SV09', '136'),
+('SV09', '146'),
+('SV09', '147'),
+('SV09', '148'),
+('SV09', '149'),
+('SV09', '150'),
+('SV09', '151'),
+('SV09', '152'),
+('SV09', '153'),
+('SV09', '154'),
+('sve', '9'),
+('sve', '10'),
+('sve', '11'),
+('sve', '12'),
+('sve', '13'),
+('sve', '14'),
+('sve', '15'),
+('sve', '16')
+), pool_cards as (
+  select distinct c.id as card_id,
+         c.card_name || ' — ' || cs.set_name || ' ' || c.collector_number || ' (estampille Play! Pokémon)' as item_name
+  from wanted w
+  join public.card_sets cs on cs.set_code = w.set_code and cs.language = 'FR'
+  join public.cards c on c.card_set_id = cs.id
+    and ltrim(split_part(c.collector_number, '/', 1), '0') = w.collector_number
+)
+insert into public.product_contents (
+  product_id, content_type, item_name, quantity, source_url, source_label, confidence, card_id, content_role
+)
+select p.id,
+       'other',
+       pool_cards.item_name,
+       1,
+       'https://www.pokemon.com/static-assets/content-assets/cms2/pdf/trading-card-game/checklist/prize_pack_series_7_web_cardlist_en.pdf',
+       'Pokémon — checklist officielle du Pack Récompense série 7',
+       'verified',
+       pool_cards.card_id,
+       'possible'
+from public.products p
+cross join pool_cards
+where p.name = 'Pack Récompense Play! Pokémon – Série 7'
+  and not exists (
+    select 1
+    from public.product_contents existing
+    where existing.product_id = p.id
+      and existing.card_id = pool_cards.card_id
+      and existing.content_role = 'possible'
+  );
