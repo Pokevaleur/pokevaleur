@@ -1442,8 +1442,8 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
   .desktopNav{flex-wrap:wrap;justify-content:flex-end;gap:12px}
 }
 @media(max-width:700px){
-  .mobileMenuPanel>.collectionNavGroup{grid-column:1/-1}
-  .mobileMenuPanel>.collectionNavGroup>summary{justify-content:center;min-height:42px;padding:9px 10px;border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;background:rgba(255,255,255,.06);font-size:14px}
+  .mobileMenuPanel>.collectionNavGroup{grid-column:1/-1;width:100%;min-width:0}
+  .mobileMenuPanel .collectionNavGroup>summary{display:flex;width:100%;height:auto;min-height:46px;justify-content:center;gap:8px;padding:10px 14px;border:1px solid rgba(255,255,255,.15);border-radius:10px;color:#fff;background:rgba(255,255,255,.06);font-size:16px;line-height:1.3;text-align:center;white-space:normal}
   .mobileMenuPanel .collectionNavPanel{position:static;grid-template-columns:1fr 1fr;gap:8px;min-width:0;padding:8px 0 0;border:0;border-radius:0;background:transparent;box-shadow:none}
-  .mobileMenuPanel .collectionNavPanel a{min-width:0;padding:9px 8px;border-radius:10px;background:rgba(255,255,255,.08);white-space:normal;font-size:13px}
+  .mobileMenuPanel .collectionNavPanel a{min-width:0;padding:10px 8px;border-radius:10px;background:rgba(255,255,255,.08);white-space:normal;font-size:14px}
 }
