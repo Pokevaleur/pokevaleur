@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { buildCardRarityBreakdown } from '../lib/card-rarity-statistics.mjs'
 
-test('Rarity progress counts distinct cards, not copies or multiple owned variants', () => {
+test('Rarity progress counts each target print variant once, never duplicate copies', () => {
   const breakdown = buildCardRarityBreakdown([
     { id: 'card-a', rarity_label: 'Common' },
     { id: 'card-b', rarity_label: 'Rare' },
@@ -19,7 +19,7 @@ test('Rarity progress counts distinct cards, not copies or multiple owned varian
   ], new Set(['a-normal', 'a-reverse', 'b-holo', 'd-target']))
 
   assert.deepEqual(breakdown, [
-    { label: 'Common', count: 1, total: 1 },
+    { label: 'Common', count: 2, total: 2 },
     { label: 'Rare', count: 1, total: 2 },
     { label: 'Rareté non renseignée', count: 1, total: 1 },
   ])

@@ -298,7 +298,7 @@ export default function CollectionStatsPage() {
   const selectedSetName = selectedSetId ? cardCopies.find(record => record.set?.id === selectedSetId)?.set?.set_name : ''
   const categoryLabel = selectedSetName || (category === 'sealed' ? 'Produits scellés' : category === 'other' ? 'Autres / à classer' : category === 'cards' ? 'Cartes' : category === 'graded' ? 'Cartes gradées' : '')
   const kpis = selectedSetId
-    ? [['Cartes possédées dans la série', stats.byRarity.reduce((sum, entry) => sum + entry.count, 0)], ['Cartes recensées dans la série', stats.byRarity.reduce((sum, entry) => sum + entry.total, 0)], ['Raretés', stats.byRarity.length]]
+    ? [['Variantes possédées dans la série', stats.byRarity.reduce((sum, entry) => sum + entry.count, 0)], ['Variantes répertoriées dans la série', stats.byRarity.reduce((sum, entry) => sum + entry.total, 0)], ['Raretés', stats.byRarity.length]]
     : category === 'all'
       ? [['Éléments au total', stats.copies], ['Produits scellés', stats.sealedCopies], ['Autres / à classer', stats.otherCopies], ['Cartes (gradées incluses)', stats.cards], ['Cartes gradées', stats.gradedCards]]
     : category === 'sealed'
@@ -324,7 +324,7 @@ export default function CollectionStatsPage() {
         : `${entry.count} variantes · total du checklist indisponible`
       const entryHref = linkForEntry?.(entry)
       const ratio = entryHref
-        ? <a href={entryHref} aria-label={`Afficher ${entry.count} cartes ${entry.label} possédées`} style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}>{ratioLabel}</a>
+        ? <a href={entryHref} aria-label={`Afficher ${entry.count} variantes ${entry.label} possédées`} style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}>{ratioLabel}</a>
         : ratioLabel
       const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{ratio}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
       if (!detailsByGroup) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
@@ -387,7 +387,7 @@ export default function CollectionStatsPage() {
       ) : (
         <div className={category === 'graded' ? 'collectionStatsBreakdowns collectionStatsBreakdownsSingle' : 'collectionStatsBreakdowns'}>
           {selectedSetId ? (
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par rareté</h2><p className="muted collectionStatsDescription">Chaque rareté indique le nombre de cartes distinctes que tu possèdes sur le total répertorié. Appuie sur le nombre possédé pour afficher tes cartes et leurs variantes.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.byRarity, null, 'rareté', entry => `/collection/cartes?set=${encodeURIComponent(selectedSetId)}&rarity=${encodeURIComponent(entry.label)}&owned=1&checklist=all`)}<p className="muted collectionStatsFootnote">Une carte compte une seule fois, même si tu possèdes plusieurs variantes ou exemplaires.</p></section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par rareté</h2><p className="muted collectionStatsDescription">Chaque rareté indique les variantes possédées sur le total du checklist. Appuie sur le nombre possédé pour afficher les cartes et leurs variantes.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.byRarity, null, 'rareté', entry => `/collection/cartes?set=${encodeURIComponent(selectedSetId)}&rarity=${encodeURIComponent(entry.label)}&owned=1&checklist=all`)}<p className="muted collectionStatsFootnote">Une variante du checklist compte une seule fois, même si tu en possèdes plusieurs exemplaires.</p></section>
           ) : (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série', entry => category === 'cards' && entry.setId ? `/collection/stats?category=cards&set=${encodeURIComponent(entry.setId)}` : null)}<p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
           )}
