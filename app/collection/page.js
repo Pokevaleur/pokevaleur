@@ -6,7 +6,7 @@ import { ProfileAvatar } from '../../lib/profile-avatars'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { filterCollectionItems } from '../../lib/collection-search.mjs'
-import { calculateCollectionStatistics, hasPurchasePrice } from '../../lib/collection-statistics.mjs'
+import { calculateCollectionStatistics, calculateCollectionItemCounts, hasPurchasePrice } from '../../lib/collection-statistics.mjs'
 import { saveUploadedPhotoBatch, uploadUnlinkedPhotoBatch } from '../../lib/collection-photo-save.mjs'
 
 const emptyForm = {
@@ -763,12 +763,14 @@ export default function CollectionPage() {
 
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
   const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter)
-  const sealedItemCount = items.reduce((sum, item) => sum + (Number(item.quantity) || 1), 0)
+  const inventoryCounts = calculateCollectionItemCounts(items, catalog)
+  const sealedItemCount = inventoryCounts.sealed
+  const otherItemCount = inventoryCounts.other
   const cardCount = collectionCardCopies?.length ?? null
   const gradedCardCount = collectionCardCopies === null
     ? null
     : collectionCardCopies.filter(copy => copy.ownership_type === 'graded').length
-  const totalCollectionCount = cardCount === null ? null : sealedItemCount + cardCount
+  const totalCollectionCount = cardCount === null ? null : inventoryCounts.total + cardCount
 
   useEffect(() => { if (hasCollectionSearch) setShowCollectionItems(true) }, [hasCollectionSearch])
 
@@ -808,6 +810,7 @@ export default function CollectionPage() {
         <div className="collectionTotalGrid">
           <div><strong>{totalCollectionCount ?? '—'}</strong><span>éléments au total</span></div>
           <a className="collectionTotalLink collectionTotalSealed" href="/collection/stats?category=sealed"><strong>{sealedItemCount}</strong><span>produits scellés</span></a>
+          <a className="collectionTotalLink collectionTotalOther" href="/collection/stats?category=other"><strong>{otherItemCount}</strong><span>autres / à classer</span></a>
           <a className="collectionTotalLink collectionTotalCards" href="/collection/stats?category=cards"><strong>{cardCount ?? '—'}</strong><span>cartes (gradées incluses)</span></a>
           <a className="collectionTotalLink collectionTotalGraded" href="/collection/stats?category=graded"><strong>{gradedCardCount ?? '—'}</strong><span>cartes gradées</span></a>
         </div>

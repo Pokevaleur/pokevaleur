@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
+import { collectionItemKind } from '../../../lib/collection-statistics.mjs'
 
 function buildBreakdown(holdings, groupFor, unlabelled = 'Autres') {
   const totals = new Map()
@@ -27,7 +28,7 @@ export default function CollectionStatsPage() {
 
   useEffect(() => {
     const requested = new URLSearchParams(window.location.search).get('category')
-    if (['sealed', 'cards', 'graded'].includes(requested)) setCategory(requested)
+    if (['sealed', 'other', 'cards', 'graded'].includes(requested)) setCategory(requested)
   }, [])
 
   useEffect(() => {
@@ -167,19 +168,24 @@ export default function CollectionStatsPage() {
   const stats = useMemo(() => {
     const productById = new Map(products.map(product => [product.id, product]))
     const allHoldings = [
-      ...items.map(item => ({
-        kind: 'sealed',
-        item,
-        product: productById.get(item.product_id),
-        quantity: Number(item.quantity) || 1
-      })),
+      ...items.map(item => {
+        const product = productById.get(item.product_id)
+        return {
+          kind: collectionItemKind(item, productById),
+          item,
+          product,
+          quantity: Number(item.quantity) || 1
+        }
+      }),
       ...cardCopies.map(record => ({ kind: 'card', record, quantity: 1 }))
     ]
     const holdings = allHoldings.filter(holding => category === 'all'
       || (category === 'sealed' && holding.kind === 'sealed')
+      || (category === 'other' && holding.kind === 'other')
       || (category === 'cards' && holding.kind === 'card')
       || (category === 'graded' && holding.kind === 'card' && holding.record.ownership_type === 'graded'))
     const sealedCopies = holdings.filter(holding => holding.kind === 'sealed').reduce((sum, holding) => sum + holding.quantity, 0)
+    const otherCopies = holdings.filter(holding => holding.kind === 'other').reduce((sum, holding) => sum + holding.quantity, 0)
     const cards = holdings.filter(holding => holding.kind === 'card').length
     const gradedCards = holdings.filter(holding => holding.kind === 'card' && holding.record.ownership_type === 'graded').length
     const copies = holdings.reduce((sum, holding) => sum + holding.quantity, 0)
@@ -188,7 +194,9 @@ export default function CollectionStatsPage() {
       : holding.product?.series?.trim()
     const typeFor = holding => holding.kind === 'card'
       ? holding.record.ownership_type === 'graded' ? 'Cartes gradées' : 'Cartes non gradées'
-      : holding.product?.product_type?.trim() || holding.product?.category?.trim()
+      : holding.kind === 'other'
+        ? holding.product?.product_type?.trim() || holding.product?.category?.trim() || 'Autres à classer'
+        : holding.product?.product_type?.trim() || holding.product?.category?.trim()
 
     const buildDetails = (groupFor, unlabelled) => {
       const groups = new Map()
@@ -230,6 +238,7 @@ export default function CollectionStatsPage() {
     return {
       copies,
       sealedCopies,
+      otherCopies,
       cards,
       gradedCards,
       seriesDetails: buildDetails(seriesFor, 'Série non renseignée'),
@@ -258,11 +267,13 @@ export default function CollectionStatsPage() {
     }
   }, [items, products, cardCopies, cardSetVariantTotals, category])
 
-  const categoryLabel = category === 'sealed' ? 'Produits scellés' : category === 'cards' ? 'Cartes' : category === 'graded' ? 'Cartes gradées' : ''
+  const categoryLabel = category === 'sealed' ? 'Produits scellés' : category === 'other' ? 'Autres / à classer' : category === 'cards' ? 'Cartes' : category === 'graded' ? 'Cartes gradées' : ''
   const kpis = category === 'all'
-    ? [['Éléments au total', stats.copies], ['Produits scellés', stats.sealedCopies], ['Cartes (gradées incluses)', stats.cards], ['Cartes gradées', stats.gradedCards]]
+    ? [['Éléments au total', stats.copies], ['Produits scellés', stats.sealedCopies], ['Autres / à classer', stats.otherCopies], ['Cartes (gradées incluses)', stats.cards], ['Cartes gradées', stats.gradedCards]]
     : category === 'sealed'
       ? [['Produits scellés', stats.sealedCopies], ['Types de produits', stats.byCategory.length], ['Séries concernées', stats.bySeries.length]]
+      : category === 'other'
+        ? [['Autres / à classer', stats.otherCopies], ['Types d’objets', stats.byCategory.length], ['Séries concernées', stats.bySeries.length]]
       : category === 'cards'
         ? [['Cartes', stats.cards], ['Cartes non gradées', stats.cards - stats.gradedCards], ['Cartes gradées', stats.gradedCards], ['Séries concernées', stats.bySeries.length]]
         : [['Cartes gradées', stats.gradedCards], ['Séries concernées', stats.bySeries.length]]
