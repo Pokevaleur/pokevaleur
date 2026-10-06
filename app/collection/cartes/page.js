@@ -80,7 +80,7 @@ export default function CardChecklistPage() {
   const [rarity, setRarity] = useState([])
   const [selectedCardTypes, setSelectedCardTypes] = useState([])
   const [selectedVersions, setSelectedVersions] = useState([])
-  const [ownedOnly, setOwnedOnly] = useState(false)
+  const [collectionFilter, setCollectionFilter] = useState('all')
   const [checklistFilter, setChecklistFilter] = useState('main')
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
@@ -98,7 +98,8 @@ export default function CardChecklistPage() {
       const requestedRarity = params.get('rarity') || ''
       const requestedChecklist = params.get('checklist')
       setRarity(requestedRarity ? requestedRarity.split(',').filter(Boolean) : [])
-      setOwnedOnly(params.get('owned') === '1')
+      const requestedCollectionFilter = params.get('collection') || (params.get('owned') === '1' ? 'owned' : 'all')
+      if (['all', 'owned', 'missing', 'duplicates'].includes(requestedCollectionFilter)) setCollectionFilter(requestedCollectionFilter)
       if (['main', 'promos', 'stamps', 'all'].includes(requestedChecklist)) setChecklistFilter(requestedChecklist)
       setLoading(true)
       const { data: { user: signedInUser }, error: authError } = await supabase.auth.getUser()
@@ -203,20 +204,41 @@ export default function CardChecklistPage() {
     }
     return [...labels.entries()].map(([key, label]) => ({ key, label })).sort((a, b) => a.label.localeCompare(b.label, 'fr'))
   }, [cardsWithIncludedVariants, checklistFilter])
-  const visibleCards = useMemo(() => {
+  const baseFilteredCards = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('fr')
     return cardsWithIncludedVariants.filter(card => {
       const matchesQuery = !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
       const matchesRarity = !rarity.length || rarity.includes(card.rarity_label?.trim())
       const matchesCardType = !selectedCardTypes.length || selectedCardTypes.includes(card.card_type?.trim())
-      const includedVariants = (card.card_print_variants || []).filter(isIncludedVariant)
-      const matchesVersion = !selectedVersions.length || includedVariants.some(variant => selectedVersions.includes(variant.variant_key))
-      const matchesOwned = !ownedOnly || includedVariants.some(variant => (owned[variant.id] || []).length > 0)
-      return matchesQuery && matchesRarity && matchesCardType && matchesVersion && matchesOwned
+      const includedVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
+      return matchesQuery && matchesRarity && matchesCardType && includedVariants.length > 0
     })
-  }, [cardsWithIncludedVariants, query, rarity, selectedCardTypes, selectedVersions, ownedOnly, owned, checklistFilter])
+  }, [cardsWithIncludedVariants, query, rarity, selectedCardTypes, selectedVersions, checklistFilter])
 
-  const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key))))
+  function matchesVariantCollectionFilter(variant, filter) {
+    const count = (owned[variant.id] || []).length
+    if (filter === 'owned') return count > 0
+    if (filter === 'missing') return count === 0
+    if (filter === 'duplicates') return count > 1
+    return true
+  }
+
+  function matchesCollectionFilter(card, filter) {
+    const targets = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
+    return targets.some(variant => matchesVariantCollectionFilter(variant, filter))
+  }
+
+  const visibleCards = useMemo(
+    () => baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter)),
+    [baseFilteredCards, collectionFilter, owned, checklistFilter, selectedVersions]
+  )
+  const missingCardsForCopy = useMemo(
+    () => baseFilteredCards.filter(card => matchesCollectionFilter(card, 'missing')),
+    [baseFilteredCards, owned, checklistFilter, selectedVersions]
+  )
+  const missingCardNumbers = [...new Set(missingCardsForCopy.map(card => card.collector_number).filter(Boolean))]
+
+  const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
 
   const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isIncludedVariant))
@@ -232,11 +254,12 @@ export default function CardChecklistPage() {
     setRarity([])
     setSelectedCardTypes([])
     setSelectedVersions([])
-    setOwnedOnly(false)
+    setCollectionFilter('all')
     const url = new URL(window.location.href)
     url.searchParams.set('set', nextSetId)
     url.searchParams.delete('rarity')
     url.searchParams.delete('owned')
+    url.searchParams.delete('collection')
     window.history.replaceState({}, '', url)
   }
 
@@ -257,12 +280,40 @@ export default function CardChecklistPage() {
     setSelectedVersions(current => current.includes(value) ? current.filter(item => item !== value) : [...current, value])
   }
 
-  function selectOwnedOnly(nextOwnedOnly) {
-    setOwnedOnly(nextOwnedOnly)
+  function selectCollectionFilter(nextFilter) {
+    setCollectionFilter(nextFilter)
     const url = new URL(window.location.href)
-    if (nextOwnedOnly) url.searchParams.set('owned', '1')
-    else url.searchParams.delete('owned')
+    if (nextFilter === 'all') url.searchParams.delete('collection')
+    else url.searchParams.set('collection', nextFilter)
+    url.searchParams.delete('owned')
     window.history.replaceState({}, '', url)
+  }
+
+  async function copyMissingCardNumbers() {
+    if (!missingCardNumbers.length) {
+      setNotice('Aucun numéro manquant avec les filtres actuels.')
+      return
+    }
+    const textToCopy = missingCardNumbers.join('\n')
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(textToCopy)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = textToCopy
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        const copied = document.execCommand('copy')
+        textarea.remove()
+        if (!copied) throw new Error('La copie n’est pas disponible dans ce navigateur.')
+      }
+      setNotice(missingCardNumbers.length + ' numéro' + (missingCardNumbers.length > 1 ? 's' : '') + ' manquant' + (missingCardNumbers.length > 1 ? 's' : '') + ' copié' + (missingCardNumbers.length > 1 ? 's' : '') + '.')
+    } catch (copyError) {
+      setNotice('Copie impossible : ' + (copyError.message || 'sélectionne les numéros manuellement.'))
+    }
   }
 
   function selectProfile(nextProfileId) {
@@ -399,7 +450,7 @@ export default function CardChecklistPage() {
             <div className={styles.progressTrack} role="progressbar" aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100" aria-label="Progression de la checklist">
               <span style={{ width: completion + '%' }} />
             </div>
-            <p className={styles.scope}>{selectedSet.checklist_scope_note}</p>
+            <p className={styles.scope}>{selectedSet.checklist_scope_note} Une carte est comptée une seule fois dans la liste ; les variantes (normale, reverse, tamponnée…) sont comptées séparément dans la progression.</p>
           </section>
           )}
 
@@ -446,10 +497,23 @@ export default function CardChecklistPage() {
                 </div>
               </div>
             </div>
-            <label className={styles.stampToggle}>
-              <input type="checkbox" checked={ownedOnly} onChange={event => selectOwnedOnly(event.target.checked)} />
-              Uniquement possédées
-            </label>
+            <div className={styles.quickFilters} aria-label="Filtres rapides de collection">
+              {[
+                { key: 'all', label: 'Toutes' },
+                { key: 'owned', label: 'Possédées' },
+                { key: 'missing', label: 'Manquantes' },
+                { key: 'duplicates', label: 'En double' }
+              ].map(option => {
+                const count = baseFilteredCards.filter(card => matchesCollectionFilter(card, option.key)).length
+                const active = collectionFilter === option.key
+                return <button type="button" key={option.key} className={active ? styles.quickFilterActive : styles.quickFilter} aria-pressed={active} onClick={() => selectCollectionFilter(option.key)}>
+                  {option.label}<small>{count}</small>
+                </button>
+              })}
+              <button type="button" className={styles.copyMissing} onClick={copyMissingCardNumbers} disabled={!missingCardNumbers.length}>
+                Copier les numéros manquants{missingCardNumbers.length ? ' · ' + missingCardNumbers.length : ''}
+              </button>
+            </div>
             <label>
               Type de checklist
               <select value={checklistFilter} onChange={event => setChecklistFilter(event.target.value)} disabled={isCatalogOnlySet}>
@@ -469,10 +533,10 @@ export default function CardChecklistPage() {
 
           {cardsLoading ? <p className={styles.status}>Chargement des cartes…</p> : (
             <section className={styles.cardGrid} aria-label="Cartes de la série">
-              {!visibleCards.length && <p className={styles.empty}>{ownedOnly ? 'Aucune carte possédée avec ces filtres.' : 'Aucune carte ne correspond aux filtres.'}</p>}
+              {!visibleCards.length && <p className={styles.empty}>{collectionFilter === 'owned' ? 'Aucune carte possédée avec ces filtres.' : collectionFilter === 'missing' ? 'Aucune carte manquante avec ces filtres.' : collectionFilter === 'duplicates' ? 'Aucun doublon avec ces filtres.' : 'Aucune carte ne correspond aux filtres.'}</p>}
               <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's' : ''} affichée{visibleCards.length > 1 ? 's' : ''} · <strong>{visibleOwnedVariantCount} / {visibleTargetVariants.length}</strong> variantes possédées</p>
               {visibleCards.map(card => {
-                const cardVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (!ownedOnly || (owned[variant.id] || []).length > 0))
+                const cardVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter))
                 return (
                   <article className={styles.card} key={card.id}>
                     <div className={styles.cardTop}>

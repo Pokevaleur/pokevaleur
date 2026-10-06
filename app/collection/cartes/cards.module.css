@@ -32,6 +32,12 @@
 .scope { margin:0; color:#687587; font-size:.88rem; line-height:1.4; }
 .searchLabel { grid-column:span 1; }
 .stampToggle { flex-direction:row !important; align-items:center; align-self:end; min-height:44px; color:#425267; }
+.quickFilters { grid-column:1 / -1; display:flex; flex-wrap:wrap; align-items:center; gap:8px; padding-top:2px; }
+.quickFilter, .quickFilterActive, .copyMissing { min-height:40px; display:inline-flex; align-items:center; gap:8px; padding:8px 13px; border:1px solid #cbd4df; border-radius:999px; background:#fff; color:#30445b; font:inherit; font-size:.88rem; cursor:pointer; }
+.quickFilterActive { border:2px solid #243f8f; background:#e9efff; color:#172d69; font-weight:750; }
+.quickFilter small { color:#65758b; font-size:.76rem; font-weight:800; }
+.copyMissing { margin-left:auto; border-color:#173c84; background:#173c84; color:#fff; font-weight:750; }
+.copyMissing:disabled { opacity:.5; cursor:not-allowed; }
 .stampToggle input, .checkboxLine input { width:20px; height:20px; accent-color:#f5b21a; }
 .cardGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
 .card { min-width:0; padding:16px; border:1px solid #dce2e9; border-radius:18px; background:#fff; box-shadow:0 5px 18px #18304b08; }
