@@ -136,39 +136,6 @@ function formatMissingCardNumbers(numbers) {
   return parts.join(', ')
 }
 
-function formatMissingCardNumbers(numbers) {
-  const parts = []
-  let run = []
-
-  function flushRun() {
-    if (run.length > 1) {
-      parts.push(run[0].label + ' à ' + run[run.length - 1].label)
-    } else if (run.length === 1) {
-      parts.push(run[0].label)
-    }
-    run = []
-  }
-
-  for (const value of numbers) {
-    const label = String(value)
-    const digits = label.match(/^\\d+$/)
-    if (!digits) {
-      flushRun()
-      parts.push(label)
-      continue
-    }
-
-    const number = Number(label)
-    const width = label.length
-    const previous = run[run.length - 1]
-    if (previous && (width !== previous.width || number !== previous.number + 1)) flushRun()
-    run.push({ label, number, width })
-  }
-
-  flushRun()
-  return parts.join(', ')
-}
-
 export default function CardChecklistPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState(null)
