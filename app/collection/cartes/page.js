@@ -201,12 +201,13 @@ export default function CardChecklistPage() {
   }, [supabase, setId, profileId])
 
   const selectedSet = sets.find(row => row.id === setId)
-  const isIncludedVariant = variant => variant.is_master_set_target && (
+  const isIncludedVariant = variant => (
     checklistFilter === 'all' ||
     (checklistFilter === 'stamps' ? variant.checklist_group === 'stamp' :
       checklistFilter === 'promos' ? variant.checklist_group === 'promo' :
       variant.checklist_group === 'main')
   )
+  const isProgressTarget = variant => variant.is_master_set_target && isIncludedVariant(variant)
   const isCatalogOnlySet = cards.length > 0 && cards.every(card => !(card.card_print_variants || []).length)
   const cardsWithIncludedVariants = isCatalogOnlySet
     ? cards
@@ -261,11 +262,12 @@ export default function CardChecklistPage() {
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
 
-  const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isIncludedVariant))
+  const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isProgressTarget))
+  const cardsWithProgressTargets = cardsWithIncludedVariants.filter(card => (card.card_print_variants || []).some(isProgressTarget))
   const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
-  const completedCardCount = cardsWithIncludedVariants.filter(card => {
-    const targets = (card.card_print_variants || []).filter(isIncludedVariant)
-    return targets.length > 0 && targets.every(variant => (owned[variant.id] || []).length > 0)
+  const completedCardCount = cardsWithProgressTargets.filter(card => {
+    const targets = (card.card_print_variants || []).filter(isProgressTarget)
+    return targets.every(variant => (owned[variant.id] || []).length > 0)
   }).length
   const completion = targetVariants.length ? Math.round(ownedTargetCount * 100 / targetVariants.length) : 0
 
