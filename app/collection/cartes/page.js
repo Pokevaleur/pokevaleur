@@ -6,6 +6,39 @@ import styles from './cards.module.css'
 
 const ALL_SERIES_FILTER = '__all_series__'
 
+function formatMissingCardNumbers(numbers) {
+  const entries = numbers.map(value => String(value).trim()).filter(Boolean)
+  const formatted = []
+  let index = 0
+
+  while (index < entries.length) {
+    const current = entries[index]
+    if (!/^\\d+$/.test(current)) {
+      formatted.push(current)
+      index += 1
+      continue
+    }
+
+    const width = current.length
+    let end = index
+    while (end + 1 < entries.length) {
+      const next = entries[end + 1]
+      const previousNumber = Number(entries[end])
+      if (!/^\\d+$/.test(next) || next.length !== width || Number(next) !== previousNumber + 1) break
+      end += 1
+    }
+
+    if (end - index >= 2) formatted.push(current + ' à ' + entries[end])
+    else {
+      formatted.push(current)
+      if (end > index) formatted.push(entries[end])
+    }
+    index = end + 1
+  }
+
+  return formatted.join(', ')
+}
+
 function raritySymbol(label) {
   const value = (label || '').toLocaleLowerCase('fr')
   if (value.includes('commune') || value.includes('common')) return '●'
@@ -320,6 +353,7 @@ export default function CardChecklistPage() {
     [baseFilteredCards, owned, checklistFilter, selectedVersions]
   )
   const missingCardNumbers = [...new Set(missingCardsForCopy.map(card => card.collector_number).filter(Boolean))]
+  const formattedMissingCardNumbers = useMemo(() => formatMissingCardNumbers(missingCardNumbers), [missingCardNumbers])
 
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
@@ -383,7 +417,7 @@ export default function CardChecklistPage() {
       setNotice('Aucun numéro manquant avec les filtres actuels.')
       return
     }
-    const textToCopy = missingCardNumbers.join('\n')
+    const textToCopy = formattedMissingCardNumbers
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(textToCopy)
@@ -650,6 +684,10 @@ export default function CardChecklistPage() {
                 Copier les numéros manquants{missingCardNumbers.length ? ' · ' + missingCardNumbers.length : ''}
               </button>
             </div>
+            {missingCardNumbers.length > 0 && <details className={styles.missingPreview}>
+              <summary>Voir les {missingCardNumbers.length} numéros manquants</summary>
+              <p>{formattedMissingCardNumbers}</p>
+            </details>}
             <label>
               Type de checklist
               <select value={checklistFilter} onChange={event => setChecklistFilter(event.target.value)} disabled={isCatalogOnlySet}>
