@@ -6,6 +6,20 @@ import { fetchAllRows } from '../../../lib/supabase-pagination'
 import { collectionItemKind } from '../../../lib/collection-statistics.mjs'
 import { buildCardRarityBreakdown } from '../../../lib/card-rarity-statistics.mjs'
 
+function displayRarityLabel(label) {
+  const labels = {
+    Common: 'Commune',
+    Uncommon: 'Peu commune',
+    Rare: 'Rare',
+    'Double rare': 'Double rare',
+    'Ultra Rare': 'Ultra rare',
+    'Illustration rare': 'Illustration rare',
+    'Special illustration rare': 'Illustration spéciale rare',
+    'Hyper rare': 'Hyper rare'
+  }
+  return labels[label] || label
+}
+
 function buildBreakdown(holdings, groupFor, unlabelled = 'Autres') {
   const totals = new Map()
   for (const holding of holdings) {
@@ -326,7 +340,8 @@ export default function CollectionStatsPage() {
       const ratio = entryHref
         ? <a href={entryHref} aria-label={`Afficher ${entry.count} variantes ${entry.label} possédées`} style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}>{ratioLabel}</a>
         : ratioLabel
-      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{ratio}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
+      const displayLabel = selectedSetId ? displayRarityLabel(entry.label) : entry.label
+      const heading = <><div className="collectionStatsBarLabel"><span>{displayLabel}</span><strong>{ratio}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
       if (!detailsByGroup) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
 
       const details = detailsByGroup[entry.label] || []
