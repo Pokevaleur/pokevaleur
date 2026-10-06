@@ -118,7 +118,7 @@ function formatMissingCardNumbers(numbers) {
 
   for (const value of numbers) {
     const label = String(value)
-    const digits = label.match(/^\\d+$/)
+    const digits = label.match(/^\d+$/)
     if (!digits) {
       flushRun()
       parts.push(label)
@@ -371,6 +371,7 @@ export default function CardChecklistPage() {
     [baseFilteredCards, owned, checklistFilter, selectedVersions]
   )
   const missingCardNumbers = [...new Set(missingCardsForCopy.map(card => card.collector_number).filter(Boolean))]
+  const formattedMissingCardNumbers = formatMissingCardNumbers(missingCardNumbers)
 
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
