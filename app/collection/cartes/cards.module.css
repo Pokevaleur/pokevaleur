@@ -74,6 +74,21 @@
 .imageNote { margin:10px 0; padding:12px 14px; border:1px solid #eadca8; border-radius:12px; background:#fff9e7; color:#695824; font-size:.9rem; line-height:1.4; }
 .error { color:#842c31; background:#fff0f0; }
 .notice { color:#254c35; background:#eaf7ee; }
+.visualFilters { grid-column:1 / -1; display:grid; gap:14px; }
+.filterGroup { min-width:0; padding:13px; border:1px solid #e1e6ed; border-radius:14px; background:#fbfcfe; }
+.filterHeading { display:flex; justify-content:space-between; align-items:baseline; gap:10px; margin-bottom:10px; }
+.filterHeading strong { font-size:.98rem; }
+.filterHeading span { color:#667487; font-size:.82rem; }
+.filterChoices { display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); gap:8px; }
+.filterChoice, .filterChoiceActive { min-height:60px; display:grid; grid-template-columns:28px minmax(0,1fr) auto; align-items:center; gap:7px; padding:8px; border:1px solid #cbd4df; border-radius:12px; background:#fff; color:#30445b; font:inherit; font-size:.82rem; text-align:left; cursor:pointer; transition:background .15s ease,border-color .15s ease,transform .15s ease; }
+.filterChoice:hover, .filterChoiceActive:hover { transform:translateY(-1px); border-color:#4966a8; }
+.filterChoiceActive { border:2px solid #243f8f; background:#e9efff; color:#172d69; }
+.filterIcon { width:27px; height:27px; display:grid; place-items:center; border-radius:8px; background:#f0f2f5; color:#7e8794; font-size:1.1rem; font-weight:900; }
+.filterChoiceActive .filterIcon { background:#d4def8; color:#263f8b; }
+.versionIcon { width:23px; height:28px; display:grid; place-items:center; border:1px solid #bbc5d2; border-radius:5px; background:linear-gradient(145deg,#fff,#f5d978); color:#394c62; font-size:.72rem; font-weight:900; }
+.filterChoice small, .filterChoiceActive small { color:#65758b; font-size:.76rem; font-weight:800; }
+.resultCount { grid-column:1 / -1; margin:0; padding:10px 12px; border-radius:10px; background:#f2f6fb; color:#42546b; font-size:.92rem; }
+.resultCount strong { color:#173c84; }
 @media (max-width:760px) {
   .cardGrid { grid-template-columns:1fr; }
   .page { width:min(calc(100% - 24px), 620px); padding-top:18px; }

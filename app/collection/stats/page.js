@@ -6,6 +6,20 @@ import { fetchAllRows } from '../../../lib/supabase-pagination'
 import { collectionItemKind } from '../../../lib/collection-statistics.mjs'
 import { buildCardRarityBreakdown } from '../../../lib/card-rarity-statistics.mjs'
 
+function displayRarityLabel(label) {
+  const labels = {
+    Common: 'Commune',
+    Uncommon: 'Peu commune',
+    Rare: 'Rare',
+    'Double rare': 'Double rare',
+    'Ultra Rare': 'Ultra rare',
+    'Illustration rare': 'Illustration rare',
+    'Special illustration rare': 'Illustration spéciale rare',
+    'Hyper rare': 'Hyper rare'
+  }
+  return labels[label] || label
+}
+
 function buildBreakdown(holdings, groupFor, unlabelled = 'Autres') {
   const totals = new Map()
   for (const holding of holdings) {
@@ -326,7 +340,8 @@ export default function CollectionStatsPage() {
       const ratio = entryHref
         ? <a href={entryHref} aria-label={`Afficher ${entry.count} variantes ${entry.label} possédées`} style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}>{ratioLabel}</a>
         : ratioLabel
-      const heading = <><div className="collectionStatsBarLabel"><span>{entry.label}</span><strong>{ratio}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
+      const displayLabel = selectedSetId ? displayRarityLabel(entry.label) : entry.label
+      const heading = <><div className="collectionStatsBarLabel"><span>{displayLabel}</span><strong>{ratio}</strong></div><div className="collectionStatsTrack"><i style={{ width: `${width}%` }} /></div></>
       if (!detailsByGroup) return <div className="collectionStatsBar" key={entry.label}>{heading}</div>
 
       const details = detailsByGroup[entry.label] || []
@@ -387,7 +402,7 @@ export default function CollectionStatsPage() {
       ) : (
         <div className={category === 'graded' ? 'collectionStatsBreakdowns collectionStatsBreakdownsSingle' : 'collectionStatsBreakdowns'}>
           {selectedSetId ? (
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par rareté</h2><p className="muted collectionStatsDescription">Chaque rareté indique les variantes possédées sur le total du checklist. Appuie sur le nombre possédé pour afficher les cartes et leurs variantes.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.byRarity, null, 'rareté', entry => `/collection/cartes?set=${encodeURIComponent(selectedSetId)}&rarity=${encodeURIComponent(entry.label)}&owned=1&checklist=all`)}<p className="muted collectionStatsFootnote">Une variante du checklist compte une seule fois, même si tu en possèdes plusieurs exemplaires.</p></section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par rareté</h2><p className="muted collectionStatsDescription">Les totaux comptent les variantes du checklist, pas les cartes distinctes : une même carte peut apparaître en version Normale et Reverse. Appuie sur un nombre pour ouvrir les cartes, puis utilise les filtres visuels pour compter séparément les cartes standard.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.byRarity, null, 'rareté', entry => `/collection/cartes?set=${encodeURIComponent(selectedSetId)}&rarity=${encodeURIComponent(entry.label)}&owned=1&checklist=all`)}<p className="muted collectionStatsFootnote">Une variante du checklist compte une seule fois, même si tu en possèdes plusieurs exemplaires.</p></section>
           ) : (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série', entry => category === 'cards' && entry.setId ? `/collection/stats?category=cards&set=${encodeURIComponent(entry.setId)}` : null)}<p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
           )}
