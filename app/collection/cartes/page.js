@@ -104,6 +104,56 @@ function imageUrl(card, quality = 'low') {
   return 'https://assets.tcgdex.net/' + language + '/' + seriesCode + '/' + setCode + '/' + encodeURIComponent(localId) + '/' + quality + '.webp'
 }
 
+
+function imageFallbackCandidates(card, quality = 'low') {
+  const primary = imageUrl(card, quality)
+  if (!primary) return []
+  const candidates = [primary]
+  const add = url => { if (url && !candidates.includes(url)) candidates.push(url) }
+  const english = url => url.replace('https://assets.tcgdex.net/fr/', 'https://assets.tcgdex.net/en/')
+
+  add(english(primary))
+  if (quality === 'high') {
+    const low = imageUrl(card, 'low')
+    add(low)
+    add(english(low))
+  }
+  return candidates
+}
+
+function handleCardImageError(event, card, quality = 'low') {
+  const image = event.currentTarget
+  const candidates = imageFallbackCandidates(card, quality)
+  const currentUrl = new URL(image.src, document.baseURI).href
+  const currentIndex = candidates.findIndex(candidate => new URL(candidate, document.baseURI).href === currentUrl)
+  const next = candidates.slice(currentIndex + 1).find(candidate => new URL(candidate, document.baseURI).href !== currentUrl)
+  if (next) {
+    image.src = next
+    return
+  }
+
+  image.style.display = 'none'
+  const wrapper = image.parentElement?.parentElement
+  if (wrapper) wrapper.dataset.imageMissing = 'true'
+}
+
+function formatMissingNumbersBySeries(cards) {
+  const grouped = new Map()
+  for (const card of cards) {
+    const cardSet = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+    const series = seriesAbbreviation(cardSet) || cardSet?.set_name || 'Série'
+    const number = String(card.collector_number || '').trim()
+    if (!number) continue
+    if (!grouped.has(series)) grouped.set(series, [])
+    grouped.get(series).push(number)
+  }
+  return [...grouped.entries()]
+    .sort(([left], [right]) => left.localeCompare(right, 'fr', { numeric: true }))
+    .map(([series, numbers]) => series + ' — ' + formatMissingCardNumbers([...new Set(numbers)].sort((left, right) => left.localeCompare(right, 'fr', { numeric: true }))))
+    .join('\n')
+}
+
+
 function formatMissingCardNumbers(numbers) {
   const parts = []
   let run = []
@@ -387,8 +437,15 @@ export default function CardChecklistPage() {
     () => baseFilteredCards.filter(card => matchesCollectionFilter(card, 'missing')),
     [baseFilteredCards, owned, checklistFilter, selectedVersions]
   )
-  const missingCardNumbers = [...new Set(missingCardsForCopy.map(card => card.collector_number).filter(Boolean))]
-  const formattedMissingCardNumbers = formatMissingCardNumbers(missingCardNumbers)
+  const missingCardNumbers = [...new Set(missingCardsForCopy.map(card => {
+    if (!card.collector_number) return ''
+    if (!isAllSeriesSelected) return card.collector_number
+    const cardSet = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+    return (seriesAbbreviation(cardSet) || cardSet?.set_name || 'Série') + ' ' + card.collector_number
+  }).filter(Boolean))]
+  const formattedMissingCardNumbers = isAllSeriesSelected
+    ? formatMissingNumbersBySeries(missingCardsForCopy)
+    : formatMissingCardNumbers(missingCardNumbers)
 
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
@@ -452,7 +509,7 @@ export default function CardChecklistPage() {
       setNotice('Aucun numéro manquant avec les filtres actuels.')
       return
     }
-    const textToCopy = formatMissingCardNumbers(missingCardNumbers)
+    const textToCopy = formattedMissingCardNumbers
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(textToCopy)
@@ -633,6 +690,15 @@ export default function CardChecklistPage() {
           </label>
           {!query.trim() && <p className={styles.scope}>Saisis un nom pour trouver les cartes correspondantes dans toutes les séries françaises publiées.</p>}
           {!!query.trim() && <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> résultat{visibleCards.length > 1 ? 's' : ''} pour « {query.trim()} » · jusqu’à 500 cartes affichées</p>}
+          <div className={styles.globalActions}>
+            <button type="button" className={styles.copyMissing} onClick={copyMissingCardNumbers} disabled={cardsLoading || !query.trim() || !missingCardNumbers.length}>
+              Copier les numéros manquants{missingCardNumbers.length ? ' · ' + missingCardNumbers.length : ''}
+            </button>
+          </div>
+          {missingCardNumbers.length > 0 && <details className={styles.missingPreview}>
+            <summary>Voir les {missingCardNumbers.length} numéros manquants</summary>
+            <p>{formattedMissingCardNumbers}</p>
+          </details>}
           {cardsLoading ? <p className={styles.status}>Recherche dans toutes les séries…</p> : query.trim() && (
             <section className={styles.cardGrid} aria-label="Résultats toutes séries">
               {!visibleCards.length && !error && <p className={styles.empty}>Aucune carte ne correspond à « {query.trim()} ».</p>}
@@ -643,7 +709,7 @@ export default function CardChecklistPage() {
                   <div className={styles.cardTop}>
                     <div className={styles.artFrame}>
                       {cardImage && <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: cardSet?.set_name || '' })}>
-                        <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true' }} />
+                        <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => handleCardImageError(event, card)} />
                       </button>}
                       <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                     </div>
@@ -784,10 +850,7 @@ export default function CardChecklistPage() {
                     <div className={styles.cardTop}>
                       <div className={styles.artFrame}>
                         <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })}>
-                          <img src={imageUrl(card)} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => {
-                            event.currentTarget.style.display = 'none'
-                            event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true'
-                          }} />
+                          <img src={imageUrl(card)} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => handleCardImageError(event, card)} />
                         </button>
                         <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                       </div>
@@ -863,7 +926,7 @@ export default function CardChecklistPage() {
       {zoomedCard && <div className={styles.zoomBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setZoomedCard(null) }}>
         <section className={styles.zoomDialog} role="dialog" aria-modal="true" aria-label={'Image agrandie de ' + zoomedCard.card_name}>
           <button type="button" className={styles.zoomClose} aria-label="Fermer l’image agrandie" onClick={() => setZoomedCard(null)}>×</button>
-          <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => { const fallback = imageUrl(zoomedCard, 'low'); if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback }} />
+          <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => handleCardImageError(event, zoomedCard, 'high')} />
           <p><strong>{zoomedCard.card_name}</strong> · N° {zoomedCard.collector_number}{zoomedCard.seriesName ? ' · ' + zoomedCard.seriesName : ''}</p>
         </section>
       </div>}
