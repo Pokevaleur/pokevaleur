@@ -138,6 +138,8 @@
 .artFrame > .zoomHint { top:6px; right:6px; bottom:auto; left:auto; width:28px; height:28px; display:grid; place-items:center; padding:0; border:1px solid #ffffff60; border-radius:50%; background:#071c32d9; color:#fff; }
 .zoomHint svg { display:block; width:16px; height:16px; }
 .globalSearch { margin-top:18px; padding:18px; border:1px solid #dce2e9; border-radius:18px; background:#fff; }
+.globalActions { display:flex; justify-content:flex-end; margin:10px 0 0; }
+.globalActions .copyMissing { margin-left:0; }
 .globalSearchLabel { display:flex; flex-direction:column; gap:7px; margin-bottom:12px; font-weight:750; }
 .globalSearchLabel input { width:100%; min-height:48px; padding:10px 13px; border:1px solid #cbd4df; border-radius:10px; background:#fff; color:#14263a; font:inherit; }
 .globalSearch .cardGrid { margin-top:14px; }
