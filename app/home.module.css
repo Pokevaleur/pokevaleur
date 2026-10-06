@@ -24,3 +24,17 @@
 .secretBubble p{min-height:0;margin:0 0 12px;color:#082348;font-size:15px;line-height:1.4}.secretBubble strong{display:block;margin-top:6px;color:#a46c05}.secretBubble button{border:0;border-radius:20px;background:#ffdf76;color:#082348;padding:9px 12px;min-height:44px;font-size:13px;font-weight:700;cursor:pointer}.secretBubble button:focus-visible{outline:3px solid #1476cb;outline-offset:2px}
 @media(max-width:600px){.secretBubble{bottom:155px;left:0;right:0;padding:12px}.secretBubble p{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.lukuluGreeting img{animation:none}}
+
+
+/* Separate card checklist block appended below the approved homepage sections. */
+.cardNumbersPromo{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);align-items:center;gap:clamp(22px,5vw,64px);margin:24px 16px 34px;padding:clamp(22px,4vw,42px);border:1px solid #dbe8f5;border-radius:24px;background:radial-gradient(circle at 90% 12%,#dceeff 0,transparent 34%),linear-gradient(125deg,#fffdf7 0%,#f2f8ff 58%,#fff 100%);box-shadow:0 8px 24px #102a4310}
+.cardNumbersCopy{max-width:700px}.cardNumbersKicker{margin:0 0 9px;color:#2677b6;font-size:14px;font-weight:800;letter-spacing:.09em;text-transform:uppercase}
+.cardNumbersCopy h2{margin:0 0 12px;color:#061b38;font-size:clamp(25px,3.2vw,38px);line-height:1.12;letter-spacing:-1px}
+.cardNumbersCopy>p:not(.cardNumbersKicker){max-width:650px;margin:0 0 21px;color:#335d8a;font-size:17px;line-height:1.5}
+.cardNumbersLink{display:inline-flex;justify-content:center;align-items:center;min-height:50px;padding:13px 23px;border:1px solid #eec555;border-radius:28px;background:linear-gradient(#fff4b4,#ffce45);box-shadow:0 5px 15px #d6b14726;color:#121b29;font-size:17px;font-weight:800;text-decoration:none}
+.cardNumbersLink:hover{box-shadow:0 7px 22px #d6b14755}.cardNumbersLink:focus-visible{outline:3px solid #1476cb;outline-offset:4px}
+.cardNumbersPreview{min-width:0;padding:22px 24px;border:1px solid #294d75;border-radius:18px;background:linear-gradient(145deg,#082348,#06192f 72%,#123e69);color:#fff;box-shadow:0 10px 24px #08234824}
+.cardNumbersLabel{display:inline-block;margin-bottom:14px;color:#f5c83f;font-size:13px;font-weight:800;letter-spacing:.06em;text-transform:uppercase}
+.cardNumbersPreview p{margin:0 0 12px;padding:17px 18px;border:1px solid #ffffff3d;border-radius:12px;background:#ffffff0d;color:#fff;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:clamp(24px,3vw,34px);font-weight:800;letter-spacing:.06em;text-align:center}
+.cardNumbersPreview small{display:block;color:#d4e4f5;font-size:14px;line-height:1.4;text-align:center}
+@media(max-width:700px){.cardNumbersPromo{grid-template-columns:1fr;gap:20px;margin:16px 8px 24px;padding:20px;border-radius:20px}.cardNumbersCopy h2{font-size:27px}.cardNumbersCopy>p:not(.cardNumbersKicker){font-size:16px}.cardNumbersPreview{padding:18px}.cardNumbersPreview p{font-size:28px}}
