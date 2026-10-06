@@ -20,6 +20,8 @@
 .controls select, .filters select, .filters input:not([type=checkbox]), .gradeForm input, .gradeForm select {
   width:100%; min-height:44px; padding:10px 12px; border:1px solid #cbd4df; border-radius:10px; background:#fff; color:#14263a; font:inherit;
 }
+.controls select { font-size:.9rem; line-height:1.25; }
+.controls select option { font-size:.9rem; }
 .adminNote { grid-column:1 / -1; margin:0; color:#735c1d; font-size:.92rem; }
 .progressCard { padding:18px; border-radius:18px; background:#fff; border:1px solid #dce2e9; }
 .progressHeading { display:flex; align-items:center; gap:22px; }
@@ -101,6 +103,8 @@
 }
 @media (max-width:520px) {
   .controls, .filters { grid-template-columns:1fr; padding:14px; }
+  .controls select { min-height:42px; padding:8px 10px; font-size:.84rem; }
+  .controls select option { font-size:.84rem; }
   .card { padding:12px; }
   .cardTop { grid-template-columns:86px minmax(0,1fr); gap:11px; }
   .artFrame { min-height:122px; }
@@ -108,4 +112,48 @@
   .progressHeading span { font-size:.76rem; }
   .progressHeading strong { font-size:1rem; }
   .percent { font-size:1.3rem !important; }
+}
+
+.artZoomButton { position:absolute; inset:0; z-index:1; display:block; width:100%; height:100%; padding:0; border:0; background:transparent; cursor:zoom-in; }
+.artZoomButton:focus-visible { outline:3px solid #173c84; outline-offset:-3px; border-radius:10px; }
+.artFrame > span { pointer-events:none; z-index:2; }
+.globalSearch { margin-top:18px; padding:18px; border:1px solid #dce2e9; border-radius:18px; background:#fff; }
+.globalSearchLabel { display:flex; flex-direction:column; gap:7px; margin-bottom:12px; font-weight:750; }
+.globalSearchLabel input { width:100%; min-height:48px; padding:10px 13px; border:1px solid #cbd4df; border-radius:10px; background:#fff; color:#14263a; font:inherit; }
+.globalSearch .cardGrid { margin-top:14px; }
+.zoomBackdrop { position:fixed; inset:0; z-index:1000; display:grid; place-items:center; padding:20px; background:#071321d9; }
+.zoomDialog { position:relative; display:grid; justify-items:center; gap:12px; width:min(96vw,760px); max-height:96vh; padding:22px; border:1px solid #ffffff50; border-radius:18px; background:#fff; box-shadow:0 24px 80px #0008; }
+.zoomImage { display:block; max-width:100%; max-height:calc(96vh - 100px); object-fit:contain; }
+.zoomDialog p { margin:0; color:#30445b; text-align:center; line-height:1.4; }
+.zoomClose { position:absolute; top:8px; right:8px; z-index:1; display:grid; place-items:center; width:40px; height:40px; border:0; border-radius:999px; background:#102236; color:#fff; font-size:1.6rem; line-height:1; cursor:pointer; }
+.zoomClose:focus-visible { outline:3px solid #ffbd1b; outline-offset:2px; }
+@media (max-width:520px) {
+  .globalSearch { padding:14px; }
+  .zoomBackdrop { padding:10px; }
+  .zoomDialog { width:100%; padding:14px; padding-top:48px; }
+  .zoomImage { max-height:calc(94vh - 120px); }
+}
+
+
+.missingPreview {
+  grid-column: 1 / -1;
+  min-width: 0;
+  color: #30445b;
+  font-size: .9rem;
+}
+
+.missingPreview summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.missingPreview p {
+  margin: 8px 0 2px;
+  padding: 12px 14px;
+  border: 1px solid #d9e1ec;
+  border-radius: 12px;
+  background: #f7f9fc;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
 }
