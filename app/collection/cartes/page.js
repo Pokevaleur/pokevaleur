@@ -354,7 +354,7 @@ export default function CardChecklistPage() {
       setNotice('Aucun numéro manquant avec les filtres actuels.')
       return
     }
-    const textToCopy = missingCardNumbers.join('\n')
+    const textToCopy = formatMissingCardNumbers(missingCardNumbers)
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(textToCopy)
