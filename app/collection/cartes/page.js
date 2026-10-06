@@ -77,7 +77,6 @@ export default function CardChecklistPage() {
   const [owned, setOwned] = useState({})
   const [companies, setCompanies] = useState([])
   const [query, setQuery] = useState('')
-  const [category, setCategory] = useState('')
   const [rarity, setRarity] = useState([])
   const [selectedCardTypes, setSelectedCardTypes] = useState([])
   const [selectedVersions, setSelectedVersions] = useState([])
@@ -193,7 +192,6 @@ export default function CardChecklistPage() {
   const cardsWithIncludedVariants = isCatalogOnlySet
     ? cards
     : cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
-  const categories = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.guide_category_label).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const rarities = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.rarity_label?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const cardTypes = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.card_type?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const versions = useMemo(() => {
@@ -209,15 +207,14 @@ export default function CardChecklistPage() {
     const normalized = query.trim().toLocaleLowerCase('fr')
     return cardsWithIncludedVariants.filter(card => {
       const matchesQuery = !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
-      const matchesCategory = !category || card.guide_category_label === category
       const matchesRarity = !rarity.length || rarity.includes(card.rarity_label?.trim())
       const matchesCardType = !selectedCardTypes.length || selectedCardTypes.includes(card.card_type?.trim())
       const includedVariants = (card.card_print_variants || []).filter(isIncludedVariant)
       const matchesVersion = !selectedVersions.length || includedVariants.some(variant => selectedVersions.includes(variant.variant_key))
       const matchesOwned = !ownedOnly || includedVariants.some(variant => (owned[variant.id] || []).length > 0)
-      return matchesQuery && matchesCategory && matchesRarity && matchesCardType && matchesVersion && matchesOwned
+      return matchesQuery && matchesRarity && matchesCardType && matchesVersion && matchesOwned
     })
-  }, [cardsWithIncludedVariants, query, category, rarity, selectedCardTypes, selectedVersions, ownedOnly, owned, checklistFilter])
+  }, [cardsWithIncludedVariants, query, rarity, selectedCardTypes, selectedVersions, ownedOnly, owned, checklistFilter])
 
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key))))
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
@@ -410,13 +407,6 @@ export default function CardChecklistPage() {
             <label className={styles.searchLabel}>
               Rechercher une carte
               <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Numéro ou nom…" />
-            </label>
-            <label>
-              Catégorie du guide
-              <select value={category} onChange={event => setCategory(event.target.value)}>
-                <option value="">Toutes les catégories</option>
-                {categories.map(value => <option key={value} value={value}>{value}</option>)}
-              </select>
             </label>
             <div className={styles.visualFilters}>
               <div className={styles.filterGroup}>
