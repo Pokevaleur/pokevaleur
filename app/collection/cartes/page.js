@@ -215,7 +215,7 @@ export default function CardChecklistPage() {
   useEffect(() => {
     if (setId !== ALL_SERIES_FILTER || !profileId) return
     const term = query.trim()
-    const searchableSetIds = sets.filter(row => row.is_public && row.language === 'fr').map(row => row.id)
+    const searchableSetIds = sets.filter(row => row.is_public && row.language === 'FR').map(row => row.id)
     let cancelled = false
     if (!term || !searchableSetIds.length) {
       setCards([])
@@ -677,7 +677,7 @@ export default function CardChecklistPage() {
                   <article className={styles.card} key={card.id}>
                     <div className={styles.cardTop}>
                       <div className={styles.artFrame}>
-                        <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard(card)}>
+                        <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })}>
                           <img src={imageUrl(card)} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => {
                             event.currentTarget.style.display = 'none'
                             event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true'
