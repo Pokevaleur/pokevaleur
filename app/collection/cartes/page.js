@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import styles from './cards.module.css'
 
@@ -21,7 +21,8 @@ function seriesAbbreviation(set) {
 
 function seriesOptionLabel(set) {
   const abbreviation = seriesAbbreviation(set)
-  return (abbreviation ? abbreviation + ' — ' : '') + set.set_name + (set.is_public ? '' : ' · brouillon privé')
+  const name = (set.set_name || '').replace(/Classique(?=30e)/i, 'Classique ')
+  return (abbreviation ? abbreviation + ' — ' : '') + name + (set.is_public ? '' : ' · brouillon privé')
 }
 
 function raritySymbol(label) {
@@ -162,13 +163,29 @@ export default function CardChecklistPage() {
   const [gradingVariant, setGradingVariant] = useState('')
   const [savingGrade, setSavingGrade] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
+  const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
+  const seriesPickerRef = useRef(null)
 
   useEffect(() => {
-    if (!zoomedCard) return
-    const closeOnEscape = event => { if (event.key === 'Escape') setZoomedCard(null) }
+    if (!zoomedCard && !seriesPickerOpen) return
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') {
+        setZoomedCard(null)
+        setSeriesPickerOpen(false)
+      }
+    }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [zoomedCard])
+  }, [zoomedCard, seriesPickerOpen])
+
+  useEffect(() => {
+    if (!seriesPickerOpen) return
+    const closeOnOutsideClick = event => {
+      if (!seriesPickerRef.current?.contains(event.target)) setSeriesPickerOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
+  }, [seriesPickerOpen])
 
   useEffect(() => {
     let cancelled = false
@@ -559,11 +576,44 @@ export default function CardChecklistPage() {
       <section className={styles.controls} aria-label="Sélection de la série et du profil">
         <label>
           Série
-          <select value={setId} onChange={event => selectSet(event.target.value)} disabled={!sets.length}>
-            {!sets.length && <option value="">Aucune série disponible</option>}
-            <option value={ALL_SERIES_FILTER}>Toutes les séries</option>
-            {sets.map(set => <option key={set.id} value={set.id}>{seriesOptionLabel(set)}</option>)}
-          </select>
+          <div className={styles.seriesPicker} ref={seriesPickerRef}>
+            <button
+              type="button"
+              className={styles.seriesPickerTrigger}
+              aria-haspopup="listbox"
+              aria-expanded={seriesPickerOpen}
+              aria-label="Choisir une série"
+              onClick={() => setSeriesPickerOpen(open => !open)}
+              disabled={!sets.length}
+            >
+              <span>{isAllSeriesSelected ? 'Toutes les séries' : selectedSet ? seriesOptionLabel(selectedSet) : 'Choisir une série'}</span>
+              <span className={styles.seriesPickerChevron} aria-hidden="true">▾</span>
+            </button>
+            {seriesPickerOpen && (
+              <div className={styles.seriesPickerOptions} role="listbox" aria-label="Séries de cartes">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isAllSeriesSelected}
+                  className={isAllSeriesSelected ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
+                  onClick={() => { selectSet(ALL_SERIES_FILTER); setSeriesPickerOpen(false) }}
+                >Toutes les séries</button>
+                {sets.map(set => {
+                  const selected = set.id === setId
+                  return (
+                    <button
+                      type="button"
+                      key={set.id}
+                      role="option"
+                      aria-selected={selected}
+                      className={selected ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
+                      onClick={() => { selectSet(set.id); setSeriesPickerOpen(false) }}
+                    >{seriesOptionLabel(set)}</button>
+                  )
+                })}
+              </div>
+            )}
+          </div>
         </label>
         <label>
           Profil de collection
