@@ -129,3 +129,27 @@
   .zoomDialog { width:100%; padding:14px; padding-top:48px; }
   .zoomImage { max-height:calc(94vh - 120px); }
 }
+
+
+.missingPreview {
+  grid-column: 1 / -1;
+  min-width: 0;
+  color: #30445b;
+  font-size: .9rem;
+}
+
+.missingPreview summary {
+  width: fit-content;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.missingPreview p {
+  margin: 8px 0 2px;
+  padding: 12px 14px;
+  border: 1px solid #d9e1ec;
+  border-radius: 12px;
+  background: #f7f9fc;
+  line-height: 1.8;
+  overflow-wrap: anywhere;
+}
