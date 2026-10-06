@@ -433,8 +433,8 @@ export default function CardChecklistPage() {
       </div>
       <header className={styles.header}>
         <p className={styles.kicker}>Checklist de série</p>
-        <h1>Cartes &amp; Master Set</h1>
-        <p>Retrouve les cartes par numéro, rareté et finition. Les exemplaires bruts et gradés restent séparés.</p>
+        <h1>Checklist cartes</h1>
+        <p>Marque tes cartes, repère les manquantes et filtre par numéro, rareté, type ou version.</p>
       </header>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
@@ -466,7 +466,7 @@ export default function CardChecklistPage() {
               <p className={styles.scope}>Première passe du catalogue : les noms et numéros sont importés. Les variantes et le suivi de collection seront ajoutés ensuite.</p>
             </section>
           ) : (
-          <section className={styles.progressCard} aria-label="Progression du Master Set">
+          <section className={styles.progressCard} aria-label="Progression de la série">
             <div className={styles.progressHeading}>
               <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>variantes du checklist possédées</span></div>
               <div><strong>{completedCardCount} / {cardsWithIncludedVariants.length}</strong><span>cartes complétées</span></div>
@@ -585,7 +585,7 @@ export default function CardChecklistPage() {
                         <span>{card.card_type || 'Carte Pokémon'}</span>
                       </div>
                       <div className={styles.cardHeading}>
-                        <span className={styles.number}>{card.collector_number}</span>
+                        <span className={styles.number}>N° {card.collector_number}</span>
                         <h2>{card.card_name}</h2>
                         <p className={styles.rarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</p>
                         {card.mechanic_label && <small>{card.mechanic_label}</small>}

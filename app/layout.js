@@ -18,7 +18,7 @@ const navLinks = [
     label: 'Ma collection',
     children: [
       { href: '/collection', label: 'Produits scellés' },
-      { href: '/collection/cartes', label: 'Cartes & Master Set', memberOnly: true }
+      { href: '/collection/cartes', label: 'Checklist cartes', memberOnly: true }
     ]
   },
   { href: '/catalogue', label: 'Catalogue', memberOnly: true },
