@@ -15,6 +15,20 @@ function raritySymbol(label) {
   return '★'
 }
 
+function rarityDisplayLabel(label) {
+  const labels = {
+    Common: 'Commune',
+    Uncommon: 'Peu commune',
+    Rare: 'Rare',
+    'Double rare': 'Double rare',
+    'Ultra Rare': 'Ultra rare',
+    'Illustration rare': 'Illustration rare',
+    'Special illustration rare': 'Illustration spéciale rare',
+    'Hyper rare': 'Hyper rare'
+  }
+  return labels[label] || label
+}
+
 function cardTypeSymbol(label) {
   if (label === 'Pokémon') return '●'
   if (label === 'Dresseur') return '♟'
@@ -411,8 +425,8 @@ export default function CardChecklistPage() {
                   {rarities.map(value => {
                     const count = cardsWithIncludedVariants.filter(card => card.rarity_label?.trim() === value).length
                     const active = rarity.includes(value)
-                    return <button type="button" key={value} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={value + ' · ' + count + ' cartes'} onClick={() => selectRarity(value)}>
-                      <span className={styles.filterIcon} aria-hidden="true">{raritySymbol(value)}</span><span>{value}</span><small>{count}</small>
+                    return <button type="button" key={value} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={rarityDisplayLabel(value) + ' · ' + count + ' cartes'} onClick={() => selectRarity(value)}>
+                      <span className={styles.filterIcon} aria-hidden="true">{raritySymbol(value)}</span><span>{rarityDisplayLabel(value)}</span><small>{count}</small>
                     </button>
                   })}
                 </div>
@@ -482,8 +496,7 @@ export default function CardChecklistPage() {
                       <div className={styles.cardHeading}>
                         <span className={styles.number}>{card.collector_number}</span>
                         <h2>{card.card_name}</h2>
-                        <p className={styles.rarity}>{card.rarity_label || 'Rareté à préciser'}</p>
-                        <small>Catégorie du guide : {card.guide_category_label || card.guide_category_code || 'à préciser'}</small>
+                        <p className={styles.rarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</p>
                         {card.mechanic_label && <small>{card.mechanic_label}</small>}
                       </div>
                     </div>
