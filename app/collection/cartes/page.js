@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import styles from './cards.module.css'
 
+const ALL_SERIES_FILTER = '__all_series__'
+
 function raritySymbol(label) {
   const value = (label || '').toLocaleLowerCase('fr')
   if (value.includes('commune') || value.includes('common')) return '●'
@@ -53,7 +55,7 @@ function cardTypeSymbol(label) {
   return '◇'
 }
 
-function imageUrl(card) {
+function imageUrl(card, quality = 'low') {
   const directUrl = card.image_url?.trim()
   if (directUrl) {
     const queryIndex = directUrl.indexOf('?')
@@ -62,7 +64,8 @@ function imageUrl(card) {
     const normalizedPath = imagePath.endsWith('/') ? imagePath.slice(0, -1) : imagePath
     const lowerPath = normalizedPath.toLowerCase()
     const isImageFile = ['.png', '.jpg', '.jpeg', '.webp'].some(extension => lowerPath.endsWith(extension))
-    return isImageFile ? directUrl : normalizedPath + '/low.webp' + query
+    if (isImageFile && quality === 'high' && lowerPath.endsWith('/low.webp')) return imagePath.slice(0, -'low.webp'.length) + 'high.webp' + query
+    return isImageFile ? directUrl : normalizedPath + '/' + quality + '.webp' + query
   }
 
   const sourceParts = (card.image_source_url || '').split('/').filter(Boolean)
@@ -79,7 +82,7 @@ function imageUrl(card) {
   }
   const seriesCode = setCode.slice(0, seriesEnd)
   if (!seriesCode || !language || !localId) return ''
-  return 'https://assets.tcgdex.net/' + language + '/' + seriesCode + '/' + setCode + '/' + encodeURIComponent(localId) + '/low.webp'
+  return 'https://assets.tcgdex.net/' + language + '/' + seriesCode + '/' + setCode + '/' + encodeURIComponent(localId) + '/' + quality + '.webp'
 }
 
 export default function CardChecklistPage() {
@@ -107,6 +110,14 @@ export default function CardChecklistPage() {
   const [busyVariant, setBusyVariant] = useState('')
   const [gradingVariant, setGradingVariant] = useState('')
   const [savingGrade, setSavingGrade] = useState(false)
+  const [zoomedCard, setZoomedCard] = useState(null)
+
+  useEffect(() => {
+    if (!zoomedCard) return
+    const closeOnEscape = event => { if (event.key === 'Escape') setZoomedCard(null) }
+    window.addEventListener('keydown', closeOnEscape)
+    return () => window.removeEventListener('keydown', closeOnEscape)
+  }, [zoomedCard])
 
   useEffect(() => {
     let cancelled = false
@@ -156,7 +167,8 @@ export default function CardChecklistPage() {
       const availableSets = setRows || []
       setSets(availableSets)
       const selected = availableSets.find(row => row.id === requestedSetId) || availableSets[0]
-      if (selected) setSetId(selected.id)
+      if (requestedSetId === ALL_SERIES_FILTER) setSetId(ALL_SERIES_FILTER)
+      else if (selected) setSetId(selected.id)
 
       const { data: companyRows, error: companyError } = await supabase.from('card_grading_companies')
         .select('id,company_name,abbreviation').eq('is_active', true).order('company_name')
@@ -169,7 +181,7 @@ export default function CardChecklistPage() {
   }, [supabase])
 
   useEffect(() => {
-    if (!setId || !profileId) return
+    if (!setId || !profileId || setId === ALL_SERIES_FILTER) return
     let cancelled = false
     async function loadChecklist() {
       setCardsLoading(true)
@@ -200,6 +212,56 @@ export default function CardChecklistPage() {
     return () => { cancelled = true }
   }, [supabase, setId, profileId])
 
+  useEffect(() => {
+    if (setId !== ALL_SERIES_FILTER || !profileId) return
+    const term = query.trim()
+    const searchableSetIds = sets.filter(row => row.is_public && row.language === 'fr').map(row => row.id)
+    let cancelled = false
+    if (!term || !searchableSetIds.length) {
+      setCards([])
+      setOwned({})
+      setCardsLoading(false)
+      return () => { cancelled = true }
+    }
+    const timer = window.setTimeout(async () => {
+      setCardsLoading(true)
+      setError('')
+      setNotice('')
+      try {
+        const escapedTerm = term.replace(/[%_]/g, '\\$&')
+        const { data: cardRows, error: cardError } = await supabase.from('cards')
+          .select('id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,image_source_url,card_sets(set_name,set_code),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
+          .in('card_set_id', searchableSetIds).ilike('card_name', '%' + escapedTerm + '%')
+          .order('card_name', { ascending: true }).limit(500)
+        if (cardError) throw cardError
+        if (cancelled) return
+        const variantIds = (cardRows || []).flatMap(card => (card.card_print_variants || []).map(variant => variant.id))
+        let copyRows = []
+        if (variantIds.length) {
+          const { data, error: copyError } = await supabase.from('collection_cards')
+            .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)')
+            .eq('collection_profile_id', profileId).in('card_print_variant_id', variantIds)
+          if (copyError) throw copyError
+          copyRows = data || []
+        }
+        if (cancelled) return
+        const ownership = {}
+        for (const copy of copyRows) {
+          if (!ownership[copy.card_print_variant_id]) ownership[copy.card_print_variant_id] = []
+          ownership[copy.card_print_variant_id].push(copy)
+        }
+        setCards(cardRows || [])
+        setOwned(ownership)
+      } catch (loadError) {
+        if (!cancelled) setError(loadError.message || 'Impossible de rechercher dans toutes les séries.')
+      } finally {
+        if (!cancelled) setCardsLoading(false)
+      }
+    }, 250)
+    return () => { cancelled = true; window.clearTimeout(timer) }
+  }, [supabase, setId, profileId, query, sets])
+
+  const isAllSeriesSelected = setId === ALL_SERIES_FILTER
   const selectedSet = sets.find(row => row.id === setId)
   const isIncludedVariant = variant => (
     checklistFilter === 'all' ||
@@ -209,7 +271,7 @@ export default function CardChecklistPage() {
   )
   const isProgressTarget = variant => variant.is_master_set_target && isIncludedVariant(variant)
   const isCatalogOnlySet = cards.length > 0 && cards.every(card => !(card.card_print_variants || []).length)
-  const cardsWithIncludedVariants = isCatalogOnlySet
+  const cardsWithIncludedVariants = isAllSeriesSelected || isCatalogOnlySet
     ? cards
     : cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
   const rarities = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.rarity_label?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
@@ -232,9 +294,9 @@ export default function CardChecklistPage() {
       const matchesCardType = !selectedCardTypes.length || selectedCardTypes.includes(card.card_type?.trim())
       const matchesElementType = !selectedElementTypes.length || (card.element_types || []).some(type => selectedElementTypes.includes(type))
       const includedVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
-      return matchesQuery && matchesRarity && matchesCardType && matchesElementType && includedVariants.length > 0
+      return matchesQuery && matchesRarity && matchesCardType && matchesElementType && (isAllSeriesSelected || includedVariants.length > 0)
     })
-  }, [cardsWithIncludedVariants, query, rarity, selectedCardTypes, selectedElementTypes, selectedVersions, checklistFilter])
+  }, [cardsWithIncludedVariants, query, rarity, selectedCardTypes, selectedElementTypes, selectedVersions, checklistFilter, isAllSeriesSelected])
 
   function matchesVariantCollectionFilter(variant, filter) {
     const count = (owned[variant.id] || []).length
@@ -250,8 +312,8 @@ export default function CardChecklistPage() {
   }
 
   const visibleCards = useMemo(
-    () => baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter)),
-    [baseFilteredCards, collectionFilter, owned, checklistFilter, selectedVersions]
+    () => isAllSeriesSelected ? baseFilteredCards : baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter)),
+    [baseFilteredCards, collectionFilter, owned, checklistFilter, selectedVersions, isAllSeriesSelected]
   )
   const missingCardsForCopy = useMemo(
     () => baseFilteredCards.filter(card => matchesCollectionFilter(card, 'missing')),
@@ -447,6 +509,7 @@ export default function CardChecklistPage() {
           Série
           <select value={setId} onChange={event => selectSet(event.target.value)} disabled={!sets.length}>
             {!sets.length && <option value="">Aucune série disponible</option>}
+            <option value={ALL_SERIES_FILTER}>Toutes les séries</option>
             {sets.map(set => <option key={set.id} value={set.id}>{set.set_name}{set.is_public ? '' : ' · brouillon privé'}</option>)}
           </select>
         </label>
@@ -460,7 +523,41 @@ export default function CardChecklistPage() {
       </section>
 
       {!sets.length && !error && <p className={styles.empty}>Aucune série de cartes n’est publiée pour le moment.</p>}
-      {selectedSet && (
+      {isAllSeriesSelected ? (
+        <section className={styles.globalSearch} aria-label="Recherche dans toutes les séries">
+          <label className={styles.globalSearchLabel}>
+            Rechercher une carte dans toutes les séries
+            <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom du Pokémon, par exemple Pikachu…" autoFocus />
+          </label>
+          {!query.trim() && <p className={styles.scope}>Saisis un nom pour trouver les cartes correspondantes dans toutes les séries françaises publiées.</p>}
+          {!!query.trim() && <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> résultat{visibleCards.length > 1 ? 's' : ''} pour « {query.trim()} » · jusqu’à 500 cartes affichées</p>}
+          {cardsLoading ? <p className={styles.status}>Recherche dans toutes les séries…</p> : query.trim() && (
+            <section className={styles.cardGrid} aria-label="Résultats toutes séries">
+              {!visibleCards.length && !error && <p className={styles.empty}>Aucune carte ne correspond à « {query.trim()} ».</p>}
+              {visibleCards.map(card => {
+                const cardSet = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+                const cardImage = imageUrl(card)
+                return <article className={styles.card} key={card.id}>
+                  <div className={styles.cardTop}>
+                    <div className={styles.artFrame}>
+                      {cardImage && <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: cardSet?.set_name || '' })}>
+                        <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true' }} />
+                      </button>}
+                      <span>{card.card_type || 'Carte Pokémon'} · cliquer pour agrandir</span>
+                    </div>
+                    <div className={styles.cardHeading}>
+                      <span className={styles.number}>N° {card.collector_number}</span>
+                      <h2>{card.card_name}</h2>
+                      <p className={styles.rarity}>{cardSet?.set_name || 'Série'}</p>
+                      <small>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</small>
+                    </div>
+                  </div>
+                </article>
+              })}
+            </section>
+          )}
+        </section>
+      ) : selectedSet && (
         <>
           {isCatalogOnlySet ? (
             <section className={styles.progressCard} aria-label="État du catalogue">
@@ -580,11 +677,13 @@ export default function CardChecklistPage() {
                   <article className={styles.card} key={card.id}>
                     <div className={styles.cardTop}>
                       <div className={styles.artFrame}>
-                        <img src={imageUrl(card)} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => {
-                          event.currentTarget.style.display = 'none'
-                          event.currentTarget.parentElement.dataset.imageMissing = 'true'
-                        }} />
-                        <span>{card.card_type || 'Carte Pokémon'}</span>
+                        <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard(card)}>
+                          <img src={imageUrl(card)} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => {
+                            event.currentTarget.style.display = 'none'
+                            event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true'
+                          }} />
+                        </button>
+                        <span>{card.card_type || 'Carte Pokémon'} · cliquer pour agrandir</span>
                       </div>
                       <div className={styles.cardHeading}>
                         <span className={styles.number}>N° {card.collector_number}</span>
@@ -655,6 +754,13 @@ export default function CardChecklistPage() {
           )}
         </>
       )}
+      {zoomedCard && <div className={styles.zoomBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setZoomedCard(null) }}>
+        <section className={styles.zoomDialog} role="dialog" aria-modal="true" aria-label={'Image agrandie de ' + zoomedCard.card_name}>
+          <button type="button" className={styles.zoomClose} aria-label="Fermer l’image agrandie" onClick={() => setZoomedCard(null)}>×</button>
+          <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} />
+          <p><strong>{zoomedCard.card_name}</strong> · N° {zoomedCard.collector_number}{zoomedCard.seriesName ? ' · ' + zoomedCard.seriesName : ''}</p>
+        </section>
+      </div>}
     </main>
   )
 }
