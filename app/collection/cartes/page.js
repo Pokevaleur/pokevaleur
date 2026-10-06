@@ -645,7 +645,7 @@ export default function CardChecklistPage() {
                       {cardImage && <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: cardSet?.set_name || '' })}>
                         <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true' }} />
                       </button>}
-                      <span>{card.card_type || 'Carte Pokémon'} · cliquer pour agrandir</span>
+                      <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                     </div>
                     <div className={styles.cardHeading}>
                       <span className={styles.number}>N° {card.collector_number}</span>
@@ -789,7 +789,7 @@ export default function CardChecklistPage() {
                             event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true'
                           }} />
                         </button>
-                        <span>{card.card_type || 'Carte Pokémon'} · cliquer pour agrandir</span>
+                        <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                       </div>
                       <div className={styles.cardHeading}>
                         <span className={styles.number}>N° {card.collector_number}</span>
