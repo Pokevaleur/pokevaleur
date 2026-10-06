@@ -24,39 +24,6 @@ function seriesOptionLabel(set) {
   return (abbreviation ? abbreviation + ' — ' : '') + set.set_name + (set.is_public ? '' : ' · brouillon privé')
 }
 
-function formatMissingCardNumbers(numbers) {
-  const entries = numbers.map(value => String(value).trim()).filter(Boolean)
-  const formatted = []
-  let index = 0
-
-  while (index < entries.length) {
-    const current = entries[index]
-    if (!/^\d+$/.test(current)) {
-      formatted.push(current)
-      index += 1
-      continue
-    }
-
-    const width = current.length
-    let end = index
-    while (end + 1 < entries.length) {
-      const next = entries[end + 1]
-      const previousNumber = Number(entries[end])
-      if (!/^\d+$/.test(next) || next.length !== width || Number(next) !== previousNumber + 1) break
-      end += 1
-    }
-
-    if (end - index >= 2) formatted.push(current + ' à ' + entries[end])
-    else {
-      formatted.push(current)
-      if (end > index) formatted.push(entries[end])
-    }
-    index = end + 1
-  }
-
-  return formatted.join(', ')
-}
-
 function raritySymbol(label) {
   const value = (label || '').toLocaleLowerCase('fr')
   if (value.includes('commune') || value.includes('common')) return '●'
@@ -134,6 +101,39 @@ function imageUrl(card, quality = 'low') {
   const seriesCode = setCode.slice(0, seriesEnd)
   if (!seriesCode || !language || !localId) return ''
   return 'https://assets.tcgdex.net/' + language + '/' + seriesCode + '/' + setCode + '/' + encodeURIComponent(localId) + '/' + quality + '.webp'
+}
+
+function formatMissingCardNumbers(numbers) {
+  const parts = []
+  let run = []
+
+  function flushRun() {
+    if (run.length > 1) {
+      parts.push(run[0].label + ' à ' + run[run.length - 1].label)
+    } else if (run.length === 1) {
+      parts.push(run[0].label)
+    }
+    run = []
+  }
+
+  for (const value of numbers) {
+    const label = String(value)
+    const digits = label.match(/^\\d+$/)
+    if (!digits) {
+      flushRun()
+      parts.push(label)
+      continue
+    }
+
+    const number = Number(label)
+    const width = label.length
+    const previous = run[run.length - 1]
+    if (previous && (width !== previous.width || number !== previous.number + 1)) flushRun()
+    run.push({ label, number, width })
+  }
+
+  flushRun()
+  return parts.join(', ')
 }
 
 export default function CardChecklistPage() {
@@ -371,7 +371,6 @@ export default function CardChecklistPage() {
     [baseFilteredCards, owned, checklistFilter, selectedVersions]
   )
   const missingCardNumbers = [...new Set(missingCardsForCopy.map(card => card.collector_number).filter(Boolean))]
-  const formattedMissingCardNumbers = useMemo(() => formatMissingCardNumbers(missingCardNumbers), [missingCardNumbers])
 
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
@@ -435,7 +434,7 @@ export default function CardChecklistPage() {
       setNotice('Aucun numéro manquant avec les filtres actuels.')
       return
     }
-    const textToCopy = formattedMissingCardNumbers
+    const textToCopy = formatMissingCardNumbers(missingCardNumbers)
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(textToCopy)
