@@ -133,7 +133,7 @@ function handleCardImageError(event, card, quality = 'low') {
   }
 
   image.style.display = 'none'
-  const wrapper = image.parentElement?.parentElement
+  const wrapper = quality === 'high' ? image.parentElement : image.parentElement?.parentElement
   if (wrapper) wrapper.dataset.imageMissing = 'true'
 }
 
