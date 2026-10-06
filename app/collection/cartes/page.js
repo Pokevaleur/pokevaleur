@@ -13,7 +13,7 @@ function formatMissingCardNumbers(numbers) {
 
   while (index < entries.length) {
     const current = entries[index]
-    if (!/^\\d+$/.test(current)) {
+    if (!/^\d+$/.test(current)) {
       formatted.push(current)
       index += 1
       continue
@@ -24,7 +24,7 @@ function formatMissingCardNumbers(numbers) {
     while (end + 1 < entries.length) {
       const next = entries[end + 1]
       const previousNumber = Number(entries[end])
-      if (!/^\\d+$/.test(next) || next.length !== width || Number(next) !== previousNumber + 1) break
+      if (!/^\d+$/.test(next) || next.length !== width || Number(next) !== previousNumber + 1) break
       end += 1
     }
 
