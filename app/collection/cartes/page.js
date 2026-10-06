@@ -205,6 +205,9 @@ export default function CardChecklistPage() {
     })
   }, [cardsWithIncludedVariants, query, category, rarity, selectedCardTypes, selectedVersions, ownedOnly, owned, checklistFilter])
 
+  const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key))))
+  const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
+
   const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isIncludedVariant))
   const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
   const completedCardCount = cardsWithIncludedVariants.filter(card => {
@@ -463,7 +466,7 @@ export default function CardChecklistPage() {
           {cardsLoading ? <p className={styles.status}>Chargement des cartes…</p> : (
             <section className={styles.cardGrid} aria-label="Cartes de la série">
               {!visibleCards.length && <p className={styles.empty}>{ownedOnly ? 'Aucune carte possédée avec ces filtres.' : 'Aucune carte ne correspond aux filtres.'}</p>}
-              <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's' : ''} affichée{visibleCards.length > 1 ? 's' : ''} sur {cardsWithIncludedVariants.length}</p>
+              <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's' : ''} affichée{visibleCards.length > 1 ? 's' : ''} · <strong>{visibleOwnedVariantCount} / {visibleTargetVariants.length}</strong> variantes possédées</p>
               {visibleCards.map(card => {
                 const cardVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (!ownedOnly || (owned[variant.id] || []).length > 0))
                 return (
@@ -542,7 +545,6 @@ export default function CardChecklistPage() {
                   </article>
                 )
               })}
-              {!visibleCards.length && <p className={styles.empty}>Aucune carte ne correspond à cette recherche.</p>}
             </section>
           )}
         </>
