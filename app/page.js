@@ -93,10 +93,7 @@ export default function Home() {
       </div>
       <div className={styles.cardNumbersPreview} aria-label="Exemple de numéros manquants à rechercher">
         <span className={styles.cardNumbersLabel}>Aperçu du format copié</span>
-        <div className={styles.cardNumbersPreviewLine}>
-          <p>3, 5, 12, 15 à 18</p>
-          <Art kind="missing" label="Illustration d’un emplacement de carte manquant" className={styles.cardNumbersArtwork}/>
-        </div>
+        <p className={styles.cardNumbersExample}>3, 5, 12, 15 à 18</p>
         <small>La liste suit la série et les filtres choisis.</small>
       </div>
     </section>
