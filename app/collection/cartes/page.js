@@ -13,7 +13,7 @@ function seriesAbbreviation(set) {
 
   for (const [prefix, abbreviation] of Object.entries(prefixes)) {
     const match = normalized.match(new RegExp('^' + prefix + '(\\d+(?:\\.\\d+)?)$'))
-    if (match) return abbreviation + match[1].replace(/^0+(?=\\d)/, '')
+    if (match) return abbreviation + String(Number(match[1]))
   }
 
   return code.toUpperCase()
