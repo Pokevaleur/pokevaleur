@@ -65,6 +65,7 @@
 .artFrame { position:relative; overflow:hidden; display:grid; place-items:center; min-height:144px; border-radius:10px; background:linear-gradient(145deg,#e5efff,#fff1cf); color:#637187; }
 .artFrame img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
 .artFrame span { position:absolute; left:6px; bottom:6px; border-radius:999px; padding:3px 7px; background:#071c32d9; color:white; font-size:.65rem; }
+.zoomDialog[data-image-missing='true']::after { content:'Illustration indisponible'; position:absolute; inset:52px 24px 62px; display:grid; place-items:center; color:#637187; font-weight:700; text-align:center; pointer-events:none; }
 .artFrame[data-image-missing='true']::after { content:'Illustration indisponible'; position:absolute; inset:0; display:grid; place-items:center; padding:10px 8px 30px; color:#637187; font-size:.7rem; font-weight:700; text-align:center; pointer-events:none; }
 .cardHeading { min-width:0; }
 .number { display:inline-block; margin-bottom:6px; color:#5d6b7c; font-size:.84rem; font-weight:800; }
