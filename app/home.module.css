@@ -68,3 +68,8 @@
 .cardNumbersPromo:after{display:block;content:'';position:absolute;z-index:0;bottom:0;left:0;width:145px;height:118px;opacity:.18;pointer-events:none;background:linear-gradient(45deg,#ffd96b,#fff2bc 54%,#ffffff);clip-path:polygon(0 42%,24% 31%,38% 0,58% 52%,37% 100%,0 78%)}
 .cardNumbersCopy,.cardNumbersPreview{position:relative;z-index:1}
 @media(max-width:700px){.cardNumbersPromo:before{width:115px;height:105px;opacity:.23}.cardNumbersPromo:after{width:94px;height:76px;opacity:.13}}
+
+/* Make the crystalline facets clearly visible around the block edges. */
+.cardNumbersPromo:before{display:block;top:-8px;right:0;width:210px;height:176px;opacity:.48;background:linear-gradient(132deg,#54b6eb 0%,#b8e9ff 36%,#79c7ef 68%,#dff5ff 100%);clip-path:polygon(67% 0,100% 0,100% 100%,87% 78%,74% 96%,59% 57%,47% 30%)}
+.cardNumbersPromo:after{display:block;bottom:0;left:0;width:162px;height:126px;opacity:.34;background:linear-gradient(45deg,#edc145 0%,#ffe8a1 42%,#ffffff 75%,#ffdb71 100%);clip-path:polygon(0 37%,23% 26%,38% 0,58% 54%,40% 100%,0 82%)}
+@media(max-width:700px){.cardNumbersPromo:before{top:0;right:0;width:132px;height:116px;opacity:.4}.cardNumbersPromo:after{width:116px;height:91px;opacity:.27}}
