@@ -29,6 +29,23 @@ function rarityDisplayLabel(label) {
   return labels[label] || label
 }
 
+function elementTypeSymbol(label) {
+  const symbols = {
+    Grass: '♣', Fire: '♨', Water: '◉', Lightning: 'ϟ', Psychic: '✧',
+    Fighting: '✊', Darkness: '☾', Metal: '⚙', Dragon: '♜', Colorless: '☆', Special: 'Sp'
+  }
+  return symbols[label] || '◇'
+}
+
+function elementTypeDisplayLabel(label) {
+  const labels = {
+    Colorless: 'Incolore', Darkness: 'Obscurité', Dragon: 'Dragon', Fighting: 'Combat',
+    Fire: 'Feu', Grass: 'Plante', Lightning: 'Électrik', Metal: 'Métal',
+    Psychic: 'Psy', Water: 'Eau', Special: 'Énergie spéciale'
+  }
+  return labels[label] || label
+}
+
 function cardTypeSymbol(label) {
   if (label === 'Pokémon') return '●'
   if (label === 'Dresseur') return '♟'
@@ -79,6 +96,7 @@ export default function CardChecklistPage() {
   const [query, setQuery] = useState('')
   const [rarity, setRarity] = useState([])
   const [selectedCardTypes, setSelectedCardTypes] = useState([])
+  const [selectedElementTypes, setSelectedElementTypes] = useState([])
   const [selectedVersions, setSelectedVersions] = useState([])
   const [collectionFilter, setCollectionFilter] = useState('all')
   const [checklistFilter, setChecklistFilter] = useState('main')
@@ -160,7 +178,7 @@ export default function CardChecklistPage() {
       setCards([])
       setOwned({})
       const { data: cardRows, error: cardError } = await supabase.from('cards')
-        .select('id,collector_number,card_name,card_type,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
+        .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
         .eq('card_set_id', setId).order('guide_order', { ascending: true })
       if (cardError) throw cardError
       if (cancelled) return
@@ -195,6 +213,7 @@ export default function CardChecklistPage() {
     : cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
   const rarities = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.rarity_label?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const cardTypes = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.card_type?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
+  const elementTypes = useMemo(() => [...new Set(cardsWithIncludedVariants.flatMap(card => card.element_types || []).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const versions = useMemo(() => {
     const labels = new Map()
     for (const card of cardsWithIncludedVariants) {
@@ -210,10 +229,11 @@ export default function CardChecklistPage() {
       const matchesQuery = !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
       const matchesRarity = !rarity.length || rarity.includes(card.rarity_label?.trim())
       const matchesCardType = !selectedCardTypes.length || selectedCardTypes.includes(card.card_type?.trim())
+      const matchesElementType = !selectedElementTypes.length || (card.element_types || []).some(type => selectedElementTypes.includes(type))
       const includedVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
-      return matchesQuery && matchesRarity && matchesCardType && includedVariants.length > 0
+      return matchesQuery && matchesRarity && matchesCardType && matchesElementType && includedVariants.length > 0
     })
-  }, [cardsWithIncludedVariants, query, rarity, selectedCardTypes, selectedVersions, checklistFilter])
+  }, [cardsWithIncludedVariants, query, rarity, selectedCardTypes, selectedElementTypes, selectedVersions, checklistFilter])
 
   function matchesVariantCollectionFilter(variant, filter) {
     const count = (owned[variant.id] || []).length
@@ -253,6 +273,7 @@ export default function CardChecklistPage() {
     setSetId(nextSetId)
     setRarity([])
     setSelectedCardTypes([])
+    setSelectedElementTypes([])
     setSelectedVersions([])
     setCollectionFilter('all')
     const url = new URL(window.location.href)
@@ -274,6 +295,10 @@ export default function CardChecklistPage() {
 
   function toggleCardType(value) {
     setSelectedCardTypes(current => current.includes(value) ? current.filter(item => item !== value) : [...current, value])
+  }
+
+  function toggleElementType(value) {
+    setSelectedElementTypes(current => current.includes(value) ? current.filter(item => item !== value) : [...current, value])
   }
 
   function toggleVersion(value) {
@@ -473,8 +498,8 @@ export default function CardChecklistPage() {
                 </div>
               </div>
               <div className={styles.filterGroup}>
-                <div className={styles.filterHeading}><strong>Type de carte</strong><span>{cardTypes.length} choix</span></div>
-                <div className={styles.filterChoices} role="group" aria-label="Filtrer par type de carte">
+                <div className={styles.filterHeading}><strong>Famille de carte</strong><span>{cardTypes.length} choix</span></div>
+                <div className={styles.filterChoices} role="group" aria-label="Filtrer par famille de carte">
                   {cardTypes.map(value => {
                     const count = cardsWithIncludedVariants.filter(card => card.card_type?.trim() === value).length
                     const active = selectedCardTypes.includes(value)
@@ -484,6 +509,18 @@ export default function CardChecklistPage() {
                   })}
                 </div>
               </div>
+              {!!elementTypes.length && <div className={styles.filterGroup}>
+                <div className={styles.filterHeading}><strong>Élément / énergie</strong><span>{elementTypes.length} choix</span></div>
+                <div className={styles.filterChoices} role="group" aria-label="Filtrer par type élémentaire">
+                  {elementTypes.map(value => {
+                    const count = cardsWithIncludedVariants.filter(card => (card.element_types || []).includes(value)).length
+                    const active = selectedElementTypes.includes(value)
+                    return <button type="button" key={value} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={elementTypeDisplayLabel(value) + ' · ' + count + ' cartes'} onClick={() => toggleElementType(value)}>
+                      <span className={styles.filterIcon} aria-hidden="true">{elementTypeSymbol(value)}</span><span>{elementTypeDisplayLabel(value)}</span><small>{count}</small>
+                    </button>
+                  })}
+                </div>
+              </div>}
               <div className={styles.filterGroup}>
                 <div className={styles.filterHeading}><strong>Version</strong><span>{versions.length} choix</span></div>
                 <div className={styles.filterChoices} role="group" aria-label="Filtrer par version">
