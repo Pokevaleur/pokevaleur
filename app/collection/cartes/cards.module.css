@@ -20,8 +20,8 @@
 .controls select, .filters select, .filters input:not([type=checkbox]), .gradeForm input, .gradeForm select {
   width:100%; min-height:44px; padding:10px 12px; border:1px solid #cbd4df; border-radius:10px; background:#fff; color:#14263a; font:inherit;
 }
-.controls select { font-size:.9rem; line-height:1.25; }
-.controls select option { font-size:.9rem; }
+.controls select { font-size:.78rem; line-height:1.15; }
+.controls select option { font-size:.7rem; line-height:1.15; }
 .adminNote { grid-column:1 / -1; margin:0; color:#735c1d; font-size:.92rem; }
 .progressCard { padding:18px; border-radius:18px; background:#fff; border:1px solid #dce2e9; }
 .progressHeading { display:flex; align-items:center; gap:22px; }
@@ -103,8 +103,8 @@
 }
 @media (max-width:520px) {
   .controls, .filters { grid-template-columns:1fr; padding:14px; }
-  .controls select { min-height:42px; padding:8px 10px; font-size:.84rem; }
-  .controls select option { font-size:.84rem; }
+  .controls select { min-height:42px; padding:8px 10px; font-size:.72rem; }
+  .controls select option { font-size:.68rem; line-height:1.1; }
   .card { padding:12px; }
   .cardTop { grid-template-columns:86px minmax(0,1fr); gap:11px; }
   .artFrame { min-height:122px; }

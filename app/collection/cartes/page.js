@@ -12,8 +12,8 @@ function seriesAbbreviation(set) {
   const prefixes = { swsh: 'EB', hgss: 'HGSS', sv: 'EV', ev: 'EV', me: 'ME', eb: 'EB', sm: 'SL', sl: 'SL', xy: 'XY', bw: 'NB', dp: 'DP', pl: 'PL' }
 
   for (const [prefix, abbreviation] of Object.entries(prefixes)) {
-    const match = normalized.match(new RegExp('^' + prefix + '(\\d+(?:\\.\\d+)?)$'))
-    if (match) return abbreviation + String(Number(match[1]))
+    const match = normalized.match(new RegExp('^' + prefix + '(\\d+(?:\\.\\d+)?)([a-z]*)$'))
+    if (match) return abbreviation + String(Number(match[1])) + match[2].toUpperCase()
   }
 
   return code.toUpperCase()
