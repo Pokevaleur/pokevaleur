@@ -84,5 +84,18 @@ export default function Home() {
         <article className={`${styles.card} ${styles.guide}`}><h2>Le coffre de Lukulu</h2><p>Conseils, découvertes ou cadeaux selon les disponibilités.</p><Art kind="chest" label="Le coffre bleu scintillant de Lukulu"/></article>
       </div>
     </section>
+    <section className={styles.cardNumbersPromo} aria-labelledby="card-numbers-title">
+      <div className={styles.cardNumbersCopy}>
+        <p className={styles.cardNumbersKicker}>Checklist de cartes</p>
+        <h2 id="card-numbers-title">Tes numéros manquants, prêts à copier</h2>
+        <p>Filtre les cartes possédées, manquantes ou en double, et par type élémentaire. Copie ensuite les numéros à rechercher en un clic.</p>
+        <a className={styles.cardNumbersLink} href={member ? '/collection/cartes' : '/login?next=%2Fcollection%2Fcartes'}>Ouvrir la checklist</a>
+      </div>
+      <div className={styles.cardNumbersPreview} aria-label="Exemple de numéros manquants à rechercher">
+        <span className={styles.cardNumbersLabel}>Aperçu du format copié</span>
+        <p>181 à 184</p>
+        <small>La liste suit la série et les filtres choisis.</small>
+      </div>
+    </section>
   </main>
 }
