@@ -107,6 +107,10 @@
 .filterHeading span { color:#667487; font-size:.82rem; }
 .filterChoices { display:grid; grid-template-columns:repeat(auto-fit,minmax(112px,1fr)); gap:8px; }
 .filterChoice, .filterChoiceActive { min-height:60px; display:grid; grid-template-columns:28px minmax(0,1fr) auto; align-items:center; gap:7px; padding:8px; border:1px solid #cbd4df; border-radius:12px; background:#fff; color:#30445b; font:inherit; font-size:.82rem; text-align:left; cursor:pointer; transition:background .15s ease,border-color .15s ease,transform .15s ease; }
+.filterChoiceLabel { min-width:0; line-height:1.15; overflow-wrap:anywhere; }
+.filterChoice small, .filterChoiceActive small { justify-self:end; white-space:nowrap; }
+.rarityFilterIcon { background:transparent; }
+.rarityFilterIcon svg { display:block; width:27px; height:27px; }
 .filterChoice:hover, .filterChoiceActive:hover { transform:translateY(-1px); border-color:#4966a8; }
 .filterChoiceActive { border:2px solid #243f8f; background:#e9efff; color:#172d69; }
 .filterIcon { width:27px; height:27px; display:grid; place-items:center; border-radius:8px; background:#f0f2f5; color:#7e8794; font-size:1.1rem; font-weight:900; }
