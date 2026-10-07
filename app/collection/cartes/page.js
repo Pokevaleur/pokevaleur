@@ -25,15 +25,30 @@ function seriesOptionLabel(set) {
   return (abbreviation ? abbreviation + ' — ' : '') + name + (set.is_public ? '' : ' · brouillon privé')
 }
 
-function raritySymbol(label) {
-  const value = (label || '').toLocaleLowerCase('fr')
-  if (value.includes('commune') || value.includes('common')) return '●'
-  if (value.includes('uncommon') || value.includes('peu commune')) return '◆'
-  if (value.includes('double')) return '✦✦'
-  if (value.includes('hyper')) return '✦✦'
-  if (value.includes('illustration')) return value.includes('special') ? '✧' : '★'
-  if (value.includes('ultra')) return '★'
-  return '★'
+const RARITY_FILTERS = [
+  { key: 'common', label: 'Commune' },
+  { key: 'uncommon', label: 'Peu commune' },
+  { key: 'rare', label: 'Rare' },
+  { key: 'double', label: 'Double rare' },
+  { key: 'ultra', label: 'Ultra rare' },
+  { key: 'illustration', label: 'Illustration rare' },
+  { key: 'specialIllustration', label: 'Illustration spéciale rare' },
+  { key: 'hyper', label: 'Hyper rare' },
+  { key: 'megaHyper', label: 'Méga Hyper Rare' }
+]
+
+function rarityKey(label) {
+  const value = (label || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s_-]+/g, '')
+  if (value.includes('megahyper') || value.includes('hypermega')) return 'megaHyper'
+  if (value.includes('special') && value.includes('illustration')) return 'specialIllustration'
+  if (value.includes('illustration')) return 'illustration'
+  if (value.includes('double')) return 'double'
+  if (value.includes('ultra')) return 'ultra'
+  if (value.includes('hyper') || value.includes('secret')) return 'hyper'
+  if (value.includes('uncommon') || value.includes('peucommune')) return 'uncommon'
+  if (value === 'common' || value === 'commune') return 'common'
+  if (value.includes('rare')) return 'rare'
+  return ''
 }
 
 function rarityDisplayLabel(label) {
@@ -45,9 +60,52 @@ function rarityDisplayLabel(label) {
     'Ultra Rare': 'Ultra rare',
     'Illustration rare': 'Illustration rare',
     'Special illustration rare': 'Illustration spéciale rare',
-    'Hyper rare': 'Hyper rare'
+    'Hyper rare': 'Hyper rare',
+    'Mega Hyper Rare': 'Méga Hyper Rare',
+    'Méga Hyper Rare': 'Méga Hyper Rare'
   }
   return labels[label] || label
+}
+
+function RarityFilterIcon({ rarityKey: type }) {
+  const star = '16,2 19.6,11 29,11.5 21.8,17.5 24.4,27 16,21.5 7.6,27 10.2,17.5 3,11.5 12.4,11'
+  let mark
+
+  switch (type) {
+    case 'common':
+      mark = <circle cx="16" cy="16" r="6.5" fill="#111"/>
+      break
+    case 'uncommon':
+      mark = <polygon points="16,5 27,16 16,27 5,16" fill="#111"/>
+      break
+    case 'rare':
+      mark = <polygon points={star} fill="#fff" stroke="#111" strokeWidth="1.8" strokeLinejoin="round"/>
+      break
+    case 'double':
+      mark = <><polygon points="10,5 11.8,9 16,9.3 12.8,12 13.8,16 10,13.8 6.2,16 7.2,12 4,9.3 8.2,9" fill="#111"/><polygon points="22,14 23.8,18 28,18.3 24.8,21 25.8,25 22,22.8 18.2,25 19.2,21 16,18.3 20.2,18" fill="#111"/></>
+      break
+    case 'ultra':
+      mark = <polygon points={star} fill="#f3bd18" stroke="#fff" strokeWidth="2" strokeLinejoin="round"/>
+      break
+    case 'illustration':
+      mark = <><polygon points="10,5 11.8,9 16,9.3 12.8,12 13.8,16 10,13.8 6.2,16 7.2,12 4,9.3 8.2,9" fill="#a7adb4" stroke="#fff" strokeWidth="1"/><polygon points="22,14 23.8,18 28,18.3 24.8,21 25.8,25 22,22.8 18.2,25 19.2,21 16,18.3 20.2,18" fill="#a7adb4" stroke="#fff" strokeWidth="1"/></>
+      break
+    case 'specialIllustration':
+      mark = <><polygon points="10,5 11.8,9 16,9.3 12.8,12 13.8,16 10,13.8 6.2,16 7.2,12 4,9.3 8.2,9" fill="#f4bd16" stroke="#fff" strokeWidth="1"/><polygon points="22,14 23.8,18 28,18.3 24.8,21 25.8,25 22,22.8 18.2,25 19.2,21 16,18.3 20.2,18" fill="#f4bd16" stroke="#fff" strokeWidth="1"/></>
+      break
+    case 'hyper':
+      mark = <><polygon points="16,3 19.4,11.5 28,12 21.4,17.8 23.4,26 16,21.5 8.6,26 10.6,17.8 4,12 12.6,11.5" fill="#f3c21b" stroke="#151515" strokeWidth="1.6"/><path d="m16 7 1.8 6.1 6.2.3-4.8 4 1.4 6-5.2-3.3-5.2 3.3 1.4-6-4.8-4 6.2-.3L16 7Z" fill="#fff1a8"/></>
+      break
+    case 'megaHyper':
+      mark = <><polygon points="10,5 11.8,9 16,9.3 12.8,12 13.8,16 10,13.8 6.2,16 7.2,12 4,9.3 8.2,9" fill="#e98ac8"/><polygon points="22,14 23.8,18 28,18.3 24.8,21 25.8,25 22,22.8 18.2,25 19.2,21 16,18.3 20.2,18" fill="#72c98a"/></>
+      break
+    default:
+      mark = <polygon points={star} fill="#fff" stroke="#111" strokeWidth="1.8" strokeLinejoin="round"/>
+  }
+
+  return <span className={styles.filterIcon + ' ' + styles.rarityFilterIcon} aria-hidden="true">
+    <svg viewBox="0 0 32 32" focusable="false">{mark}</svg>
+  </span>
 }
 
 function elementTypeKey(label) {
@@ -261,7 +319,7 @@ export default function CardChecklistPage() {
       const requestedSetId = params.get('set') || ''
       const requestedRarity = params.get('rarity') || ''
       const requestedChecklist = params.get('checklist')
-      setRarity(requestedRarity ? requestedRarity.split(',').filter(Boolean) : [])
+      setRarity(requestedRarity ? requestedRarity.split(',').map(rarityKey).filter(Boolean) : [])
       const requestedCollectionFilter = params.get('collection') || (params.get('owned') === '1' ? 'owned' : 'all')
       if (['all', 'owned', 'missing', 'duplicates'].includes(requestedCollectionFilter)) setCollectionFilter(requestedCollectionFilter)
       if (['main', 'promos', 'stamps', 'all'].includes(requestedChecklist)) setChecklistFilter(requestedChecklist)
@@ -409,7 +467,7 @@ export default function CardChecklistPage() {
   const cardsWithIncludedVariants = isAllSeriesSelected || isCatalogOnlySet
     ? cards
     : cards.filter(card => (card.card_print_variants || []).some(isIncludedVariant))
-  const rarities = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.rarity_label?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
+  const rarities = RARITY_FILTERS
   const cardTypes = useMemo(() => [...new Set(cardsWithIncludedVariants.map(card => card.card_type?.trim()).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const elementTypes = useMemo(() => [...new Set(cardsWithIncludedVariants.flatMap(card => card.element_types || []).filter(Boolean))].sort((a, b) => a.localeCompare(b, 'fr')), [cardsWithIncludedVariants])
   const versions = useMemo(() => {
@@ -425,7 +483,7 @@ export default function CardChecklistPage() {
     const normalized = query.trim().toLocaleLowerCase('fr')
     return cardsWithIncludedVariants.filter(card => {
       const matchesQuery = !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
-      const matchesRarity = !rarity.length || rarity.includes(card.rarity_label?.trim())
+      const matchesRarity = !rarity.length || rarity.includes(rarityKey(card.rarity_label))
       const matchesCardType = !selectedCardTypes.length || selectedCardTypes.includes(card.card_type?.trim())
       const matchesElementType = !selectedElementTypes.length || (card.element_types || []).some(type => selectedElementTypes.includes(type))
       const includedVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
@@ -756,11 +814,11 @@ export default function CardChecklistPage() {
               <div className={styles.filterGroup}>
                 <div className={styles.filterHeading}><strong>Rareté</strong><span>{rarities.length} choix</span></div>
                 <div className={styles.filterChoices} role="group" aria-label="Filtrer par rareté">
-                  {rarities.map(value => {
-                    const count = cardsWithIncludedVariants.filter(card => card.rarity_label?.trim() === value).length
-                    const active = rarity.includes(value)
-                    return <button type="button" key={value} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={rarityDisplayLabel(value) + ' · ' + count + ' cartes'} onClick={() => selectRarity(value)}>
-                      <span className={styles.filterIcon} aria-hidden="true">{raritySymbol(value)}</span><span>{rarityDisplayLabel(value)}</span><small>{count}</small>
+                  {rarities.map(option => {
+                    const count = cardsWithIncludedVariants.filter(card => rarityKey(card.rarity_label) === option.key).length
+                    const active = rarity.includes(option.key)
+                    return <button type="button" key={option.key} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={option.label + ' · ' + count + ' cartes'} onClick={() => selectRarity(option.key)}>
+                      <RarityFilterIcon rarityKey={option.key} /><span>{option.label}</span><small>{count}</small>
                     </button>
                   })}
                 </div>
@@ -784,7 +842,7 @@ export default function CardChecklistPage() {
                     const count = cardsWithIncludedVariants.filter(card => (card.element_types || []).includes(value)).length
                     const active = selectedElementTypes.includes(value)
                     return <button type="button" key={value} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={elementTypeDisplayLabel(value) + ' · ' + count + ' cartes'} onClick={() => toggleElementType(value)}>
-                      <ElementTypeIcon label={value} /><span>{elementTypeDisplayLabel(value)}</span><small>{count}</small>
+                      <ElementTypeIcon label={value} /><span className={styles.filterChoiceLabel}>{elementTypeDisplayLabel(value)}</span><small>{count}</small>
                     </button>
                   })}
                 </div>
