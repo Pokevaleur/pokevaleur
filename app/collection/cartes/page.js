@@ -629,7 +629,7 @@ export default function CardChecklistPage() {
         <section className={styles.globalSearch} aria-label="Recherche dans toutes les séries">
           <label className={styles.globalSearchLabel}>
             Rechercher une carte dans toutes les séries
-            <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom du Pokémon, par exemple Pikachu…" autoFocus />
+            <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom du Pokémon, par exemple Pikachu…" />
           </label>
           {!query.trim() && <p className={styles.scope}>Saisis un nom pour trouver les cartes correspondantes dans toutes les séries françaises publiées.</p>}
           {!!query.trim() && <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> résultat{visibleCards.length > 1 ? 's' : ''} pour « {query.trim()} » · jusqu’à 500 cartes affichées</p>}
