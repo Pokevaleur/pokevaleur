@@ -114,12 +114,13 @@ function elementTypeKey(label) {
     grass: 'grass', plante: 'grass',
     fire: 'fire', feu: 'fire',
     water: 'water', eau: 'water',
-    lightning: 'lightning', electric: 'lightning', electrik: 'lightning', electrique: 'lightning',
+    lightning: 'lightning', electric: 'lightning', electrik: 'lightning', electrique: 'lightning', electricite: 'lightning',
     psychic: 'psychic', psy: 'psychic',
     fighting: 'fighting', combat: 'fighting',
     darkness: 'darkness', obscurite: 'darkness', tenebres: 'darkness',
     metal: 'metal', acier: 'metal',
     dragon: 'dragon',
+    fairy: 'fairy', fee: 'fairy',
     colorless: 'colorless', incolore: 'colorless', normal: 'colorless',
     special: 'special', energiespeciale: 'special'
   }
@@ -130,7 +131,7 @@ function elementTypeColor(type) {
   return {
     grass: '#36a852', fire: '#ed493b', water: '#3198e8', lightning: '#f0c629',
     psychic: '#995acb', fighting: '#e66a35', darkness: '#28364b', metal: '#828c98',
-    dragon: '#d98b2b', colorless: '#9ba4ae', special: '#a05caa'
+    dragon: '#d98b2b', fairy: '#ed91ca', colorless: '#9ba4ae', special: '#a05caa'
   }[type]
 }
 
@@ -170,6 +171,9 @@ function ElementTypeIcon({ label }) {
     case 'special':
       mark = <><path d="m16 6 2.8 6.4 6.9.6-5.2 4.5 1.6 6.7-6.1-3.6-6.1 3.6 1.6-6.7-5.2-4.5 6.9-.6L16 6Z" fill="#fff"/><circle cx="16" cy="16" r="2" fill={fill}/></>
       break
+    case 'fairy':
+      mark = <><path d="m16 5 2.7 7 7.3 1-5.4 4.7 1.7 7.2-6.3-3.8-6.3 3.8 1.7-7.2L4 13l7.3-1L16 5Z" fill="#fff"/><circle cx="16" cy="16" r="2" fill={fill}/></>
+      break
     default:
       mark = <path d="m16 5 3.2 7.1 7.8.7-5.9 5.1 1.8 7.6-6.9-4.1-6.9 4.1 1.8-7.6-5.9-5.1 7.8-.7L16 5Z" fill="#fff"/>
   }
@@ -185,11 +189,11 @@ function ElementTypeIcon({ label }) {
 
 function elementTypeDisplayLabel(label) {
   const labels = {
-    Colorless: 'Incolore', Darkness: 'Obscurité', Dragon: 'Dragon', Fighting: 'Combat',
-    Fire: 'Feu', Grass: 'Plante', Lightning: 'Électrik', Metal: 'Métal',
-    Psychic: 'Psy', Water: 'Eau', Special: 'Énergie spéciale'
+    grass: 'Plante', fire: 'Feu', water: 'Eau', lightning: 'Électrique',
+    psychic: 'Psy', fighting: 'Combat', darkness: 'Obscurité', metal: 'Métal',
+    dragon: 'Dragon', fairy: 'Fée', colorless: 'Incolore', special: 'Énergie spéciale'
   }
-  return labels[label] || label
+  return labels[elementTypeKey(label)] || label
 }
 
 function cardTypeSymbol(label) {
@@ -837,7 +841,7 @@ export default function CardChecklistPage() {
               </div>
               {!!elementTypes.length && <div className={styles.filterGroup}>
                 <div className={styles.filterHeading}><strong>Élément / énergie</strong><span>{elementTypes.length} choix</span></div>
-                <div className={styles.filterChoices} role="group" aria-label="Filtrer par type élémentaire">
+                <div className={styles.filterChoices + ' ' + styles.energyFilterChoices} role="group" aria-label="Filtrer par type élémentaire">
                   {elementTypes.map(value => {
                     const count = cardsWithIncludedVariants.filter(card => (card.element_types || []).includes(value)).length
                     const active = selectedElementTypes.includes(value)
