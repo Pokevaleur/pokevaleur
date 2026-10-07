@@ -110,6 +110,9 @@
 .filterChoice:hover, .filterChoiceActive:hover { transform:translateY(-1px); border-color:#4966a8; }
 .filterChoiceActive { border:2px solid #243f8f; background:#e9efff; color:#172d69; }
 .filterIcon { width:27px; height:27px; display:grid; place-items:center; border-radius:8px; background:#f0f2f5; color:#7e8794; font-size:1.1rem; font-weight:900; }
+.energyFilterIcon { width:28px; height:28px; overflow:visible; border-radius:50%; background:transparent; }
+.energyFilterIcon svg { display:block; width:100%; height:100%; filter:drop-shadow(0 1px 1px #172a4430); }
+.filterChoiceActive .energyFilterIcon { background:transparent; }
 .filterChoiceActive .filterIcon { background:#d4def8; color:#263f8b; }
 .versionIcon { width:23px; height:28px; display:grid; place-items:center; border:1px solid #bbc5d2; border-radius:5px; background:linear-gradient(145deg,#fff,#f5d978); color:#394c62; font-size:.72rem; font-weight:900; }
 .filterChoice small, .filterChoiceActive small { color:#65758b; font-size:.76rem; font-weight:800; }
