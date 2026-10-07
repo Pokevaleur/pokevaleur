@@ -25,29 +25,72 @@ function seriesOptionLabel(set) {
   return (abbreviation ? abbreviation + ' — ' : '') + name + (set.is_public ? '' : ' · brouillon privé')
 }
 
-function raritySymbol(label) {
-  const value = (label || '').toLocaleLowerCase('fr')
-  if (value.includes('commune') || value.includes('common')) return '●'
-  if (value.includes('uncommon') || value.includes('peu commune')) return '◆'
-  if (value.includes('double')) return '✦✦'
-  if (value.includes('hyper')) return '✦✦'
-  if (value.includes('illustration')) return value.includes('special') ? '✧' : '★'
-  if (value.includes('ultra')) return '★'
-  return '★'
+function starPoints(cx, cy, outerRadius, innerRadius) {
+  return Array.from({ length: 10 }, (_, index) => {
+    const angle = (Math.PI * index) / 5 - Math.PI / 2
+    const radius = index % 2 === 0 ? outerRadius : innerRadius
+    return (cx + Math.cos(angle) * radius).toFixed(2) + ',' + (cy + Math.sin(angle) * radius).toFixed(2)
+  }).join(' ')
 }
 
 function rarityDisplayLabel(label) {
+  const value = (label || '').trim().toLocaleLowerCase('fr')
   const labels = {
-    Common: 'Commune',
-    Uncommon: 'Peu commune',
-    Rare: 'Rare',
-    'Double rare': 'Double rare',
-    'Ultra Rare': 'Ultra rare',
-    'Illustration rare': 'Illustration rare',
-    'Special illustration rare': 'Illustration spéciale rare',
-    'Hyper rare': 'Hyper rare'
+    common: 'Commune',
+    uncommon: 'Peu commune',
+    'peu commune': 'Peu commune',
+    rare: 'Rare',
+    'double rare': 'Double rare',
+    'ultra rare': 'Ultra rare',
+    'illustration rare': 'Illustration rare',
+    'special illustration rare': 'Illustration spéciale rare',
+    'illustration spéciale rare': 'Illustration spéciale rare',
+    'mega attack rare': 'Méga attaque rare',
+    'méga attaque rare': 'Méga attaque rare',
+    'mega hyper rare': 'Méga hyper rare',
+    'méga hyper rare': 'Méga hyper rare',
+    'hyper rare': 'Hyper rare'
   }
-  return labels[label] || label
+  return labels[value] || label
+}
+
+function raritySymbol(label) {
+  const value = rarityDisplayLabel(label).toLocaleLowerCase('fr')
+  const star = (cx, cy, radius, fill) => (
+    <polygon points={starPoints(cx, cy, radius, radius * 0.45)} fill={fill} />
+  )
+
+  if (value === 'commune') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4" fill="#27313d" /></svg>
+  }
+  if (value === 'peu commune') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true"><polygon points="12,4 20,12 12,20 4,12" fill="#27313d" /></svg>
+  }
+  if (value === 'double rare') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true">{star(7.5, 12, 6.2, '#27313d')}{star(17, 12, 6.2, '#27313d')}</svg>
+  }
+  if (value === 'ultra rare') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true">{star(7.5, 12, 6.2, '#8a9098')}{star(17, 12, 6.2, '#8a9098')}</svg>
+  }
+  if (value === 'illustration rare') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true">{star(12, 12, 7.3, '#f0b323')}</svg>
+  }
+  if (value === 'illustration spéciale rare') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true">{star(7.5, 12, 6.2, '#f0b323')}{star(17, 12, 6.2, '#f0b323')}</svg>
+  }
+  if (value === 'méga attaque rare') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true">{star(7.5, 12, 6.2, '#e85b9a')}{star(17, 12, 6.2, '#64a86b')}</svg>
+  }
+  if (value === 'méga hyper rare') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true">
+      <polygon points="12,3.5 20.5,12 12,20.5 3.5,12" fill="#f0cf35" stroke="#b59717" strokeWidth="1" />
+      <polygon points={starPoints(12, 12, 4.2, 1.9)} fill="#fff8d6" />
+    </svg>
+  }
+  if (value === 'hyper rare') {
+    return <svg viewBox="0 0 24 24" aria-hidden="true">{star(12, 12, 7.3, '#f0b323')}</svg>
+  }
+  return <svg viewBox="0 0 24 24" aria-hidden="true">{star(12, 12, 7.3, '#27313d')}</svg>
 }
 
 function elementTypeSymbol(label) {
