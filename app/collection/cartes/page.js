@@ -50,12 +50,79 @@ function rarityDisplayLabel(label) {
   return labels[label] || label
 }
 
-function elementTypeSymbol(label) {
-  const symbols = {
-    Grass: '♣', Fire: '♨', Water: '◉', Lightning: 'ϟ', Psychic: '✧',
-    Fighting: '✊', Darkness: '☾', Metal: '⚙', Dragon: '♜', Colorless: '☆', Special: 'Sp'
+function elementTypeKey(label) {
+  const normalized = (label || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s_-]+/g, '')
+  const aliases = {
+    grass: 'grass', plante: 'grass',
+    fire: 'fire', feu: 'fire',
+    water: 'water', eau: 'water',
+    lightning: 'lightning', electric: 'lightning', electrik: 'lightning', electrique: 'lightning',
+    psychic: 'psychic', psy: 'psychic',
+    fighting: 'fighting', combat: 'fighting',
+    darkness: 'darkness', obscurite: 'darkness', tenebres: 'darkness',
+    metal: 'metal', acier: 'metal',
+    dragon: 'dragon',
+    colorless: 'colorless', incolore: 'colorless', normal: 'colorless',
+    special: 'special', energiespeciale: 'special'
   }
-  return symbols[label] || '◇'
+  return aliases[normalized] || 'colorless'
+}
+
+function elementTypeColor(type) {
+  return {
+    grass: '#36a852', fire: '#ed493b', water: '#3198e8', lightning: '#f0c629',
+    psychic: '#995acb', fighting: '#e66a35', darkness: '#28364b', metal: '#828c98',
+    dragon: '#d98b2b', colorless: '#9ba4ae', special: '#a05caa'
+  }[type]
+}
+
+function ElementTypeIcon({ label }) {
+  const type = elementTypeKey(label)
+  const fill = elementTypeColor(type)
+  let mark
+
+  switch (type) {
+    case 'grass':
+      mark = <><path d="M8 22C8 11 14 6 25 6c0 11-5 17-16 17Z" fill="#fff"/><path d="M9 23 21 11" fill="none" stroke={fill} strokeWidth="1.8" strokeLinecap="round"/></>
+      break
+    case 'fire':
+      mark = <path d="M17 5c1 5-3 6-2 10 1-2 3-3 4-5 4 4 6 7 4 11-1 3-4 5-8 5-5 0-8-3-8-7 0-4 3-7 6-10 0 3 1 4 2 5 2-3 2-6 2-9Z" fill="#fff"/>
+      break
+    case 'water':
+      mark = <path d="M16 5C13 10 8 15 8 19a8 8 0 0 0 16 0c0-4-5-9-8-14Z" fill="#fff"/>
+      break
+    case 'lightning':
+      mark = <path d="M18 4 8 17h7l-1 11 10-15h-7l1-9Z" fill="#fff"/>
+      break
+    case 'psychic':
+      mark = <><path d="M4.5 16s4-7 11.5-7 11.5 7 11.5 7-4 7-11.5 7S4.5 16 4.5 16Z" fill="#fff"/><circle cx="16" cy="16" r="4" fill={fill}/><circle cx="16" cy="16" r="1.8" fill="#fff"/></>
+      break
+    case 'fighting':
+      mark = <path d="M8 15h3v-5c0-2.5 3.5-2.5 3.5 0v4-7c0-2.5 3.5-2.5 3.5 0v7-5c0-2.5 3.5-2.5 3.5 0v6l1-2c1-2 3.7-.8 3 1.4l-1.8 5.4A6 6 0 0 1 18 24h-3c-2.3 0-4-1-5-3l-3-3c-1.4-1.4-.5-3 1-3Z" fill="#fff"/>
+      break
+    case 'darkness':
+      mark = <><circle cx="17" cy="16" r="9" fill="#fff"/><circle cx="21" cy="12" r="8" fill={fill}/></>
+      break
+    case 'metal':
+      mark = <><path d="m16 6 8 5v10l-8 5-8-5V11l8-5Z" fill="none" stroke="#fff" strokeWidth="2.5"/><circle cx="16" cy="16" r="3" fill="#fff"/></>
+      break
+    case 'dragon':
+      mark = <><path d="m5 19 8-12 3 7 5-8 6 13-9-3-7 6-6-3Z" fill="#fff"/><circle cx="19" cy="15" r="1" fill={fill}/></>
+      break
+    case 'special':
+      mark = <><path d="m16 6 2.8 6.4 6.9.6-5.2 4.5 1.6 6.7-6.1-3.6-6.1 3.6 1.6-6.7-5.2-4.5 6.9-.6L16 6Z" fill="#fff"/><circle cx="16" cy="16" r="2" fill={fill}/></>
+      break
+    default:
+      mark = <path d="m16 5 3.2 7.1 7.8.7-5.9 5.1 1.8 7.6-6.9-4.1-6.9 4.1 1.8-7.6-5.9-5.1 7.8-.7L16 5Z" fill="#fff"/>
+  }
+
+  return <span className={styles.filterIcon + ' ' + styles.energyFilterIcon} aria-hidden="true">
+    <svg viewBox="0 0 32 32" focusable="false">
+      <circle cx="16" cy="16" r="15" fill={fill}/>
+      <circle cx="11" cy="9" r="3" fill="#fff" opacity=".2"/>
+      {mark}
+    </svg>
+  </span>
 }
 
 function elementTypeDisplayLabel(label) {
@@ -717,7 +784,7 @@ export default function CardChecklistPage() {
                     const count = cardsWithIncludedVariants.filter(card => (card.element_types || []).includes(value)).length
                     const active = selectedElementTypes.includes(value)
                     return <button type="button" key={value} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={elementTypeDisplayLabel(value) + ' · ' + count + ' cartes'} onClick={() => toggleElementType(value)}>
-                      <span className={styles.filterIcon} aria-hidden="true">{elementTypeSymbol(value)}</span><span>{elementTypeDisplayLabel(value)}</span><small>{count}</small>
+                      <ElementTypeIcon label={value} /><span>{elementTypeDisplayLabel(value)}</span><small>{count}</small>
                     </button>
                   })}
                 </div>
