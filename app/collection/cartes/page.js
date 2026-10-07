@@ -235,7 +235,7 @@ export default function CardChecklistPage() {
       const availableSets = setRows || []
       setSets(availableSets)
       const selected = availableSets.find(row => row.id === requestedSetId) || availableSets[0]
-      if (requestedSetId === ALL_SERIES_FILTER) setSetId(ALL_SERIES_FILTER)
+      if (requestedSetId === ALL_SERIES_FILTER || !requestedSetId) setSetId(ALL_SERIES_FILTER)
       else if (selected) setSetId(selected.id)
 
       const { data: companyRows, error: companyError } = await supabase.from('card_grading_companies')
