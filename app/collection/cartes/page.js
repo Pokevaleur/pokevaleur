@@ -51,7 +51,7 @@ function rarityDisplayLabel(label) {
 }
 
 function elementTypeKey(label) {
-  const normalized = (label || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').replace(/[\\s_-]+/g, '')
+  const normalized = (label || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s_-]+/g, '')
   const aliases = {
     grass: 'grass', plante: 'grass',
     fire: 'fire', feu: 'fire',
