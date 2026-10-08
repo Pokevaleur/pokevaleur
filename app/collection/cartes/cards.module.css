@@ -109,9 +109,10 @@
 .filterChoice, .filterChoiceActive { min-height:60px; display:grid; grid-template-columns:28px minmax(0,1fr) auto; align-items:center; gap:7px; padding:8px; border:1px solid #cbd4df; border-radius:12px; background:#fff; color:#30445b; font:inherit; font-size:.82rem; text-align:left; cursor:pointer; transition:background .15s ease,border-color .15s ease,transform .15s ease; }
 .filterChoiceLabel { min-width:0; line-height:1.15; }
 .filterChoice small, .filterChoiceActive small { justify-self:end; white-space:nowrap; }
-.energyFilterChoices { grid-template-columns:repeat(auto-fit,minmax(148px,1fr)); }
-.energyFilterChoices .filterChoice, .energyFilterChoices .filterChoiceActive { gap:6px; padding:7px; font-size:.76rem; }
-.energyFilterChoices .filterChoiceLabel { white-space:nowrap; overflow-wrap:normal; }
+.energyFilterChoices { grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr)); }
+.energyFilterChoices .filterChoice, .energyFilterChoices .filterChoiceActive { min-width:0; grid-template-columns:28px minmax(0,1fr) max-content; gap:6px; padding:7px; font-size:.76rem; }
+.energyFilterChoices .filterChoiceLabel { min-width:0; white-space:normal; overflow-wrap:anywhere; }
+.energyFilterChoices .filterChoice small, .energyFilterChoices .filterChoiceActive small { min-width:max-content; }
 .rarityFilterIcon { background:transparent; }
 .rarityFilterIcon svg { display:block; width:27px; height:27px; }
 .filterChoice:hover, .filterChoiceActive:hover { transform:translateY(-1px); border-color:#4966a8; }
