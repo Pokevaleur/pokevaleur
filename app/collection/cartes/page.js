@@ -493,7 +493,7 @@ export default function CardChecklistPage() {
   const baseFilteredCards = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('fr')
     return cardsWithIncludedVariants.filter(card => {
-      const matchesQuery = !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
+      const matchesQuery = !normalized || ((card.collector_number || '') + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
       const matchesRarity = !rarity.length || rarity.includes(rarityKey(card.rarity_label))
       const matchesCardType = !selectedCardTypes.length || selectedCardTypes.includes(card.card_type?.trim())
       const matchesElementType = !selectedElementTypes.length || (card.element_types || []).some(type => selectedElementTypes.includes(type))
@@ -784,7 +784,7 @@ export default function CardChecklistPage() {
                       <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                     </div>
                     <div className={styles.cardHeading}>
-                      <span className={styles.number}>N° {card.collector_number}</span>
+                      <span className={styles.number}>{card.collector_number ? 'N° ' + card.collector_number : 'Non numérotée'}</span>
                       <h2>{card.card_name}</h2>
                       <p className={styles.rarity}>{cardSet?.set_name || 'Série'}</p>
                       <small>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</small>
@@ -928,7 +928,7 @@ export default function CardChecklistPage() {
                         <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                       </div>
                       <div className={styles.cardHeading}>
-                        <span className={styles.number}>N° {card.collector_number}</span>
+                        <span className={styles.number}>{card.collector_number ? 'N° ' + card.collector_number : 'Non numérotée'}</span>
                         <h2>{card.card_name}</h2>
                         <p className={styles.rarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</p>
                         {card.mechanic_label && <small>{card.mechanic_label}</small>}
@@ -1000,7 +1000,7 @@ export default function CardChecklistPage() {
         <section className={styles.zoomDialog} role="dialog" aria-modal="true" aria-label={'Image agrandie de ' + zoomedCard.card_name}>
           <button type="button" className={styles.zoomClose} aria-label="Fermer l’image agrandie" onClick={() => setZoomedCard(null)}>×</button>
           <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => { const fallback = imageUrl(zoomedCard, 'low'); if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback }} />
-          <p><strong>{zoomedCard.card_name}</strong> · N° {zoomedCard.collector_number}{zoomedCard.seriesName ? ' · ' + zoomedCard.seriesName : ''}</p>
+          <p><strong>{zoomedCard.card_name}</strong>{zoomedCard.collector_number ? ' · N° ' + zoomedCard.collector_number : ''}{zoomedCard.seriesName ? ' · ' + zoomedCard.seriesName : ''}</p>
         </section>
       </div>}
     </main>
