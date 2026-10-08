@@ -34,11 +34,13 @@ const RARITY_FILTERS = [
   { key: 'illustration', label: 'Illustration rare' },
   { key: 'specialIllustration', label: 'Illustration spéciale rare' },
   { key: 'hyper', label: 'Hyper rare' },
-  { key: 'megaHyper', label: 'Méga Hyper Rare' }
+  { key: 'megaAttack', label: 'Méga attaque rare' },
+  { key: 'megaHyper', label: 'Méga hyper rare' }
 ]
 
 function rarityKey(label) {
   const value = (label || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[\s_-]+/g, '')
+  if (value.includes('megaattack') || value.includes('attackmega')) return 'megaAttack'
   if (value.includes('megahyper') || value.includes('hypermega')) return 'megaHyper'
   if (value.includes('special') && value.includes('illustration')) return 'specialIllustration'
   if (value.includes('illustration')) return 'illustration'
@@ -61,8 +63,10 @@ function rarityDisplayLabel(label) {
     'Illustration rare': 'Illustration rare',
     'Special illustration rare': 'Illustration spéciale rare',
     'Hyper rare': 'Hyper rare',
-    'Mega Hyper Rare': 'Méga Hyper Rare',
-    'Méga Hyper Rare': 'Méga Hyper Rare'
+    'Mega Attack Rare': 'Méga attaque rare',
+    'Méga attaque rare': 'Méga attaque rare',
+    'Mega Hyper Rare': 'Méga hyper rare',
+    'Méga Hyper Rare': 'Méga hyper rare'
   }
   return labels[label] || label
 }
@@ -96,8 +100,11 @@ function RarityFilterIcon({ rarityKey: type }) {
     case 'hyper':
       mark = <><polygon points="16,3 19.4,11.5 28,12 21.4,17.8 23.4,26 16,21.5 8.6,26 10.6,17.8 4,12 12.6,11.5" fill="#f3c21b" stroke="#151515" strokeWidth="1.6"/><path d="m16 7 1.8 6.1 6.2.3-4.8 4 1.4 6-5.2-3.3-5.2 3.3 1.4-6-4.8-4 6.2-.3L16 7Z" fill="#fff1a8"/></>
       break
-    case 'megaHyper':
+    case 'megaAttack':
       mark = <><polygon points="10,5 11.8,9 16,9.3 12.8,12 13.8,16 10,13.8 6.2,16 7.2,12 4,9.3 8.2,9" fill="#e98ac8"/><polygon points="22,14 23.8,18 28,18.3 24.8,21 25.8,25 22,22.8 18.2,25 19.2,21 16,18.3 20.2,18" fill="#72c98a"/></>
+      break
+    case 'megaHyper':
+      mark = <><polygon points="16,3 27,16 16,29 5,16" fill="#f1c72c" stroke="#9d7c11" strokeWidth="1.5" strokeLinejoin="round"/><polygon points="16,8 17.8,13 23,13.3 19,16.5 20.5,22 16,19 11.5,22 13,16.5 9,13.3 14.2,13" fill="#fff8d6"/></>
       break
     default:
       mark = <polygon points={star} fill="#fff" stroke="#111" strokeWidth="1.8" strokeLinejoin="round"/>
