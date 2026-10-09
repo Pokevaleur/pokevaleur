@@ -100,7 +100,7 @@ export default function Home() {
       </div>
       <div className={styles.cardNumbersPreview} aria-label="Exemple de numéros manquants à rechercher">
         <span className={styles.cardNumbersLabel}>Aperçu du format copié</span>
-        <p>181 à 184</p>
+        <p>018, 027, 044, 071, 093, 181 à 184</p>
         <small>La liste suit la série et les filtres choisis.</small>
       </div>
     </section>
