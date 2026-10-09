@@ -237,6 +237,8 @@ export default function CollectionPage() {
       window.location.replace(`/collection/rejoindre?token=${encodeURIComponent(transferToken)}`)
       return
     }
+    const initialSearch = params.get('search')
+    if (initialSearch) setQuery(initialSearch)
     setLoginNext(`/collection${window.location.search}`)
     load()
   }, [])
