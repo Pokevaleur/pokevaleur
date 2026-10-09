@@ -2,7 +2,10 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { supabaseUrl } from '../../lib/supabase-config'
 import { resolvePostLoginPath } from '../../lib/post-login-path.mjs'
+
+const usesIsolatedAuth = supabaseUrl !== 'https://zrvjbvhumyizutnjzljy.supabase.co'
 
 const AVATARS = [
   { key: 'star', emoji: '⭐', label: 'Étoile' },
@@ -186,6 +189,12 @@ export default function LoginPage() {
             ? isSignUp ? 'Crée ton compte pour proposer une référence au catalogue.' : 'Connecte-toi pour proposer une référence au catalogue.'
             : isSignUp ? 'Choisis ton pseudo et ton avatar pour créer ton profil de collectionneur.' : 'Connecte-toi pour retrouver et gérer ta collection.'}
         </p>
+
+        {usesIsolatedAuth && (
+          <p className="message" role="note">
+            <strong>Aperçu de test :</strong> il utilise un compte et une collection séparés du site en ligne. Ton compte du site en ligne ne fonctionne pas ici. Si tu n’as pas encore créé de compte sur cet aperçu, utilise « Créer un compte gratuit ».
+          </p>
+        )}
 
         <form onSubmit={submit}>
           {isSignUp && (
