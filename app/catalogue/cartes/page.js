@@ -75,18 +75,15 @@ export default function CardCataloguePage() {
 
     try {
       if (term) {
-        const [names, numbers] = await Promise.all([
-          buildQuery().ilike('card_name', '%' + term + '%').order('card_name').range(0, 149),
-          buildQuery().ilike('collector_number', '%' + term + '%').order('collector_number').range(0, 99)
-        ])
-        if (names.error) throw names.error
-        if (numbers.error) throw numbers.error
-        const unique = new Map()
-        for (const card of [...(names.data || []), ...(numbers.data || [])]) unique.set(card.id, card)
-        setCards([...unique.values()].sort((a, b) =>
-          a.card_name.localeCompare(b.card_name, 'fr') ||
-          String(a.collector_number).localeCompare(String(b.collector_number), 'fr', { numeric: true })
-        ))
+        const isNumber = /^[A-Za-z]*\\d+(?:[A-Za-z0-9./-]*)$/.test(term)
+        const { data, error: loadError } = await fetchAllRows(() => {
+          const request = buildQuery()
+          return isNumber
+            ? request.eq('collector_number', term).order('card_name')
+            : request.ilike('card_name', '%' + term + '%').order('card_name')
+        })
+        if (loadError) throw loadError
+        setCards(data || [])
       } else {
         const { data, error: loadError } = await fetchAllRows(() =>
           buildQuery().order('guide_order', { ascending: true }).order('collector_number')
