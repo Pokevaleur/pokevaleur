@@ -131,6 +131,7 @@ export default function CardCataloguePage() {
         <section className={styles.grid} aria-label="Résultats du catalogue de cartes">
           {cards.map(card => {
             const set = relatedSet(card)
+            const collectionSetId = set?.id || card.card_set_id || sets.find(item => item.set_name === set?.set_name && item.set_code === set?.set_code)?.id
             const variants = [...new Set((card.card_print_variants || [])
               .map(variant => variant.variant_label)
               .filter(label => label && label !== 'Carte (suivi de base)'))]
@@ -147,7 +148,7 @@ export default function CardCataloguePage() {
                   <h2>{card.card_name}</h2>
                   <p className={styles.cardNumber}>{card.collector_number || 'Numéro non renseigné'}{card.rarity_label ? ' · ' + card.rarity_label : ''}</p>
                   {variants.length > 0 && <p className={styles.variants}>{variants.join(' · ')}</p>}
-                  {set && <a className={styles.collectionLink} href={'/collection/cartes?set=' + encodeURIComponent(set.id)}>Voir cette série dans Ma Collection →</a>}
+                  {set && <a className={styles.collectionLink} href={'/collection/cartes?set=' + encodeURIComponent(collectionSetId)}>Voir cette série dans Ma Collection →</a>}
                 </div>
               </article>
             )
