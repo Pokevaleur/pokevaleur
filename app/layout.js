@@ -17,7 +17,8 @@ const navLinks = [
   {
     label: 'Catalogue',
     children: [
-      { href: '/catalogue', label: 'Produits scellés' }
+      { href: '/catalogue', label: 'Produits scellés' },
+      { href: '/catalogue/cartes', label: 'Cartes' }
     ]
   },
   {
