@@ -953,7 +953,7 @@ export default function CardChecklistPage() {
                               </label>
                               <div className={styles.copyActions}>
                                 <button type="button" aria-label="Retirer un exemplaire brut" disabled={!rawCopies.length || busyVariant === variant.id} onClick={() => changeRawCopies(variant, 'remove')}>−</button>
-                                <button type="button" aria-label="Ajouter un exemplaire brut" disabled={busyVariant === variant.id} onClick={() => changeRawCopies(variant, 'add')}>+</button>
+                                <button type="button" className={styles.addRawCopy} aria-label="Ajouter un exemplaire brut" disabled={busyVariant === variant.id} onClick={() => changeRawCopies(variant, 'add')}>+ Ajouter à ma collection</button>
                               </div>
                             </div>
                             <div className={styles.gradedSection}>
