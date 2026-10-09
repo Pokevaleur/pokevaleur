@@ -16,7 +16,6 @@ const navLinks = [
   { href: '/', label: 'Accueil' },
   {
     label: 'Catalogue',
-    memberOnly: true,
     children: [
       { href: '/catalogue', label: 'Produits scellés' }
     ]
