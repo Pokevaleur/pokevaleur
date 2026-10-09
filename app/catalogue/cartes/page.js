@@ -147,7 +147,7 @@ export default function CardCataloguePage() {
                   <h2>{card.card_name}</h2>
                   <p className={styles.cardNumber}>{card.collector_number || 'Numéro non renseigné'}{card.rarity_label ? ' · ' + card.rarity_label : ''}</p>
                   {variants.length > 0 && <p className={styles.variants}>{variants.join(' · ')}</p>}
-                  {set && <a className={styles.collectionLink} href={'/collection/cartes?set=' + encodeURIComponent(set.id)}>Voir cette série dans Ma Collection →</a>}
+                  {set && <a className={styles.collectionLink} href={'/collection/cartes?set=' + encodeURIComponent(card.card_set_id)}>Voir cette série dans Ma Collection →</a>}
                 </div>
               </article>
             )
