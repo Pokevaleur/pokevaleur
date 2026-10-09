@@ -109,7 +109,8 @@ export default function ProductDetailPage() {
             {product.category === 'sealed' ? 'Scellé' : product.category}
           </span>
           <h1>{product.name}</h1>
-          <a className="btn" href={`/collection?product=${encodeURIComponent(product.id)}`}>Ajouter à ma collection</a>
+          <a className="btn" href={`/collection?product=${encodeURIComponent(product.id)}`}>Ajouter à Ma Collection</a>
+          <a className="detailLink catalogueCollectionLink" href="/collection">Voir mes exemplaires →</a>
           <p className="muted">{product.series || 'Série non renseignée'}</p>
           <div className="detailReleaseDate">
             <span>Date de sortie officielle</span>
@@ -142,7 +143,8 @@ export default function ProductDetailPage() {
 
       {guaranteedContents.length > 0 && (
         <section className="panel productContentsPanel">
-          <h2>Contenu garanti</h2>
+          <h2>Contenu du produit de référence</h2>
+          <p className="muted">Ce contenu décrit le produit générique. Le contenu réellement possédé se suit séparément dans Ma Collection.</p>
           <div className="productContentsList">
             {guaranteedContents.map(item => (
               <div key={item.id} className="productContentRow">
