@@ -18,6 +18,7 @@ const navLinks = [
     label: 'Catalogue',
     children: [
       { href: '/catalogue', label: 'Produits scellés' },
+      { href: '/catalogue?search=ETB', label: 'ETB' },
       { href: '/catalogue/cartes', label: 'Cartes' }
     ]
   },
@@ -25,6 +26,7 @@ const navLinks = [
     label: 'Ma Collection',
     children: [
       { href: '/collection', label: 'Produits scellés' },
+      { href: '/collection?search=ETB', label: 'ETB' },
       { href: '/collection/cartes', label: 'Cartes', memberOnly: true },
       { href: '/collection/statistiques', label: 'Statistiques', memberOnly: true }
     ]
