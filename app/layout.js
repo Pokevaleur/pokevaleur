@@ -15,13 +15,20 @@ export const metadata = {
 const navLinks = [
   { href: '/', label: 'Accueil' },
   {
-    label: 'Ma collection',
+    label: 'Catalogue',
+    memberOnly: true,
     children: [
-      { href: '/collection', label: 'Produits scellés' },
-      { href: '/collection/cartes', label: 'Checklist cartes', memberOnly: true }
+      { href: '/catalogue', label: 'Produits scellés' }
     ]
   },
-  { href: '/catalogue', label: 'Catalogue', memberOnly: true },
+  {
+    label: 'Ma Collection',
+    children: [
+      { href: '/collection', label: 'Produits scellés' },
+      { href: '/collection/cartes', label: 'Cartes', memberOnly: true },
+      { href: '/collection/statistiques', label: 'Statistiques', memberOnly: true }
+    ]
+  },
   { href: '/opportunites', label: 'Watchlist' },
   { href: '/communaute', label: 'Communauté' },
   { href: '/trades', label: 'Trades' },
