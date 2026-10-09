@@ -1455,3 +1455,6 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
   .mobileMenuPanel .collectionNavPanel{position:static;grid-template-columns:1fr 1fr;gap:8px;min-width:0;padding:8px 0 0;border:0;border-radius:0;background:transparent;box-shadow:none}
   .mobileMenuPanel .collectionNavPanel a{min-width:0;padding:10px 8px;border-radius:10px;background:rgba(255,255,255,.08);white-space:normal;font-size:14px}
 }
+
+
+.collectionQuickSearchLabel{margin:10px 0 0;color:var(--muted);font-size:13px;font-weight:700}.collectionQuickSearch{margin:8px 0 2px}
