@@ -162,7 +162,7 @@ export default function LoginPage() {
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo })
       if (error) {
         const detail = error.message?.toLowerCase() || ''
-        const waitSeconds = error.message?.match(/after\\s+(\\d+)\\s+seconds?/i)?.[1]
+        const waitSeconds = error.message?.match(/after\s+(\d+)\s+seconds?/i)?.[1]
         const isRateLimited = error.code === 'over_email_send_rate_limit'
           || Number(error.status) === 429
           || detail.includes('rate limit')
