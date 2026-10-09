@@ -6,7 +6,7 @@ import { fetchAllRows } from '../../../lib/supabase-pagination'
 import styles from './page.module.css'
 
 const ALL_SERIES = '__all_series__'
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets(set_name,set_code),card_print_variants(id,variant_label,finish_code,guide_marker,checklist_group)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets(id,set_name,set_code),card_print_variants(id,variant_label,finish_code,guide_marker,checklist_group)'
 
 function seriesLabel(set) {
   return (set.set_code ? set.set_code.toUpperCase() + ' — ' : '') + set.set_name
@@ -147,7 +147,7 @@ export default function CardCataloguePage() {
                   <h2>{card.card_name}</h2>
                   <p className={styles.cardNumber}>{card.collector_number || 'Numéro non renseigné'}{card.rarity_label ? ' · ' + card.rarity_label : ''}</p>
                   {variants.length > 0 && <p className={styles.variants}>{variants.join(' · ')}</p>}
-                  {set && <a className={styles.collectionLink} href={'/collection/cartes?set=' + encodeURIComponent(card.card_set_id)}>Voir cette série dans Ma Collection →</a>}
+                  {set && <a className={styles.collectionLink} href={'/collection/cartes?set=' + encodeURIComponent(set.id)}>Voir cette série dans Ma Collection →</a>}
                 </div>
               </article>
             )
