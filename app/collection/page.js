@@ -237,6 +237,8 @@ export default function CollectionPage() {
       window.location.replace(`/collection/rejoindre?token=${encodeURIComponent(transferToken)}`)
       return
     }
+    const initialSearch = params.get('search')
+    if (initialSearch) setQuery(initialSearch)
     setLoginNext(`/collection${window.location.search}`)
     load()
   }, [])
@@ -851,6 +853,22 @@ export default function CollectionPage() {
                 {collectionVoiceListening ? '🎙️' : '🎤'}
               </button>
             </div>
+        <p className="collectionQuickSearchLabel">Accès rapide à tes formats :</p>
+        <div className="catalogQuickSearch collectionQuickSearch" aria-label="Filtres rapides de ma collection">
+          {['ETB', 'Display', 'Coffret'].map(format => (
+            <button
+              type="button"
+              key={format}
+              className="catalogExample"
+              onClick={() => {
+                setQuery(format)
+                setShowCollectionItems(true)
+              }}
+            >
+              {format}
+            </button>
+          ))}
+        </div>
         <div className="collectionSearchFilters">
         <label>
           État du produit

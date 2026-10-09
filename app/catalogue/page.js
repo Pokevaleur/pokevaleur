@@ -50,6 +50,8 @@ export default function CataloguePage() {
   }
 
   useEffect(() => {
+    const initialSearch = new URLSearchParams(window.location.search).get('search')
+    if (initialSearch) setQuery(initialSearch)
     loadProducts()
     loadUser()
   }, [])

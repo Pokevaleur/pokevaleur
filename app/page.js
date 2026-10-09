@@ -48,7 +48,14 @@ export default function Home() {
       catch { if (active) setMember(false) }
     }
     sync()
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(() => { if (active) setMember(false); setTimeout(() => { if (active) sync() }, 0) })
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (active && event === 'PASSWORD_RECOVERY' && session?.user) {
+        window.location.replace('/update-password?recovery=1')
+        return
+      }
+      if (active) setMember(false)
+      setTimeout(() => { if (active) sync() }, 0)
+    })
     return () => { active = false; subscription.unsubscribe() }
   }, [])
 
