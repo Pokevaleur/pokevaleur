@@ -851,6 +851,22 @@ export default function CollectionPage() {
                 {collectionVoiceListening ? '🎙️' : '🎤'}
               </button>
             </div>
+        <p className="collectionQuickSearchLabel">Accès rapide à tes formats :</p>
+        <div className="catalogQuickSearch collectionQuickSearch" aria-label="Filtres rapides de ma collection">
+          {['ETB', 'Display', 'Coffret'].map(format => (
+            <button
+              type="button"
+              key={format}
+              className="catalogExample"
+              onClick={() => {
+                setQuery(format)
+                setShowCollectionItems(true)
+              }}
+            >
+              {format}
+            </button>
+          ))}
+        </div>
         <div className="collectionSearchFilters">
         <label>
           État du produit
