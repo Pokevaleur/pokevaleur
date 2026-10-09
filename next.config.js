@@ -14,7 +14,7 @@ const securityHeaders = [
       "frame-ancestors 'none'",
       "form-action 'self'",
       "object-src 'none'",
-      "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://assets.tcgdex.net https://www.dexocard.com https://cdn.beebs.app https://cdn.svc.asmodee.net https://de.fantasysphere.net https://images.king-jouet.com https://pokemagic.fr",
+      "img-src 'self' data: blob: https://*.supabase.co https://*.supabase.in https://assets.tcgdex.net https://www.dexocard.com https://cdn.beebs.app https://cdn.svc.asmodee.net https://de.fantasysphere.net https://images.king-jouet.com https://pokemagic.fr https://pokemon.com https://*.pokemon.com",
       "media-src 'self' blob:",
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
