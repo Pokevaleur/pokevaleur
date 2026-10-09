@@ -162,8 +162,15 @@ export default function LoginPage() {
       const { error } = await supabase.auth.resetPasswordForEmail(normalizedEmail, { redirectTo })
       if (error) {
         const detail = error.message?.toLowerCase() || ''
-        setMessage(detail.includes('rate limit') || detail.includes('too many requests')
-          ? 'Trop de demandes. Attends quelques minutes avant de réessayer.'
+        const waitSeconds = error.message?.match(/after\\s+(\\d+)\\s+seconds?/i)?.[1]
+        const isRateLimited = error.code === 'over_email_send_rate_limit'
+          || Number(error.status) === 429
+          || detail.includes('rate limit')
+          || detail.includes('too many requests')
+        setMessage(isRateLimited
+          ? waitSeconds
+            ? `Une demande vient déjà d’être faite. Vérifie ta boîte mail et les indésirables. Tu pourras réessayer dans ${waitSeconds} secondes.`
+            : 'Une demande vient déjà d’être faite ou le délai de sécurité est actif. Vérifie ta boîte mail et les indésirables avant de réessayer.'
           : 'La demande n’a pas pu être envoyée. Vérifie ton adresse puis réessaie.')
         return
       }
