@@ -90,7 +90,16 @@ export default function Navigation({ links }) {
     return visibleLinks.map(link => link.children
       ? (
         <details className="collectionNavGroup" key={link.label}>
-          <summary>{link.label}<span aria-hidden="true">⌄</span></summary>
+          <summary>
+            <a
+              href={link.href || link.children[0]?.href}
+              aria-label={`Aller à ${link.label}`}
+              onClick={event => event.stopPropagation()}
+            >
+              {link.label}
+            </a>
+            <span aria-hidden="true">⌄</span>
+          </summary>
           <div className="collectionNavPanel">
             {link.children.map(child => <a href={child.href} key={child.href}>{child.label}</a>)}
           </div>
