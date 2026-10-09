@@ -497,7 +497,8 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
   main.homePage{padding:14px 12px 24px}
   .homePage{gap:18px}
   .homeHero{
-    display:grid;    grid-template-columns:1fr;
+    display:grid;
+    grid-template-columns:1fr;
     gap:14px;
     padding:14px;
     border-radius:22px;
@@ -996,7 +997,8 @@ linear-gradient(135deg,#071a31 0%,#0a2748 58%,#103c6d 100%);color:#fff;overflow:
 .profileAvatarLarge.profileAvatarIllustrated{background-color:transparent!important}
 .profileAvatarDetail{display:flex;align-items:center;gap:8px}
 .profileAvatarDetailMark{display:inline-flex;align-items:center;justify-content:center;width:32px;height:32px;flex:0 0 32px;border-radius:50%;font-size:20px}
-.profileAvatarDetailMark.profileAvatarIllustrated{background-color:transparent!important}@media(max-width:390px){.profileAvatarChoices{grid-template-columns:repeat(4,minmax(0,1fr))}.profileAvatarOptionImage{width:42px;height:42px}}
+.profileAvatarDetailMark.profileAvatarIllustrated{background-color:transparent!important}
+@media(max-width:390px){.profileAvatarChoices{grid-template-columns:repeat(4,minmax(0,1fr))}.profileAvatarOptionImage{width:42px;height:42px}}
 
 .collectionProfileAvatar{display:inline-flex;align-items:center;justify-content:center;width:24px;height:24px;vertical-align:middle;margin-right:4px;border-radius:50%;background:#fff4c7;font-size:16px}
 .collectionProfileAvatar.profileAvatarIllustrated{background-color:transparent!important}
