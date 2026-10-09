@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
-import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
+import { createProductMatcher, isEtbSelection, normalizeSearch } from '../../lib/product-search.mjs'
+import { sortEtbsByReleaseDate } from '../../lib/catalogue-sort.mjs'
 
 function median(values) {
   if (!values.length) return null
@@ -107,7 +108,11 @@ export default function CataloguePage() {
   }
 
   const hasSearch = Boolean(normalizeSearch(query))
-  const filtered = useMemo(() => hasSearch ? products.filter(createProductMatcher(query)) : [], [products, query, hasSearch])
+  const filtered = useMemo(() => {
+    if (!hasSearch) return []
+    const matches = products.filter(createProductMatcher(query))
+    return isEtbSelection(query) ? sortEtbsByReleaseDate(matches) : matches
+  }, [products, query, hasSearch])
 
   function getStats(productId, tier = 'standard') {
     const sales = history.filter(item =>
