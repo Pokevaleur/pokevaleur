@@ -75,7 +75,7 @@ export default function CardCataloguePage() {
 
     try {
       if (term) {
-        const isNumber = /^[A-Za-z]*\\d+(?:[A-Za-z0-9./-]*)$/.test(term)
+        const isNumber = /^[A-Za-z]*\d+(?:[A-Za-z0-9./-]*)$/.test(term)
         const { data, error: loadError } = await fetchAllRows(() => {
           const request = buildQuery()
           return isNumber
