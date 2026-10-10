@@ -42,6 +42,247 @@ function imageFor(card) {
   return card?.image_url || card?.image_source_url || ''
 }
 
+
+const CARD_CONDITIONS = [
+  { value: 'near_mint', label: 'Quasi neuve' },
+  { value: 'excellent', label: 'Très bon état' },
+  { value: 'good', label: 'Bon état' },
+  { value: 'played', label: 'Jouée' },
+  { value: 'damaged', label: 'Abîmée' },
+  { value: 'unassessed', label: 'À évaluer' },
+]
+
+function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
+  const [selectedCopyId, setSelectedCopyId] = useState(copies[0]?.id || '')
+  const [photos, setPhotos] = useState([])
+  const [photosLoading, setPhotosLoading] = useState(true)
+  const [uploading, setUploading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [condition, setCondition] = useState(copies[0]?.raw_condition || '')
+  const [conditionDetails, setConditionDetails] = useState(copies[0]?.condition_details || '')
+  const [message, setMessage] = useState('')
+  const selectedCopy = copies.find(copy => copy.id === selectedCopyId) || copies[0]
+
+  useEffect(() => {
+    const onKeyDown = event => { if (event.key === 'Escape') onClose() }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [onClose])
+
+  useEffect(() => {
+    setCondition(selectedCopy?.raw_condition || '')
+    setConditionDetails(selectedCopy?.condition_details || '')
+    setMessage('')
+  }, [selectedCopyId])
+
+  useEffect(() => {
+    if (!selectedCopy) return
+    let cancelled = false
+    setPhotosLoading(true)
+    setMessage('')
+    async function loadPhotos() {
+      try {
+        const { data, error } = await supabase.from('collection_card_photos')
+          .select('id,photo_path,caption,sort_order').eq('collection_card_id', selectedCopy.id)
+          .order('sort_order').order('created_at')
+        if (error) throw error
+        const rows = [...(data || [])]
+        if (selectedCopy.photo_path && !rows.some(photo => photo.photo_path === selectedCopy.photo_path)) {
+          rows.unshift({ id: null, photo_path: selectedCopy.photo_path, caption: 'Photo déjà enregistrée', sort_order: -1 })
+        }
+        const signedRows = await Promise.all(rows.map(async photo => {
+          const { data: signed, error: signedError } = await supabase.storage
+            .from('collection-images').createSignedUrl(photo.photo_path, 3600)
+          if (signedError) throw signedError
+          return { ...photo, url: signed?.signedUrl || null }
+        }))
+        if (!cancelled) setPhotos(signedRows)
+      } catch (error) {
+        if (!cancelled) setMessage('Impossible de charger les photos : ' + (error.message || 'réessaie plus tard.'))
+      } finally {
+        if (!cancelled) setPhotosLoading(false)
+      }
+    }
+    loadPhotos()
+    return () => { cancelled = true }
+  }, [supabase, selectedCopyId, selectedCopy?.photo_path])
+
+  async function saveCondition() {
+    if (!selectedCopy || saving) return
+    setSaving(true)
+    setMessage('')
+    const { error } = await supabase.from('collection_cards').update({
+      raw_condition: condition || null,
+      condition_details: conditionDetails.trim() || null,
+    }).eq('id', selectedCopy.id).eq('collection_profile_id', profileId)
+    setSaving(false)
+    setMessage(error ? 'État non enregistré : ' + error.message : 'État enregistré.')
+  }
+
+  async function uploadPhotos(event) {
+    const files = Array.from(event.target.files || [])
+    event.target.value = ''
+    if (!files.length || !selectedCopy) return
+    const allowedTypes = new Set(['image/jpeg', 'image/png', 'image/webp'])
+    const invalid = files.find(file => !allowedTypes.has(file.type) || file.size > 8 * 1024 * 1024)
+    if (invalid) {
+      setMessage('Choisis des photos JPG, PNG ou WebP de 8 Mo maximum chacune.')
+      return
+    }
+
+    setUploading(true)
+    setMessage('')
+    const uploadedPaths = []
+    let linked = false
+    try {
+      for (const file of files) {
+        const extension = file.type === 'image/jpeg' ? 'jpg' : file.type.split('/')[1]
+        const path = user.id + '/' + profileId + '/' + selectedCopy.id + '/' + window.crypto.randomUUID() + '.' + extension
+        const { error } = await supabase.storage.from('collection-images').upload(path, file, {
+          cacheControl: '3600', contentType: file.type, upsert: false,
+        })
+        if (error) throw error
+        uploadedPaths.push(path)
+      }
+
+      const nextOrder = photos.length ? Math.max(...photos.map(photo => photo.sort_order || 0)) + 1 : 0
+      const { error: insertError } = await supabase.from('collection_card_photos').insert(
+        uploadedPaths.map((photoPath, index) => ({
+          user_id: user.id, collection_profile_id: profileId, collection_card_id: selectedCopy.id,
+          photo_path: photoPath, sort_order: nextOrder + index,
+        }))
+      )
+      if (insertError) throw insertError
+      linked = true
+
+      if (!selectedCopy.photo_path && uploadedPaths[0]) {
+        const { error: primaryError } = await supabase.from('collection_cards')
+          .update({ photo_path: uploadedPaths[0] }).eq('id', selectedCopy.id)
+        if (primaryError) setMessage('Photos ajoutées, mais la photo principale n’a pas pu être mise à jour.')
+      }
+      const { data: rows, error: galleryError } = await supabase.from('collection_card_photos')
+        .select('id,photo_path,caption,sort_order').eq('collection_card_id', selectedCopy.id)
+        .order('sort_order').order('created_at')
+      if (galleryError) throw galleryError
+      const signedRows = await Promise.all((rows || []).map(async photo => {
+        const { data: signed } = await supabase.storage.from('collection-images').createSignedUrl(photo.photo_path, 3600)
+        return { ...photo, url: signed?.signedUrl || null }
+      }))
+      setPhotos(signedRows)
+      setMessage(files.length + (files.length > 1 ? ' nouvelles photos ajoutées.' : ' photo ajoutée.'))
+    } catch (error) {
+      if (!linked && uploadedPaths.length) await supabase.storage.from('collection-images').remove(uploadedPaths)
+      setMessage('Envoi impossible : ' + (error.message || 'réessaie.'))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  async function removePhoto(photo) {
+    if (!selectedCopy || uploading) return
+    setUploading(true)
+    setMessage('')
+    try {
+      if (photo.id) {
+        const { error } = await supabase.from('collection_card_photos').delete().eq('id', photo.id)
+        if (error) throw error
+      } else {
+        const { error } = await supabase.from('collection_cards').update({ photo_path: null }).eq('id', selectedCopy.id)
+        if (error) throw error
+      }
+      const { error: removeError } = await supabase.storage.from('collection-images').remove([photo.photo_path])
+      const nextPhotos = photos.filter(entry => entry.photo_path !== photo.photo_path)
+      if (selectedCopy.photo_path === photo.photo_path) {
+        const { error: primaryError } = await supabase.from('collection_cards')
+          .update({ photo_path: nextPhotos[0]?.photo_path || null }).eq('id', selectedCopy.id)
+        if (primaryError) throw primaryError
+      }
+      setPhotos(nextPhotos)
+      setMessage(removeError ? 'Photo retirée de la fiche, mais le fichier n’a pas pu être supprimé.' : 'Photo supprimée.')
+    } catch (error) {
+      setMessage('Suppression impossible : ' + (error.message || 'réessaie.'))
+    } finally {
+      setUploading(false)
+    }
+  }
+
+  const conditionIsCustom = condition && !CARD_CONDITIONS.some(option => option.value === condition)
+  return (
+    <div className={styles.detailBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
+      <section className={styles.cardDetailDialog} role="dialog" aria-modal="true" aria-label={'Détail de ' + card.card_name}>
+        <button type="button" className={styles.detailClose} onClick={onClose} aria-label="Fermer">×</button>
+        <header className={styles.detailHeader}>
+          <div>
+            <p className={styles.kicker}>Fiche de collection</p>
+            <h2>{card.card_name}</h2>
+            <p>{card.setName} · N° {card.collector_number}</p>
+          </div>
+          <span className={styles.detailCopyCount}>{copies.length} exemplaire{copies.length > 1 ? 's' : ''}</span>
+        </header>
+
+        <div className={styles.detailLayout}>
+          <figure className={styles.detailCatalogArt}>
+            {imageFor(card) ? <img src={imageFor(card)} alt={'Illustration catalogue de ' + card.card_name} /> : <span>Illustration indisponible</span>}
+            <figcaption>Illustration du catalogue</figcaption>
+          </figure>
+
+          <div className={styles.detailContent}>
+            {copies.length > 1 && <div className={styles.copyTabs} role="tablist" aria-label="Choisir un exemplaire">
+              {copies.map((copy, index) => <button key={copy.id} type="button" role="tab"
+                aria-selected={copy.id === selectedCopy?.id} className={copy.id === selectedCopy?.id ? styles.copyTabActive : styles.copyTab}
+                onClick={() => setSelectedCopyId(copy.id)}>
+                Exemplaire {index + 1}{copy.variantLabel ? ' · ' + copy.variantLabel : ''}
+              </button>)}
+            </div>}
+
+            <section className={styles.conditionPanel} aria-label="État de l’exemplaire">
+              <h3>État de cet exemplaire</h3>
+              <label className={styles.detailField}>État général
+                <select value={condition} onChange={event => setCondition(event.target.value)}>
+                  <option value="">À préciser</option>
+                  {conditionIsCustom && <option value={condition}>{condition}</option>}
+                  {CARD_CONDITIONS.map(option => <option key={option.value} value={option.value}>{option.label}</option>)}
+                </select>
+              </label>
+              <label className={styles.detailField}>Détails
+                <textarea value={conditionDetails} onChange={event => setConditionDetails(event.target.value)}
+                  rows={2} maxLength={500} placeholder="Ex. petit blanchiment au dos, coin légèrement marqué…" />
+              </label>
+              <button type="button" className={styles.detailSave} onClick={saveCondition} disabled={saving}>
+                {saving ? 'Enregistrement…' : 'Enregistrer l’état'}
+              </button>
+            </section>
+
+            <section className={styles.photoPanel} aria-label="Photos personnelles">
+              <div className={styles.photoPanelHeading}>
+                <div><h3>Photos de ton exemplaire</h3><p>Recto, verso et détails</p></div>
+                <label className={styles.photoAddButton}>
+                  {uploading ? 'Envoi…' : '＋ Ajouter'}
+                  <input type="file" accept="image/jpeg,image/png,image/webp" multiple disabled={uploading}
+                    onChange={uploadPhotos} aria-label="Ajouter des photos de cet exemplaire" />
+                </label>
+              </div>
+              {photosLoading ? <p className={styles.photoMessage}>Chargement des photos…</p> : photos.length ? (
+                <div className={styles.photoGrid}>
+                  {photos.map((photo, index) => <figure key={photo.id || photo.photo_path} className={styles.photoItem}>
+                    {photo.url ? <img src={photo.url} alt={photo.caption || 'Photo ' + (index + 1) + ' de ' + card.card_name} /> : <span>Photo indisponible</span>}
+                    <figcaption>{photo.caption || 'Photo ' + (index + 1)}</figcaption>
+                    <button type="button" onClick={() => removePhoto(photo)} disabled={uploading}
+                      aria-label={'Supprimer la photo ' + (index + 1)}>Supprimer</button>
+                  </figure>)}
+                </div>
+              ) : <p className={styles.photoMessage}>Aucune photo personnelle pour cet exemplaire.</p>}
+              <p className={styles.photoHint}>JPG, PNG ou WebP · 8 Mo maximum par photo</p>
+            </section>
+            {message && <p className={styles.detailMessage} role="status">{message}</p>}
+          </div>
+        </div>
+      </section>
+    </div>
+  )
+}
+
+
 function BackLink({ href, children = '← Retour' }) {
   return <a className={styles.backLink} href={href}>{children}</a>
 }
@@ -66,6 +307,7 @@ function BindersContent() {
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [zoomedCard, setZoomedCard] = useState(null)
 
   useEffect(() => {
     let cancelled = false
@@ -187,7 +429,7 @@ function BindersContent() {
         let copies = []
         for (let offset = 0; offset < ids.length; offset += 250) {
           const { data, error: copyError } = await supabase.from('collection_cards')
-            .select('id,card_print_variant_id,ownership_type,grade_label')
+            .select('id,card_print_variant_id,ownership_type,grade_label,raw_condition,condition_details,photo_path')
             .eq('collection_profile_id', profileId).in('card_print_variant_id', ids.slice(offset, offset + 250))
           if (copyError) throw copyError
           copies = copies.concat(data || [])
@@ -325,7 +567,7 @@ function BindersContent() {
         </header>
         {error && <p className={styles.error} role="alert">{error}</p>}
         {cardsLoading ? <p className={styles.status}>Chargement des cartes du classeur…</p> : <>
-          <section className={styles.spread} aria-label={'Double page ' + (page + 1) + ' sur ' + totalSpreads}>
+          <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={'Double page ' + (page + 1) + ' sur ' + totalSpreads}>
             {[0, 1].map(side => <section key={side} className={styles.bookPage} aria-label={side === 0 ? 'Page de gauche' : 'Page de droite'}>
               <div className={styles.pageTop}><span>{shortCode(selectedSet)}</span><span>{page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
@@ -333,7 +575,22 @@ function BindersContent() {
                   const cardVariants = (card?.card_print_variants || []).filter(variant => variant.is_master_set_target)
                   const copyCount = cardVariants.reduce((count, variant) => count + (variantCopies[variant.id] || []).length, 0)
                   const cardArt = imageFor(card)
-                  return <article key={card?.id || 'empty-' + side + '-' + slotIndex} className={card && copyCount ? styles.slotOwned : styles.slot}>
+                  if (card && copyCount) {
+                    const ownedCopies = cardVariants.flatMap(variant => (variantCopies[variant.id] || []).map(copy => ({
+                      ...copy, variantLabel: variant.variant_label || variant.variant_key || '',
+                    })))
+                    return <button key={card.id} type="button" className={styles.slotOpen}
+                      onClick={() => setZoomedCard({ ...card, setName: selectedSet.set_name, copies: ownedCopies })}
+                      aria-label={'Voir les exemplaires de ' + card.card_name + ', ' + ownedCopies.length + ' au total'}>
+                      <div className={styles.thumb}>
+                        {cardArt ? <img src={cardArt} alt="" loading="lazy" /> : <span>Illustration absente</span>}
+                        {copyCount > 1 && <b className={styles.copyBadge}>×{copyCount}</b>}
+                      </div>
+                      <strong className={styles.cardName}>{card.card_name}</strong>
+                      <span className={styles.cardNumber}>{card.collector_number}</span>
+                    </button>
+                  }
+                  return <article key={card?.id || 'empty-' + side + '-' + slotIndex} className={styles.slot}>
                     {card && copyCount ? <>
                       <div className={styles.thumb}>
                         {cardArt ? <img src={cardArt} alt={'Carte ' + card.card_name} loading="lazy" /> : <span>Illustration absente</span>}
@@ -358,6 +615,8 @@ function BindersContent() {
           </nav>
         </>}
       </>}
+      {zoomedCard && <CardCopyDialog supabase={supabase} user={user} profileId={profileId} card={zoomedCard}
+        copies={zoomedCard.copies || []} onClose={() => setZoomedCard(null)} />}
     </main>
   )
 }
