@@ -42,7 +42,7 @@ function seriesAbbreviation(set) {
 function seriesOptionLabel(set) {
   const abbreviation = seriesAbbreviation(set)
   const name = (set.set_name || '').replace(/Classique(?=30e)/i, 'Classique ')
-  const masterSetSuffix = (set.set_code || '').toLowerCase() === 'swsh9' ? ' · Master Set' : ''
+  const masterSetSuffix = ['swsh9', 'swsh12.5'].includes((set.set_code || '').toLowerCase()) ? ' · Master Set' : ''
   return (abbreviation ? abbreviation + ' — ' : '') + name + masterSetSuffix + (set.is_public ? '' : ' · brouillon privé')
 }
 
@@ -231,6 +231,13 @@ function cardTypeSymbol(label) {
   return '◇'
 }
 
+function tcgdexEnglishImageFallback(url) {
+  const value = (url || '').trim()
+  return value.includes('://assets.tcgdex.net/fr/')
+    ? value.replace('://assets.tcgdex.net/fr/', '://assets.tcgdex.net/en/')
+    : ''
+}
+
 function imageUrl(card, quality = 'low') {
   const directUrl = card.image_url?.trim()
   if (directUrl) {
@@ -416,8 +423,12 @@ export default function CardChecklistPage() {
       setCards([])
       setOwned({})
       const selectedSet = sets.find(set => set.id === setId)
-      const checklistSetIds = (selectedSet?.set_code || '').toLowerCase() === 'swsh9'
-        ? sets.filter(set => ['swsh9', 'swsh9tg'].includes((set.set_code || '').toLowerCase())).map(set => set.id)
+      const combinedSetCodes = {
+        swsh9: ['swsh9', 'swsh9tg'],
+        'swsh12.5': ['swsh12.5', 'swsh12.5gg']
+      }[(selectedSet?.set_code || '').toLowerCase()]
+      const checklistSetIds = combinedSetCodes
+        ? sets.filter(set => combinedSetCodes.includes((set.set_code || '').toLowerCase())).map(set => set.id)
         : [setId]
       const { data: cardRows, error: cardError } = await supabase.from('cards')
         .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
@@ -872,7 +883,7 @@ export default function CardChecklistPage() {
                   <div className={styles.cardTop}>
                     <div className={styles.artFrame}>
                       {cardImage && <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: cardSet?.set_name || '' })}>
-                        <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true' }} />
+                        <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { const fallback = tcgdexEnglishImageFallback(event.currentTarget.src); if (fallback && !event.currentTarget.dataset.englishFallback) { event.currentTarget.dataset.englishFallback = 'true'; event.currentTarget.src = fallback } else { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true' } }} />
                       </button>}
                       <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                     </div>
@@ -935,7 +946,7 @@ export default function CardChecklistPage() {
                       data-image-missing={!cardImage ? 'true' : undefined}
                     >
                       {cardImage
-                        ? <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.parentElement.dataset.imageMissing = 'true'; event.currentTarget.style.display = 'none' }} />
+                        ? <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { const fallback = tcgdexEnglishImageFallback(event.currentTarget.src); if (fallback && !event.currentTarget.dataset.englishFallback) { event.currentTarget.dataset.englishFallback = 'true'; event.currentTarget.src = fallback } else { event.currentTarget.parentElement.dataset.imageMissing = 'true'; event.currentTarget.style.display = 'none' } }} />
                         : <span aria-hidden="true">Image</span>}
                     </button>
                     <div className={styles.masterChecklistMeta}>
@@ -965,7 +976,7 @@ export default function CardChecklistPage() {
       {zoomedCard && <div className={styles.zoomBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setZoomedCard(null) }}>
         <section className={styles.zoomDialog} role="dialog" aria-modal="true" aria-label={'Image agrandie de ' + zoomedCard.card_name}>
           <button type="button" className={styles.zoomClose} aria-label="Fermer l’image agrandie" onClick={() => setZoomedCard(null)}>×</button>
-          <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => { const fallback = imageUrl(zoomedCard, 'low'); if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback }} />
+          <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => { const lowFallback = imageUrl(zoomedCard, 'low'); if (!event.currentTarget.dataset.lowFallback && event.currentTarget.src !== lowFallback) { event.currentTarget.dataset.lowFallback = 'true'; event.currentTarget.src = lowFallback; return } const englishFallback = tcgdexEnglishImageFallback(event.currentTarget.src); if (englishFallback && !event.currentTarget.dataset.englishFallback) { event.currentTarget.dataset.englishFallback = 'true'; event.currentTarget.src = englishFallback } }} />
           <p><strong>{zoomedCard.card_name}</strong> · N° {zoomedCard.collector_number}{zoomedCard.seriesName ? ' · ' + zoomedCard.seriesName : ''}</p>
         </section>
       </div>}
