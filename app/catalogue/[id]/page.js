@@ -3,6 +3,26 @@
 import { useEffect, useMemo, useState } from 'react'
 import { useParams } from 'next/navigation'
 import { createClient } from '../../../lib/supabase-browser'
+import { describeProductComponent, sortProductComponents } from '../../../lib/product-content-display.mjs'
+
+async function loadProductContents(supabase, productId) {
+  const current = await supabase
+    .from('product_contents')
+    .select('id,component_type,item_name,set_name,quantity,is_random,sort_order,source_note')
+    .eq('product_id', productId)
+    .order('sort_order', { ascending: true })
+
+  if (!current.error) return current.data || []
+
+  const legacy = await supabase
+    .from('product_contents')
+    .select('id,content_type,item_name,quantity,source_label,source_url,confidence,content_role')
+    .eq('product_id', productId)
+    .order('content_type')
+    .order('item_name', { ascending: true })
+
+  return legacy.data || []
+}
 
 function median(values) {
   if (!values.length) return null
@@ -28,7 +48,7 @@ export default function ProductDetailPage() {
   async function load() {
     setLoading(true)
 
-    const [{ data: productData }, { data: historyData }, { data: contentData }] = await Promise.all([
+    const [{ data: productData }, { data: historyData }, contentData] = await Promise.all([
       supabase
         .from('products')
         .select('id,name,series,category,product_type,release_date,release_period,official_source_url,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
@@ -39,12 +59,7 @@ export default function ProductDetailPage() {
         .select('id,source,price,observed_at,condition_tier,observation_type')
         .eq('product_id', params.id)
         .order('observed_at', { ascending: true }),
-      supabase
-        .from('product_contents')
-        .select('id,content_type,item_name,quantity,source_label,source_url,confidence,content_role')
-        .eq('product_id', params.id)
-        .order('content_type')
-        .order('item_name', { ascending: true })
+      loadProductContents(supabase, params.id)
     ])
 
     setProduct(productData || null)
@@ -61,8 +76,9 @@ export default function ProductDetailPage() {
     return <main><section className="panel"><h1>Produit introuvable</h1></section></main>
   }
 
-  const guaranteedContents = contents.filter(item => (item.content_role || 'guaranteed') === 'guaranteed')
-  const possibleContents = contents.filter(item => item.content_role === 'possible')
+  const compositionContents = sortProductComponents(contents.filter(item => item.component_type))
+  const guaranteedContents = contents.filter(item => !item.component_type && (item.content_role || 'guaranteed') === 'guaranteed')
+  const possibleContents = contents.filter(item => !item.component_type && item.content_role === 'possible')
 
   const confirmedSales = history.filter(item => (item.observation_type || 'confirmed_sale') === 'confirmed_sale')
   const observedListings = history.filter(item => item.observation_type === 'observed_listing')
@@ -140,6 +156,27 @@ export default function ProductDetailPage() {
           </div>
         </div>
       </section>
+
+      {compositionContents.length > 0 && (
+        <section className="panel productContentsPanel">
+          <h2>Composition de référence</h2>
+          <p className="muted">Cette composition décrit le produit générique. Le contenu réellement possédé se suit séparément dans Ma Collection.</p>
+          {compositionContents.some(item => item.is_random) && (
+            <p className="muted">« Aléatoire » concerne le choix de l’extension dans le coffret. Un booster reste un produit scellé.</p>
+          )}
+          <div className="productContentsList">
+            {compositionContents.map((item, index) => (
+              <div key={item.id || `${item.component_type}-${index}`} className="productContentRow">
+                <span>{item.quantity > 1 ? `${item.quantity} × ` : ''}{item.item_name}</span>
+                <small>{describeProductComponent(item)}</small>
+              </div>
+            ))}
+          </div>
+          {product.official_source_url && (
+            <p><a className="detailLink" href={product.official_source_url} target="_blank" rel="noreferrer">Consulter la source officielle →</a></p>
+          )}
+        </section>
+      )}
 
       {guaranteedContents.length > 0 && (
         <section className="panel productContentsPanel">
