@@ -32,13 +32,38 @@ const FRENCH_SET_CODES = {
   swsh12: 'EB12',
   swsh12tg: 'EB12 TG',
   'swsh12.5': 'EB12.5',
-  'swsh12.5gg': 'EB12.5 GG'
+  'swsh12.5gg': 'EB12.5 GG',
+  sv01: 'EV01',
+  sv02: 'EV02',
+  sv03: 'EV03',
+  'sv03.5': 'EV03.5',
+  sv04: 'EV04',
+  'sv04.5': 'EV04.5',
+  sv05: 'EV05',
+  sv06: 'EV06',
+  'sv06.5': 'EV06.5',
+  sv07: 'EV07',
+  sv08: 'EV08',
+  'sv08.5': 'EV08.5',
+  sv09: 'EV09',
+  sv10: 'EV10',
+  'sv10.5b': 'EV10.5',
+  'sv10.5w': 'EV10.5',
+  me01: 'ME01',
+  me02: 'ME02',
+  'me02.5': 'ME02.5',
+  me03: 'ME03',
+  me04: 'ME04',
+  me05: 'ME05',
+  '30th': '30C',
+  '30th-c': '30CC'
 }
 
 function seriesLabel(set) {
   const code = (set?.set_code || '').toLowerCase()
   const displayCode = FRENCH_SET_CODES[code] || (set?.set_code || '').toUpperCase()
-  return (displayCode ? displayCode + ' — ' : '') + (set?.set_name || 'Série')
+  const masterSetSuffix = code === 'swsh9' ? ' · Master Set' : ''
+  return (displayCode ? displayCode + ' — ' : '') + (set?.set_name || 'Série') + masterSetSuffix
 }
 
 function relatedSet(card) {
@@ -132,7 +157,12 @@ export default function CardCataloguePage() {
       setOwned({})
       setSelection({})
       try {
-        const setIds = setId === ALL_SERIES ? sets.map(set => set.id) : [setId]
+        const selectedSetRow = sets.find(set => set.id === setId)
+        const setIds = setId === ALL_SERIES
+          ? sets.map(set => set.id)
+          : selectedSetRow?.set_code?.toLowerCase() === 'swsh9'
+            ? sets.filter(set => ['swsh9', 'swsh9tg'].includes((set.set_code || '').toLowerCase())).map(set => set.id)
+            : [setId]
         if (!setIds.length) return
         const term = query.trim().replace(/[%_]/g, '\\$&')
         const { data: rows, error: loadError } = await fetchAllRows(() => {
@@ -278,7 +308,7 @@ export default function CardCataloguePage() {
       {loadingCards && <p className={styles.hint} role="status">Chargement de la liste complète…</p>}
 
       {selectedSet && !loadingCards && !error && <div className={styles.setSummary}>
-        <div><strong>{seriesLabel(selectedSet)}</strong><span>{visibleCards.length}{filterQuery ? ' résultat(s)' : ' cartes dans la liste du catalogue'}</span></div>
+        <div><strong>{seriesLabel(selectedSet)}</strong><span>{visibleCards.length}{filterQuery ? ' résultat(s)' : ' cartes dans la liste du catalogue'}{selectedSet.set_code?.toLowerCase() === 'swsh9' && !filterQuery ? ' · 186 extension + 30 Galerie de Dresseurs' : ''}</span></div>
         <a href={'/collection/cartes?set=' + encodeURIComponent(setId) + '&collection=owned'}>Voir mes cartes de cette série →</a>
       </div>}
 
