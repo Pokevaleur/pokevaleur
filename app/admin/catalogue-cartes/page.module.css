@@ -1,0 +1,30 @@
+.page{width:min(1050px,calc(100% - 32px));margin:0 auto;padding:26px 0 64px;color:#14263a}
+.breadcrumb{display:flex;justify-content:space-between;gap:12px;margin-bottom:20px;color:#637287;font-size:.84rem}
+.breadcrumb a{color:#0d4a78;font-weight:800;text-decoration:none}
+.header{max-width:800px;margin:0 auto 22px}
+.kicker{margin:0 0 8px;color:#98731b;font-size:.78rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase}
+.header h1{margin:0;font-size:clamp(1.8rem,4vw,2.6rem);line-height:1.08}
+.header>p:last-child{margin:10px 0 0;color:#5e6b7a;line-height:1.55}
+.search{display:grid;gap:7px;margin:18px 0;color:#42536a;font-weight:750}
+.search input,.row input:not([type=checkbox]),.row textarea{width:100%;padding:10px 12px;border:1px solid #cbd4df;border-radius:10px;background:#fff;color:#14263a;font:inherit}
+.list{display:grid;gap:12px}
+.row,.panel{padding:16px;border:1px solid #dce3eb;border-radius:16px;background:#fff;box-shadow:0 7px 22px #18334c0b}
+.row{display:grid;gap:12px}
+.rowHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.rowHeading div{display:grid;gap:4px}
+.rowHeading strong{font-size:.98rem}
+.rowHeading strong span{color:#8a96a4}
+.rowHeading small{color:#6b7888;font-size:.76rem}
+.rowHeading>a{color:#0d4a78;font-size:.8rem;font-weight:800;text-decoration:none;white-space:nowrap}
+.row>label{display:grid;gap:6px;color:#4b5c70;font-size:.8rem;font-weight:750}
+.row textarea{resize:vertical;line-height:1.4}
+.rowFooter{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.publicToggle{display:flex;align-items:center;gap:8px;color:#394a5d;font-size:.82rem;font-weight:750}
+.publicToggle input{width:18px;height:18px;accent-color:#124d7c}
+.rowFooter button{min-height:40px;padding:8px 16px;border:0;border-radius:10px;background:#102f50;color:#fff;font:inherit;font-weight:850;cursor:pointer}
+.rowFooter button:disabled{opacity:.5;cursor:not-allowed}
+.notice,.error,.empty{padding:12px 14px;border-radius:12px}
+.notice{background:#edf8f2;color:#236746}
+.error{background:#fff1ef;color:#923a2d}
+.empty{background:#f0f5fb;color:#52677e}
+@media(max-width:560px){.page{width:calc(100% - 22px);padding-top:18px}.row{padding:12px}.rowHeading{flex-direction:column}.rowFooter{align-items:stretch;flex-direction:column}.rowFooter button{width:100%}}
