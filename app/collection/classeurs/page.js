@@ -581,7 +581,7 @@ function BindersContent() {
           <span className={styles.eyebrow}>{shortCode(selectedSet)}</span>
         </div>
         <header className={styles.openHeader}>
-          <div><p className={styles.kicker}><span className={styles.desktopOnly}>Double page</span><span className={styles.mobileOnly}>Page du classeur</span></p><h1>{selectedSet.set_name}</h1></div>
+          <div><h1>{selectedSet.set_name}</h1></div>
           <p>{ownedOnSet} possédée{ownedOnSet === 1 ? '' : 's'} · {missingOnSet} emplacement{missingOnSet === 1 ? '' : 's'} à compléter</p>
         </header>
         {error && <p className={styles.error} role="alert">{error}</p>}
@@ -630,7 +630,7 @@ function BindersContent() {
           </section>
           <nav className={styles.pageNav} aria-label="Navigation du classeur">
             <button type="button" onClick={() => navigate({ open: true, page: Math.max(page - 1, 0) })} disabled={page === 0} aria-label="Double page précédente">←</button>
-            <span><span className={styles.desktopOnly}>Double page</span><span className={styles.mobileOnly}>Page</span> {page + 1} sur {totalSpreads}</span>
+            <span>{page + 1}/{totalSpreads}</span>
             <button type="button" onClick={() => navigate({ open: true, page: Math.min(page + 1, totalSpreads - 1) })} disabled={page >= totalSpreads - 1} aria-label="Double page suivante">→</button>
           </nav>
         </>}
