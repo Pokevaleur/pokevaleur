@@ -314,6 +314,15 @@ function BindersContent() {
   const [cardsLoading, setCardsLoading] = useState(false)
   const [error, setError] = useState('')
   const [zoomedCard, setZoomedCard] = useState(null)
+  const [cardsPerSpread, setCardsPerSpread] = useState(24)
+
+  useEffect(() => {
+    const mobileQuery = window.matchMedia('(max-width: 600px)')
+    const updateCardsPerSpread = () => setCardsPerSpread(mobileQuery.matches ? 16 : 24)
+    updateCardsPerSpread()
+    mobileQuery.addEventListener('change', updateCardsPerSpread)
+    return () => mobileQuery.removeEventListener('change', updateCardsPerSpread)
+  }, [])
 
   useEffect(() => {
     let cancelled = false
@@ -462,11 +471,13 @@ function BindersContent() {
   const ownedOnSet = ownedCardCounts[requestedSetId] || 0
   const setTotal = cards.length || Number(selectedSet?.advertised_card_count || 0)
   const missingOnSet = Math.max(setTotal - ownedOnSet, 0)
-  const totalSpreads = Math.max(1, Math.ceil(cards.length / 24))
-  const totalBookPages = Math.max(1, Math.ceil(cards.length / 12))
+  const cardsPerBookPage = cardsPerSpread === 16 ? 16 : 12
+  const totalSpreads = Math.max(1, Math.ceil(cards.length / cardsPerSpread))
+  const totalBookPages = cardsPerSpread === 16 ? totalSpreads : Math.max(1, Math.ceil(cards.length / cardsPerBookPage))
   const page = Math.max(0, Math.min(Number.isFinite(rawPage) ? rawPage : 0, totalSpreads - 1))
-  const pageCards = cards.slice(page * 24, page * 24 + 24)
-  const spreadSlots = Array.from({ length: 24 }, (_, index) => pageCards[index] || null)
+  const pageCards = cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread)
+  const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageCards[index] || null)
+  const pageSides = cardsPerSpread === 16 ? [0] : [0, 1]
 
   function navigate(next) {
     const query = new URLSearchParams()
@@ -570,16 +581,16 @@ function BindersContent() {
           <span className={styles.eyebrow}>{shortCode(selectedSet)}</span>
         </div>
         <header className={styles.openHeader}>
-          <div><p className={styles.kicker}>Double page</p><h1>{selectedSet.set_name}</h1></div>
+          <div><p className={styles.kicker}><span className={styles.desktopOnly}>Double page</span><span className={styles.mobileOnly}>Page du classeur</span></p><h1>{selectedSet.set_name}</h1></div>
           <p>{ownedOnSet} possédée{ownedOnSet === 1 ? '' : 's'} · {missingOnSet} emplacement{missingOnSet === 1 ? '' : 's'} à compléter</p>
         </header>
         {error && <p className={styles.error} role="alert">{error}</p>}
         {cardsLoading ? <p className={styles.status}>Chargement des cartes du classeur…</p> : <>
-          <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={'Double page ' + (page + 1) + ' sur ' + totalSpreads}>
-            {[0, 1].map(side => <section key={side} className={styles.bookPage} aria-label={side === 0 ? 'Page de gauche' : 'Page de droite'}>
-              <div className={styles.pageTop}><span>{shortCode(selectedSet)}</span><span>{page * 2 + side + 1}</span></div>
+          <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(cardsPerSpread === 16 ? 'Page ' : 'Double page ') + (page + 1) + ' sur ' + totalSpreads}>
+            {pageSides.map(side => <section key={side} className={styles.bookPage} aria-label={cardsPerSpread === 16 ? 'Page du classeur' : side === 0 ? 'Page de gauche' : 'Page de droite'}>
+              <div className={styles.pageTop}><span>{shortCode(selectedSet)}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
-                {spreadSlots.slice(side * 12, side * 12 + 12).map((card, slotIndex) => {
+                {spreadSlots.slice(side * cardsPerBookPage, side * cardsPerBookPage + cardsPerBookPage).map((card, slotIndex) => {
                   const cardVariants = (card?.card_print_variants || []).filter(variant => variant.is_master_set_target)
                   const copyCount = cardVariants.reduce((count, variant) => count + (variantCopies[variant.id] || []).length, 0)
                   const cardArt = imageFor(card)
@@ -614,12 +625,12 @@ function BindersContent() {
                   </article>
                 })}
               </div>
-              <div className={styles.pageFooter}><span>{profileName}</span><span>{page * 2 + side + 1}/{totalBookPages}</span></div>
+              <div className={styles.pageFooter}><span>{profileName}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}/{totalBookPages}</span></div>
             </section>)}
           </section>
           <nav className={styles.pageNav} aria-label="Navigation du classeur">
             <button type="button" onClick={() => navigate({ open: true, page: Math.max(page - 1, 0) })} disabled={page === 0} aria-label="Double page précédente">←</button>
-            <span>Double page {page + 1} sur {totalSpreads}</span>
+            <span><span className={styles.desktopOnly}>Double page</span><span className={styles.mobileOnly}>Page</span> {page + 1} sur {totalSpreads}</span>
             <button type="button" onClick={() => navigate({ open: true, page: Math.min(page + 1, totalSpreads - 1) })} disabled={page >= totalSpreads - 1} aria-label="Double page suivante">→</button>
           </nav>
         </>}
