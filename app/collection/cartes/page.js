@@ -519,7 +519,7 @@ export default function CardChecklistPage() {
   }
 
   function matchesCollectionFilter(card, filter) {
-    const targets = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
+    const targets = (card.card_print_variants || []).filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
     return targets.some(variant => matchesVariantCollectionFilter(variant, filter))
   }
 
@@ -531,9 +531,9 @@ export default function CardChecklistPage() {
   const missingCardNumbers = [...new Set(missingCardsForCopy.map(card => card.collector_number).filter(Boolean))]
   const formattedMissingCardNumbers = formatMissingCardNumbers(missingCardNumbers)
 
-  const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
+  const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleMissingVariantIds = collectMissingTargetVariantIds(
-    visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target)),
+    visibleCards.flatMap(card => (card.card_print_variants || []).filter(isProgressTarget)),
     owned
   )
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
@@ -905,7 +905,7 @@ export default function CardChecklistPage() {
           <section className={styles.progressCard} aria-label="Progression de la série">
             <div className={styles.progressHeading}>
               <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>variantes possédées</span></div>
-              <div><strong>{completedCardCount} / {cardsWithIncludedVariants.length}</strong><span>cartes complètes</span></div>
+              <div><strong>{completedCardCount} / {cardsWithProgressTargets.length}</strong><span>cartes complètes</span></div>
               <strong className={styles.percent}>{completion}%</strong>
             </div>
             <div className={styles.progressTrack} role="progressbar" aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100" aria-label="Progression de la checklist">
