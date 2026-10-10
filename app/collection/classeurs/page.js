@@ -10,7 +10,7 @@ function shortCode(set) {
   const code = String(set?.set_code || '').trim().toUpperCase()
   const match = code.match(/^(?:SWSH|EB|SV|EV|ME|SM|SL|XY|BW|DP|PL|HGSS)[\s-]*(\d+(?:\.\d+)?)([A-Z]*)$/)
   if (match) {
-    const prefix = /^(?:SWSH|EB)/.test(code) ? 'EB' : /^(?:SV|EV|ME)/.test(code) ? 'EV' : (code.match(/^[A-Z]+/) || [''])[0]
+    const prefix = /^(?:SWSH|EB)/.test(code) ? 'EB' : /^(?:SV|EV|ME)/.test(code) ? 'EV' : /^SM/.test(code) ? 'SL' : (code.match(/^[A-Z]+/) || [''])[0]
     return prefix + Number(match[1]) + match[2]
   }
   return code || 'SÉRIE'
@@ -462,10 +462,11 @@ function BindersContent() {
   const ownedOnSet = ownedCardCounts[requestedSetId] || 0
   const setTotal = cards.length || Number(selectedSet?.advertised_card_count || 0)
   const missingOnSet = Math.max(setTotal - ownedOnSet, 0)
-  const totalSpreads = Math.max(1, Math.ceil(cards.length / 16))
+  const totalSpreads = Math.max(1, Math.ceil(cards.length / 24))
+  const totalBookPages = Math.max(1, Math.ceil(cards.length / 12))
   const page = Math.max(0, Math.min(Number.isFinite(rawPage) ? rawPage : 0, totalSpreads - 1))
-  const pageCards = cards.slice(page * 16, page * 16 + 16)
-  const spreadSlots = Array.from({ length: 16 }, (_, index) => pageCards[index] || null)
+  const pageCards = cards.slice(page * 24, page * 24 + 24)
+  const spreadSlots = Array.from({ length: 24 }, (_, index) => pageCards[index] || null)
 
   function navigate(next) {
     const query = new URLSearchParams()
@@ -516,6 +517,7 @@ function BindersContent() {
               style={{ '--spine-start': start, '--spine-end': end }}
               onClick={() => navigate({ open: false, set: set.id })}
               aria-label={'Ouvrir le classeur ' + set.set_name + ', ' + (ownedCardCounts[set.id] || 0) + ' cartes possédées'}>
+              {hasCards && generatedCoverFor(set) && <span className={styles.spineArtwork} aria-hidden="true"><img src={generatedCoverFor(set)} alt="" loading="lazy" /></span>}
               <span className={styles.spineCode}>{shortCode(set)}</span>
               <span className={styles.spineMarker} aria-hidden="true" />
             </button>
@@ -577,7 +579,7 @@ function BindersContent() {
             {[0, 1].map(side => <section key={side} className={styles.bookPage} aria-label={side === 0 ? 'Page de gauche' : 'Page de droite'}>
               <div className={styles.pageTop}><span>{shortCode(selectedSet)}</span><span>{page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
-                {spreadSlots.slice(side * 8, side * 8 + 8).map((card, slotIndex) => {
+                {spreadSlots.slice(side * 12, side * 12 + 12).map((card, slotIndex) => {
                   const cardVariants = (card?.card_print_variants || []).filter(variant => variant.is_master_set_target)
                   const copyCount = cardVariants.reduce((count, variant) => count + (variantCopies[variant.id] || []).length, 0)
                   const cardArt = imageFor(card)
@@ -612,7 +614,7 @@ function BindersContent() {
                   </article>
                 })}
               </div>
-              <div className={styles.pageFooter}><span>{profileName}</span><span>{page + 1}/{totalSpreads}</span></div>
+              <div className={styles.pageFooter}><span>{profileName}</span><span>{page * 2 + side + 1}/{totalBookPages}</span></div>
             </section>)}
           </section>
           <nav className={styles.pageNav} aria-label="Navigation du classeur">
