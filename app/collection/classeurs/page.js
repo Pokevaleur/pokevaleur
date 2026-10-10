@@ -43,6 +43,7 @@ function BindersContent() {
   const rawPage = Number.parseInt(params.get('page') || '0', 10)
   const [user, setUser] = useState(null)
   const [sets, setSets] = useState([])
+  const [showAllBinders, setShowAllBinders] = useState(false)
   const [profiles, setProfiles] = useState([])
   const [profileId, setProfileId] = useState('')
   const [ownedCardCounts, setOwnedCardCounts] = useState({})
@@ -145,6 +146,8 @@ function BindersContent() {
   }, [supabase])
 
   const selectedSet = sets.find(set => set.id === requestedSetId) || null
+  const ownedSets = sets.filter(set => (ownedCardCounts[set.id] || 0) > 0)
+  const displayedSets = showAllBinders ? sets : ownedSets
 
   useEffect(() => {
     if (!selectedSet || !profileId) {
@@ -193,10 +196,10 @@ function BindersContent() {
   const ownedOnSet = ownedCardCounts[requestedSetId] || 0
   const setTotal = cards.length || Number(selectedSet?.advertised_card_count || 0)
   const missingOnSet = Math.max(setTotal - ownedOnSet, 0)
-  const totalSpreads = Math.max(1, Math.ceil(cards.length / 24))
+  const totalSpreads = Math.max(1, Math.ceil(cards.length / 16))
   const page = Math.max(0, Math.min(Number.isFinite(rawPage) ? rawPage : 0, totalSpreads - 1))
-  const pageCards = cards.slice(page * 24, page * 24 + 24)
-  const spreadSlots = Array.from({ length: 24 }, (_, index) => pageCards[index] || null)
+  const pageCards = cards.slice(page * 16, page * 16 + 16)
+  const spreadSlots = Array.from({ length: 16 }, (_, index) => pageCards[index] || null)
 
   function navigate(next) {
     const query = new URLSearchParams()
@@ -212,7 +215,7 @@ function BindersContent() {
 
   const libraryMode = !selectedSet
   const [coverStart, coverEnd] = colorFor(selectedSet?.set_code)
-  const coverArt = (selectedSet && etbImages[selectedSet.id]) || imageFor(cards[0])
+  const coverArt = selectedSet && etbImages[selectedSet.id]
   const profileName = profiles.find(profile => profile.id === profileId)?.display_name
     || (profiles.find(profile => profile.id === profileId)?.profile_type === 'child' ? 'Collection familiale' : 'Ma collection')
 
@@ -230,10 +233,16 @@ function BindersContent() {
         </header>
         {error && <p className={styles.error} role="alert">{error}</p>}
         <section className={styles.librarySummary} aria-label="Résumé de la bibliothèque">
-          <strong>{sets.length} classeurs</strong><span>{ownedCopyCount} cartes au total dans {profileName}</span>
+          <strong>{ownedSets.length} classeur{ownedSets.length === 1 ? '' : 's'} avec des cartes</strong><span>{ownedCopyCount} cartes dans {profileName}</span>
         </section>
-        {sets.length ? <section className={styles.library} aria-label="Bibliothèque des séries">
-          {sets.map(set => {
+        {sets.length > ownedSets.length && <div className={styles.libraryControls}>
+          <span>{showAllBinders ? 'Toutes les séries du catalogue' : 'Tes séries en cours'}</span>
+          <button type="button" className={styles.allBindersButton} onClick={() => setShowAllBinders(value => !value)}>
+            {showAllBinders ? 'Masquer les séries sans carte' : 'Voir toutes les séries'}
+          </button>
+        </div>}
+        {displayedSets.length ? <section className={styles.library} aria-label="Bibliothèque des séries">
+          {displayedSets.map(set => {
             const [start, end] = colorFor(set.set_code)
             const hasCards = (ownedCardCounts[set.id] || 0) > 0
             return <button key={set.id} type="button" className={hasCards ? styles.spineActive : styles.spine}
@@ -244,7 +253,7 @@ function BindersContent() {
               <span className={styles.spineMarker} aria-hidden="true" />
             </button>
           })}
-        </section> : <p className={styles.empty}>Aucune série française n’est publiée dans le catalogue.</p>}
+        </section> : <p className={styles.empty}>{sets.length ? 'Tu n’as pas encore de carte dans un classeur.' : 'Aucune série française n’est publiée dans le catalogue.'}</p>}
         {requestedSetId && selectedSet && <p className={styles.notice}>Série sélectionnée : {selectedSet.set_name}</p>}
         <section className={styles.seriesJump} aria-label="Accès à un classeur">
           <label htmlFor="binder-series">Choisir une série</label>
@@ -268,7 +277,6 @@ function BindersContent() {
               <p className={styles.coverBrand}>POKÉVALEUR · CLASSEUR</p>
               <h1>{selectedSet.set_name}</h1>
               <p className={styles.coverCode}>{shortCode(selectedSet)} · {selectedSet.release_date ? new Date(selectedSet.release_date + 'T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : 'Collection'}</p>
-              <div className={styles.coverCrystal} aria-hidden="true">✧</div>
             </div>
           </article>
           <div className={styles.coverDetails}>
@@ -298,7 +306,7 @@ function BindersContent() {
             {[0, 1].map(side => <section key={side} className={styles.bookPage} aria-label={side === 0 ? 'Page de gauche' : 'Page de droite'}>
               <div className={styles.pageTop}><span>{shortCode(selectedSet)}</span><span>{page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
-                {spreadSlots.slice(side * 12, side * 12 + 12).map((card, slotIndex) => {
+                {spreadSlots.slice(side * 8, side * 8 + 8).map((card, slotIndex) => {
                   const cardVariants = (card?.card_print_variants || []).filter(variant => variant.is_master_set_target)
                   const copyCount = cardVariants.reduce((count, variant) => count + (variantCopies[variant.id] || []).length, 0)
                   const cardArt = imageFor(card)
