@@ -20,6 +20,18 @@ function normalize(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
 }
 
+
+const GENERATED_COVER_ALIASES = [["mascarade crepusculaire","mascarade-crepusculaire"],["evolutions prismatiques","evolutions-prismatiques"],["ecarlate et violet 151","ecarlate-violet-151"],["etincelles deferlantes","etincelles-deferlantes"],["alliance infaillible","alliance-infaillible"],["harmonie des esprits","harmonie-des-esprits"],["flammes obsidiennes","flammes-obsidiennes"],["destinees radieuses","destinees-radieuses"],["evolutions a paldea","evolution-a-paldea"],["rivalites destinees","rivalites-destinees"],["gardiens ascendants","gardiens-ascendants"],["evolutions celestes","evolutions-celestes"],["majeste des dragons","majeste-des-dragons"],["heros transcendants","heros-transcendants"],["forces temporelles","forces-temporelles"],["couronne stellaire","couronne-stellaire"],["evolution a paldea","evolution-a-paldea"],["stars etincelantes","stars-etincelantes"],["tenebres embrasees","tenebres-embrasees"],["aventures ensemble","aventures-ensemble"],["clash des rebelles","clash-des-rebelles"],["lumiere interdite","lumiere-interdite"],["vigueur spectrale","vigueur-spectrale"],["origines antiques","origines-antiques"],["tempete argentee","tempete-argentee"],["voltage eclatant","voltage-eclatant"],["offensive vapeur","offensive-vapeur"],["eclipse cosmique","eclipse-cosmique"],["epee et bouclier","epee-et-bouclier"],["styles de combat","styles-de-combat"],["faille paradoxe","faille-paradoxe"],["tempete celeste","tempete-celeste"],["poing de fusion","poing-de-fusion"],["ombres ardentes","ombres-ardentes"],["impulsion turbo","impulsion-turbo"],["invasion carmin","invasion-carmin"],["fable nebuleuse","fable-nebuleuse"],["astres radieux","astres-radieux"],["origine perdue","origine-perdue"],["tonnerre perdu","tonnerre-perdu"],["voie du maitre","voie-du-maitre"],["flamme blanche","flamme-blanche"],["regne de glace","regne-de-glace"],["soleil et lune","soleil-et-lune"],["poings furieux","poings-furieux"],["ciel rugissant","ciel-rugissant"],["mega evolution","mega-evolution"],["zenith supreme","zenith-supreme-variante"],["rupture turbo","rupture-turbo"],["foudre noire","foudre-noire"],["celebrations","celebrations"],["ultra prisme","ultra-prisme"],["duo de choc","duo-de-choc"],["generations","generations"],["pokemon go","pokemon-go"],["primo choc","primo-choc"],["etincelles","etincelles-xy"],["evolutions","evolutions-xy"],["151","ecarlate-violet-151"],["xy","xy"]]
+
+function generatedCoverFor(set) {
+  const name = normalize(set?.set_name).replace(/[^a-z0-9]+/g, ' ').trim()
+  const code = shortCode(set)
+  if (name === 'ecarlate et violet' || code === 'EV1') return '/binder-covers/ecarlate-et-violet.webp'
+  if (name === 'xy' || code === 'XY1') return '/binder-covers/xy.webp'
+  const match = GENERATED_COVER_ALIASES.find(([alias]) => name.includes(alias))
+  return match ? '/binder-covers/' + match[1] + '.webp' : ''
+}
+
 function colorFor(value) {
   const colors = [['#6d5bd0', '#b4a6ff'], ['#c45d57', '#efb39b'], ['#258b83', '#a5dfd4'], ['#4275bb', '#a4c8f0'], ['#b17a28', '#ead18d'], ['#ac5c9a', '#e4acd5']]
   const hash = Array.from(String(value || '')).reduce((sum, char) => sum + char.charCodeAt(0), 0)
@@ -221,7 +233,8 @@ function BindersContent() {
 
   const libraryMode = !selectedSet
   const [coverStart, coverEnd] = colorFor(selectedSet?.set_code)
-  const coverArt = selectedSet && (shortCode(selectedSet) === 'EV8' ? '/binder-covers/etincelles-deferlantes.svg' : etbImages[selectedSet.id])
+  const generatedCoverArt = selectedSet && generatedCoverFor(selectedSet)
+  const coverArt = selectedSet && (generatedCoverArt || (shortCode(selectedSet) === 'EV8' ? '/binder-covers/etincelles-deferlantes.svg' : etbImages[selectedSet.id]))
   const profileName = profiles.find(profile => profile.id === profileId)?.display_name
     || (profiles.find(profile => profile.id === profileId)?.profile_type === 'child' ? 'Collection familiale' : 'Ma collection')
 
@@ -275,6 +288,9 @@ function BindersContent() {
         </div>
         <section className={styles.coverStage}>
           <div className={styles.coverGlow} style={{ '--cover-start': coverStart, '--cover-end': coverEnd }} />
+          {generatedCoverArt ? (
+            <img className={styles.generatedProductCover} src={generatedCoverArt} alt={'Classeur ' + selectedSet.set_name} />
+          ) : (
           <article className={styles.closedBinder} style={{ '--cover-start': coverStart, '--cover-end': coverEnd }}>
             <div className={styles.binderSpine}><span>{shortCode(selectedSet)}</span></div>
             <div className={styles.coverFace}>
@@ -285,6 +301,7 @@ function BindersContent() {
               <p className={styles.coverCode}>{shortCode(selectedSet)} · {selectedSet.release_date ? new Date(selectedSet.release_date + 'T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : 'Collection'}</p>
             </div>
           </article>
+          )}
           <div className={styles.coverDetails}>
             <p className={styles.kicker}>Ton classeur de série</p>
             <h2>{selectedSet.set_name}</h2>
