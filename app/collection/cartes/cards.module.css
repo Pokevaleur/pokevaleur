@@ -151,6 +151,7 @@
 .cardImageSelect:disabled, .cardNameSelect:disabled { cursor:default; opacity:.72; }
 .artZoomButton { position:absolute; top:6px; right:6px; z-index:3; display:grid; place-items:center; width:30px; height:30px; padding:0; border:0; border-radius:50%; background:transparent; cursor:zoom-in; }
 .artZoomButton:focus-visible { outline:3px solid #173c84; outline-offset:2px; border-radius:50%; }
+.artZoomButton .zoomHint { position:static; display:grid; place-items:center; width:28px; height:28px; padding:0; border:1px solid #ffffff60; border-radius:50%; background:#071c32d9; color:#fff; }
 .cardSelectCheckbox { display:flex; align-items:center; gap:6px; margin:2px 0 7px; color:#173c84; font-size:.78rem; font-weight:750; cursor:pointer; }
 .cardSelectCheckbox input { width:18px; height:18px; accent-color:#173c84; }
 .cardNameSelect { display:inline; padding:0; border:0; background:transparent; color:inherit; font:inherit; line-height:inherit; text-align:left; cursor:pointer; }
