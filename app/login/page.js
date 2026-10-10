@@ -136,8 +136,7 @@ export default function LoginPage() {
       const destination = getPostLoginPath()
       const isMobile = window.matchMedia('(max-width: 850px) and (pointer: coarse)').matches
       const installChoice = window.localStorage.getItem('pokevaleur-install-choice')
-      const installPrompted = window.localStorage.getItem('pokevaleur-install-prompted')
-      if (isMobile && !installChoice && !installPrompted) {
+      if (isMobile && installChoice !== 'installed') {
         window.localStorage.setItem('pokevaleur-install-pending', '1')
       }
       window.localStorage.removeItem('pokevaleur-post-login-path')
