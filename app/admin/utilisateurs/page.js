@@ -56,7 +56,10 @@ function eventDescription(event) {
     const qty = event.quantity > 1 ? ` · ${event.quantity} exemplaires` : ''
     const collection = summary.collection ? ` · ${summary.collection}` : ''
     const series = displaySeries(summary.series_code, summary.series)
-    return `${series} · ${card}${variant}${qty}${collection}`
+    const changes = event.event_type === 'card_updated' && summary.changed_fields?.length
+      ? ` · Modifié : ${summary.changed_fields.join(', ')}`
+      : ''
+    return `${series} · ${card}${variant}${qty}${collection}${changes}`
   }
   if (event.event_type === 'sealed_quantity_changed') {
     return `${summary.product || 'Produit'} · ${summary.quantity_before ?? '—'} → ${summary.quantity_after ?? '—'}${summary.collection ? ` · ${summary.collection}` : ''}`
@@ -204,7 +207,7 @@ export default function AdminUsersPage() {
               </button>
               {expanded && (
                 <div className={styles.detail}>
-                  <div className={styles.detailHeading}><h2>Activité du compte</h2><p>Les connexions récentes sont indiquées ci-dessus. L’historique des actions commence à partir de l’activation du suivi.</p></div>
+                  <div className={styles.detailHeading}><h2>Activité du compte</h2><p>Les 100 actions les plus récentes sont affichées. La dernière connexion est indiquée ci-dessus.</p></div>
                   {loadingActivity ? <p className={styles.empty}>Chargement de l’historique…</p> : activity.length ? (
                     <ol className={styles.timeline}>
                       {activity.map(event => <li key={event.event_id}><span className={styles.dot} /><div><strong>{eventTitle(event)}</strong><p>{eventDescription(event)}</p><time dateTime={event.occurred_at}>{formatDate(event.occurred_at)}</time></div></li>)}
