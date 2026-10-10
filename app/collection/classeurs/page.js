@@ -473,7 +473,7 @@ function BindersContent() {
   const missingOnSet = Math.max(setTotal - ownedOnSet, 0)
   const cardsPerBookPage = cardsPerSpread === 16 ? 16 : 12
   const totalSpreads = Math.max(1, Math.ceil(cards.length / cardsPerSpread))
-  const totalBookPages = cardsPerSpread === 16 ? totalSpreads : Math.max(1, Math.ceil(cards.length / cardsPerBookPage))
+  const totalBookPages = cardsPerSpread === 16 ? totalSpreads : totalSpreads * 2
   const page = Math.max(0, Math.min(Number.isFinite(rawPage) ? rawPage : 0, totalSpreads - 1))
   const pageCards = cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread)
   const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageCards[index] || null)
