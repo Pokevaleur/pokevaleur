@@ -61,7 +61,8 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
   const [condition, setCondition] = useState(copies[0]?.raw_condition || '')
   const [conditionDetails, setConditionDetails] = useState(copies[0]?.condition_details || '')
   const [message, setMessage] = useState('')
-  const selectedCopy = copies.find(copy => copy.id === selectedCopyId) || copies[0]
+  const [localCopies, setLocalCopies] = useState(copies)
+  const selectedCopy = localCopies.find(copy => copy.id === selectedCopyId) || localCopies[0]
 
   useEffect(() => {
     const onKeyDown = event => { if (event.key === 'Escape') onClose() }
@@ -116,6 +117,8 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
       condition_details: conditionDetails.trim() || null,
     }).eq('id', selectedCopy.id).eq('collection_profile_id', profileId)
     setSaving(false)
+    if (!error) setLocalCopies(previous => previous.map(copy => copy.id === selectedCopy.id
+      ? { ...copy, raw_condition: condition || null, condition_details: conditionDetails.trim() || null } : copy))
     setMessage(error ? 'État non enregistré : ' + error.message : 'État enregistré.')
   }
 
@@ -159,6 +162,7 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
         const { error: primaryError } = await supabase.from('collection_cards')
           .update({ photo_path: uploadedPaths[0] }).eq('id', selectedCopy.id)
         if (primaryError) setMessage('Photos ajoutées, mais la photo principale n’a pas pu être mise à jour.')
+        else setLocalCopies(previous => previous.map(copy => copy.id === selectedCopy.id ? { ...copy, photo_path: uploadedPaths[0] } : copy))
       }
       const { data: rows, error: galleryError } = await supabase.from('collection_card_photos')
         .select('id,photo_path,caption,sort_order').eq('collection_card_id', selectedCopy.id)
@@ -193,9 +197,11 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
       const { error: removeError } = await supabase.storage.from('collection-images').remove([photo.photo_path])
       const nextPhotos = photos.filter(entry => entry.photo_path !== photo.photo_path)
       if (selectedCopy.photo_path === photo.photo_path) {
+        const nextPrimary = nextPhotos[0]?.photo_path || null
         const { error: primaryError } = await supabase.from('collection_cards')
-          .update({ photo_path: nextPhotos[0]?.photo_path || null }).eq('id', selectedCopy.id)
+          .update({ photo_path: nextPrimary }).eq('id', selectedCopy.id)
         if (primaryError) throw primaryError
+        setLocalCopies(previous => previous.map(copy => copy.id === selectedCopy.id ? { ...copy, photo_path: nextPrimary } : copy))
       }
       setPhotos(nextPhotos)
       setMessage(removeError ? 'Photo retirée de la fiche, mais le fichier n’a pas pu être supprimé.' : 'Photo supprimée.')
@@ -584,6 +590,7 @@ function BindersContent() {
                       aria-label={'Voir les exemplaires de ' + card.card_name + ', ' + ownedCopies.length + ' au total'}>
                       <div className={styles.thumb}>
                         {cardArt ? <img src={cardArt} alt="" loading="lazy" /> : <span>Illustration absente</span>}
+                        <span className={styles.slotZoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                         {copyCount > 1 && <b className={styles.copyBadge}>×{copyCount}</b>}
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
