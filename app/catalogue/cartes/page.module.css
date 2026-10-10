@@ -62,3 +62,7 @@
 .seriesPickerOption:last-child,.seriesPickerOptionActive:last-child { border-bottom:0; }
 .seriesPickerOption:hover,.seriesPickerOption:focus-visible { background:#f2f6fa; outline:none; }
 .seriesPickerOptionActive { background:#eef3f8; color:#173654; font-weight:750; }
+
+
+.seriesPickerTrigger>span:first-child{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+@media(max-width:480px){.selectionPanel{align-items:stretch;flex-direction:column}.selectionPanel label{flex:1 1 auto!important;width:100%}}
