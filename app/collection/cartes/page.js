@@ -537,10 +537,10 @@ export default function CardChecklistPage() {
     owned
   )
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
-  const selectedCardCount = masterSetCards.filter(card => {
-    const missing = (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !(owned[variant.id] || []).length)
-    return missing.length > 0 && missing.every(variant => selectedVariantIds.includes(variant.id))
-  }).length
+  const selectedVariantCount = selectedVariantIds.length
+  const selectedCardCount = masterSetCards.filter(card =>
+    (card.card_print_variants || []).some(variant => variant.is_master_set_target && selectedVariantIds.includes(variant.id))
+  ).length
 
   const targetVariants = cards.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
   const cardsWithProgressTargets = cards.filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target))
@@ -630,15 +630,11 @@ export default function CardChecklistPage() {
     if (user) window.localStorage.setItem('pokevaleur-collection:' + user.id, nextProfileId)
   }
 
-  function toggleCardSelection(variants) {
-    const missingIds = variants
-      .filter(variant => variant.is_master_set_target && !(owned[variant.id] || []).length)
-      .map(variant => variant.id)
-    if (!missingIds.length || savingBulk) return
-    const allSelected = missingIds.every(id => selectedVariantIds.includes(id))
-    setSelectedVariantIds(current => allSelected
-      ? current.filter(id => !missingIds.includes(id))
-      : [...new Set([...current, ...missingIds])])
+  function toggleVariantSelection(variant) {
+    if (!variant?.is_master_set_target || (owned[variant.id] || []).length || savingBulk) return
+    setSelectedVariantIds(current => current.includes(variant.id)
+      ? current.filter(id => id !== variant.id)
+      : [...current, variant.id])
   }
 
   async function changeRawCopies(variant, action) {
@@ -906,8 +902,8 @@ export default function CardChecklistPage() {
               {masterSetCards.length} carte{masterSetCards.length > 1 ? 's' : ''} dans le Master Set. Coche les cartes à ajouter, puis valide.
             </p>
             {!isCatalogOnlySet && <div className={styles.bulkToolbar} role="group" aria-label="Ajout des cartes sélectionnées">
-              <p aria-live="polite">{selectedCardCount} carte{selectedCardCount > 1 ? 's' : ''} sélectionnée{selectedCardCount > 1 ? 's' : ''}</p>
-              <button type="button" className={styles.bulkAddButton} disabled={!selectedVariantIds.length || savingBulk} onClick={addSelectedVariants}>
+              <p aria-live="polite">{selectedCardCount} carte{selectedCardCount > 1 ? 's' : ''} sélectionnée{selectedCardCount > 1 ? 's' : ''} · {selectedVariantCount} variante{selectedVariantCount > 1 ? 's' : ''}</p>
+              <button type="button" className={styles.bulkAddButton} disabled={!selectedVariantCount || savingBulk} onClick={addSelectedVariants}>
                 {savingBulk ? 'Ajout en cours…' : 'Ajouter à ma collection' + (selectedCardCount ? ' · ' + selectedCardCount : '')}
               </button>
               {!!selectedVariantIds.length && <button type="button" className={styles.bulkClearButton} disabled={savingBulk} onClick={() => setSelectedVariantIds([])}>Effacer la sélection</button>}
@@ -919,26 +915,41 @@ export default function CardChecklistPage() {
               {!visibleCards.length && <p className={styles.empty}>{query.trim() ? 'Aucune carte ne correspond à cette recherche.' : isCatalogOnlySet ? 'Aucune carte dans cette série.' : 'Aucune carte du Master Set n’est répertoriée pour cette série.'}</p>}
               {visibleCards.map(card => {
                 const targetVariants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
-                const missingVariants = targetVariants.filter(variant => !(owned[variant.id] || []).length)
-                const cardSelectionActive = missingVariants.length > 0 && missingVariants.every(variant => selectedVariantIds.includes(variant.id))
-                const ownedCount = targetVariants.length - missingVariants.length
-                return <label className={styles.masterChecklistRow} key={card.id}>
-                  <input
-                    type="checkbox"
-                    checked={cardSelectionActive}
-                    disabled={!missingVariants.length || savingBulk}
-                    onChange={() => toggleCardSelection(targetVariants)}
-                    aria-label={'Ajouter ' + card.card_name + ' à ma collection'}
-                  />
-                  <span className={styles.masterChecklistNumber}>{card.collector_number}</span>
-                  <span className={styles.masterChecklistName}>{card.card_name}</span>
-                  <span className={styles.masterChecklistRarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</span>
-                  <span className={styles.masterChecklistStatus}>
-                    {targetVariants.length
-                      ? (ownedCount === targetVariants.length ? 'Dans ma collection' : ownedCount ? ownedCount + ' / ' + targetVariants.length + ' variantes' : '')
-                      : 'Variantes à compléter'}
-                  </span>
-                </label>
+                const cardImage = imageUrl(card)
+                return <article className={styles.masterChecklistCard} key={card.id}>
+                  <div className={styles.masterChecklistHead}>
+                    <button
+                      type="button"
+                      className={styles.masterChecklistThumb}
+                      aria-label={'Agrandir l’image de ' + card.card_name}
+                      onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })}
+                      data-image-missing={!cardImage ? 'true' : undefined}
+                    >
+                      {cardImage
+                        ? <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.parentElement.dataset.imageMissing = 'true'; event.currentTarget.style.display = 'none' }} />
+                        : <span aria-hidden="true">Image</span>}
+                    </button>
+                    <div className={styles.masterChecklistMeta}>
+                      <span className={styles.masterChecklistNumber}>N° {card.collector_number}</span>
+                      <h2 className={styles.masterChecklistName}><button type="button" className={styles.masterChecklistNameButton} onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })} aria-label={'Voir la carte ' + card.card_name}>{card.card_name}</button></h2>
+                      <span className={styles.masterChecklistRarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</span>
+                    </div>
+                  </div>
+                  {targetVariants.length ? (
+                    <div className={styles.masterVariantChoices} role="group" aria-label={'Versions à ajouter pour ' + card.card_name}>
+                      {targetVariants.map(variant => {
+                        const alreadyOwned = (owned[variant.id] || []).length > 0
+                        const isSelected = selectedVariantIds.includes(variant.id)
+                        const label = variant.variant_label || variant.variant_key || variant.finish_code || 'Version'
+                        return <label className={styles.masterVariantChoice + (alreadyOwned ? ' ' + styles.masterVariantChoiceOwned : '')} key={variant.id}>
+                          <input type="checkbox" checked={alreadyOwned || isSelected} disabled={alreadyOwned || savingBulk} onChange={() => toggleVariantSelection(variant)} />
+                          <span>{label}</span>
+                          {alreadyOwned && <small>Déjà ajoutée</small>}
+                        </label>
+                      })}
+                    </div>
+                  ) : <p className={styles.masterChecklistStatus}>Aucune variante de Master Set répertoriée.</p>}
+                </article>
               })}
             </section>
           )}
