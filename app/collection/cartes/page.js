@@ -542,11 +542,11 @@ export default function CardChecklistPage() {
     return missing.length > 0 && missing.every(variant => selectedVariantIds.includes(variant.id))
   }).length
 
-  const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isProgressTarget))
-  const cardsWithProgressTargets = cardsWithIncludedVariants.filter(card => (card.card_print_variants || []).some(isProgressTarget))
+  const targetVariants = cards.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
+  const cardsWithProgressTargets = cards.filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target))
   const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
   const completedCardCount = cardsWithProgressTargets.filter(card => {
-    const targets = (card.card_print_variants || []).filter(isProgressTarget)
+    const targets = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
     return targets.every(variant => (owned[variant.id] || []).length > 0)
   }).length
   const completion = targetVariants.length ? Math.round(ownedTargetCount * 100 / targetVariants.length) : 0
