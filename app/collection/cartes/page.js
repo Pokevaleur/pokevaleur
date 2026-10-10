@@ -33,7 +33,11 @@ function seriesAbbreviation(set) {
   if (FRENCH_SET_CODES[normalized]) return FRENCH_SET_CODES[normalized]
   const prefixes = { hgss: 'HGSS', sm: 'SL', sl: 'SL', xy: 'XY', bw: 'NB', dp: 'DP', pl: 'PL' }
   for (const [prefix, abbreviation] of Object.entries(prefixes)) {
-    const match = normalized.match(new RegExp('^' + prefix + '(\\d+(?:\\.\\d+)?)([a-z]*)
+    const match = normalized.match(new RegExp('^' + prefix + '(\\d+(?:\\.\\d+)?)([a-z]*)$'))
+    if (match) return abbreviation + String(Number(match[1])) + match[2].toUpperCase()
+  }
+  return code.toUpperCase()
+}
 
 function seriesOptionLabel(set) {
   const abbreviation = seriesAbbreviation(set)
