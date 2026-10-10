@@ -219,3 +219,33 @@
 .bulkToolbar .bulkAddButton { border-color: #173c84; background: #173c84; color: #fff; }
 .bulkCheckbox { flex: none; display: inline-flex; align-items: center; gap: 5px; color: #173c84; font-size: .76rem; font-weight: 700; cursor: pointer; }
 .bulkCheckbox input { width: 18px; height: 18px; accent-color: #173c84; }
+
+/* Checklist dense, lisible comme une liste papier. */
+.masterChecklist { display:grid; gap:0; overflow:hidden; border:1px solid #d7dee8; border-radius:12px; background:#fff; }
+.masterChecklistRow {
+  display:grid;
+  grid-template-columns:24px minmax(46px,auto) minmax(120px,1fr) minmax(90px,auto) minmax(120px,auto);
+  align-items:center;
+  gap:10px;
+  min-height:46px;
+  padding:7px 12px;
+  border-bottom:1px solid #e7ebf0;
+  cursor:pointer;
+  color:#1c2a3b;
+}
+.masterChecklistRow:nth-child(even) { background:#f6f8fa; }
+.masterChecklistRow:last-child { border-bottom:0; }
+.masterChecklistRow:hover { background:#edf3ff; }
+.masterChecklistRow input { width:19px; height:19px; margin:0; accent-color:#173c84; }
+.masterChecklistNumber { font-variant-numeric:tabular-nums; color:#526174; font-size:.88rem; font-weight:700; }
+.masterChecklistName { min-width:0; font-size:.95rem; font-weight:650; }
+.masterChecklistRarity { color:#58677a; font-size:.82rem; }
+.masterChecklistStatus { color:#637187; text-align:right; font-size:.78rem; }
+.masterChecklistRow input:disabled { cursor:not-allowed; }
+.seriesPrompt { margin:16px 0; padding:16px; border:1px dashed #c7d2e1; border-radius:12px; background:#f8fafc; color:#43546a; }
+@media (max-width: 620px) {
+  .masterChecklistRow { grid-template-columns:22px 42px minmax(0,1fr); gap:8px; padding:8px 10px; }
+  .masterChecklistRarity { grid-column:2 / 4; padding-left:0; font-size:.76rem; }
+  .masterChecklistStatus { grid-column:2 / 4; text-align:left; font-size:.74rem; }
+  .masterChecklistName { font-size:.9rem; }
+}

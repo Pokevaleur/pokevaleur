@@ -382,9 +382,8 @@ export default function CardChecklistPage() {
       if (cancelled) return
       const availableSets = setRows || []
       setSets(availableSets)
-      const selected = availableSets.find(row => row.id === requestedSetId) || availableSets[0]
-      if (requestedSetId === ALL_SERIES_FILTER || !requestedSetId) setSetId(ALL_SERIES_FILTER)
-      else if (selected) setSetId(selected.id)
+      if (requestedSetId === ALL_SERIES_FILTER) setSetId(ALL_SERIES_FILTER)
+      else if (availableSets.some(row => row.id === requestedSetId)) setSetId(requestedSetId)
 
       const { data: companyRows, error: companyError } = await supabase.from('card_grading_companies')
         .select('id,company_name,abbreviation').eq('is_active', true).order('company_name')
@@ -502,17 +501,14 @@ export default function CardChecklistPage() {
     }
     return [...labels.entries()].map(([key, label]) => ({ key, label })).sort((a, b) => a.label.localeCompare(b.label, 'fr'))
   }, [cardsWithIncludedVariants, checklistFilter])
+  const masterSetCards = useMemo(() => isCatalogOnlySet
+    ? cards
+    : cards.filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target)), [cards, isCatalogOnlySet])
+  const checklistCards = isAllSeriesSelected ? cards : masterSetCards
   const baseFilteredCards = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase('fr')
-    return cardsWithIncludedVariants.filter(card => {
-      const matchesQuery = !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized)
-      const matchesRarity = !rarity.length || rarity.includes(rarityKey(card.rarity_label))
-      const matchesCardType = !selectedCardTypes.length || selectedCardTypes.includes(card.card_type?.trim())
-      const matchesElementType = !selectedElementTypes.length || (card.element_types || []).some(type => selectedElementTypes.includes(type))
-      const includedVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
-      return matchesQuery && matchesRarity && matchesCardType && matchesElementType && (isAllSeriesSelected || includedVariants.length > 0)
-    })
-  }, [cardsWithIncludedVariants, query, rarity, selectedCardTypes, selectedElementTypes, selectedVersions, checklistFilter, isAllSeriesSelected])
+    return checklistCards.filter(card => !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized))
+  }, [checklistCards, query])
 
   function matchesVariantCollectionFilter(variant, filter) {
     const count = (owned[variant.id] || []).length
@@ -527,10 +523,7 @@ export default function CardChecklistPage() {
     return targets.some(variant => matchesVariantCollectionFilter(variant, filter))
   }
 
-  const visibleCards = useMemo(
-    () => isAllSeriesSelected ? baseFilteredCards : baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter)),
-    [baseFilteredCards, collectionFilter, owned, checklistFilter, selectedVersions, isAllSeriesSelected]
-  )
+  const visibleCards = baseFilteredCards
   const missingCardsForCopy = useMemo(
     () => baseFilteredCards.filter(card => matchesCollectionFilter(card, 'missing')),
     [baseFilteredCards, owned, checklistFilter, selectedVersions]
@@ -540,16 +533,20 @@ export default function CardChecklistPage() {
 
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleMissingVariantIds = collectMissingTargetVariantIds(
-    visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))),
+    visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target)),
     owned
   )
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
+  const selectedCardCount = masterSetCards.filter(card => {
+    const missing = (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !(owned[variant.id] || []).length)
+    return missing.length > 0 && missing.every(variant => selectedVariantIds.includes(variant.id))
+  }).length
 
-  const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isProgressTarget))
-  const cardsWithProgressTargets = cardsWithIncludedVariants.filter(card => (card.card_print_variants || []).some(isProgressTarget))
+  const targetVariants = cards.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
+  const cardsWithProgressTargets = cards.filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target))
   const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
   const completedCardCount = cardsWithProgressTargets.filter(card => {
-    const targets = (card.card_print_variants || []).filter(isProgressTarget)
+    const targets = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
     return targets.every(variant => (owned[variant.id] || []).length > 0)
   }).length
   const completion = targetVariants.length ? Math.round(ownedTargetCount * 100 / targetVariants.length) : 0
@@ -635,7 +632,7 @@ export default function CardChecklistPage() {
 
   function toggleCardSelection(variants) {
     const missingIds = variants
-      .filter(variant => isProgressTarget(variant) && !(owned[variant.id] || []).length)
+      .filter(variant => variant.is_master_set_target && !(owned[variant.id] || []).length)
       .map(variant => variant.id)
     if (!missingIds.length || savingBulk) return
     const allSelected = missingIds.every(id => selectedVariantIds.includes(id))
@@ -680,6 +677,7 @@ export default function CardChecklistPage() {
   async function addSelectedVariants() {
     if (!user || !profileId || savingBulk) return
     const variantById = new Map(cards.flatMap(card => card.card_print_variants || []).map(variant => [variant.id, variant]))
+    const cardByVariantId = new Map(cards.flatMap(card => (card.card_print_variants || []).map(variant => [variant.id, card.id])))
     const variantsToAdd = [...new Set(selectedVariantIds)]
       .map(id => variantById.get(id))
       .filter(variant => variant?.is_master_set_target && !(owned[variant.id] || []).length)
@@ -693,6 +691,7 @@ export default function CardChecklistPage() {
     setSavingBulk(true)
     setNotice('')
     let addedCount = 0
+    const addedCardIds = new Set()
     try {
       for (let offset = 0; offset < variantsToAdd.length; offset += 100) {
         const rows = variantsToAdd.slice(offset, offset + 100).map(variant => ({
@@ -705,6 +704,10 @@ export default function CardChecklistPage() {
           .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)')
         if (insertError) throw insertError
         addedCount += (data || []).length
+        for (const copy of data || []) {
+          const cardId = cardByVariantId.get(copy.card_print_variant_id)
+          if (cardId) addedCardIds.add(cardId)
+        }
         const addedIds = new Set((data || []).map(copy => copy.card_print_variant_id))
         setOwned(current => {
           const next = { ...current }
@@ -713,10 +716,10 @@ export default function CardChecklistPage() {
         })
         setSelectedVariantIds(current => current.filter(id => !addedIds.has(id)))
       }
-      setNotice(addedCount + ' variante' + (addedCount > 1 ? 's ajoutées' : ' ajoutée') + ' à ta collection.')
+      setNotice(addedCardIds.size + ' carte' + (addedCardIds.size > 1 ? 's ajoutées' : ' ajoutée') + ' à ta collection.')
     } catch (saveError) {
-      setNotice(addedCount
-        ? addedCount + ' variante(s) ajoutée(s) ; le reste n’a pas été enregistré : ' + (saveError.message || 'réessaie.')
+      setNotice(addedCardIds.size
+        ? addedCardIds.size + ' carte(s) ajoutée(s) ; le reste n’a pas été enregistré : ' + (saveError.message || 'réessaie.')
         : 'Enregistrement impossible : ' + (saveError.message || 'réessaie.'))
     } finally {
       setSavingBulk(false)
@@ -838,6 +841,7 @@ export default function CardChecklistPage() {
       </section>
 
       {!sets.length && !error && <p className={styles.empty}>Aucune série de cartes n’est publiée pour le moment.</p>}
+      {!isAllSeriesSelected && !selectedSet && !loading && <p className={styles.seriesPrompt}>Choisis une série pour afficher la liste complète de ses cartes de Master Set.</p>}
       {isAllSeriesSelected ? (
         <section className={styles.globalSearch} aria-label="Recherche dans toutes les séries">
           <label className={styles.globalSearchLabel}>
@@ -893,212 +897,48 @@ export default function CardChecklistPage() {
           </section>
           )}
 
-          <section className={styles.filters} aria-label="Filtres de la checklist">
+          <section className={styles.filters} aria-label="Checklist de la série">
             <label className={styles.searchLabel}>
               Rechercher une carte
               <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Numéro ou nom…" />
             </label>
-            <div className={styles.visualFilters}>
-              <div className={styles.filterGroup}>
-                <div className={styles.filterHeading}><strong>Rareté</strong><span>{rarities.length} choix</span></div>
-                <div className={styles.filterChoices} role="group" aria-label="Filtrer par rareté">
-                  {rarities.map(option => {
-                    const count = cardsWithIncludedVariants.filter(card => rarityKey(card.rarity_label) === option.key).length
-                    const active = rarity.includes(option.key)
-                    return <button type="button" key={option.key} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={option.label + ' · ' + count + ' cartes'} onClick={() => selectRarity(option.key)}>
-                      <RarityFilterIcon rarityKey={option.key} /><span>{option.label}</span><small>{count}</small>
-                    </button>
-                  })}
-                </div>
-              </div>
-              <div className={styles.filterGroup}>
-                <div className={styles.filterHeading}><strong>Famille de carte</strong><span>{cardTypes.length} choix</span></div>
-                <div className={styles.filterChoices} role="group" aria-label="Filtrer par famille de carte">
-                  {cardTypes.map(value => {
-                    const count = cardsWithIncludedVariants.filter(card => card.card_type?.trim() === value).length
-                    const active = selectedCardTypes.includes(value)
-                    return <button type="button" key={value} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={value + ' · ' + count + ' cartes'} onClick={() => toggleCardType(value)}>
-                      <span className={styles.filterIcon} aria-hidden="true">{cardTypeSymbol(value)}</span><span>{value}</span><small>{count}</small>
-                    </button>
-                  })}
-                </div>
-              </div>
-              {!!elementTypes.length && <div className={styles.filterGroup}>
-                <div className={styles.filterHeading}><strong>Élément / énergie</strong><span>{elementTypes.length} choix</span></div>
-                <div className={styles.filterChoices + ' ' + styles.energyFilterChoices} role="group" aria-label="Filtrer par type élémentaire">
-                  {elementTypes.map(value => {
-                    const count = cardsWithIncludedVariants.filter(card => (card.element_types || []).includes(value)).length
-                    const active = selectedElementTypes.includes(value)
-                    return <button type="button" key={value} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={elementTypeDisplayLabel(value) + ' · ' + count + ' cartes'} onClick={() => toggleElementType(value)}>
-                      <ElementTypeIcon label={value} /><span className={styles.filterChoiceLabel}>{elementTypeDisplayLabel(value)}</span><small>{count}</small>
-                    </button>
-                  })}
-                </div>
-              </div>}
-              <div className={styles.filterGroup}>
-                <div className={styles.filterHeading}><strong>Version</strong><span>{versions.length} choix</span></div>
-                <div className={styles.filterChoices} role="group" aria-label="Filtrer par version">
-                  {versions.map(version => {
-                    const count = cardsWithIncludedVariants.filter(card => (card.card_print_variants || []).some(variant => isIncludedVariant(variant) && variant.variant_key === version.key)).length
-                    const active = selectedVersions.includes(version.key)
-                    return <button type="button" key={version.key} className={active ? styles.filterChoiceActive : styles.filterChoice} aria-pressed={active} title={version.label + ' · ' + count + ' cartes'} onClick={() => toggleVersion(version.key)}>
-                      <span className={styles.versionIcon} aria-hidden="true">{version.label.slice(0, 1).toLocaleUpperCase('fr')}</span><span>{version.label}</span><small>{count}</small>
-                    </button>
-                  })}
-                </div>
-              </div>
-            </div>
-            <div className={styles.quickFilters} aria-label="Filtres rapides de collection">
-              {[
-                { key: 'all', label: 'Toutes' },
-                { key: 'owned', label: 'Possédées' },
-                { key: 'missing', label: 'Manquantes' },
-                { key: 'duplicates', label: 'En double' }
-              ].map(option => {
-                const count = baseFilteredCards.filter(card => matchesCollectionFilter(card, option.key)).length
-                const active = collectionFilter === option.key
-                return <button type="button" key={option.key} className={active ? styles.quickFilterActive : styles.quickFilter} aria-pressed={active} onClick={() => selectCollectionFilter(option.key)}>
-                  {option.label}<small>{count}</small>
-                </button>
-              })}
-              <button type="button" className={styles.copyMissing} onClick={copyMissingCardNumbers} disabled={!missingCardNumbers.length}>
-                Copier les numéros manquants{missingCardNumbers.length ? ' · ' + missingCardNumbers.length : ''}
-              </button>
-            </div>
-            {missingCardNumbers.length > 0 && <details className={styles.missingPreview}>
-              <summary>Voir les {missingCardNumbers.length} numéros manquants</summary>
-              <p>{formattedMissingCardNumbers}</p>
-            </details>}
-            {!isAllSeriesSelected && !isCatalogOnlySet && <div className={styles.bulkToolbar} role="group" aria-label="Ajout groupé à ma collection">
-              <p>{selectedVariantIds.length
-                ? selectedVariantIds.length + ' variante' + (selectedVariantIds.length > 1 ? 's sélectionnées' : ' sélectionnée')
-                : 'Coche une carte, touche son nom ou son image, ou choisis ses variantes une par une ; valide ensuite l’ajout.'}</p>
-              <button type="button" className={styles.bulkSelectButton} disabled={!visibleMissingVariantIds.length || savingBulk} onClick={() => {
-                const allSelected = visibleMissingVariantIds.length > 0 && visibleMissingVariantIds.every(id => selectedVariantIds.includes(id))
-                setSelectedVariantIds(current => allSelected
-                  ? current.filter(id => !visibleMissingVariantIds.includes(id))
-                  : [...new Set([...current, ...visibleMissingVariantIds])])
-              }}>
-                {visibleMissingVariantIds.length && visibleMissingVariantIds.every(id => selectedVariantIds.includes(id))
-                  ? 'Désélectionner les résultats manquants'
-                  : 'Cocher les ' + visibleMissingVariantIds.length + ' variantes manquantes affichées'}
-              </button>
+            <p className={styles.scope}>
+              {masterSetCards.length} carte{masterSetCards.length > 1 ? 's' : ''} dans le Master Set. Coche les cartes à ajouter, puis valide.
+            </p>
+            {!isCatalogOnlySet && <div className={styles.bulkToolbar} role="group" aria-label="Ajout des cartes sélectionnées">
+              <p aria-live="polite">{selectedCardCount} carte{selectedCardCount > 1 ? 's' : ''} sélectionnée{selectedCardCount > 1 ? 's' : ''}</p>
               <button type="button" className={styles.bulkAddButton} disabled={!selectedVariantIds.length || savingBulk} onClick={addSelectedVariants}>
-                {savingBulk ? 'Ajout en cours…' : 'Valider l’ajout' + (selectedVariantIds.length ? ' · ' + selectedVariantIds.length : '')}
+                {savingBulk ? 'Ajout en cours…' : 'Ajouter à ma collection' + (selectedCardCount ? ' · ' + selectedCardCount : '')}
               </button>
               {!!selectedVariantIds.length && <button type="button" className={styles.bulkClearButton} disabled={savingBulk} onClick={() => setSelectedVariantIds([])}>Effacer la sélection</button>}
             </div>}
-            <label>
-              Type de checklist
-              <select value={checklistFilter} onChange={event => setChecklistFilter(event.target.value)} disabled={isCatalogOnlySet}>
-                <option value="main">Cartes et variantes principales</option>
-                <option value="promos">Promos SVP liées à la série</option>
-                <option value="stamps">Versions tamponnées</option>
-                <option value="all">Tout afficher</option>
-              </select>
-            </label>
           </section>
 
-          {checklistFilter === 'stamps' && (
-            <p className={styles.imageNote} role="status">
-              Le filtre liste les variantes avec stamp ; l’image disponible peut représenter la carte sans son stamp.
-            </p>
-          )}
-
           {cardsLoading ? <p className={styles.status}>Chargement des cartes…</p> : (
-            <section className={styles.cardGrid} aria-label="Cartes de la série">
-              {!visibleCards.length && <p className={styles.empty}>{collectionFilter === 'owned' ? 'Aucune carte possédée avec ces filtres.' : collectionFilter === 'missing' ? 'Aucune carte manquante avec ces filtres.' : collectionFilter === 'duplicates' ? 'Aucun doublon avec ces filtres.' : 'Aucune carte ne correspond aux filtres.'}</p>}
-              <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's' : ''} affichée{visibleCards.length > 1 ? 's' : ''} · <strong>{visibleOwnedVariantCount} / {visibleTargetVariants.length}</strong> variantes possédées</p>
+            <section className={styles.masterChecklist} aria-label="Liste complète des cartes du Master Set">
+              {!visibleCards.length && <p className={styles.empty}>{query.trim() ? 'Aucune carte ne correspond à cette recherche.' : isCatalogOnlySet ? 'Aucune carte dans cette série.' : 'Aucune carte du Master Set n’est répertoriée pour cette série.'}</p>}
               {visibleCards.map(card => {
-                const cardVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter))
-                const selectableVariants = cardVariants.filter(variant => isProgressTarget(variant) && !(owned[variant.id] || []).length)
-                const cardSelectionActive = selectableVariants.length > 0 && selectableVariants.every(variant => selectedVariantIds.includes(variant.id))
-                return (
-                  <article className={styles.card} key={card.id}>
-                    <div className={styles.cardTop}>
-                      <div className={styles.artFrame}>
-                        <button type="button" className={styles.cardImageSelect} aria-label={(cardSelectionActive ? 'Désélectionner' : 'Sélectionner') + ' les variantes manquantes de ' + card.card_name} aria-pressed={cardSelectionActive} disabled={!selectableVariants.length || savingBulk} onClick={() => toggleCardSelection(cardVariants)}>
-                          <img src={imageUrl(card)} alt={card.card_name} loading="lazy" onError={event => {
-                            event.currentTarget.style.display = 'none'
-                            event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true'
-                          }} />
-                        </button>
-                        <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })}>
-                          <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
-                        </button>
-                      </div>
-                      <div className={styles.cardHeading}>
-                        <span className={styles.number}>N° {card.collector_number}</span>
-                        <label className={styles.cardSelectCheckbox}>
-                          <input type="checkbox" checked={cardSelectionActive} disabled={!selectableVariants.length || savingBulk} onChange={() => toggleCardSelection(cardVariants)} />
-                          <span>Sélectionner la carte</span>
-                        </label>
-                        <h2><button type="button" className={styles.cardNameSelect} aria-pressed={cardSelectionActive} disabled={!selectableVariants.length || savingBulk} onClick={() => toggleCardSelection(cardVariants)}>{card.card_name}</button></h2>
-                        <p className={styles.rarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</p>
-                        {card.mechanic_label && <small>{card.mechanic_label}</small>}
-                      </div>
-                    </div>
-                    <div className={styles.variantList}>
-                      {!cardVariants.length && isCatalogOnlySet && <p className={styles.scope}>Variantes à compléter avant le suivi de collection.</p>}
-                      {cardVariants.map(variant => {
-                        const copies = owned[variant.id] || []
-                        const rawCopies = copies.filter(copy => copy.ownership_type === 'raw')
-                        const gradedCopies = copies.filter(copy => copy.ownership_type === 'graded')
-                        return (
-                          <div className={styles.variant} key={variant.id}>
-                            <div className={styles.variantName}>
-                              <span>{variant.variant_label}</span>
-                              {variant.checklist_group === 'stamp' && <small>Tampon</small>}
-                              {isProgressTarget(variant) && !(owned[variant.id] || []).length && <label className={styles.bulkCheckbox}>
-                                <input type="checkbox" checked={selectedVariantIds.includes(variant.id)} disabled={savingBulk} onChange={() => setSelectedVariantIds(current => current.includes(variant.id) ? current.filter(id => id !== variant.id) : [...current, variant.id])} />
-                                <span>Ajouter</span>
-                              </label>}
-                            </div>
-                            <div className={styles.rawLine}>
-                              <label className={styles.checkboxLine}>
-                                <input type="checkbox" checked={rawCopies.length > 0} readOnly />
-                                <span>Brute · {rawCopies.length}</span>
-                              </label>
-                              <div className={styles.copyActions}>
-                                <button type="button" aria-label="Retirer un exemplaire brut" disabled={!rawCopies.length || busyVariant === variant.id} onClick={() => changeRawCopies(variant, 'remove')}>−</button>
-                                <button type="button" aria-label="Ajouter un exemplaire brut" disabled={busyVariant === variant.id} onClick={() => changeRawCopies(variant, 'add')}>+</button>
-                              </div>
-                            </div>
-                            <div className={styles.gradedSection}>
-                              <div className={styles.gradedHeading}><span>Gradées · {gradedCopies.length}</span><button type="button" onClick={() => setGradingVariant(gradingVariant === variant.id ? '' : variant.id)}>+ Ajouter</button></div>
-                              {gradedCopies.map(copy => (
-                                <div className={styles.gradedCopy} key={copy.id}>
-                                  <span>{copy.card_grading_companies?.abbreviation || copy.card_grading_companies?.company_name || 'Société'} {copy.grade_label || copy.grade}</span>
-                                  {copy.certification_number && <small>Cert. {copy.certification_number}</small>}
-                                  <button type="button" aria-label="Retirer cet exemplaire gradé" onClick={() => removeGradedCopy(variant.id, copy)}>×</button>
-                                </div>
-                              ))}
-                              {gradingVariant === variant.id && (
-                                <form className={styles.gradeForm} onSubmit={event => addGradedCopy(event, variant)}>
-                                  <label>Société
-                                    <select name="grading_company_id" required defaultValue="">
-                                      <option value="" disabled>Choisir…</option>
-                                      {companies.map(company => <option key={company.id} value={company.id}>{company.company_name}</option>)}
-                                    </select>
-                                  </label>
-                                  <label>Note
-                                    <select name="grade" defaultValue="10">
-                                      {Array.from({ length: 10 }, (_, index) => 10 - index).map(value => <option key={value} value={value}>{value}/10</option>)}
-                                    </select>
-                                  </label>
-                                  <label>Certification (facultatif)<input name="certification_number" maxLength="80" /></label>
-                                  <label>Valeur personnelle (€)<input name="current_value_override" type="number" min="0" step="0.01" /></label>
-                                  {!companies.length && <small>Les sociétés de gradation seront disponibles après leur ajout au référentiel.</small>}
-                                  <button type="submit" disabled={savingGrade || !companies.length}>{savingGrade ? 'Enregistrement…' : 'Enregistrer la gradée'}</button>
-                                </form>
-                              )}
-                            </div>
-                          </div>
-                        )
-                      })}
-                    </div>
-                  </article>
-                )
+                const targetVariants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
+                const missingVariants = targetVariants.filter(variant => !(owned[variant.id] || []).length)
+                const cardSelectionActive = missingVariants.length > 0 && missingVariants.every(variant => selectedVariantIds.includes(variant.id))
+                const ownedCount = targetVariants.length - missingVariants.length
+                return <label className={styles.masterChecklistRow} key={card.id}>
+                  <input
+                    type="checkbox"
+                    checked={cardSelectionActive}
+                    disabled={!missingVariants.length || savingBulk}
+                    onChange={() => toggleCardSelection(targetVariants)}
+                    aria-label={'Ajouter ' + card.card_name + ' à ma collection'}
+                  />
+                  <span className={styles.masterChecklistNumber}>{card.collector_number}</span>
+                  <span className={styles.masterChecklistName}>{card.card_name}</span>
+                  <span className={styles.masterChecklistRarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</span>
+                  <span className={styles.masterChecklistStatus}>
+                    {targetVariants.length
+                      ? (ownedCount === targetVariants.length ? 'Dans ma collection' : ownedCount ? ownedCount + ' / ' + targetVariants.length + ' variantes' : '')
+                      : 'Variantes à compléter'}
+                  </span>
+                </label>
               })}
             </section>
           )}
