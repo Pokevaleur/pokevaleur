@@ -65,6 +65,8 @@
 .thumb img { width:100%; height:100%; object-fit:contain; }
 .thumb > span { color:#8791a0; font-size:.6rem; }
 .copyBadge { position:absolute; top:3px; right:3px; padding:2px 5px; border-radius:999px; background:#173c73e8; color:#fff; font-size:.62rem; }
+.slotZoomHint { position:absolute; left:3px; bottom:3px; display:grid; width:18px; height:18px; place-items:center; border-radius:50%; background:#ffffffeb; color:#173c73; box-shadow:0 1px 4px #07172b33; }
+.slotZoomHint svg { display:block; width:12px; height:12px; }
 .cardName { display:-webkit-box; max-width:100%; margin-top:3px; overflow:hidden; color:#293b50; font-size:clamp(.57rem,1vw,.76rem); line-height:1.1; -webkit-box-orient:vertical; -webkit-line-clamp:1; }
 .cardNumber { color:#778292; font-size:.58rem; }
 .emptyNumber { display:grid; width:25px; height:25px; place-items:center; border:1px solid #d3d4d6; border-radius:50%; color:#9aa0a8; font-size:.65rem; font-weight:800; }
@@ -174,4 +176,6 @@
  .emptyNumber { width:20px; height:20px; font-size:.55rem; }
  .emptyHint { margin-top:3px; font-size:.48rem; line-height:1.05; }
  .copyBadge { top:2px; right:2px; padding:1px 4px; font-size:.52rem; }
+ .slotZoomHint { left:2px; bottom:2px; width:16px; height:16px; }
+ .slotZoomHint svg { width:10px; height:10px; }
 }
