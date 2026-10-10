@@ -86,12 +86,14 @@ export default function CardCataloguePage() {
       setCards([])
       setOwned({})
       setSelection({})
+      setLoadingCards(false)
       return
     }
     if (setId === ALL_SERIES && !query.trim()) {
       setCards([])
       setOwned({})
       setSelection({})
+      setLoadingCards(false)
       return
     }
     let cancelled = false
@@ -190,17 +192,20 @@ export default function CardCataloguePage() {
         const { data, error: insertError } = await supabase.from('collection_cards').insert(rows.slice(offset, offset + 100))
           .select('id,card_print_variant_id,ownership_type,grade,grade_label')
         if (insertError) throw insertError
-        insertedCopies.push(...(data || []))
+        const saved = data || []
+        insertedCopies.push(...saved)
+        setOwned(current => {
+          const next = { ...current }
+          for (const copy of saved) next[copy.card_print_variant_id] = [...(next[copy.card_print_variant_id] || []), copy]
+          return next
+        })
       }
-      setOwned(current => {
-        const next = { ...current }
-        for (const copy of insertedCopies) next[copy.card_print_variant_id] = [...(next[copy.card_print_variant_id] || []), copy]
-        return next
-      })
       setSelection({})
       setNotice(insertedCopies.length + ' exemplaire' + (insertedCopies.length > 1 ? 's ajoutés' : ' ajouté') + ' à ' + (profiles.find(row => row.id === profileId)?.display_name || 'la collection') + '.')
     } catch (saveError) {
-      setNotice('Ajout interrompu : ' + (saveError.message || 'réessaie.'))
+      setNotice(insertedCopies.length
+        ? insertedCopies.length + ' exemplaire(s) ajouté(s) ; le reste n’a pas été enregistré : ' + (saveError.message || 'réessaie.')
+        : 'Ajout impossible : ' + (saveError.message || 'réessaie.'))
     } finally {
       setSaving(false)
     }
