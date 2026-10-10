@@ -121,17 +121,23 @@ function BindersContent() {
 
         try {
           const { data: products, error: productsError } = await fetchAllRows(() => supabase.from('products')
-            .select('name,series,image_url,product_type').eq('is_public', true).ilike('name', '%ETB%'))
+            .select('name,series,image_url,image_source_url,product_type').eq('is_public', true)
+            .or('product_type.ilike.%etb%,name.ilike.%dresseur%,name.ilike.%trainer box%'))
           if (productsError) throw productsError
           const art = {}
+          const ignoredSetWords = new Set(['ecarlate', 'violet', 'pokemon', 'serie', 'et', 'de', 'des', 'du', 'la', 'le', 'les'])
           for (const set of setRows || []) {
-            const tokens = [normalize(set.set_name), normalize(set.series_name)].filter(value => value.length > 3)
+            const tokens = normalize(set.set_name).split(/[^a-z0-9]+/).filter(word => word.length > 2 && !ignoredSetWords.has(word))
             const matching = (products || []).find(product => {
               const productName = normalize(product.name)
               const productSeries = normalize(product.series)
-              return tokens.some(token => productName.includes(token) || productSeries.includes(token))
+              const productType = normalize(product.product_type)
+              const isEtb = productType.includes('etb') || productName.includes('coffret dresseur') || productName.includes('elite trainer box')
+              const productText = productName + ' ' + productSeries
+              return isEtb && tokens.length > 0 && tokens.every(token => productText.includes(token)) && (product.image_url || product.image_source_url)
             })
-            if (matching?.image_url) art[set.id] = matching.image_url
+            const image = matching?.image_url || matching?.image_source_url
+            if (image) art[set.id] = image
           }
           if (!cancelled) setEtbImages(art)
         } catch { /* The binder remains usable if no ETB image is indexed. */ }
@@ -294,10 +300,10 @@ function BindersContent() {
       </> : <>
         <div className={styles.topLine}>
           <BackLink href={'/collection/classeurs?set=' + encodeURIComponent(selectedSet.id)} />
-          <span className={styles.eyebrow}>{shortCode(selectedSet)} · {selectedSet.set_name}</span>
+          <span className={styles.eyebrow}>{shortCode(selectedSet)}</span>
         </div>
         <header className={styles.openHeader}>
-          <div><p className={styles.kicker}>Ton classeur · double page</p><h1>{selectedSet.set_name}</h1></div>
+          <div><p className={styles.kicker}>Double page</p><h1>{selectedSet.set_name}</h1></div>
           <p>{ownedOnSet} possédée{ownedOnSet === 1 ? '' : 's'} · {missingOnSet} emplacement{missingOnSet === 1 ? '' : 's'} à compléter</p>
         </header>
         {error && <p className={styles.error} role="alert">{error}</p>}
