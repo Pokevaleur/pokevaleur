@@ -8,9 +8,36 @@ import styles from './page.module.css'
 const ALL_SERIES = '__all_series__'
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets(id,set_name,set_code),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
 
+const FRENCH_SET_CODES = {
+  swsh1: 'EB01',
+  swsh2: 'EB02',
+  swsh3: 'EB03',
+  'swsh3.5': 'EB03.5',
+  swsh4: 'EB04',
+  'swsh4.5': 'EB04.5',
+  'swsh4.5sv': 'EB04.5 SV',
+  swsh5: 'EB05',
+  swsh6: 'EB06',
+  swsh7: 'EB07',
+  cel25: 'EB07.5',
+  cel25cc: 'EB07.5 CC',
+  swsh8: 'EB08',
+  swsh9: 'EB09',
+  swsh9tg: 'EB09 TG',
+  swsh10: 'EB10',
+  swsh10tg: 'EB10 TG',
+  'swsh10.5': 'EB10.5',
+  swsh11: 'EB11',
+  swsh11tg: 'EB11 TG',
+  swsh12: 'EB12',
+  swsh12tg: 'EB12 TG',
+  'swsh12.5': 'EB12.5',
+  'swsh12.5gg': 'EB12.5 GG'
+}
+
 function seriesLabel(set) {
   const code = (set?.set_code || '').toLowerCase()
-  const displayCode = code === 'swsh7' ? 'EB07' : (set?.set_code || '').toUpperCase()
+  const displayCode = FRENCH_SET_CODES[code] || (set?.set_code || '').toUpperCase()
   return (displayCode ? displayCode + ' — ' : '') + (set?.set_name || 'Série')
 }
 
