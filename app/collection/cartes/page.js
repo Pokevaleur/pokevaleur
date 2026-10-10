@@ -300,7 +300,7 @@ export default function CardChecklistPage() {
   const [selectedElementTypes, setSelectedElementTypes] = useState([])
   const [selectedVersions, setSelectedVersions] = useState([])
   const [collectionFilter, setCollectionFilter] = useState('owned')
-  const [checklistFilter, setChecklistFilter] = useState('main')
+  const [checklistFilter, setChecklistFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
   const [error, setError] = useState('')
@@ -558,7 +558,7 @@ export default function CardChecklistPage() {
     setSelectedCardTypes([])
     setSelectedElementTypes([])
     setSelectedVersions([])
-    setCollectionFilter('all')
+    setCollectionFilter('owned')
     const url = new URL(window.location.href)
     url.searchParams.set('set', nextSetId)
     url.searchParams.delete('rarity')
@@ -778,8 +778,8 @@ export default function CardChecklistPage() {
       </div>
       <header className={styles.header}>
         <p className={styles.kicker}>Ma collection · Cartes</p>
-        <h1>Mes cartes possédées</h1>
-        <p>Consulte les impressions que tu possèdes et le nombre d’exemplaires. Pour ajouter une carte ou une variante, sélectionne-la dans le Catalogue.</p>
+        <h1>Mes cartes</h1>
+        <p>Choisis une série pour afficher tes cartes possédées, en double ou non possédées. Pour en ajouter, sélectionne-les dans le Catalogue.</p>
         <a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Choisir des cartes dans le Catalogue →</a>
       </header>
 
@@ -836,6 +836,22 @@ export default function CardChecklistPage() {
         </label>
         {isAdmin && selectedSet && !selectedSet.is_public && <p className={styles.adminNote}>Série privée : visible ici pour la vérification administrateur uniquement.</p>}
       </section>
+
+      {selectedSet && <div className={styles.collectionCardFilters} role="group" aria-label="Filtrer les cartes de cette série">
+        {[
+          ['owned', 'Possédées'],
+          ['duplicates', 'En double'],
+          ['missing', 'Non possédées']
+        ].map(([filter, label]) => (
+          <button
+            key={filter}
+            type="button"
+            className={collectionFilter === filter ? styles.collectionCardFilterActive : styles.collectionCardFilter}
+            aria-pressed={collectionFilter === filter}
+            onClick={() => selectCollectionFilter(filter)}
+          >{label}</button>
+        ))}
+      </div>}
 
       {!sets.length && !error && <p className={styles.empty}>Aucune série de cartes n’est publiée pour le moment.</p>}
       {!isAllSeriesSelected && !selectedSet && !loading && <p className={styles.seriesPrompt}>Choisis une série pour afficher la liste complète de ses cartes de Master Set.</p>}
