@@ -935,7 +935,7 @@ export default function CardChecklistPage() {
                   <span className={styles.masterChecklistRarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</span>
                   <span className={styles.masterChecklistStatus}>
                     {targetVariants.length
-                      ? ownedCount === targetVariants.length ? 'Dans ma collection' : ownedCount ? ownedCount + ' / ' + targetVariants.length + ' variantes' : ''}
+                      ? (ownedCount === targetVariants.length ? 'Dans ma collection' : ownedCount ? ownedCount + ' / ' + targetVariants.length + ' variantes' : '')
                       : 'Variantes à compléter'}
                   </span>
                 </label>
