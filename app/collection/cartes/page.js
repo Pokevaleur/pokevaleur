@@ -911,7 +911,10 @@ export default function CardChecklistPage() {
             <div className={styles.progressTrack} role="progressbar" aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100" aria-label="Progression de la checklist">
               <span style={{ width: completion + '%' }} />
             </div>
-            <p className={styles.scope}>{selectedSet.checklist_scope_note} Les variantes (Normale, Reverse, tamponnée…) comptent séparément. Une carte est complète seulement lorsque toutes ses variantes sont possédées.</p>
+            <details className={styles.scopeDetails}>
+              <summary>Détails du calcul</summary>
+              <p className={styles.scope}>{selectedSet.checklist_scope_note} Les variantes (Normale, Reverse, tamponnée…) comptent séparément. Une carte est complète seulement lorsque toutes ses variantes sont possédées.</p>
+            </details>
           </section>
           )}
 
