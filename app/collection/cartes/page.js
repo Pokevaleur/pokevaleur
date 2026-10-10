@@ -283,6 +283,18 @@ function formatMissingCardNumbers(numbers) {
   return parts.join(', ')
 }
 
+function normalizeCardSearch(value) {
+  return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function cardSearchText(card) {
+  const artistNames = (card.card_illustrators || []).flatMap(link => {
+    const illustrators = link.illustrators
+    return Array.isArray(illustrators) ? illustrators.map(item => item?.name) : [illustrators?.name]
+  }).filter(Boolean)
+  return normalizeCardSearch([card.collector_number, card.card_name, ...artistNames].join(' '))
+}
+
 export default function CardChecklistPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState(null)
@@ -405,7 +417,7 @@ export default function CardChecklistPage() {
       setCards([])
       setOwned({})
       const { data: cardRows, error: cardError } = await supabase.from('cards')
-        .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
+        .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
         .eq('card_set_id', setId).order('guide_order', { ascending: true })
       if (cardError) throw cardError
       if (cancelled) return
@@ -428,7 +440,7 @@ export default function CardChecklistPage() {
   }, [supabase, setId, profileId])
 
   useEffect(() => {
-    if (setId !== ALL_SERIES_FILTER || !profileId) return
+    if (!profileId || (setId !== ALL_SERIES_FILTER && setId !== '')) return
     const term = query.trim()
     const searchableSetIds = sets.filter(row => row.is_public && row.language === 'FR').map(row => row.id)
     let cancelled = false
@@ -444,20 +456,48 @@ export default function CardChecklistPage() {
       setNotice('')
       try {
         const escapedTerm = term.replace(/[%_]/g, '\\$&')
-        const { data: cardRows, error: cardError } = await supabase.from('cards')
-          .select('id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,image_source_url,card_sets(set_name,set_code),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
-          .in('card_set_id', searchableSetIds).ilike('card_name', '%' + escapedTerm + '%')
-          .order('card_name', { ascending: true }).limit(500)
-        if (cardError) throw cardError
+        const pattern = '%' + escapedTerm + '%'
+        const fields = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,image_source_url,card_sets(set_name,set_code),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
+        const [nameResult, numberResult] = await Promise.all([
+          supabase.from('cards').select(fields).in('card_set_id', searchableSetIds)
+            .ilike('card_name', pattern).order('card_name', { ascending: true }).limit(500),
+          supabase.from('cards').select(fields).in('card_set_id', searchableSetIds)
+            .ilike('collector_number', pattern).order('card_name', { ascending: true }).limit(500)
+        ])
+        if (nameResult.error) throw nameResult.error
+        if (numberResult.error) throw numberResult.error
         if (cancelled) return
-        const variantIds = (cardRows || []).flatMap(card => (card.card_print_variants || []).map(variant => variant.id))
+        const artistCardIds = new Set()
+        for (let offset = 0; artistCardIds.size < 500; offset += 1000) {
+          const { data: artistLinks, error: artistError } = await supabase.from('card_illustrators')
+            .select('card_id,illustrators!inner(name)')
+            .ilike('illustrators.name', pattern)
+            .order('card_id', { ascending: true })
+            .range(offset, offset + 999)
+          if (artistError) throw artistError
+          for (const link of artistLinks || []) artistCardIds.add(link.card_id)
+          if (!artistLinks || artistLinks.length < 1000) break
+        }
+        let artistRows = []
+        const artistIds = [...artistCardIds]
+        for (let offset = 0; offset < artistIds.length; offset += 100) {
+          const { data, error: artistCardError } = await supabase.from('cards')
+            .select(fields).in('card_set_id', searchableSetIds).in('id', artistIds.slice(offset, offset + 100))
+            .order('card_name', { ascending: true }).limit(500)
+          if (artistCardError) throw artistCardError
+          artistRows = artistRows.concat(data || [])
+        }
+        const cardsById = new Map()
+        for (const card of [...(nameResult.data || []), ...(numberResult.data || []), ...artistRows]) cardsById.set(card.id, card)
+        const cardRows = [...cardsById.values()].sort((a, b) => a.card_name.localeCompare(b.card_name, 'fr')).slice(0, 500)
+        const variantIds = cardRows.flatMap(card => (card.card_print_variants || []).map(variant => variant.id))
         let copyRows = []
-        if (variantIds.length) {
+        for (let offset = 0; offset < variantIds.length; offset += 100) {
           const { data, error: copyError } = await supabase.from('collection_cards')
             .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)')
-            .eq('collection_profile_id', profileId).in('card_print_variant_id', variantIds)
+            .eq('collection_profile_id', profileId).in('card_print_variant_id', variantIds.slice(offset, offset + 100))
           if (copyError) throw copyError
-          copyRows = data || []
+          copyRows = copyRows.concat(data || [])
         }
         if (cancelled) return
         const ownership = {}
@@ -506,8 +546,8 @@ export default function CardChecklistPage() {
     : cards.filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target)), [cards, isCatalogOnlySet])
   const checklistCards = isAllSeriesSelected ? cards : masterSetCards
   const baseFilteredCards = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase('fr')
-    return checklistCards.filter(card => !normalized || (card.collector_number + ' ' + card.card_name).toLocaleLowerCase('fr').includes(normalized))
+    const normalized = normalizeCardSearch(query.trim())
+    return checklistCards.filter(card => !normalized || cardSearchText(card).includes(normalized))
   }, [checklistCards, query])
 
   function matchesVariantCollectionFilter(variant, filter) {
@@ -870,14 +910,14 @@ export default function CardChecklistPage() {
       </div>}
 
       {!sets.length && !error && <p className={styles.empty}>Aucune série de cartes n’est publiée pour le moment.</p>}
-      {!isAllSeriesSelected && !selectedSet && !loading && <p className={styles.seriesPrompt}>Choisis une série pour afficher la liste complète de ses cartes de Master Set.</p>}
-      {isAllSeriesSelected ? (
-        <section className={styles.globalSearch} aria-label="Recherche dans toutes les séries">
+      {!isAllSeriesSelected && !selectedSet && !loading && !query.trim() && <p className={styles.seriesPrompt}>Choisis une série pour afficher la liste complète de ses cartes de Master Set, ou lance une recherche dans ta collection.</p>}
+      {isAllSeriesSelected || !selectedSet ? (
+        <section className={styles.globalSearch} aria-label="Recherche dans la collection">
           <label className={styles.globalSearchLabel}>
-            Rechercher une carte dans toutes les séries
-            <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom du Pokémon, par exemple Pikachu…" />
+            Rechercher dans ma collection
+            <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, numéro ou artiste…" />
           </label>
-          {!query.trim() && <p className={styles.scope}>Saisis un nom pour trouver les cartes correspondantes dans toutes les séries françaises publiées.</p>}
+          {!query.trim() && <p className={styles.scope}>Saisis un nom, un numéro ou un artiste pour retrouver tes cartes dans les séries françaises.</p>}
           {!!query.trim() && <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> résultat{visibleCards.length > 1 ? 's' : ''} pour « {query.trim()} » · jusqu’à 500 cartes affichées</p>}
           {cardsLoading ? <p className={styles.status}>Recherche dans toutes les séries…</p> : query.trim() && (
             <section className={styles.cardGrid} aria-label="Résultats toutes séries">
@@ -932,7 +972,7 @@ export default function CardChecklistPage() {
           <section className={styles.filters} aria-label="Checklist de la série">
             <label className={styles.searchLabel}>
               Rechercher une carte
-              <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Numéro ou nom…" />
+              <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, numéro ou artiste…" />
             </label>
             <p className={styles.scope}>
               {visibleCards.length} carte{visibleCards.length > 1 ? 's' : ''} affichée{visibleCards.length > 1 ? 's' : ''} selon le filtre. Les ajouts se font depuis le Catalogue.
