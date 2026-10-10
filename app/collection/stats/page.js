@@ -35,6 +35,9 @@ export default function CollectionStatsPage() {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
   const [profileName, setProfileName] = useState('Ma collection')
+  const [activeProfileId, setActiveProfileId] = useState('')
+  const [removingItemId, setRemovingItemId] = useState(null)
+  const [collectionActionMessage, setCollectionActionMessage] = useState('')
   const [items, setItems] = useState([])
   const [products, setProducts] = useState([])
   const [cardCopies, setCardCopies] = useState([])
@@ -77,7 +80,7 @@ export default function CollectionStatsPage() {
 
         const { data: rows, error: itemsError } = await fetchAllRows(() => supabase
           .from('collection_items')
-          .select('product_id,custom_name,quantity')
+          .select('id,product_id,custom_name,quantity')
           .eq('collection_profile_id', profile.id)
           .order('created_at', { ascending: true })
           .order('id', { ascending: true }))
@@ -187,6 +190,7 @@ export default function CollectionStatsPage() {
 
         if (!active) return
         setProfileName(profile.display_name || 'Ma collection')
+        setActiveProfileId(profile.id)
         setItems(rows || [])
         setProducts(catalog)
         setCardCopies(inventoryCards)
@@ -259,14 +263,17 @@ export default function CollectionStatsPage() {
           detail = {
             name,
             type: product?.product_type?.trim() || product?.category?.trim() || '',
-            count: holding.quantity
+            count: holding.quantity,
+            itemIds: [item.id]
           }
         }
         if (!groups.has(groupName)) groups.set(groupName, new Map())
         const entries = groups.get(groupName)
         const existing = entries.get(detailKey)
-        if (existing) existing.count += holding.quantity
-        else entries.set(detailKey, detail)
+        if (existing) {
+          existing.count += holding.quantity
+          if (detail.itemIds) existing.itemIds.push(...detail.itemIds)
+        } else entries.set(detailKey, detail)
       }
       return Object.fromEntries([...groups.entries()].map(([groupName, entries]) => [
         groupName,
@@ -326,6 +333,69 @@ export default function CollectionStatsPage() {
   if (loading) return <main className="collectionStatsPage"><section className="collectionStatsHero"><p role="status">Chargement de tes statistiques…</p></section></main>
   if (loadError) return <main className="collectionStatsPage"><section className="collectionStatsHero"><span className="collectionStatsEyebrow">En un coup d’œil</span><h1>Stats collection</h1><p role="alert">{loadError}</p><button type="button" className="btn" onClick={() => window.location.reload()}>Réessayer</button></section></main>
 
+  async function removeOneCopy(detail) {
+    const item = items.find(entry => detail.itemIds?.includes(entry.id))
+    if (!item || !activeProfileId || removingItemId) return
+
+    const quantity = Math.max(1, Number(item.quantity) || 1)
+    const lastCopy = quantity <= 1
+    const prompt = lastCopy
+      ? `Retirer « ${detail.name} » de ta collection ? C’est le dernier exemplaire de cette fiche.`
+      : `Retirer un exemplaire de « ${detail.name} » de ta collection ? Il en restera ${quantity - 1}.`
+    if (!window.confirm(prompt)) return
+
+    setRemovingItemId(item.id)
+    setCollectionActionMessage('')
+    try {
+      if (lastCopy) {
+        const { data: metadata, error: metadataError } = await supabase
+          .from('collection_items')
+          .select('photo_path')
+          .eq('id', item.id)
+          .eq('collection_profile_id', activeProfileId)
+          .maybeSingle()
+        if (metadataError) throw metadataError
+        if (!metadata) throw new Error('Cette fiche est introuvable dans la collection active.')
+
+        const { data: photos, error: photosError } = await supabase
+          .from('collection_item_photos')
+          .select('photo_path')
+          .eq('collection_item_id', item.id)
+        if (photosError) throw photosError
+        const photoPaths = [...new Set([metadata.photo_path, ...(photos || []).map(photo => photo.photo_path)].filter(Boolean))]
+        if (photoPaths.length) {
+          const { error: storageError } = await supabase.storage.from('collection-images').remove(photoPaths)
+          if (storageError) throw new Error(`Impossible de nettoyer les photos ; la fiche est conservée. ${storageError.message}`)
+        }
+
+        const { data: deleted, error: deleteError } = await supabase
+          .from('collection_items')
+          .delete()
+          .eq('id', item.id)
+          .eq('collection_profile_id', activeProfileId)
+          .select('id')
+          .maybeSingle()
+        if (deleteError) throw deleteError
+        if (!deleted) throw new Error('La fiche n’a pas pu être retirée de la collection active.')
+        setItems(current => current.filter(entry => entry.id !== item.id))
+        setCollectionActionMessage(`« ${detail.name} » a été retiré de ta collection.`)
+      } else {
+        const { error: updateError } = await supabase
+          .from('collection_items')
+          .update({ quantity: quantity - 1 })
+          .eq('id', item.id)
+          .eq('collection_profile_id', activeProfileId)
+        if (updateError) throw updateError
+        setItems(current => current.map(entry => entry.id === item.id ? { ...entry, quantity: quantity - 1 } : entry))
+        setCollectionActionMessage(`Un exemplaire de « ${detail.name} » a été retiré de ta collection.`)
+      }
+    } catch (error) {
+      setCollectionActionMessage(error?.message || 'Impossible de retirer cet exemplaire. Réessaie dans un instant.')
+    } finally {
+      setRemovingItemId(null)
+    }
+  }
+
   const distribution = (entries, detailsByGroup = null, detailLabel = 'groupe', linkForEntry = null) => entries.length
     ? <div className="collectionStatsBars">{entries.map(entry => {
       const hasDenominator = entry.total === undefined || entry.total !== null
@@ -362,7 +432,12 @@ export default function CollectionStatsPage() {
                     {detail.name}
                     {detail.type && <small style={{ display: 'block', marginTop: 3, color: '#65758b' }}>{detail.type}</small>}
                   </span>
-                  <strong style={{ flex: '0 0 auto', whiteSpace: 'nowrap' }}>{detail.count} / {entry.count} · {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(entry.count ? detail.count / entry.count * 100 : 0)} %</strong>
+                  <span style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
+                    <strong style={{ whiteSpace: 'nowrap' }}>{detail.count} / {entry.count} · {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(entry.count ? detail.count / entry.count * 100 : 0)} %</strong>
+                    {detail.itemIds?.length > 0 && <button type="button" className="miniBtn dangerMini" disabled={removingItemId !== null} onClick={() => removeOneCopy(detail)} aria-label={`Retirer un exemplaire de ${detail.name}`}>
+                      {removingItemId && detail.itemIds.includes(removingItemId) ? 'Retrait…' : 'Retirer 1 exemplaire'}
+                    </button>}
+                  </span>
                 </li>
               ))}
             </ul>
@@ -396,6 +471,7 @@ export default function CollectionStatsPage() {
       <section className="stats collectionStatsKpis" aria-label="Chiffres clés">
         {kpis.map(([label, count]) => <div key={label}><span>{label}</span><strong>{count}</strong></div>)}
       </section>
+      {collectionActionMessage && <p role="status" className="muted" style={{ margin: '12px 0' }}>{collectionActionMessage}</p>}
 
       {stats.copies === 0 ? (
         <section className="panel collectionStatsEmpty"><h2>{category === 'all' ? 'Ta collection commence ici' : 'Aucun élément dans cette rubrique'}</h2><p>{category === 'all' ? 'Les statistiques apparaîtront au fur et à mesure que ta collection se remplit.' : <>Cette rubrique est vide dans {profileName}. <a href="/collection/stats">Voir toutes les statistiques</a></>}</p></section>
