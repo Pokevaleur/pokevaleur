@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
 import styles from './page.module.css'
@@ -37,7 +37,8 @@ const FRENCH_SET_CODES = {
 
 function seriesLabel(set) {
   const code = (set?.set_code || '').toLowerCase()
-  const displayCode = FRENCH_SET_CODES[code] || (set?.set_code || '').toUpperCase()
+  const rawCode = set?.set_code || ''
+  const displayCode = FRENCH_SET_CODES[code] || (/^sv\d/i.test(rawCode) ? 'EV' + rawCode.slice(2).toUpperCase() : rawCode.toUpperCase())
   return (displayCode ? displayCode + ' — ' : '') + (set?.set_name || 'Série')
 }
 
@@ -63,6 +64,8 @@ export default function CardCataloguePage() {
   const [selection, setSelection] = useState({})
   const [saving, setSaving] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
+  const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
+  const seriesPickerRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -102,11 +105,25 @@ export default function CardCataloguePage() {
   }, [supabase])
 
   useEffect(() => {
-    if (!zoomedCard) return
-    const closeOnEscape = event => { if (event.key === 'Escape') setZoomedCard(null) }
+    if (!zoomedCard && !seriesPickerOpen) return
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') {
+        setZoomedCard(null)
+        setSeriesPickerOpen(false)
+      }
+    }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [zoomedCard])
+  }, [zoomedCard, seriesPickerOpen])
+
+  useEffect(() => {
+    if (!seriesPickerOpen) return
+    const closeOnOutsideClick = event => {
+      if (!seriesPickerRef.current?.contains(event.target)) setSeriesPickerOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
+  }, [seriesPickerOpen])
 
   useEffect(() => {
     if (!setId) {
@@ -249,11 +266,17 @@ export default function CardCataloguePage() {
       <section className={styles.selectionPanel} aria-label="Choix de la série et de la collection">
         <label className={styles.seriesField}>
           <span>Série</span>
-          <select value={setId} onChange={event => { setSetId(event.target.value); setFilterQuery(''); setSelection({}) }} disabled={loadingSets}>
-            <option value="">Choisir une série…</option>
-            <option value={ALL_SERIES}>Toutes les séries · rechercher</option>
-            {sets.map(set => <option value={set.id} key={set.id}>{seriesLabel(set)}</option>)}
-          </select>
+          <div className={styles.seriesPicker} ref={seriesPickerRef}>
+            <button type="button" className={styles.seriesPickerTrigger} aria-haspopup="listbox" aria-expanded={seriesPickerOpen} disabled={loadingSets} onClick={() => setSeriesPickerOpen(open => !open)}>
+              <span>{selectedSet ? seriesLabel(selectedSet) : setId === ALL_SERIES ? 'Toutes les séries · rechercher' : 'Choisir une série…'}</span>
+              <span className={styles.seriesPickerChevron} aria-hidden="true">▾</span>
+            </button>
+            {seriesPickerOpen && <div className={styles.seriesPickerOptions} role="listbox" aria-label="Séries du catalogue">
+              <button type="button" role="option" aria-selected={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>Choisir une série…</button>
+              <button type="button" role="option" aria-selected={setId === ALL_SERIES} className={setId === ALL_SERIES ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
+              {sets.map(set => <button type="button" role="option" aria-selected={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>{seriesLabel(set)}</button>)}
+            </div>}
+          </div>
         </label>
         {setId === ALL_SERIES && <label className={styles.searchField}>
           <span>Nom d’une carte</span>
