@@ -783,6 +783,7 @@ export default function CardChecklistPage() {
       <header className={styles.header}>
         <p className={styles.kicker}>Ma collection · Cartes</p>
         <h1>Mes cartes</h1>
+        {selectedSet && !cardsLoading && !isCatalogOnlySet && <p className={styles.ownedSummary}>{ownedCopyCount} exemplaire{ownedCopyCount === 1 ? '' : 's'} possédé{ownedCopyCount === 1 ? '' : 's'} · {ownedDistinctCardCount} carte{ownedDistinctCardCount === 1 ? '' : 's'} différente{ownedDistinctCardCount === 1 ? '' : 's'}</p>}
         <p>Choisis une série pour afficher tes cartes possédées, en double ou non possédées. Pour en ajouter, sélectionne-les dans le Catalogue.</p>
         <a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Choisir des cartes dans le Catalogue →</a>
       </header>
@@ -902,7 +903,6 @@ export default function CardChecklistPage() {
             </section>
           ) : (
           <section className={styles.progressCard} aria-label="Progression de la série">
-            <p className={styles.ownedSummary}>{ownedCopyCount} exemplaire{ownedCopyCount === 1 ? '' : 's'} possédé{ownedCopyCount === 1 ? '' : 's'} · {ownedDistinctCardCount} carte{ownedDistinctCardCount === 1 ? '' : 's'} différente{ownedDistinctCardCount === 1 ? '' : 's'}</p>
             <div className={styles.progressHeading}>
               <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>variantes possédées</span></div>
               <div><strong>{completedCardCount} / {cardsWithIncludedVariants.length}</strong><span>cartes complètes</span></div>
