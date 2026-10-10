@@ -228,6 +228,13 @@ export default function ProfilePage() {
           <div><dt>Adresse e-mail du compte</dt><dd>{email || 'Non renseignée'}</dd></div>
         </dl>
         <section className="profileEditPanel" style={{ margin: '20px 0', padding: 18, borderRadius: 16, background: '#f4f7fb' }}>
+          <h2 style={{ marginTop: 0, fontSize: 21 }}>PokéValeur sur ton téléphone</h2>
+          <p>Ajoute un raccourci à l’écran d’accueil pour retrouver ta collection avec une icône.</p>
+          <button className="btn ghost" type="button" onClick={() => window.dispatchEvent(new Event('pokevaleur-open-install-help'))}>
+            Comment ajouter le raccourci ?
+          </button>
+        </section>
+        <section className="profileEditPanel" style={{ margin: '20px 0', padding: 18, borderRadius: 16, background: '#f4f7fb' }}>
           <h2 style={{ marginTop: 0, fontSize: 21 }}>Accès sociaux</h2>
           {socialAccess === true ? (
             <div style={{ display: 'grid', gap: 12 }}>
