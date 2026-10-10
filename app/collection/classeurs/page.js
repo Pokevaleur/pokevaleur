@@ -221,7 +221,7 @@ function BindersContent() {
 
   const libraryMode = !selectedSet
   const [coverStart, coverEnd] = colorFor(selectedSet?.set_code)
-  const coverArt = selectedSet && etbImages[selectedSet.id]
+  const coverArt = selectedSet && (shortCode(selectedSet) === 'EV8' ? '/binder-covers/etincelles-deferlantes.svg' : etbImages[selectedSet.id])
   const profileName = profiles.find(profile => profile.id === profileId)?.display_name
     || (profiles.find(profile => profile.id === profileId)?.profile_type === 'child' ? 'Collection familiale' : 'Ma collection')
 
