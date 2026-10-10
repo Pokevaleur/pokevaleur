@@ -1,4 +1,4 @@
-create table public.user_activity_events (
+create table if not exists public.user_activity_events (
   id uuid primary key default pg_catalog.gen_random_uuid(),
   user_id uuid not null references auth.users(id) on delete cascade,
   transaction_key bigint not null default pg_catalog.txid_current(),
@@ -13,7 +13,7 @@ create table public.user_activity_events (
   created_at timestamptz not null default pg_catalog.now()
 );
 
-create index user_activity_events_user_created_idx
+create index if not exists user_activity_events_user_created_idx
   on public.user_activity_events(user_id, created_at desc);
 
 alter table public.user_activity_events enable row level security;
@@ -94,6 +94,7 @@ begin
 end;
 $$;
 
+drop trigger if exists capture_collection_card_activity on public.collection_cards;
 create trigger capture_collection_card_activity
 after insert or update or delete on public.collection_cards
 for each row execute function public.capture_collection_card_activity();
@@ -163,6 +164,7 @@ begin
 end;
 $$;
 
+drop trigger if exists capture_collection_item_activity on public.collection_items;
 create trigger capture_collection_item_activity
 after insert or update or delete on public.collection_items
 for each row execute function public.capture_collection_item_activity();
@@ -201,6 +203,7 @@ begin
 end;
 $$;
 
+drop trigger if exists capture_collection_profile_activity on public.collection_profiles;
 create trigger capture_collection_profile_activity
 after insert or delete on public.collection_profiles
 for each row execute function public.capture_collection_profile_activity();
