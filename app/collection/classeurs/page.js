@@ -11,7 +11,8 @@ function shortCode(set) {
   const match = code.match(/^(?:SWSH|EB|SV|EV|ME|SM|SL|XY|BW|DP|PL|HGSS)[\s-]*(\d+(?:\.\d+)?)([A-Z]*)$/)
   if (match) {
     const prefix = /^(?:SWSH|EB)/.test(code) ? 'EB' : /^(?:SV|EV|ME)/.test(code) ? 'EV' : /^SM/.test(code) ? 'SL' : (code.match(/^[A-Z]+/) || [''])[0]
-    return prefix + Number(match[1]) + match[2]
+    const number = Number(match[1])
+    return prefix + (prefix === 'EB' && number < 10 ? '0' : '') + number + match[2]
   }
   return code || 'SÉRIE'
 }
@@ -586,6 +587,11 @@ function BindersContent() {
         </header>
         {error && <p className={styles.error} role="alert">{error}</p>}
         {cardsLoading ? <p className={styles.status}>Chargement des cartes du classeur…</p> : <>
+          <nav className={styles.pageNav} aria-label="Navigation du classeur">
+            <button type="button" onClick={() => navigate({ open: true, page: Math.max(page - 1, 0) })} disabled={page === 0} aria-label="Double page précédente">←</button>
+            <span>{page + 1}/{totalSpreads}</span>
+            <button type="button" onClick={() => navigate({ open: true, page: Math.min(page + 1, totalSpreads - 1) })} disabled={page >= totalSpreads - 1} aria-label="Double page suivante">→</button>
+          </nav>
           <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(cardsPerSpread === 16 ? 'Page ' : 'Double page ') + (page + 1) + ' sur ' + totalSpreads}>
             {pageSides.map(side => <section key={side} className={styles.bookPage} aria-label={cardsPerSpread === 16 ? 'Page du classeur' : side === 0 ? 'Page de gauche' : 'Page de droite'}>
               <div className={styles.pageTop}><span>{shortCode(selectedSet)}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
@@ -628,11 +634,6 @@ function BindersContent() {
               <div className={styles.pageFooter}><span>{profileName}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}/{totalBookPages}</span></div>
             </section>)}
           </section>
-          <nav className={styles.pageNav} aria-label="Navigation du classeur">
-            <button type="button" onClick={() => navigate({ open: true, page: Math.max(page - 1, 0) })} disabled={page === 0} aria-label="Double page précédente">←</button>
-            <span>{page + 1}/{totalSpreads}</span>
-            <button type="button" onClick={() => navigate({ open: true, page: Math.min(page + 1, totalSpreads - 1) })} disabled={page >= totalSpreads - 1} aria-label="Double page suivante">→</button>
-          </nav>
         </>}
       </>}
       {zoomedCard && <CardCopyDialog supabase={supabase} user={user} profileId={profileId} card={zoomedCard}
