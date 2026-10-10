@@ -272,6 +272,8 @@ export default function AdminPage() {
 
       <section className="panel partnerAdminShortcut"><div><span className="eyebrow dark">PARTENAIRES</span><h2>Cadeaux du coffre de Lukulu</h2><p className="muted">Crée les campagnes partenaires, importe leurs codes et surveille les stocks disponibles.</p></div><a className="btn" href="/admin-partenaires">Gérer les partenaires</a></section>
 
+      <section className="panel partnerAdminShortcut"><div><span className="eyebrow dark">CARTES</span><h2>Séries du catalogue</h2><p className="muted">Vérifie le nom affiché, le périmètre du Master Set et la publication des séries de cartes.</p></div><a className="btn" href="/admin/catalogue-cartes">Gérer le catalogue cartes</a></section>
+
       <section className="adminStats">
         <div><span>Produits</span><strong>{products.length}</strong></div>
         <div><span>Sans cote</span><strong>{noPrice.length}</strong></div>

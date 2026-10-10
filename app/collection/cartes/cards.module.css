@@ -244,6 +244,15 @@
 .masterVariantChoiceOwned { border-color:#d7e6d9; background:#f2f8f2; color:#53675a; cursor:default; }
 .masterVariantChoiceOwned input { accent-color:#36834a; }
 .seriesPrompt { margin:16px 0; padding:16px; border:1px dashed #c7d2e1; border-radius:12px; background:#f8fafc; color:#43546a; }
+.collectionCatalogueLink { display:inline-flex; align-items:center; min-height:40px; margin-top:12px; padding:8px 14px; border-radius:10px; background:#102f50; color:#fff; font-size:.84rem; font-weight:800; text-decoration:none; }
+.collectionCatalogueLink:hover { background:#17466f; }
+.ownedVariantList { min-width:0; display:flex; flex-wrap:wrap; justify-content:flex-end; gap:6px; }
+.ownedVariantRow { display:inline-flex; align-items:center; gap:8px; min-height:34px; padding:5px 9px; border:1px solid #dce3eb; border-radius:8px; background:#fff; color:#34455a; font-size:.76rem; }
+.ownedVariantRow strong { font-size:.72rem; }
+.ownedQuantity { color:#236746; }
+.missingQuantity { color:#8994a1; font-weight:600; }
+.emptyCollection { display:grid; justify-items:center; gap:3px; padding:24px 14px; color:#637287; text-align:center; }
+.emptyCollection p { margin:0; }
 @media (max-width: 720px) {
   .masterChecklistCard { grid-template-columns:minmax(0,1fr); gap:9px; padding:10px; }
   .masterChecklistHead { grid-template-columns:58px minmax(0,1fr); gap:10px; align-items:start; }
@@ -252,6 +261,6 @@
   .masterChecklistNumber { font-size:.78rem; }
   .masterChecklistName { font-size:.92rem; }
   .masterChecklistRarity { font-size:.74rem; }
-  .masterVariantChoices { justify-content:flex-start; }
+  .masterVariantChoices,.ownedVariantList { justify-content:flex-start; }
   .masterVariantChoice { min-height:36px; padding:5px 8px; }
 }
