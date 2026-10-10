@@ -252,6 +252,10 @@
 .ownedVariantRow strong { font-size:.72rem; }
 .ownedQuantity { color:#236746; }
 .missingQuantity { color:#8994a1; font-weight:600; }
+.removeCopyButton { width:32px; height:32px; padding:0; border:1px solid #dce3eb; border-radius:50%; background:#f5f7fa; color:#536276; font:inherit; font-size:1.05rem; font-weight:700; line-height:1; cursor:pointer; touch-action:manipulation; }
+.removeCopyButton:hover:not(:disabled) { border-color:#b95151; background:#fff1f1; color:#a53232; }
+.removeCopyButton:disabled { opacity:.45; cursor:wait; }
+.removeCopyButton:focus-visible { outline:3px solid #e7b929; outline-offset:2px; }
 .emptyCollection { display:grid; justify-items:center; gap:3px; padding:24px 14px; color:#637287; text-align:center; }
 .emptyCollection p { margin:0; }
 @media (max-width: 720px) {
