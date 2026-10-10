@@ -63,7 +63,22 @@ export default function CollectionPage() {
   const addItemPendingRef = useRef(false)
   const [photoUploadState, setPhotoUploadState] = useState({})
   const [collectionVoiceListening, setCollectionVoiceListening] = useState(false)
+  const [quickFormatFilter, setQuickFormatFilter] = useState('')
   const activeCollectionProfile = collectionProfiles.find(profile => profile.id === activeProfileId)
+
+  async function addCaseUnitTypes(productRows) {
+    const typeById = new Map((productRows || []).map(product => [product.id, product.product_type]))
+    const missingIds = [...new Set((productRows || []).map(product => product.case_unit_product_id).filter(id => id && !typeById.has(id)))]
+    for (let offset = 0; offset < missingIds.length; offset += 100) {
+      const { data, error } = await supabase.from('products').select('id,product_type')
+        .eq('is_public', true).in('id', missingIds.slice(offset, offset + 100))
+      if (!error) for (const product of data || []) typeById.set(product.id, product.product_type)
+    }
+    return (productRows || []).map(product => ({
+      ...product,
+      case_unit_product_type: typeById.get(product.case_unit_product_id) || product.case_unit_product_type || ''
+    }))
+  }
 
   const editPhotoUploadStatus = photoUploadState[editingId]?.status
   useEffect(() => {
@@ -183,13 +198,15 @@ export default function CollectionPage() {
       for (let offset = 0; offset < productIds.length; offset += 100) {
         const { data: products, error: productsError } = await supabase
           .from('products')
-          .select('id,name,series,category,current_value,zero_defect_value,image_url')
+          .select('id,name,series,category,product_type,case_unit_product_id,current_value,zero_defect_value,image_url')
           .eq('is_public', true)
           .in('id', productIds.slice(offset, offset + 100))
         if (!productsError) linkedProducts.push(...(products || []))
         if (!isCurrentRequest()) return
       }
-      setCatalog(linkedProducts)
+      const enrichedLinkedProducts = await addCaseUnitTypes(linkedProducts)
+      if (!isCurrentRequest()) return
+      setCatalog(enrichedLinkedProducts)
 
       const signedEntries = await Promise.all(
         rows
@@ -312,7 +329,7 @@ export default function CollectionPage() {
     const timeout = setTimeout(async () => {
       if (!catalogIndexRef.current) {
         catalogIndexRef.current = fetchAllRows(() => supabase.from('products')
-          .select('id,name,series,category,product_type,current_value,zero_defect_value')
+          .select('id,name,series,category,product_type,case_unit_product_id,current_value,zero_defect_value')
           .eq('is_public', true).order('name').order('id'))
       }
       const { data, error } = await catalogIndexRef.current
@@ -322,7 +339,9 @@ export default function CollectionPage() {
         setCatalogError('La recherche est indisponible. Réessaie en modifiant ta recherche.')
         setCatalogMatches([])
       } else {
-        const matches = data.filter(createProductMatcher(searchTerm))
+        const searchableProducts = await addCaseUnitTypes(data || [])
+        if (!active) return
+        const matches = searchableProducts.filter(createProductMatcher(searchTerm))
         setCatalogMatches(matches)
         setCatalog(previous => {
           const byId = new Map(previous.map(product => [product.id, product]))
@@ -346,7 +365,7 @@ export default function CollectionPage() {
     let active = true
     async function preselect() {
       const { data: product, error } = await supabase.from('products')
-        .select('id,name,series,category,product_type,current_value,zero_defect_value')
+.select('id,name,series,category,product_type,case_unit_product_id,current_value,zero_defect_value')
         .eq('is_public', true).eq('id', productId).maybeSingle()
       if (!active) return
       preselectedProductRef.current = productId
@@ -354,9 +373,11 @@ export default function CollectionPage() {
         setMessage('Ce produit n’est plus disponible dans le catalogue. Tu peux le rechercher ou saisir son nom.')
         return
       }
-      setForm(previous => ({ ...previous, product_id: product.id, custom_name: product.name, current_value_override: '' }))
-      setCatalogQuery(product.name)
-      setCatalog(previous => [...previous.filter(item => item.id !== product.id), product])
+      const [enrichedProduct] = await addCaseUnitTypes([product])
+      if (!active) return
+      setForm(previous => ({ ...previous, product_id: enrichedProduct.id, custom_name: enrichedProduct.name, current_value_override: '' }))
+      setCatalogQuery(enrichedProduct.name)
+      setCatalog(previous => [...previous.filter(item => item.id !== enrichedProduct.id), enrichedProduct])
       document.getElementById('ajouter-produit')?.scrollIntoView({ block: 'start' })
     }
     preselect()
@@ -764,7 +785,7 @@ export default function CollectionPage() {
   const { invested, current, difference, evolution: percent, missingPurchaseCount } = calculateCollectionStatistics(items, getCurrentValue)
 
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
-  const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter)
+  const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter, quickFormatFilter)
   const inventoryCounts = calculateCollectionItemCounts(items, catalog)
   const sealedItemCount = inventoryCounts.sealed
   const otherItemCount = inventoryCounts.other
@@ -841,14 +862,14 @@ export default function CollectionPage() {
                 aria-label="Rechercher dans ma collection"
                 placeholder="Nom, série, vendeur…"
                 value={query}
-                onChange={e => setQuery(e.target.value)}
+                onChange={e => { setQuery(e.target.value); setQuickFormatFilter('') }}
               />
               <button
                 type="button"
                 className={collectionVoiceListening ? 'voiceSearchButton listening' : 'voiceSearchButton'}
                 aria-label="Rechercher à la voix"
                 title="Recherche vocale"
-                onClick={() => startVoiceSearch(setQuery, setCollectionVoiceListening)}
+                onClick={() => startVoiceSearch(value => { setQuery(value); setQuickFormatFilter('') }, setCollectionVoiceListening)}
               >
                 {collectionVoiceListening ? '🎙️' : '🎤'}
               </button>
@@ -862,6 +883,7 @@ export default function CollectionPage() {
               className="catalogExample"
               onClick={() => {
                 setQuery(format)
+                setQuickFormatFilter(format)
                 setShowCollectionItems(true)
               }}
             >
@@ -878,7 +900,7 @@ export default function CollectionPage() {
             <option value="standard">État standard</option>
           </select>
         </label>
-        {hasCollectionSearch && <button type="button" className="miniBtn" onClick={() => { setQuery(''); setConditionFilter('all') }}>Effacer</button>}
+        {hasCollectionSearch && <button type="button" className="miniBtn" onClick={() => { setQuery(''); setQuickFormatFilter(''); setConditionFilter('all') }}>Effacer</button>}
         </div>
         <p className="muted collectionSearchStatus" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Saisis un nom ou choisis un filtre.'}</p>
       </section>

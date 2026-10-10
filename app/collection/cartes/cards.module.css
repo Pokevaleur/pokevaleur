@@ -59,8 +59,8 @@
 .copyMissing { margin-left:auto; border-color:#173c84; background:#173c84; color:#fff; font-weight:750; }
 .copyMissing:disabled { opacity:.5; cursor:not-allowed; }
 .stampToggle input, .checkboxLine input { width:20px; height:20px; accent-color:#f5b21a; }
-.cardGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
-.card { min-width:0; padding:16px; border:1px solid #dce2e9; border-radius:18px; background:#fff; box-shadow:0 5px 18px #18304b08; }
+.cardGrid { display:grid; grid-template-columns:1fr; gap:10px; }
+.card { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.25fr); align-items:start; gap:14px; min-width:0; padding:14px 16px; border:1px solid #dce2e9; border-radius:14px; background:#fff; box-shadow:0 3px 12px #18304b08; }
 .cardTop { display:grid; grid-template-columns:104px minmax(0,1fr); align-items:start; gap:14px; }
 .artFrame { position:relative; overflow:hidden; display:grid; place-items:center; min-height:144px; border-radius:10px; background:linear-gradient(145deg,#e5efff,#fff1cf); color:#637187; }
 .artFrame img { position:absolute; inset:0; width:100%; height:100%; object-fit:contain; }
@@ -128,6 +128,8 @@
 .resultCount strong { color:#173c84; }
 @media (max-width:760px) {
   .cardGrid { grid-template-columns:1fr; }
+  .card { grid-template-columns:1fr; gap:10px; }
+  .variantList { margin-top:0; }
   .page { width:min(calc(100% - 24px), 620px); padding-top:18px; }
 }
 @media (max-width:520px) {
@@ -143,8 +145,19 @@
   .percent { font-size:1.3rem !important; }
 }
 
-.artZoomButton { position:absolute; inset:0; z-index:1; display:block; width:100%; height:100%; padding:0; border:0; background:transparent; cursor:zoom-in; }
-.artZoomButton:focus-visible { outline:3px solid #173c84; outline-offset:-3px; border-radius:10px; }
+.cardImageSelect { position:absolute; inset:0; z-index:1; display:block; width:100%; height:100%; padding:0; border:2px solid transparent; border-radius:10px; background:transparent; cursor:pointer; }
+.cardImageSelect[aria-pressed="true"] { border-color:#173c84; box-shadow:inset 0 0 0 3px #ffffffb8; }
+.cardImageSelect:focus-visible, .cardNameSelect:focus-visible { outline:3px solid #173c84; outline-offset:2px; border-radius:6px; }
+.cardImageSelect:disabled, .cardNameSelect:disabled { cursor:default; opacity:.72; }
+.artZoomButton { position:absolute; top:6px; right:6px; z-index:3; display:grid; place-items:center; width:30px; height:30px; padding:0; border:0; border-radius:50%; background:transparent; cursor:zoom-in; }
+.artZoomButton:focus-visible { outline:3px solid #173c84; outline-offset:2px; border-radius:50%; }
+.artZoomButton .zoomHint { position:static; display:grid; place-items:center; width:28px; height:28px; padding:0; border:1px solid #ffffff60; border-radius:50%; background:#071c32d9; color:#fff; }
+.cardSelectCheckbox { display:flex; align-items:center; gap:6px; margin:2px 0 7px; color:#173c84; font-size:.78rem; font-weight:750; cursor:pointer; }
+.cardSelectCheckbox input { width:18px; height:18px; accent-color:#173c84; }
+.cardNameSelect { display:inline; padding:0; border:0; background:transparent; color:inherit; font:inherit; line-height:inherit; text-align:left; cursor:pointer; }
+.cardNameSelect:hover:not(:disabled) { color:#173c84; text-decoration:underline; }
+.cardNameSelect:disabled { cursor:default; }
+.variantList { margin-top:0; }
 .artFrame > span { pointer-events:none; z-index:2; }
 .artFrame > .zoomHint { top:6px; right:6px; bottom:auto; left:auto; width:28px; height:28px; display:grid; place-items:center; padding:0; border:1px solid #ffffff60; border-radius:50%; background:#071c32d9; color:#fff; }
 .zoomHint svg { display:block; width:16px; height:16px; }
@@ -188,3 +201,21 @@
   line-height: 1.8;
   overflow-wrap: anywhere;
 }
+
+.bulkToolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d9e2f2;
+  border-radius: 12px;
+  background: #f5f8ff;
+}
+.bulkToolbar p { flex: 1 1 100%; margin: 0 0 2px; color: #42546b; font-size: .9rem; }
+.bulkToolbar button { min-height: 40px; padding: 8px 12px; border: 1px solid #cbd4df; border-radius: 9px; background: #fff; color: #30445b; font: inherit; font-size: .86rem; font-weight: 700; cursor: pointer; }
+.bulkToolbar button:disabled { opacity: .5; cursor: not-allowed; }
+.bulkToolbar .bulkAddButton { border-color: #173c84; background: #173c84; color: #fff; }
+.bulkCheckbox { flex: none; display: inline-flex; align-items: center; gap: 5px; color: #173c84; font-size: .76rem; font-weight: 700; cursor: pointer; }
+.bulkCheckbox input { width: 18px; height: 18px; accent-color: #173c84; }
