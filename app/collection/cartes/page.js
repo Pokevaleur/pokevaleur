@@ -299,7 +299,7 @@ export default function CardChecklistPage() {
   const [selectedCardTypes, setSelectedCardTypes] = useState([])
   const [selectedElementTypes, setSelectedElementTypes] = useState([])
   const [selectedVersions, setSelectedVersions] = useState([])
-  const [collectionFilter, setCollectionFilter] = useState('all')
+  const [collectionFilter, setCollectionFilter] = useState('owned')
   const [checklistFilter, setChecklistFilter] = useState('main')
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
@@ -343,7 +343,7 @@ export default function CardChecklistPage() {
       const requestedRarity = params.get('rarity') || ''
       const requestedChecklist = params.get('checklist')
       setRarity(requestedRarity ? requestedRarity.split(',').map(rarityKey).filter(Boolean) : [])
-      const requestedCollectionFilter = params.get('collection') || (params.get('owned') === '1' ? 'owned' : 'all')
+      const requestedCollectionFilter = params.get('collection') || 'owned'
       if (['all', 'owned', 'missing', 'duplicates'].includes(requestedCollectionFilter)) setCollectionFilter(requestedCollectionFilter)
       if (['main', 'promos', 'stamps', 'all'].includes(requestedChecklist)) setChecklistFilter(requestedChecklist)
       setLoading(true)
@@ -523,7 +523,7 @@ export default function CardChecklistPage() {
     return targets.some(variant => matchesVariantCollectionFilter(variant, filter))
   }
 
-  const visibleCards = baseFilteredCards
+  const visibleCards = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
   const missingCardsForCopy = useMemo(
     () => baseFilteredCards.filter(card => matchesCollectionFilter(card, 'missing')),
     [baseFilteredCards, owned, checklistFilter, selectedVersions]
@@ -777,9 +777,10 @@ export default function CardChecklistPage() {
         <span className={styles.privateBadge}>Espace membre</span>
       </div>
       <header className={styles.header}>
-        <p className={styles.kicker}>Checklist de série</p>
-        <h1>Checklist cartes</h1>
-        <p>Marque tes cartes, repère les manquantes et filtre par numéro, rareté, type ou version.</p>
+        <p className={styles.kicker}>Ma collection · Cartes</p>
+        <h1>Mes cartes possédées</h1>
+        <p>Consulte les impressions que tu possèdes et le nombre d’exemplaires. Pour ajouter une carte ou une variante, sélectionne-la dans le Catalogue.</p>
+        <a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Choisir des cartes dans le Catalogue →</a>
       </header>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
@@ -899,20 +900,13 @@ export default function CardChecklistPage() {
               <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Numéro ou nom…" />
             </label>
             <p className={styles.scope}>
-              {masterSetCards.length} carte{masterSetCards.length > 1 ? 's' : ''} dans le Master Set. Coche les cartes à ajouter, puis valide.
+              {visibleCards.length} carte{visibleCards.length > 1 ? 's' : ''} affichée{visibleCards.length > 1 ? 's' : ''} selon le filtre. Les ajouts se font depuis le Catalogue.
             </p>
-            {!isCatalogOnlySet && <div className={styles.bulkToolbar} role="group" aria-label="Ajout des cartes sélectionnées">
-              <p aria-live="polite">{selectedCardCount} carte{selectedCardCount > 1 ? 's' : ''} sélectionnée{selectedCardCount > 1 ? 's' : ''} · {selectedVariantCount} variante{selectedVariantCount > 1 ? 's' : ''}</p>
-              <button type="button" className={styles.bulkAddButton} disabled={!selectedVariantCount || savingBulk} onClick={addSelectedVariants}>
-                {savingBulk ? 'Ajout en cours…' : 'Ajouter à ma collection' + (selectedCardCount ? ' · ' + selectedCardCount : '')}
-              </button>
-              {!!selectedVariantIds.length && <button type="button" className={styles.bulkClearButton} disabled={savingBulk} onClick={() => setSelectedVariantIds([])}>Effacer la sélection</button>}
-            </div>}
           </section>
 
           {cardsLoading ? <p className={styles.status}>Chargement des cartes…</p> : (
             <section className={styles.masterChecklist} aria-label="Liste complète des cartes du Master Set">
-              {!visibleCards.length && <p className={styles.empty}>{query.trim() ? 'Aucune carte ne correspond à cette recherche.' : isCatalogOnlySet ? 'Aucune carte dans cette série.' : 'Aucune carte du Master Set n’est répertoriée pour cette série.'}</p>}
+              {!visibleCards.length && <div className={styles.emptyCollection}><p>{query.trim() ? 'Aucune carte ne correspond à cette recherche.' : collectionFilter === 'owned' ? 'Aucune carte de cette série dans cette collection pour le moment.' : 'Aucune carte ne correspond à ce filtre.'}</p><a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Ajouter des cartes depuis le Catalogue →</a></div>}
               {visibleCards.map(card => {
                 const targetVariants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
                 const cardImage = imageUrl(card)
@@ -936,16 +930,14 @@ export default function CardChecklistPage() {
                     </div>
                   </div>
                   {targetVariants.length ? (
-                    <div className={styles.masterVariantChoices} role="group" aria-label={'Versions à ajouter pour ' + card.card_name}>
+                    <div className={styles.ownedVariantList} aria-label={'Versions possédées de ' + card.card_name}>
                       {targetVariants.map(variant => {
-                        const alreadyOwned = (owned[variant.id] || []).length > 0
-                        const isSelected = selectedVariantIds.includes(variant.id)
+                        const quantity = (owned[variant.id] || []).length
                         const label = variant.variant_label || variant.variant_key || variant.finish_code || 'Version'
-                        return <label className={styles.masterVariantChoice + (alreadyOwned ? ' ' + styles.masterVariantChoiceOwned : '')} key={variant.id}>
-                          <input type="checkbox" checked={alreadyOwned || isSelected} disabled={alreadyOwned || savingBulk} onChange={() => toggleVariantSelection(variant)} />
+                        return <div className={styles.ownedVariantRow} key={variant.id}>
                           <span>{label}</span>
-                          {alreadyOwned && <small>Déjà ajoutée</small>}
-                        </label>
+                          <strong className={quantity ? styles.ownedQuantity : styles.missingQuantity}>{quantity ? quantity + ' ex.' : 'Non possédée'}</strong>
+                        </div>
                       })}
                     </div>
                   ) : <p className={styles.masterChecklistStatus}>Aucune variante de Master Set répertoriée.</p>}
