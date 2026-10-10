@@ -57,7 +57,7 @@
 .pageTop,.pageFooter { display:flex; justify-content:space-between; gap:8px; color:#8b7757; font-size:.67rem; font-weight:800; letter-spacing:.08em; text-transform:uppercase; }
 .pageTop { padding:0 2px 8px; border-bottom:1px solid #e5e0d6; }
 .pageFooter { padding:8px 2px 0; border-top:1px solid #e5e0d6; letter-spacing:.03em; text-transform:none; }
-.cardSlots { display:grid; flex:1; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(112px,1fr)); gap:8px; padding:10px 0; }
+.cardSlots { display:grid; flex:1; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(2,minmax(112px,1fr)); gap:8px; padding:10px 0; }
 .slot,.slotOwned { position:relative; display:flex; min-width:0; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; padding:5px; border:1px dashed #c9cbd0; border-radius:7px; background:linear-gradient(135deg,#f0f1f2,#e8e9eb); text-align:center; }
 .slotOwned { border:1px solid #e1d5b4; background:linear-gradient(145deg,#fffdf7,#fbf5e7); box-shadow:0 2px 5px #24344a0b; }
 .thumb { position:relative; width:100%; height:clamp(68px,9vw,128px); display:grid; place-items:center; overflow:hidden; border-radius:4px; background:#fff; }
@@ -83,7 +83,7 @@
  .openHeader { align-items:start; flex-direction:column; gap:8px; }
  .spread { gap:7px; padding:7px; border-radius:14px; }
  .bookPage { padding:6px; }
- .cardSlots { grid-template-rows:repeat(3,minmax(75px,1fr)); gap:4px; padding:7px 0; }
+ .cardSlots { grid-template-rows:repeat(2,minmax(75px,1fr)); gap:4px; padding:7px 0; }
  .thumb { height:clamp(44px,17vw,84px); }
  .pageFooter { font-size:.58rem; }
  .pageTop { font-size:.58rem; }
