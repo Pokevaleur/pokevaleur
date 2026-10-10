@@ -108,8 +108,8 @@
  .bookPage:nth-child(2) .pageFooter { grid-column:1/-1; }
  .pageTop { margin:0; padding:0 2px 6px; font-size:.58rem; }
  .pageFooter { padding:6px 2px 0; font-size:.56rem; }
- .slot,.slotOwned { min-height:68px; padding:3px; border-radius:6px; }
- .thumb { height:50px; max-height:50px; }
+ .slot,.slotOwned { min-height:84px; padding:3px; border-radius:6px; }
+ .thumb { height:66px; max-height:66px; }
  .cardName { margin-top:2px; font-size:.5rem; line-height:1.05; }
  .cardNumber { font-size:.48rem; }
  .emptyNumber { width:20px; height:20px; font-size:.55rem; }
