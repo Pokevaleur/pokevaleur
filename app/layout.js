@@ -1,5 +1,6 @@
 import './styles.css'
 import SiteHeader from './site-header'
+import InstallPrompt from './install-prompt'
 
 export const viewport = {
   width: 'device-width',
@@ -9,6 +10,7 @@ export const viewport = {
 
 export const metadata = {
   title: 'PokéValeur',
+  manifest: '/manifest.json',
   description: 'Suivez, estimez et organisez votre collection de cartes et produits scellés.'
 }
 
@@ -43,6 +45,7 @@ export default function RootLayout({ children }) {
     <html lang="fr">
       <body>
         <SiteHeader links={navLinks} />
+        <InstallPrompt />
 
         {children}
 
