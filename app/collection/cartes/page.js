@@ -633,6 +633,17 @@ export default function CardChecklistPage() {
     if (user) window.localStorage.setItem('pokevaleur-collection:' + user.id, nextProfileId)
   }
 
+  function toggleCardSelection(variants) {
+    const missingIds = variants
+      .filter(variant => isProgressTarget(variant) && !(owned[variant.id] || []).length)
+      .map(variant => variant.id)
+    if (!missingIds.length || savingBulk) return
+    const allSelected = missingIds.every(id => selectedVariantIds.includes(id))
+    setSelectedVariantIds(current => allSelected
+      ? current.filter(id => !missingIds.includes(id))
+      : [...new Set([...current, ...missingIds])])
+  }
+
   async function changeRawCopies(variant, action) {
     const copies = owned[variant.id] || []
     const rawCopies = copies.filter(copy => copy.ownership_type === 'raw')
@@ -961,7 +972,7 @@ export default function CardChecklistPage() {
             {!isAllSeriesSelected && !isCatalogOnlySet && <div className={styles.bulkToolbar} role="group" aria-label="Ajout groupé à ma collection">
               <p>{selectedVariantIds.length
                 ? selectedVariantIds.length + ' variante' + (selectedVariantIds.length > 1 ? 's sélectionnées' : ' sélectionnée')
-                : 'Coche une ou plusieurs variantes manquantes, puis valide leur ajout.'}</p>
+                : 'Coche une carte, touche son nom ou son image, ou choisis ses variantes une par une ; valide ensuite l’ajout.'}</p>
               <button type="button" className={styles.bulkSelectButton} disabled={!visibleMissingVariantIds.length || savingBulk} onClick={() => {
                 const allSelected = visibleMissingVariantIds.length > 0 && visibleMissingVariantIds.every(id => selectedVariantIds.includes(id))
                 setSelectedVariantIds(current => allSelected
@@ -1000,21 +1011,29 @@ export default function CardChecklistPage() {
               <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's' : ''} affichée{visibleCards.length > 1 ? 's' : ''} · <strong>{visibleOwnedVariantCount} / {visibleTargetVariants.length}</strong> variantes possédées</p>
               {visibleCards.map(card => {
                 const cardVariants = (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter))
+                const selectableVariants = cardVariants.filter(variant => isProgressTarget(variant) && !(owned[variant.id] || []).length)
+                const cardSelectionActive = selectableVariants.length > 0 && selectableVariants.every(variant => selectedVariantIds.includes(variant.id))
                 return (
                   <article className={styles.card} key={card.id}>
                     <div className={styles.cardTop}>
                       <div className={styles.artFrame}>
-                        <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })}>
-                          <img src={imageUrl(card)} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => {
+                        <button type="button" className={styles.cardImageSelect} aria-label={(cardSelectionActive ? 'Désélectionner' : 'Sélectionner') + ' les variantes manquantes de ' + card.card_name} aria-pressed={cardSelectionActive} disabled={!selectableVariants.length || savingBulk} onClick={() => toggleCardSelection(cardVariants)}>
+                          <img src={imageUrl(card)} alt={card.card_name} loading="lazy" onError={event => {
                             event.currentTarget.style.display = 'none'
                             event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true'
                           }} />
                         </button>
-                        <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
+                        <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })}>
+                          <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
+                        </button>
                       </div>
                       <div className={styles.cardHeading}>
                         <span className={styles.number}>N° {card.collector_number}</span>
-                        <h2>{card.card_name}</h2>
+                        <label className={styles.cardSelectCheckbox}>
+                          <input type="checkbox" checked={cardSelectionActive} disabled={!selectableVariants.length || savingBulk} onChange={() => toggleCardSelection(cardVariants)} />
+                          <span>Sélectionner la carte</span>
+                        </label>
+                        <h2><button type="button" className={styles.cardNameSelect} aria-pressed={cardSelectionActive} disabled={!selectableVariants.length || savingBulk} onClick={() => toggleCardSelection(cardVariants)}>{card.card_name}</button></h2>
                         <p className={styles.rarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</p>
                         {card.mechanic_label && <small>{card.mechanic_label}</small>}
                       </div>
