@@ -160,14 +160,18 @@ export default function CardCataloguePage() {
         if (loadError) throw loadError
         if (cancelled) return
         const cardRows = rows || []
-        const variantIds = cardRows.flatMap(card => (card.card_print_variants || []).map(variant => variant.id))
+        const variantIds = Array.from(new Set(cardRows.flatMap(card => (card.card_print_variants || []).map(variant => variant.id))))
         let copyRows = []
         if (profileId && variantIds.length) {
-          const { data, error: copyError } = await fetchAllRows(() => supabase.from('collection_cards')
-            .select('id,card_print_variant_id,ownership_type,grade,grade_label')
-            .eq('collection_profile_id', profileId).in('card_print_variant_id', variantIds))
-          if (copyError) throw copyError
-          copyRows = data || []
+          // Keep the URL for each PostgREST .in() request short enough for mobile networks and proxies.
+          for (let offset = 0; offset < variantIds.length; offset += 100) {
+            const variantBatch = variantIds.slice(offset, offset + 100)
+            const { data, error: copyError } = await fetchAllRows(() => supabase.from('collection_cards')
+              .select('id,card_print_variant_id,ownership_type,grade,grade_label')
+              .eq('collection_profile_id', profileId).in('card_print_variant_id', variantBatch))
+            if (copyError) throw copyError
+            copyRows.push(...(data || []))
+          }
         }
         const ownership = {}
         for (const copy of copyRows) {
