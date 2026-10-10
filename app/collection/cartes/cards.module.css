@@ -275,3 +275,8 @@
 .collectionCardFilter { background:#fff; color:#263549; }
 .collectionCardFilter:hover { border-color:#8b6c2c; }
 .collectionCardFilterActive { background:#173654; border-color:#173654; color:#fff; }
+
+.scopeDetails { margin-top:8px; color:#8994a1; font-size:.72rem; }
+.scopeDetails summary { display:inline-block; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+.scopeDetails summary::marker { color:#aab2bc; }
+.scopeDetails .scope { margin:8px 0 0; }
