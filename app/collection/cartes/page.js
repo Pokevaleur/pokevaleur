@@ -545,6 +545,10 @@ export default function CardChecklistPage() {
   const targetVariants = cards.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
   const cardsWithProgressTargets = cards.filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target))
   const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
+  const ownedCopyCount = Object.values(owned).reduce((sum, copies) => sum + copies.length, 0)
+  const ownedDistinctCardCount = cardsWithProgressTargets.filter(card =>
+    (card.card_print_variants || []).some(variant => variant.is_master_set_target && (owned[variant.id] || []).length > 0)
+  ).length
   const completedCardCount = cardsWithProgressTargets.filter(card => {
     const targets = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
     return targets.every(variant => (owned[variant.id] || []).length > 0)
@@ -898,15 +902,16 @@ export default function CardChecklistPage() {
             </section>
           ) : (
           <section className={styles.progressCard} aria-label="Progression de la série">
+            <p className={styles.ownedSummary}>{ownedCopyCount} exemplaire{ownedCopyCount === 1 ? '' : 's'} possédé{ownedCopyCount === 1 ? '' : 's'} · {ownedDistinctCardCount} carte{ownedDistinctCardCount === 1 ? '' : 's'} différente{ownedDistinctCardCount === 1 ? '' : 's'}</p>
             <div className={styles.progressHeading}>
-              <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>variantes du checklist possédées</span></div>
-              <div><strong>{completedCardCount} / {cardsWithIncludedVariants.length}</strong><span>cartes complétées</span></div>
+              <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>variantes possédées</span></div>
+              <div><strong>{completedCardCount} / {cardsWithIncludedVariants.length}</strong><span>cartes complètes</span></div>
               <strong className={styles.percent}>{completion}%</strong>
             </div>
             <div className={styles.progressTrack} role="progressbar" aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100" aria-label="Progression de la checklist">
               <span style={{ width: completion + '%' }} />
             </div>
-            <p className={styles.scope}>{selectedSet.checklist_scope_note} Une carte est comptée une seule fois dans la liste ; les variantes (normale, reverse, tamponnée…) sont comptées séparément dans la progression.</p>
+            <p className={styles.scope}>{selectedSet.checklist_scope_note} Les variantes (Normale, Reverse, tamponnée…) comptent séparément. Une carte est complète seulement lorsque toutes ses variantes sont possédées.</p>
           </section>
           )}
 

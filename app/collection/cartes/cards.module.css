@@ -42,6 +42,7 @@
 .seriesPickerOptionActive { background:#e9efff; color:#172d69; font-weight:750; }
 .adminNote { grid-column:1 / -1; margin:0; color:#735c1d; font-size:.92rem; }
 .progressCard { padding:18px; border-radius:18px; background:#fff; border:1px solid #dce2e9; }
+.ownedSummary { padding:9px 12px; margin:0 0 12px; border-radius:10px; background:#f3f6fa; color:#425267; font-size:.87rem; font-weight:750; }
 .progressHeading { display:flex; align-items:center; gap:22px; }
 .progressHeading div { display:flex; flex-direction:column; gap:3px; }
 .progressHeading strong { font-size:1.2rem; }
