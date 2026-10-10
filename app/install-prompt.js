@@ -50,7 +50,6 @@ export default function InstallPrompt() {
 
     if (localStorage.getItem('pokevaleur-install-pending') === '1') {
       localStorage.removeItem('pokevaleur-install-pending')
-      localStorage.setItem('pokevaleur-install-prompted', '1')
       setVisible(true)
     }
 
