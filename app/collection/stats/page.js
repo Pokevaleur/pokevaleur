@@ -20,14 +20,61 @@ function displayRarityLabel(label) {
   return labels[label] || label
 }
 
-function buildBreakdown(holdings, groupFor, unlabelled = 'Autres') {
+const SERIES_RELEASE_ORDER = [
+  ['épée et bouclier', 201911],
+  ['évolutions célestes', 202109],
+  ['poing de fusion', 202111],
+  ['stars étincelantes', 202202],
+  ['astres radieux', 202205],
+  ['origine perdue', 202209],
+  ['tempête argentée', 202211],
+  ['zénith suprême', 202301],
+  ['écarlate et violet', 202303],
+  ['évolutions à paldea', 202306],
+  ['flammes obsidiennes', 202308],
+  ['151', 202309],
+  ['faille paradoxe', 202311],
+  ['destinées de paldea', 202401],
+  ['forces temporelles', 202403],
+  ['mascarade crépusculaire', 202405],
+  ['fable nébuleuse', 202408],
+  ['couronne stellaire', 202409],
+  ['étincelles déferlantes', 202411],
+  ['évolutions prismatiques', 202501],
+  ['aventures ensemble', 202503],
+  ['rivalités destinées', 202505],
+  ['flamme blanche', 202507],
+  ['foudre noire', 202507],
+  ['30e anniversaire', 202602]
+]
+
+function normalizeSeriesName(value) {
+  return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function seriesReleaseRank(label) {
+  const normalized = normalizeSeriesName(label)
+  const matches = SERIES_RELEASE_ORDER.filter(([name]) => normalized.includes(normalizeSeriesName(name)))
+    .sort((a, b) => b[0].length - a[0].length)
+  return matches[0]?.[1] ?? Number.MAX_SAFE_INTEGER
+}
+
+function compareSeriesByRelease(a, b) {
+  return seriesReleaseRank(a.label) - seriesReleaseRank(b.label) || a.label.localeCompare(b.label, 'fr')
+}
+
+function buildBreakdown(holdings, groupFor, unlabelled = 'Autres', sortBy = 'count') {
   const totals = new Map()
   for (const holding of holdings) {
     const label = groupFor(holding) || unlabelled
     totals.set(label, (totals.get(label) || 0) + holding.quantity)
   }
-  return [...totals.entries()].map(([label, count]) => ({ label, count }))
-    .sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'))
+  const entries = [...totals.entries()].map(([label, count]) => ({ label, count }))
+  return entries.sort(sortBy === 'release'
+    ? compareSeriesByRelease
+    : sortBy === 'alpha'
+      ? (a, b) => a.label.localeCompare(b.label, 'fr')
+      : (a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'))
 }
 
 export default function CollectionStatsPage() {
@@ -277,7 +324,7 @@ export default function CollectionStatsPage() {
       }
       return Object.fromEntries([...groups.entries()].map(([groupName, entries]) => [
         groupName,
-        [...entries.values()].sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'fr'))
+        [...entries.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'))
       ]))
     }
 
@@ -309,10 +356,10 @@ export default function CollectionStatsPage() {
               label: entry.label,
               count: entry.owned.size,
               total: entry.total || null
-            })).sort((a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'))
+            })).sort(compareSeriesByRelease)
           })()
-        : buildBreakdown(holdings, seriesFor, 'Série non renseignée'),
-      byCategory: buildBreakdown(holdings, typeFor)
+        : buildBreakdown(holdings, seriesFor, 'Série non renseignée', 'release'),
+      byCategory: buildBreakdown(holdings, typeFor, 'Autres', 'alpha')
     }
   }, [items, products, cardCopies, cardSetVariantTotals, cardSetRarityBreakdowns, category, selectedSetId])
 
@@ -483,7 +530,13 @@ export default function CollectionStatsPage() {
           {selectedSetId ? (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par rareté</h2><p className="muted collectionStatsDescription">Les totaux comptent les variantes du checklist, pas les cartes distinctes : une même carte peut apparaître en version Normale et Reverse. Appuie sur un nombre pour ouvrir les cartes, puis utilise les filtres visuels pour compter séparément les cartes standard.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.byRarity, null, 'rareté', entry => `/collection/cartes?set=${encodeURIComponent(selectedSetId)}&rarity=${encodeURIComponent(entry.label)}&owned=1&checklist=all`)}<p className="muted collectionStatsFootnote">Une variante du checklist compte une seule fois, même si tu en possèdes plusieurs exemplaires.</p></section>
           ) : (
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.bySeries, stats.seriesDetails, 'série', entry => category === 'cards' && entry.setId ? `/collection/stats?category=cards&set=${encodeURIComponent(entry.setId)}` : null)}<p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div><details className="collectionStatsSeriesList">
+              <summary style={{ cursor: 'pointer', padding: '10px 0', color: '#263549' }}>
+                <strong>Afficher les séries</strong>
+                <span style={{ marginLeft: 8, color: '#65758b' }}>({stats.bySeries.length})</span>
+              </summary>
+              {distribution(stats.bySeries, stats.seriesDetails, 'série', entry => category === 'cards' && entry.setId ? `/collection/stats?category=cards&set=${encodeURIComponent(entry.setId)}` : null)}
+            </details><p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
           )}
           {category !== 'graded' && !selectedSetId && (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les éléments associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
