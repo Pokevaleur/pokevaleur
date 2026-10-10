@@ -59,10 +59,17 @@ const FRENCH_SET_CODES = {
   '30th-c': '30CC'
 }
 
+function tcgdexEnglishImageFallback(url) {
+  const value = (url || '').trim()
+  return value.includes('://assets.tcgdex.net/fr/')
+    ? value.replace('://assets.tcgdex.net/fr/', '://assets.tcgdex.net/en/')
+    : ''
+}
+
 function seriesLabel(set) {
   const code = (set?.set_code || '').toLowerCase()
   const displayCode = FRENCH_SET_CODES[code] || (set?.set_code || '').toUpperCase()
-  const masterSetSuffix = code === 'swsh9' ? ' · Master Set' : ''
+  const masterSetSuffix = ['swsh9', 'swsh12.5'].includes(code) ? ' · Master Set' : ''
   return (displayCode ? displayCode + ' — ' : '') + (set?.set_name || 'Série') + masterSetSuffix
 }
 
@@ -158,10 +165,14 @@ export default function CardCataloguePage() {
       setSelection({})
       try {
         const selectedSetRow = sets.find(set => set.id === setId)
+        const combinedSetCodes = {
+          swsh9: ['swsh9', 'swsh9tg'],
+          'swsh12.5': ['swsh12.5', 'swsh12.5gg']
+        }[(selectedSetRow?.set_code || '').toLowerCase()]
         const setIds = setId === ALL_SERIES
           ? sets.map(set => set.id)
-          : selectedSetRow?.set_code?.toLowerCase() === 'swsh9'
-            ? sets.filter(set => ['swsh9', 'swsh9tg'].includes((set.set_code || '').toLowerCase())).map(set => set.id)
+          : combinedSetCodes
+            ? sets.filter(set => combinedSetCodes.includes((set.set_code || '').toLowerCase())).map(set => set.id)
             : [setId]
         if (!setIds.length) return
         const term = query.trim().replace(/[%_]/g, '\\$&')
@@ -308,7 +319,7 @@ export default function CardCataloguePage() {
       {loadingCards && <p className={styles.hint} role="status">Chargement de la liste complète…</p>}
 
       {selectedSet && !loadingCards && !error && <div className={styles.setSummary}>
-        <div><strong>{seriesLabel(selectedSet)}</strong><span>{visibleCards.length}{filterQuery ? ' résultat(s)' : ' cartes dans la liste du catalogue'}{selectedSet.set_code?.toLowerCase() === 'swsh9' && !filterQuery ? ' · 186 extension + 30 Galerie de Dresseurs' : ''}</span></div>
+        <div><strong>{seriesLabel(selectedSet)}</strong><span>{visibleCards.length}{filterQuery ? ' résultat(s)' : ' cartes dans la liste du catalogue'}{selectedSet.set_code?.toLowerCase() === 'swsh9' && !filterQuery ? ' · 186 extension + 30 Galerie de Dresseurs' : ''}{selectedSet.set_code?.toLowerCase() === 'swsh12.5' && !filterQuery ? ` · ${cards.filter(card => card.card_set_id === selectedSet.id).length} extension + ${cards.filter(card => relatedSet(card)?.set_code?.toLowerCase() === 'swsh12.5gg').length} Galerie Galaroise` : ''}</span></div>
         <a href={'/collection/cartes?set=' + encodeURIComponent(setId) + '&collection=owned'}>Voir mes cartes de cette série →</a>
       </div>}
 
@@ -320,7 +331,7 @@ export default function CardCataloguePage() {
             const set = relatedSet(card)
             return <article className={styles.cardRow} key={card.id}>
               <button className={styles.thumbButton} type="button" onClick={() => setZoomedCard(card)} aria-label={'Voir l’image de ' + card.card_name}>
-                {card.image_url ? <img src={card.image_url} alt="" loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} /> : <span>Image</span>}
+                {card.image_url ? <img src={card.image_url} alt="" loading="lazy" onError={event => { const fallback = tcgdexEnglishImageFallback(event.currentTarget.src); if (fallback && !event.currentTarget.dataset.englishFallback) { event.currentTarget.dataset.englishFallback = 'true'; event.currentTarget.src = fallback } else event.currentTarget.style.display = 'none' }} /> : <span>Image</span>}
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
@@ -366,7 +377,7 @@ export default function CardCataloguePage() {
       {zoomedCard && <div className={styles.modal} role="presentation" onClick={() => setZoomedCard(null)}>
         <div className={styles.modalContent} role="dialog" aria-modal="true" aria-label={'Carte ' + zoomedCard.card_name} onClick={event => event.stopPropagation()}>
           <button type="button" className={styles.closeButton} onClick={() => setZoomedCard(null)} aria-label="Fermer">×</button>
-          <img src={zoomedCard.image_url} alt={zoomedCard.card_name} />
+          <img src={zoomedCard.image_url} alt={zoomedCard.card_name} onError={event => { const fallback = tcgdexEnglishImageFallback(event.currentTarget.src); if (fallback && !event.currentTarget.dataset.englishFallback) { event.currentTarget.dataset.englishFallback = 'true'; event.currentTarget.src = fallback } }} />
           <p>{zoomedCard.card_name} · {zoomedCard.collector_number}</p>
         </div>
       </div>}
