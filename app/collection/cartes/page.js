@@ -6,6 +6,16 @@ import styles from './cards.module.css'
 
 const ALL_SERIES_FILTER = '__all_series__'
 
+function collectMissingTargetVariantIds(variants, ownedByVariant = {}) {
+  const ids = new Set()
+  for (const variant of variants || []) {
+    if (!variant?.id || !variant.is_master_set_target) continue
+    if ((ownedByVariant[variant.id] || []).length) continue
+    ids.add(variant.id)
+  }
+  return [...ids]
+}
+
 function seriesAbbreviation(set) {
   const code = (set?.set_code || '').trim()
   const normalized = code.toLowerCase()
@@ -296,6 +306,8 @@ export default function CardChecklistPage() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busyVariant, setBusyVariant] = useState('')
+  const [selectedVariantIds, setSelectedVariantIds] = useState([])
+  const [savingBulk, setSavingBulk] = useState(false)
   const [gradingVariant, setGradingVariant] = useState('')
   const [savingGrade, setSavingGrade] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
@@ -527,6 +539,10 @@ export default function CardChecklistPage() {
   const formattedMissingCardNumbers = formatMissingCardNumbers(missingCardNumbers)
 
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isIncludedVariant(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
+  const visibleMissingVariantIds = collectMissingTargetVariantIds(
+    visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))),
+    owned
+  )
   const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
 
   const targetVariants = cardsWithIncludedVariants.flatMap(card => (card.card_print_variants || []).filter(isProgressTarget))
@@ -540,6 +556,7 @@ export default function CardChecklistPage() {
 
   function selectSet(nextSetId) {
     setSetId(nextSetId)
+    setSelectedVariantIds([])
     setRarity([])
     setSelectedCardTypes([])
     setSelectedElementTypes([])
@@ -612,6 +629,7 @@ export default function CardChecklistPage() {
 
   function selectProfile(nextProfileId) {
     setProfileId(nextProfileId)
+    setSelectedVariantIds([])
     if (user) window.localStorage.setItem('pokevaleur-collection:' + user.id, nextProfileId)
   }
 
@@ -638,12 +656,59 @@ export default function CardChecklistPage() {
         }).select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)').single()
         if (insertError) throw insertError
         setOwned(current => ({ ...current, [variant.id]: [...(current[variant.id] || []), data] }))
+        setSelectedVariantIds(current => current.filter(id => id !== variant.id))
         setNotice('Exemplaire brut ajouté à la collection.')
       }
     } catch (saveError) {
       setNotice('Enregistrement impossible : ' + (saveError.message || 'réessaie.'))
     } finally {
       setBusyVariant('')
+    }
+  }
+
+  async function addSelectedVariants() {
+    if (!user || !profileId || savingBulk) return
+    const variantById = new Map(cards.flatMap(card => card.card_print_variants || []).map(variant => [variant.id, variant]))
+    const variantsToAdd = [...new Set(selectedVariantIds)]
+      .map(id => variantById.get(id))
+      .filter(variant => variant?.is_master_set_target && !(owned[variant.id] || []).length)
+    if (!variantsToAdd.length) {
+      setSelectedVariantIds([])
+      setNotice('Aucune variante manquante à ajouter. Les doublons ont été ignorés.')
+      return
+    }
+
+    const targetProfileId = profileId
+    setSavingBulk(true)
+    setNotice('')
+    let addedCount = 0
+    try {
+      for (let offset = 0; offset < variantsToAdd.length; offset += 100) {
+        const rows = variantsToAdd.slice(offset, offset + 100).map(variant => ({
+          user_id: user.id,
+          collection_profile_id: targetProfileId,
+          card_print_variant_id: variant.id,
+          ownership_type: 'raw'
+        }))
+        const { data, error: insertError } = await supabase.from('collection_cards').insert(rows)
+          .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)')
+        if (insertError) throw insertError
+        addedCount += (data || []).length
+        const addedIds = new Set((data || []).map(copy => copy.card_print_variant_id))
+        setOwned(current => {
+          const next = { ...current }
+          for (const copy of data || []) next[copy.card_print_variant_id] = [...(next[copy.card_print_variant_id] || []), copy]
+          return next
+        })
+        setSelectedVariantIds(current => current.filter(id => !addedIds.has(id)))
+      }
+      setNotice(addedCount + ' variante' + (addedCount > 1 ? 's ajoutées' : ' ajoutée') + ' à ta collection.')
+    } catch (saveError) {
+      setNotice(addedCount
+        ? addedCount + ' variante(s) ajoutée(s) ; le reste n’a pas été enregistré : ' + (saveError.message || 'réessaie.')
+        : 'Enregistrement impossible : ' + (saveError.message || 'réessaie.'))
+    } finally {
+      setSavingBulk(false)
     }
   }
 
@@ -672,6 +737,7 @@ export default function CardChecklistPage() {
       }).select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)').single()
       if (insertError) throw insertError
       setOwned(current => ({ ...current, [variant.id]: [...(current[variant.id] || []), data] }))
+      setSelectedVariantIds(current => current.filter(id => id !== variant.id))
       setGradingVariant('')
       setNotice('Carte gradée ajoutée à la collection.')
     } catch (saveError) {
@@ -753,7 +819,7 @@ export default function CardChecklistPage() {
         </label>
         <label>
           Profil de collection
-          <select value={profileId} onChange={event => selectProfile(event.target.value)} disabled={!profiles.length}>
+          <select value={profileId} onChange={event => selectProfile(event.target.value)} disabled={!profiles.length || savingBulk}>
             {profiles.map(profile => <option key={profile.id} value={profile.id}>{profile.display_name || (profile.profile_type === 'adult' ? 'Ma collection' : 'Collection familiale')}</option>)}
           </select>
         </label>
@@ -892,6 +958,25 @@ export default function CardChecklistPage() {
               <summary>Voir les {missingCardNumbers.length} numéros manquants</summary>
               <p>{formattedMissingCardNumbers}</p>
             </details>}
+            {!isAllSeriesSelected && !isCatalogOnlySet && <div className={styles.bulkToolbar} role="group" aria-label="Ajout groupé à ma collection">
+              <p>{selectedVariantIds.length
+                ? selectedVariantIds.length + ' variante' + (selectedVariantIds.length > 1 ? 's sélectionnées' : ' sélectionnée')
+                : 'Coche une ou plusieurs variantes manquantes, puis valide leur ajout.'}</p>
+              <button type="button" className={styles.bulkSelectButton} disabled={!visibleMissingVariantIds.length || savingBulk} onClick={() => {
+                const allSelected = visibleMissingVariantIds.length > 0 && visibleMissingVariantIds.every(id => selectedVariantIds.includes(id))
+                setSelectedVariantIds(current => allSelected
+                  ? current.filter(id => !visibleMissingVariantIds.includes(id))
+                  : [...new Set([...current, ...visibleMissingVariantIds])])
+              }}>
+                {visibleMissingVariantIds.length && visibleMissingVariantIds.every(id => selectedVariantIds.includes(id))
+                  ? 'Désélectionner les résultats manquants'
+                  : 'Cocher les ' + visibleMissingVariantIds.length + ' variantes manquantes affichées'}
+              </button>
+              <button type="button" className={styles.bulkAddButton} disabled={!selectedVariantIds.length || savingBulk} onClick={addSelectedVariants}>
+                {savingBulk ? 'Ajout en cours…' : 'Valider l’ajout' + (selectedVariantIds.length ? ' · ' + selectedVariantIds.length : '')}
+              </button>
+              {!!selectedVariantIds.length && <button type="button" className={styles.bulkClearButton} disabled={savingBulk} onClick={() => setSelectedVariantIds([])}>Effacer la sélection</button>}
+            </div>}
             <label>
               Type de checklist
               <select value={checklistFilter} onChange={event => setChecklistFilter(event.target.value)} disabled={isCatalogOnlySet}>
@@ -945,6 +1030,10 @@ export default function CardChecklistPage() {
                             <div className={styles.variantName}>
                               <span>{variant.variant_label}</span>
                               {variant.checklist_group === 'stamp' && <small>Tampon</small>}
+                              {isProgressTarget(variant) && !(owned[variant.id] || []).length && <label className={styles.bulkCheckbox}>
+                                <input type="checkbox" checked={selectedVariantIds.includes(variant.id)} disabled={savingBulk} onChange={() => setSelectedVariantIds(current => current.includes(variant.id) ? current.filter(id => id !== variant.id) : [...current, variant.id])} />
+                                <span>Ajouter</span>
+                              </label>}
                             </div>
                             <div className={styles.rawLine}>
                               <label className={styles.checkboxLine}>
