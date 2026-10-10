@@ -380,12 +380,15 @@ export default function CollectionStatsPage() {
         setItems(current => current.filter(entry => entry.id !== item.id))
         setCollectionActionMessage(`« ${detail.name} » a été retiré de ta collection.`)
       } else {
-        const { error: updateError } = await supabase
+        const { data: updated, error: updateError } = await supabase
           .from('collection_items')
           .update({ quantity: quantity - 1 })
           .eq('id', item.id)
           .eq('collection_profile_id', activeProfileId)
+          .select('id')
+          .maybeSingle()
         if (updateError) throw updateError
+        if (!updated) throw new Error('Cet exemplaire n’a pas pu être retiré de la collection active.')
         setItems(current => current.map(entry => entry.id === item.id ? { ...entry, quantity: quantity - 1 } : entry))
         setCollectionActionMessage(`Un exemplaire de « ${detail.name} » a été retiré de ta collection.`)
       }
