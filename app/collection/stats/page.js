@@ -59,19 +59,39 @@ function seriesReleaseRank(label) {
   return matches[0]?.[1] ?? Number.MAX_SAFE_INTEGER
 }
 
-function compareSeriesByRelease(a, b) {
+function releaseTimestamp(label, releaseDates = {}) {
+  const normalized = normalizeSeriesName(label)
+  const directDate = releaseDates[normalized]
+  if (directDate) return Date.parse(directDate) || Number.MAX_SAFE_INTEGER
+  const matchingDates = Object.entries(releaseDates)
+    .filter(([name]) => normalized.includes(name) || name.includes(normalized))
+    .map(([, date]) => Date.parse(date))
+    .filter(Number.isFinite)
+  return matchingDates.length ? Math.min(...matchingDates) : null
+}
+
+function compareSeriesByRelease(a, b, releaseDates = {}) {
+  const dateA = a.releaseDate ? Date.parse(a.releaseDate) : releaseTimestamp(a.label, releaseDates)
+  const dateB = b.releaseDate ? Date.parse(b.releaseDate) : releaseTimestamp(b.label, releaseDates)
+  if (dateA && !dateB) return -1
+  if (!dateA && dateB) return 1
+  if (dateA && dateB && dateA !== dateB) return dateA - dateB
   return seriesReleaseRank(a.label) - seriesReleaseRank(b.label) || a.label.localeCompare(b.label, 'fr')
 }
 
-function buildBreakdown(holdings, groupFor, unlabelled = 'Autres', sortBy = 'count') {
+function buildBreakdown(holdings, groupFor, unlabelled = 'Autres', sortBy = 'count', releaseDates = {}) {
   const totals = new Map()
   for (const holding of holdings) {
     const label = groupFor(holding) || unlabelled
-    totals.set(label, (totals.get(label) || 0) + holding.quantity)
+    const releaseDate = holding.kind === 'card' ? holding.record.set?.release_date : null
+    const current = totals.get(label) || { count: 0, releaseDate }
+    current.count += holding.quantity
+    if (releaseDate && (!current.releaseDate || releaseDate < current.releaseDate)) current.releaseDate = releaseDate
+    totals.set(label, current)
   }
-  const entries = [...totals.entries()].map(([label, count]) => ({ label, count }))
+  const entries = [...totals.entries()].map(([label, totals]) => ({ label, ...totals }))
   return entries.sort(sortBy === 'release'
-    ? compareSeriesByRelease
+    ? (a, b) => compareSeriesByRelease(a, b, releaseDates)
     : sortBy === 'alpha'
       ? (a, b) => a.label.localeCompare(b.label, 'fr')
       : (a, b) => b.count - a.count || a.label.localeCompare(b.label, 'fr'))
@@ -90,6 +110,7 @@ export default function CollectionStatsPage() {
   const [cardCopies, setCardCopies] = useState([])
   const [cardSetVariantTotals, setCardSetVariantTotals] = useState({})
   const [cardSetRarityBreakdowns, setCardSetRarityBreakdowns] = useState({})
+  const [seriesReleaseDates, setSeriesReleaseDates] = useState({})
   const [category, setCategory] = useState('all')
   const [selectedSetId, setSelectedSetId] = useState('')
 
@@ -124,6 +145,21 @@ export default function CollectionStatsPage() {
         const profile = (profileRows || []).find(row => row.id === savedProfileId)
           || (profileRows || []).find(row => row.is_default)
         if (!profile) throw new Error('Aucune collection disponible.')
+
+        const { data: releaseRows, error: releaseError } = await fetchAllRows(() => supabase.from('card_sets')
+          .select('set_name,series_name,release_date')
+          .eq('is_public', true)
+          .eq('language', 'FR'))
+        if (releaseError) throw releaseError
+        const releaseDates = {}
+        for (const row of releaseRows || []) {
+          if (!row.release_date) continue
+          for (const label of [row.set_name, row.series_name]) {
+            const key = normalizeSeriesName(label)
+            if (key && (!releaseDates[key] || row.release_date < releaseDates[key])) releaseDates[key] = row.release_date
+          }
+        }
+        setSeriesReleaseDates(releaseDates)
 
         const { data: rows, error: itemsError } = await fetchAllRows(() => supabase
           .from('collection_items')
@@ -176,7 +212,7 @@ export default function CollectionStatsPage() {
         const sets = []
         for (let offset = 0; offset < setIds.length; offset += 100) {
           const { data, error } = await supabase.from('card_sets')
-            .select('id,series_name,set_name')
+            .select('id,series_name,set_name,release_date')
             .in('id', setIds.slice(offset, offset + 100))
           if (error) throw error
           sets.push(...(data || []))
@@ -346,6 +382,7 @@ export default function CollectionStatsPage() {
               if (!variantsBySet.has(set.id)) variantsBySet.set(set.id, {
                 setId: set.id,
                 label: set.set_name || 'Série sans nom',
+                releaseDate: set.release_date || null,
                 owned: new Set(),
                 total: Number(cardSetVariantTotals[set.id]) || 0
               })
@@ -354,14 +391,15 @@ export default function CollectionStatsPage() {
             return [...variantsBySet.values()].map(entry => ({
               setId: entry.setId,
               label: entry.label,
+              releaseDate: entry.releaseDate,
               count: entry.owned.size,
               total: entry.total || null
-            })).sort(compareSeriesByRelease)
+            })).sort((a, b) => compareSeriesByRelease(a, b, seriesReleaseDates))
           })()
-        : buildBreakdown(holdings, seriesFor, 'Série non renseignée', 'release'),
+        : buildBreakdown(holdings, seriesFor, 'Série non renseignée', 'release', seriesReleaseDates),
       byCategory: buildBreakdown(holdings, typeFor, 'Autres', 'alpha')
     }
-  }, [items, products, cardCopies, cardSetVariantTotals, cardSetRarityBreakdowns, category, selectedSetId])
+  }, [items, products, cardCopies, cardSetVariantTotals, cardSetRarityBreakdowns, category, selectedSetId, seriesReleaseDates])
 
   const selectedSetName = selectedSetId ? cardCopies.find(record => record.set?.id === selectedSetId)?.set?.set_name : ''
   const categoryLabel = selectedSetName || (category === 'sealed' ? 'Produits scellés' : category === 'other' ? 'Autres / à classer' : category === 'cards' ? 'Cartes' : category === 'graded' ? 'Cartes gradées' : '')
