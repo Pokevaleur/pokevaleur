@@ -545,10 +545,10 @@ export default function CardChecklistPage() {
   const targetVariants = cards.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
   const cardsWithProgressTargets = cards.filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target))
   const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
-  const ownedCopyCount = Object.values(owned).reduce((sum, copies) => sum + copies.length, 0)
-  const ownedDistinctCardCount = cardsWithProgressTargets.filter(card =>
-    (card.card_print_variants || []).some(variant => variant.is_master_set_target && (owned[variant.id] || []).length > 0)
-  ).length
+  const selectedSetVariantIds = new Set(cards.flatMap(card => card.card_print_variants || []).map(variant => variant.id))
+  const ownedCopyCount = Object.entries(owned).reduce((sum, [variantId, copies]) =>
+    sum + (selectedSetVariantIds.has(variantId) ? copies.length : 0), 0
+  )
   const completedCardCount = cardsWithProgressTargets.filter(card => {
     const targets = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
     return targets.every(variant => (owned[variant.id] || []).length > 0)
@@ -783,7 +783,7 @@ export default function CardChecklistPage() {
       <header className={styles.header}>
         <p className={styles.kicker}>Ma collection · Cartes</p>
         <h1>Mes cartes</h1>
-        {selectedSet && !cardsLoading && !isCatalogOnlySet && <p className={styles.ownedSummary}>{ownedCopyCount} exemplaire{ownedCopyCount === 1 ? '' : 's'} possédé{ownedCopyCount === 1 ? '' : 's'} · {ownedDistinctCardCount} carte{ownedDistinctCardCount === 1 ? '' : 's'} différente{ownedDistinctCardCount === 1 ? '' : 's'}</p>}
+        {selectedSet && !cardsLoading && !isCatalogOnlySet && <p className={styles.ownedSummary}>{ownedCopyCount} exemplaire{ownedCopyCount === 1 ? '' : 's'} possédé{ownedCopyCount === 1 ? '' : 's'} dans cette série</p>}
         <p>Choisis une série pour afficher tes cartes possédées, en double ou non possédées. Pour en ajouter, sélectionne-les dans le Catalogue.</p>
         <a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Choisir des cartes dans le Catalogue →</a>
       </header>
