@@ -16,23 +16,34 @@ function collectMissingTargetVariantIds(variants, ownedByVariant = {}) {
   return [...ids]
 }
 
+const FRENCH_SET_CODES = {
+  swsh1: 'EB01', swsh2: 'EB02', swsh3: 'EB03', 'swsh3.5': 'EB03.5', swsh4: 'EB04', 'swsh4.5': 'EB04.5',
+  'swsh4.5sv': 'EB04.5 SV', swsh5: 'EB05', swsh6: 'EB06', swsh7: 'EB07', cel25: 'EB07.5', cel25cc: 'EB07.5 CC',
+  swsh8: 'EB08', swsh9: 'EB09', swsh9tg: 'EB09 TG', swsh10: 'EB10', swsh10tg: 'EB10 TG', 'swsh10.5': 'EB10.5',
+  swsh11: 'EB11', swsh11tg: 'EB11 TG', swsh12: 'EB12', swsh12tg: 'EB12 TG', 'swsh12.5': 'EB12.5', 'swsh12.5gg': 'EB12.5 GG',
+  sv01: 'EV01', sv02: 'EV02', sv03: 'EV03', 'sv03.5': 'EV03.5', sv04: 'EV04', 'sv04.5': 'EV04.5', sv05: 'EV05',
+  sv06: 'EV06', 'sv06.5': 'EV06.5', sv07: 'EV07', sv08: 'EV08', 'sv08.5': 'EV08.5', sv09: 'EV09', sv10: 'EV10',
+  'sv10.5b': 'EV10.5', 'sv10.5w': 'EV10.5', me01: 'ME01', me02: 'ME02', 'me02.5': 'ME02.5', me03: 'ME03',
+  me04: 'ME04', me05: 'ME05', '30th': '30C', '30th-c': '30CC'
+}
+
 function seriesAbbreviation(set) {
   const code = (set?.set_code || '').trim()
   const normalized = code.toLowerCase()
-  const prefixes = { swsh: 'EB', hgss: 'HGSS', sv: 'EV', ev: 'EV', me: 'ME', eb: 'EB', sm: 'SL', sl: 'SL', xy: 'XY', bw: 'NB', dp: 'DP', pl: 'PL' }
-
+  if (FRENCH_SET_CODES[normalized]) return FRENCH_SET_CODES[normalized]
+  const prefixes = { hgss: 'HGSS', sm: 'SL', sl: 'SL', xy: 'XY', bw: 'NB', dp: 'DP', pl: 'PL' }
   for (const [prefix, abbreviation] of Object.entries(prefixes)) {
     const match = normalized.match(new RegExp('^' + prefix + '(\\d+(?:\\.\\d+)?)([a-z]*)$'))
     if (match) return abbreviation + String(Number(match[1])) + match[2].toUpperCase()
   }
-
   return code.toUpperCase()
 }
 
 function seriesOptionLabel(set) {
   const abbreviation = seriesAbbreviation(set)
   const name = (set.set_name || '').replace(/Classique(?=30e)/i, 'Classique ')
-  return (abbreviation ? abbreviation + ' — ' : '') + name + (set.is_public ? '' : ' · brouillon privé')
+  const masterSetSuffix = ['swsh9', 'swsh12.5'].includes((set.set_code || '').toLowerCase()) ? ' · Master Set' : ''
+  return (abbreviation ? abbreviation + ' — ' : '') + name + masterSetSuffix + (set.is_public ? '' : ' · brouillon privé')
 }
 
 const RARITY_FILTERS = [
@@ -220,6 +231,13 @@ function cardTypeSymbol(label) {
   return '◇'
 }
 
+function tcgdexEnglishImageFallback(url) {
+  const value = (url || '').trim()
+  return value.includes('://assets.tcgdex.net/fr/')
+    ? value.replace('://assets.tcgdex.net/fr/', '://assets.tcgdex.net/en/')
+    : ''
+}
+
 function imageUrl(card, quality = 'low') {
   const directUrl = card.image_url?.trim()
   if (directUrl) {
@@ -404,9 +422,17 @@ export default function CardChecklistPage() {
       setNotice('')
       setCards([])
       setOwned({})
+      const selectedSet = sets.find(set => set.id === setId)
+      const combinedSetCodes = {
+        swsh9: ['swsh9', 'swsh9tg'],
+        'swsh12.5': ['swsh12.5', 'swsh12.5gg']
+      }[(selectedSet?.set_code || '').toLowerCase()]
+      const checklistSetIds = combinedSetCodes
+        ? sets.filter(set => combinedSetCodes.includes((set.set_code || '').toLowerCase())).map(set => set.id)
+        : [setId]
       const { data: cardRows, error: cardError } = await supabase.from('cards')
         .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
-        .eq('card_set_id', setId).order('guide_order', { ascending: true })
+        .in('card_set_id', checklistSetIds).order('guide_order', { ascending: true })
       if (cardError) throw cardError
       if (cancelled) return
       const { data: copyRows, error: copyError } = await supabase.from('collection_cards')
@@ -857,7 +883,7 @@ export default function CardChecklistPage() {
                   <div className={styles.cardTop}>
                     <div className={styles.artFrame}>
                       {cardImage && <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: cardSet?.set_name || '' })}>
-                        <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true' }} />
+                        <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { const fallback = tcgdexEnglishImageFallback(event.currentTarget.src); if (fallback && !event.currentTarget.dataset.englishFallback) { event.currentTarget.dataset.englishFallback = 'true'; event.currentTarget.src = fallback } else { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true' } }} />
                       </button>}
                       <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                     </div>
@@ -920,7 +946,7 @@ export default function CardChecklistPage() {
                       data-image-missing={!cardImage ? 'true' : undefined}
                     >
                       {cardImage
-                        ? <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.parentElement.dataset.imageMissing = 'true'; event.currentTarget.style.display = 'none' }} />
+                        ? <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { const fallback = tcgdexEnglishImageFallback(event.currentTarget.src); if (fallback && !event.currentTarget.dataset.englishFallback) { event.currentTarget.dataset.englishFallback = 'true'; event.currentTarget.src = fallback } else { event.currentTarget.parentElement.dataset.imageMissing = 'true'; event.currentTarget.style.display = 'none' } }} />
                         : <span aria-hidden="true">Image</span>}
                     </button>
                     <div className={styles.masterChecklistMeta}>
@@ -950,7 +976,7 @@ export default function CardChecklistPage() {
       {zoomedCard && <div className={styles.zoomBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setZoomedCard(null) }}>
         <section className={styles.zoomDialog} role="dialog" aria-modal="true" aria-label={'Image agrandie de ' + zoomedCard.card_name}>
           <button type="button" className={styles.zoomClose} aria-label="Fermer l’image agrandie" onClick={() => setZoomedCard(null)}>×</button>
-          <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => { const fallback = imageUrl(zoomedCard, 'low'); if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback }} />
+          <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => { const lowFallback = imageUrl(zoomedCard, 'low'); if (!event.currentTarget.dataset.lowFallback && event.currentTarget.src !== lowFallback) { event.currentTarget.dataset.lowFallback = 'true'; event.currentTarget.src = lowFallback; return } const englishFallback = tcgdexEnglishImageFallback(event.currentTarget.src); if (englishFallback && !event.currentTarget.dataset.englishFallback) { event.currentTarget.dataset.englishFallback = 'true'; event.currentTarget.src = englishFallback } }} />
           <p><strong>{zoomedCard.card_name}</strong> · N° {zoomedCard.collector_number}{zoomedCard.seriesName ? ' · ' + zoomedCard.seriesName : ''}</p>
         </section>
       </div>}
