@@ -453,9 +453,13 @@ export default function CollectionStatsPage() {
       const share = denominator ? entry.count / denominator * 100 : 0
       const width = denominator ? Math.max(1, Math.round(share * 10) / 10) : 1
       const shareLabel = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(share)
-      const ratioLabel = denominator
-        ? `${entry.count} / ${denominator} · ${shareLabel} %`
-        : `${entry.count} variantes · total du checklist indisponible`
+      const hasRealTotal = entry.total !== undefined && entry.total !== null
+      const isCompletionBreakdown = hasRealTotal && (
+        selectedSetId || (detailLabel === 'série' && (category === 'cards' || category === 'graded'))
+      )
+      const ratioLabel = isCompletionBreakdown
+        ? `${entry.count} / ${entry.total} · ${shareLabel} %`
+        : String(entry.count)
       const entryHref = linkForEntry?.(entry)
       const ratio = entryHref
         ? <a href={entryHref} aria-label={`Afficher ${entry.count} variantes ${entry.label} possédées`} style={{ color: 'inherit', textDecoration: 'underline', textUnderlineOffset: 3 }}>{ratioLabel}</a>
@@ -483,7 +487,7 @@ export default function CollectionStatsPage() {
                     {detail.type && <small style={{ display: 'block', marginTop: 3, color: '#65758b' }}>{detail.type}</small>}
                   </span>
                   <span style={{ flex: '0 0 auto', display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap', justifyContent: 'flex-end' }}>
-                    <strong style={{ whiteSpace: 'nowrap' }}>{detail.count} / {entry.count} · {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(entry.count ? detail.count / entry.count * 100 : 0)} %</strong>
+                    <strong style={{ whiteSpace: 'nowrap' }}>{detail.count}</strong>
                     {detail.itemIds?.length > 0 && <button type="button" className="miniBtn dangerMini" disabled={removingItemId !== null} onClick={() => removeOneCopy(detail)} aria-label={`Retirer un exemplaire de ${detail.name}`}>
                       {removingItemId && detail.itemIds.includes(removingItemId) ? 'Retrait…' : 'Retirer 1 exemplaire'}
                     </button>}
@@ -530,16 +534,16 @@ export default function CollectionStatsPage() {
           {selectedSetId ? (
           <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par rareté</h2><p className="muted collectionStatsDescription">Les totaux comptent les variantes du checklist, pas les cartes distinctes : une même carte peut apparaître en version Normale et Reverse. Appuie sur un nombre pour ouvrir les cartes, puis utilise les filtres visuels pour compter séparément les cartes standard.</p></div><span aria-hidden="true">✧</span></div>{distribution(stats.byRarity, null, 'rareté', entry => `/collection/cartes?set=${encodeURIComponent(selectedSetId)}&rarity=${encodeURIComponent(entry.label)}&owned=1&checklist=all`)}<p className="muted collectionStatsFootnote">Une variante du checklist compte une seule fois, même si tu en possèdes plusieurs exemplaires.</p></section>
           ) : (
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : `Part de tes ${stats.copies} éléments au total.`}</p></div><span aria-hidden="true">✧</span></div><details className="collectionStatsSeriesList">
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par série</h2><p className="muted collectionStatsDescription">Appuie sur une série pour voir les produits et cartes associés. {category === 'cards' || category === 'graded' ? 'Progression parmi les variantes du checklist répertoriées pour la série.' : 'Nombre d’exemplaires associés à chaque série.'}</p></div><span aria-hidden="true">✧</span></div><details className="collectionStatsSeriesList">
               <summary style={{ cursor: 'pointer', padding: '10px 0', color: '#263549' }}>
                 <strong>Afficher les séries</strong>
                 <span style={{ marginLeft: 8, color: '#65758b' }}>({stats.bySeries.length})</span>
               </summary>
               {distribution(stats.bySeries, stats.seriesDetails, 'série', entry => category === 'cards' && entry.setId ? `/collection/stats?category=cards&set=${encodeURIComponent(entry.setId)}` : null)}
-            </details><p className="muted collectionStatsFootnote">{category === 'cards' || category === 'graded' ? 'Les cartes sont comptées une seule fois par variante possédée.' : 'Le pourcentage indique la part de tes exemplaires associés à cette série, pas ton taux de complétion de la série complète.'}</p></section>
+            </details>{(category === 'cards' || category === 'graded') && <p className="muted collectionStatsFootnote">Les cartes sont comptées une seule fois par variante possédée.</p>}</section>
           )}
           {category !== 'graded' && !selectedSetId && (
-          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les éléments associés et leur quantité. Part du total de ta collection.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
+          <section className="panel collectionStatsBreakdown"><div className="collectionStatsPanelTitle"><div><span className="collectionStatsEyebrow">Répartition</span><h2>Par type d’objet</h2><p className="muted collectionStatsDescription">Appuie sur un type d’objet pour voir les éléments associés et leur quantité.</p></div><span aria-hidden="true">◇</span></div>{distribution(stats.byCategory, stats.typeDetails, 'type d’objet')}</section>
           )}
         </div>
       )}
