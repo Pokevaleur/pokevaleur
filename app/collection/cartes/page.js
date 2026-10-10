@@ -772,6 +772,17 @@ export default function CardChecklistPage() {
     setNotice('Exemplaire gradé retiré.')
   }
 
+  function removeOneCopy(variant) {
+    const copies = owned[variant.id] || []
+    const rawCopies = copies.filter(copy => copy.ownership_type === 'raw')
+    if (rawCopies.length) {
+      changeRawCopies(variant, 'remove')
+      return
+    }
+    const gradedCopy = copies.find(copy => copy.ownership_type === 'graded')
+    if (gradedCopy) removeGradedCopy(variant.id, gradedCopy)
+  }
+
   if (loading) return <main className={styles.page}><p className={styles.status}>Chargement de la collection de cartes…</p></main>
 
   return (
@@ -961,6 +972,7 @@ export default function CardChecklistPage() {
                         return <div className={styles.ownedVariantRow} key={variant.id}>
                           <span>{label}</span>
                           <strong className={quantity ? styles.ownedQuantity : styles.missingQuantity}>{quantity ? quantity + ' ex.' : 'Non possédée'}</strong>
+                          {quantity > 0 && <button type="button" className={styles.removeCopyButton} onClick={() => removeOneCopy(variant)} disabled={busyVariant === variant.id || savingBulk} aria-label={'Retirer un exemplaire de ' + card.card_name + ' (' + label + ')'} title="Retirer un exemplaire">−</button>}
                         </div>
                       })}
                     </div>
