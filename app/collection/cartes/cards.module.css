@@ -188,3 +188,21 @@
   line-height: 1.8;
   overflow-wrap: anywhere;
 }
+
+.bulkToolbar {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid #d9e2f2;
+  border-radius: 12px;
+  background: #f5f8ff;
+}
+.bulkToolbar p { flex: 1 1 100%; margin: 0 0 2px; color: #42546b; font-size: .9rem; }
+.bulkToolbar button { min-height: 40px; padding: 8px 12px; border: 1px solid #cbd4df; border-radius: 9px; background: #fff; color: #30445b; font: inherit; font-size: .86rem; font-weight: 700; cursor: pointer; }
+.bulkToolbar button:disabled { opacity: .5; cursor: not-allowed; }
+.bulkToolbar .bulkAddButton { border-color: #173c84; background: #173c84; color: #fff; }
+.bulkCheckbox { flex: none; display: inline-flex; align-items: center; gap: 5px; color: #173c84; font-size: .76rem; font-weight: 700; cursor: pointer; }
+.bulkCheckbox input { width: 18px; height: 18px; accent-color: #173c84; }
