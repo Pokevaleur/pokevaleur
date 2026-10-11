@@ -53,6 +53,18 @@ function pdfVariantLabel(variant) {
   return known[key] || variant?.variant_label || variant?.variant_key || variant?.finish_code || 'Variante'
 }
 
+function binderVariantsForItem(item) {
+  if (item?.kind === 'extra') return item.variant ? [item.variant] : []
+  return (item?.card?.card_print_variants || []).filter(variant => variant.is_master_set_target)
+}
+
+function binderCopiesForItem(item, variantCopies) {
+  return binderVariantsForItem(item).flatMap(variant => (variantCopies[variant.id] || []).map(copy => ({
+    ...copy,
+    variantLabel: variant.variant_label || variant.variant_key || '',
+  })))
+}
+
 function loadPdfImage(url) {
   if (!url) return Promise.resolve(null)
   return new Promise(resolve => {
@@ -88,7 +100,7 @@ function loadPdfImage(url) {
   })
 }
 
-async function createBinderPdf({ set, cards, variantCopies, coverArt, ownedOnSet, copiesOnSet, missingOnSet, onProgress }) {
+async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, coverArt, profileName, profileCreatedAt, ownedOnSet, copiesOnSet, missingOnSet, onProgress }) {
   const { jsPDF } = await import('jspdf')
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true })
   const pageWidth = pdf.internal.pageSize.getWidth()
@@ -97,7 +109,7 @@ async function createBinderPdf({ set, cards, variantCopies, coverArt, ownedOnSet
   const dateLabel = new Date().toLocaleDateString('fr-FR')
   const seriesCode = shortCode(set)
   const title = 'PokéValeur - ' + seriesCode + ' - ' + set.set_name
-  pdf.setProperties({ title, subject: 'Classeur de cartes Pokémon', author: 'PokéValeur', creator: 'PokéValeur' })
+  pdf.setProperties({ title, subject: 'Classeur de cartes Pokémon', author: profileName || 'PokéValeur', creator: 'PokéValeur' })
 
   pdf.setFillColor(16, 31, 57)
   pdf.rect(0, 0, pageWidth, pageHeight, 'F')
@@ -131,15 +143,23 @@ async function createBinderPdf({ set, cards, variantCopies, coverArt, ownedOnSet
   pdf.setFontSize(10)
   pdf.text(seriesCode + (set.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : ''), pageWidth / 2, 260, { align: 'center' })
   pdf.text(ownedOnSet + ' cartes possédées · ' + copiesOnSet + ' exemplaires · ' + missingOnSet + ' emplacements à compléter', pageWidth / 2, 270, { align: 'center' })
+  if (extraVariants.length) {
+    pdf.setFontSize(9)
+    pdf.text('Hors Master Set · ' + extraVariants.length + ' versions', pageWidth / 2, 276, { align: 'center' })
+  }
+  pdf.setFontSize(9)
+  pdf.text('Collection de ' + (profileName || 'Ma collection') + (profileCreatedAt ? ' · créée le ' + new Date(profileCreatedAt).toLocaleDateString('fr-FR') : ''), pageWidth / 2, 281, { align: 'center' })
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(12)
-  pdf.text('pokevaleur.fr', pageWidth / 2, 285, { align: 'center' })
+  pdf.text('pokevaleur.fr', pageWidth / 2, 286, { align: 'center' })
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(8)
   pdf.text('Exporté le ' + dateLabel, pageWidth / 2, 291, { align: 'center' })
 
   const cardsPerPage = 12
-  const totalPages = Math.max(1, Math.ceil(cards.length / cardsPerPage))
+  const masterPageCount = cards.length ? Math.ceil(cards.length / cardsPerPage) : (extraVariants.length ? 0 : 1)
+  const extraPageCount = Math.ceil(extraVariants.length / cardsPerPage)
+  const totalPages = Math.max(1, masterPageCount + extraPageCount)
   const marginX = 9
   const gridTop = 28
   const gridBottom = 285
@@ -149,37 +169,43 @@ async function createBinderPdf({ set, cards, variantCopies, coverArt, ownedOnSet
   const overflowDetails = []
 
   for (let pageIndex = 0; pageIndex < totalPages; pageIndex += 1) {
+    const isExtraPage = extraPageCount > 0 && pageIndex >= masterPageCount
     pdf.addPage('a4', 'portrait')
     pdf.setFillColor(249, 250, 252)
     pdf.rect(0, 0, pageWidth, pageHeight, 'F')
     pdf.setTextColor(23, 47, 78)
     pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(13)
-    pdf.text(set.set_name, marginX, 14)
+    pdf.text(isExtraPage ? 'Hors Master Set · ' + extraVariants.length + ' versions' : set.set_name, marginX, 14)
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(8)
-    pdf.text(seriesCode + ' · Page ' + (pageIndex + 1) + '/' + totalPages, pageWidth - marginX, 14, { align: 'right' })
+    pdf.text(isExtraPage
+      ? 'Page ' + (pageIndex - masterPageCount + 1) + '/' + extraPageCount
+      : seriesCode + ' · Page ' + (pageIndex + 1) + '/' + masterPageCount, pageWidth - marginX, 14, { align: 'right' })
     pdf.setDrawColor(210, 219, 229)
     pdf.line(marginX, 19, pageWidth - marginX, 19)
     onProgress('Création du PDF : page ' + (pageIndex + 1) + ' sur ' + totalPages + '…')
 
-    const pageCards = cards.slice(pageIndex * cardsPerPage, (pageIndex + 1) * cardsPerPage)
-    const images = await Promise.all(pageCards.map(card => loadPdfImage(imageFor(card))))
-    pageCards.forEach((card, cardIndex) => {
+    const pageItems = isExtraPage
+      ? extraVariants.slice((pageIndex - masterPageCount) * cardsPerPage, (pageIndex - masterPageCount + 1) * cardsPerPage).map(item => ({ kind: 'extra', ...item }))
+      : cards.slice(pageIndex * cardsPerPage, (pageIndex + 1) * cardsPerPage).map(card => ({ kind: 'master', card }))
+    const images = await Promise.all(pageItems.map(item => loadPdfImage(binderCopiesForItem(item, variantCopies).length ? imageFor(item.card) : '')))
+    pageItems.forEach((item, cardIndex) => {
+      const card = item.card
       const column = cardIndex % 3
       const row = Math.floor(cardIndex / 3)
       const x = marginX + column * cellWidth + 2
       const y = gridTop + row * cellHeight + 1.5
       const w = cellWidth - 4
       const h = cellHeight - 3
-      const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
-      const ownedVariants = variants.map(variant => ({ variant, count: (variantCopies[variant.id] || []).length })).filter(item => item.count > 0)
+      const ownedCopies = binderCopiesForItem(item, variantCopies)
+      const ownedVariants = binderVariantsForItem(item).map(variant => ({ variant, count: (variantCopies[variant.id] || []).length })).filter(variant => variant.count > 0)
 
-      pdf.setFillColor(ownedVariants.length ? 255 : 244, ownedVariants.length ? 255 : 246, ownedVariants.length ? 255 : 249)
-      pdf.setDrawColor(ownedVariants.length ? 189 : 222, ownedVariants.length ? 203 : 226, ownedVariants.length ? 218 : 231)
+      pdf.setFillColor(ownedCopies.length ? 255 : 232, ownedCopies.length ? 253 : 237, ownedCopies.length ? 245 : 243)
+      pdf.setDrawColor(ownedCopies.length ? 165 : 150, ownedCopies.length ? 191 : 161, ownedCopies.length ? 174 : 174)
       pdf.roundedRect(x, y, w, h, 2.5, 2.5, 'FD')
       const imageData = images[cardIndex]
-      if (imageData) {
+      if (imageData && ownedCopies.length) {
         const imageBox = { x: x + (w - 25) / 2, y: y + 2, w: 25, h: 35 }
         const aspect = imageData.width / imageData.height
         const drawW = aspect > imageBox.w / imageBox.h ? imageBox.w : imageBox.h * aspect
@@ -190,32 +216,43 @@ async function createBinderPdf({ set, cards, variantCopies, coverArt, ownedOnSet
       pdf.setTextColor(31, 48, 67)
       pdf.setFont('helvetica', 'bold')
       pdf.setFontSize(7.2)
-      const nameLines = pdf.splitTextToSize(card.card_name || 'Carte sans nom', w - 6).slice(0, 2)
-      pdf.text(nameLines, x + 3, y + 41)
+      const nameLines = ownedCopies.length ? pdf.splitTextToSize(card.card_name || 'Carte sans nom', w - 6).slice(0, 2) : []
+      if (nameLines.length) pdf.text(nameLines, x + 3, y + 41)
       const numberY = y + 41 + nameLines.length * 3.1 + 1
       pdf.setFont('helvetica', 'normal')
       pdf.setFontSize(6.6)
       pdf.text('N° ' + (card.collector_number || '—'), x + 3, numberY)
 
-      if (ownedVariants.length) {
+      if (item.kind === 'extra') {
+        pdf.setFont('helvetica', ownedCopies.length ? 'normal' : 'bold')
+        pdf.setFontSize(5.8)
+        pdf.setTextColor(ownedCopies.length ? 46 : 105, ownedCopies.length ? 95 : 71, ownedCopies.length ? 72 : 41)
+        const extraLabel = pdf.splitTextToSize(pdfVariantLabel(item.variant) + ' · HORS MASTER SET', w - 6).slice(0, 2)
+        pdf.text(extraLabel, x + 3, numberY + 3.2)
+      }
+      if (ownedCopies.length) {
         const lines = []
-        for (const item of ownedVariants) {
-          const label = pdfVariantLabel(item.variant) + ' ×' + item.count
-          lines.push(...pdf.splitTextToSize(label, w - 6))
+        if (item.kind === 'extra') {
+          lines.push('Possédée · ×' + ownedCopies.length)
+        } else {
+          for (const ownedVariant of ownedVariants) {
+            const label = pdfVariantLabel(ownedVariant.variant) + ' ×' + ownedVariant.count
+            lines.push(...pdf.splitTextToSize(label, w - 6))
+          }
         }
         if (lines.length > 4) {
           overflowDetails.push({ number: card.collector_number, name: card.card_name, variants: ownedVariants })
           lines.splice(4, lines.length - 4, 'Détails des variantes en fin de PDF')
         }
-        pdf.setTextColor(72, 91, 111)
+        pdf.setTextColor(42, 83, 61)
         pdf.setFont('helvetica', 'normal')
         pdf.setFontSize(5.6)
         pdf.text(lines, x + 3, Math.min(numberY + 3.5, y + h - 10), { lineHeightFactor: 1.05 })
       } else {
-        pdf.setTextColor(117, 127, 139)
-        pdf.setFont('helvetica', 'normal')
+        pdf.setTextColor(113, 58, 37)
+        pdf.setFont('helvetica', 'bold')
         pdf.setFontSize(6.5)
-        pdf.text('À compléter', x + 3, numberY + 4)
+        pdf.text('À COMPLÉTER', x + 3, numberY + (item.kind === 'extra' ? 8 : 4))
       }
     })
     pdf.setTextColor(91, 105, 122)
@@ -575,9 +612,12 @@ function BindersContent() {
   const [showAllBinders, setShowAllBinders] = useState(false)
   const [profiles, setProfiles] = useState([])
   const [profileId, setProfileId] = useState('')
+  const [profileCreatedAt, setProfileCreatedAt] = useState('')
   const [ownedCardCounts, setOwnedCardCounts] = useState({})
+  const [ownedExtraCounts, setOwnedExtraCounts] = useState({})
   const [ownedCopyCount, setOwnedCopyCount] = useState(0)
   const [cards, setCards] = useState([])
+  const [extraVariants, setExtraVariants] = useState([])
   const [variantCopies, setVariantCopies] = useState({})
   const [etbImages, setEtbImages] = useState({})
   const [loading, setLoading] = useState(true)
@@ -609,7 +649,7 @@ function BindersContent() {
         }
         const signedUser = auth.user
         const { data: profileRows, error: profileError } = await supabase.from('collection_profiles')
-          .select('id,display_name,is_default,profile_type').order('created_at')
+          .select('id,display_name,is_default,profile_type,created_at').order('created_at')
         if (profileError) throw profileError
         const savedProfile = window.localStorage.getItem('pokevaleur-collection:' + signedUser.id)
         const activeProfile = (profileRows || []).find(row => row.id === savedProfile)
@@ -624,6 +664,7 @@ function BindersContent() {
         setUser(signedUser)
         setProfiles(profileRows || [])
         setProfileId(activeProfile.id)
+        setProfileCreatedAt(activeProfile.created_at || '')
         window.localStorage.setItem('pokevaleur-collection:' + signedUser.id, activeProfile.id)
         setSets(setRows || [])
 
@@ -636,7 +677,7 @@ function BindersContent() {
         const variants = []
         for (let offset = 0; offset < variantIds.length; offset += 250) {
           const { data, error: variantError } = await supabase.from('card_print_variants')
-            .select('id,card_id').in('id', variantIds.slice(offset, offset + 250))
+            .select('id,card_id,is_master_set_target').in('id', variantIds.slice(offset, offset + 250))
           if (variantError) throw variantError
           variants.push(...(data || []))
         }
@@ -649,18 +690,24 @@ function BindersContent() {
           for (const card of data || []) cardSetById.set(card.id, card.card_set_id)
         }
         const setCards = {}
-        const variantIdsBySet = {}
+        const setExtraVariants = {}
         for (const variant of variants) {
           const setId = cardSetById.get(variant.card_id)
           if (!setId) continue
-          if (!setCards[setId]) setCards[setId] = new Set()
-          setCards[setId].add(variant.card_id)
-          if (!variantIdsBySet[setId]) variantIdsBySet[setId] = new Set()
-          variantIdsBySet[setId].add(variant.id)
+          if (variant.is_master_set_target) {
+            if (!setCards[setId]) setCards[setId] = new Set()
+            setCards[setId].add(variant.card_id)
+          } else {
+            if (!setExtraVariants[setId]) setExtraVariants[setId] = new Set()
+            setExtraVariants[setId].add(variant.id)
+          }
         }
         const counts = {}
         for (const [setId, cardSet] of Object.entries(setCards)) counts[setId] = cardSet.size
+        const extraCounts = {}
+        for (const [setId, variantsInSet] of Object.entries(setExtraVariants)) extraCounts[setId] = variantsInSet.size
         setOwnedCardCounts(counts)
+        setOwnedExtraCounts(extraCounts)
 
         try {
           const { data: products, error: productsError } = await fetchAllRows(() => supabase.from('products')
@@ -695,18 +742,19 @@ function BindersContent() {
   }, [supabase])
 
   const selectedSet = sets.find(set => set.id === requestedSetId) || null
-  const ownedSets = sets.filter(set => (ownedCardCounts[set.id] || 0) > 0)
+  const ownedSets = sets.filter(set => (ownedCardCounts[set.id] || 0) > 0 || (ownedExtraCounts[set.id] || 0) > 0)
   const displayedSets = showAllBinders ? sets : ownedSets
 
   useEffect(() => {
     setPdfFile(null)
     setPdfCanShare(false)
     setPdfNotice('')
-  }, [selectedSet?.id, profileId, cards, variantCopies])
+  }, [selectedSet?.id, profileId, profileCreatedAt, cards, extraVariants, variantCopies])
 
   useEffect(() => {
     if (!selectedSet || !profileId) {
       setCards([])
+      setExtraVariants([])
       setVariantCopies({})
       return
     }
@@ -720,7 +768,10 @@ function BindersContent() {
           .eq('card_set_id', selectedSet.id).order('guide_order', { ascending: true }).order('collector_number')
         if (cardError) throw cardError
         const variants = (cardRows || []).flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
-        const ids = variants.map(variant => variant.id)
+        const extraItems = (cardRows || []).flatMap(card => (card.card_print_variants || [])
+          .filter(variant => !variant.is_master_set_target)
+          .map(variant => ({ card, variant })))
+        const ids = [...variants, ...extraItems.map(item => item.variant)].map(variant => variant.id)
         let copies = []
         for (let offset = 0; offset < ids.length; offset += 250) {
           const { data, error: copyError } = await supabase.from('collection_cards')
@@ -734,6 +785,7 @@ function BindersContent() {
         const grouped = {}
         for (const copy of copies) grouped[copy.card_print_variant_id] = [...(grouped[copy.card_print_variant_id] || []), copy]
         setCards((cardRows || []).filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target)))
+        setExtraVariants(extraItems)
         setVariantCopies(grouped)
       } catch (loadError) {
         if (!cancelled) setError(loadError.message || 'Impossible de charger ce classeur.')
@@ -753,16 +805,22 @@ function BindersContent() {
   const setTotal = cards.length || Number(selectedSet?.advertised_card_count || 0)
   const missingOnSet = Math.max(setTotal - ownedOnSet, 0)
   const cardsPerBookPage = cardsPerSpread === 16 ? 16 : 12
-  const totalSpreads = Math.max(1, Math.ceil(cards.length / cardsPerSpread))
-  const totalBookPages = cardsPerSpread === 16 ? totalSpreads : totalSpreads * 2
+  const masterSpreadCount = cards.length ? Math.ceil(cards.length / cardsPerSpread) : (extraVariants.length ? 0 : 1)
+  const extraSpreadCount = Math.ceil(extraVariants.length / cardsPerSpread)
+  const totalSpreads = Math.max(1, masterSpreadCount + extraSpreadCount)
+  const totalBookPages = (cardsPerSpread === 16 ? 1 : 2) * totalSpreads
   const page = Math.max(0, Math.min(Number.isFinite(rawPage) ? rawPage : 0, totalSpreads - 1))
-  const pageCards = cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread)
-  const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageCards[index] || null)
+  const isExtraSpread = extraSpreadCount > 0 && page >= masterSpreadCount
+  const pageItems = isExtraSpread
+    ? extraVariants.slice((page - masterSpreadCount) * cardsPerSpread, (page - masterSpreadCount + 1) * cardsPerSpread).map(item => ({ kind: 'extra', ...item }))
+    : cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread).map(card => ({ kind: 'master', card }))
+  const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageItems[index] || null)
   const pageSides = cardsPerSpread === 16 ? [0] : [0, 1]
 
   function handleCopyDeleted(copy) {
     const remainingForVariant = (variantCopies[copy.card_print_variant_id] || []).filter(row => row.id !== copy.id)
     const owningCard = cards.find(card => (card.card_print_variants || []).some(variant => variant.id === copy.card_print_variant_id))
+    const owningExtra = extraVariants.find(item => item.variant.id === copy.card_print_variant_id)
     const cardStillOwned = (owningCard?.card_print_variants || []).some(variant =>
       variant.id === copy.card_print_variant_id
         ? remainingForVariant.length > 0
@@ -777,6 +835,9 @@ function BindersContent() {
     if (owningCard && !cardStillOwned) {
       setOwnedCardCounts(current => ({ ...current, [selectedSet.id]: Math.max((current[selectedSet.id] || 0) - 1, 0) }))
     }
+    if (owningExtra && remainingForVariant.length === 0) {
+      setOwnedExtraCounts(current => ({ ...current, [selectedSet.id]: Math.max((current[selectedSet.id] || 0) - 1, 0) }))
+    }
     setZoomedCard(current => current ? { ...current, copies: (current.copies || []).filter(row => row.id !== copy.id) } : current)
   }
 
@@ -790,8 +851,11 @@ function BindersContent() {
       const pdf = await createBinderPdf({
         set: selectedSet,
         cards,
+        extraVariants,
         variantCopies,
         coverArt,
+        profileName,
+        profileCreatedAt,
         ownedOnSet,
         copiesOnSet,
         missingOnSet,
@@ -892,11 +956,13 @@ function BindersContent() {
         {displayedSets.length ? <section className={styles.library} aria-label="Bibliothèque des séries">
           {displayedSets.map(set => {
             const [start, end] = colorFor(set.set_code)
-            const hasCards = (ownedCardCounts[set.id] || 0) > 0
+            const masterOwned = ownedCardCounts[set.id] || 0
+            const extraOwned = ownedExtraCounts[set.id] || 0
+            const hasCards = masterOwned > 0 || extraOwned > 0
             return <button key={set.id} type="button" className={hasCards ? styles.spineActive : styles.spine}
               style={{ '--spine-start': start, '--spine-end': end }}
               onClick={() => navigate({ open: false, set: set.id })}
-              aria-label={'Ouvrir le classeur ' + set.set_name + ', ' + (ownedCardCounts[set.id] || 0) + ' cartes possédées'}>
+              aria-label={'Ouvrir le classeur ' + set.set_name + ', ' + masterOwned + ' cartes du Master Set et ' + extraOwned + ' versions hors Master Set possédées'}>
               {hasCards && generatedCoverFor(set) && <span className={styles.spineArtwork} aria-hidden="true"><img src={generatedCoverFor(set)} alt="" loading="lazy" /></span>}
               <span className={styles.spineCode}>{shortCode(set)}</span>
               <span className={styles.spineMarker} aria-hidden="true" />
@@ -940,6 +1006,7 @@ function BindersContent() {
               <div><strong>{ownedOnSet}</strong><span>cartes possédées</span></div>
               <div><strong>{missingOnSet}</strong><span>emplacements à compléter</span></div>
               <div><strong>{copiesOnSet}</strong><span>exemplaires possédés</span></div>
+              <div><strong>{extraVariants.length}</strong><span>versions hors Master Set</span></div>
             </div>
             <div className={styles.coverActions}>
               <button className={styles.openButton} type="button" onClick={() => navigate({ open: true, page: 0 })}>Ouvrir le classeur <span aria-hidden="true">→</span></button>
@@ -962,30 +1029,31 @@ function BindersContent() {
         </div>
         <header className={styles.openHeader}>
           <div><h1>{selectedSet.set_name}</h1></div>
-          <p>{ownedOnSet} possédée{ownedOnSet === 1 ? '' : 's'} · {missingOnSet} emplacement{missingOnSet === 1 ? '' : 's'} à compléter</p>
+          <p>{ownedOnSet} possédée{ownedOnSet === 1 ? '' : 's'} · {missingOnSet} emplacement{missingOnSet === 1 ? '' : 's'} à compléter · {extraVariants.length} version{extraVariants.length === 1 ? '' : 's'} hors Master Set</p>
         </header>
         {error && <p className={styles.error} role="alert">{error}</p>}
         {cardsLoading ? <p className={styles.status}>Chargement des cartes du classeur…</p> : <>
           <nav className={styles.pageNav} aria-label="Navigation du classeur">
             <button type="button" onClick={() => navigate({ open: true, page: Math.max(page - 1, 0) })} disabled={page === 0} aria-label="Double page précédente">←</button>
-            <span>{page + 1}/{totalSpreads}</span>
+            <span>{isExtraSpread
+              ? 'Hors Master ' + (page - masterSpreadCount + 1) + '/' + extraSpreadCount
+              : 'Master ' + (masterSpreadCount ? page + 1 : 0) + '/' + masterSpreadCount}</span>
             <button type="button" onClick={() => navigate({ open: true, page: Math.min(page + 1, totalSpreads - 1) })} disabled={page >= totalSpreads - 1} aria-label="Double page suivante">→</button>
           </nav>
-          <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(cardsPerSpread === 16 ? 'Page ' : 'Double page ') + (page + 1) + ' sur ' + totalSpreads}>
+          <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(isExtraSpread ? 'Hors Master Set, ' : 'Master Set, ') + (cardsPerSpread === 16 ? 'page ' : 'double page ') + (isExtraSpread ? page - masterSpreadCount + 1 : page + 1)}>
             {pageSides.map(side => <section key={side} className={styles.bookPage} aria-label={cardsPerSpread === 16 ? 'Page du classeur' : side === 0 ? 'Page de gauche' : 'Page de droite'}>
-              <div className={styles.pageTop}><span>{shortCode(selectedSet)}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
+              <div className={styles.pageTop}><span>{isExtraSpread ? 'Hors Master Set · ' + extraVariants.length : shortCode(selectedSet)}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
-                {spreadSlots.slice(side * cardsPerBookPage, side * cardsPerBookPage + cardsPerBookPage).map((card, slotIndex) => {
-                  const cardVariants = (card?.card_print_variants || []).filter(variant => variant.is_master_set_target)
-                  const copyCount = cardVariants.reduce((count, variant) => count + (variantCopies[variant.id] || []).length, 0)
+                {spreadSlots.slice(side * cardsPerBookPage, side * cardsPerBookPage + cardsPerBookPage).map((item, slotIndex) => {
+                  const card = item?.card
+                  const variants = binderVariantsForItem(item)
+                  const ownedCopies = binderCopiesForItem(item, variantCopies)
+                  const copyCount = ownedCopies.length
                   const cardArt = imageFor(card)
                   if (card && copyCount) {
-                    const ownedCopies = cardVariants.flatMap(variant => (variantCopies[variant.id] || []).map(copy => ({
-                      ...copy, variantLabel: variant.variant_label || variant.variant_key || '',
-                    })))
-                    return <button key={card.id} type="button" className={styles.slotOpen}
+                    return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotOpen}
                       onClick={() => setZoomedCard({ ...card, setName: selectedSet.set_name, copies: ownedCopies })}
-                      aria-label={'Voir les exemplaires de ' + card.card_name + ', ' + ownedCopies.length + ' au total'}>
+                      aria-label={'Voir ' + (item.kind === 'extra' ? pdfVariantLabel(item.variant) + ' de ' : '') + card.card_name + ', ' + ownedCopies.length + ' exemplaire' + (ownedCopies.length === 1 ? '' : 's')}>
                       <div className={styles.thumb}>
                         {cardArt ? <img src={cardArt} alt="" loading="lazy" /> : <span>Illustration absente</span>}
                         <span className={styles.slotZoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
@@ -993,20 +1061,15 @@ function BindersContent() {
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
                       <span className={styles.cardNumber}>{card.collector_number}</span>
+                      {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{pdfVariantLabel(item.variant)}</span>}
                     </button>
                   }
-                  return <article key={card?.id || 'empty-' + side + '-' + slotIndex} className={styles.slot}>
-                    {card && copyCount ? <>
-                      <div className={styles.thumb}>
-                        {cardArt ? <img src={cardArt} alt={'Carte ' + card.card_name} loading="lazy" /> : <span>Illustration absente</span>}
-                        {copyCount > 1 && <b className={styles.copyBadge}>×{copyCount}</b>}
-                      </div>
-                      <strong className={styles.cardName}>{card.card_name}</strong>
-                      <span className={styles.cardNumber}>{card.collector_number}</span>
-                    </> : <>
+                  return <article key={item ? item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-') : 'empty-' + side + '-' + slotIndex} className={styles.slot}>
+                    {card ? <>
                       <span className={styles.emptyNumber}>{card?.collector_number || '—'}</span>
-                      <span className={styles.emptyHint}>{card ? 'À compléter' : 'Emplacement libre'}</span>
-                    </>}
+                      <span className={styles.emptyHint}>À compléter</span>
+                      {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{pdfVariantLabel(item.variant)}</span>}
+                    </> : <><span className={styles.emptyNumber}>—</span><span className={styles.emptyHint}>Emplacement libre</span></>}
                   </article>
                 })}
               </div>

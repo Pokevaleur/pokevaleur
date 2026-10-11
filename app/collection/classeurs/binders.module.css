@@ -85,6 +85,7 @@
 .slotZoomHint svg { display:block; width:12px; height:12px; }
 .cardName { display:-webkit-box; max-width:100%; margin-top:3px; overflow:hidden; color:#293b50; font-size:clamp(.57rem,1vw,.76rem); line-height:1.1; -webkit-box-orient:vertical; -webkit-line-clamp:1; }
 .cardNumber { color:#778292; font-size:.58rem; }
+.extraVariantLabel { max-width:100%; margin-top:2px; overflow:hidden; color:#805f1e; font-size:.5rem; font-weight:800; line-height:1.05; text-overflow:ellipsis; white-space:nowrap; }
 .emptyNumber { display:grid; width:25px; height:25px; place-items:center; border:1px solid #d3d4d6; border-radius:50%; color:#9aa0a8; font-size:.65rem; font-weight:800; }
 .emptyHint { margin-top:6px; color:#9a9fa8; font-size:.58rem; }
 .pageNav { display:flex; align-items:center; justify-content:center; gap:18px; width:min(100%,420px); min-height:52px; margin:0 auto 12px; padding:6px 10px; border:1px solid #dce3eb; border-radius:16px; background:rgba(255,255,255,.98); color:#536477; font-size:.9rem; font-weight:800; box-shadow:0 5px 16px #15263a16; }
