@@ -433,7 +433,7 @@ export default function CardCataloguePage() {
                     </label>
                     {checked && <label className={styles.quantity}>
                       <span>Qté</span>
-                      <input type="number" min="1" max="99" inputMode="numeric" value={quantity} onChange={event => setSelection(current => ({ ...current, [variant.id]: event.target.value }))} aria-label={'Quantité de ' + card.card_name + ' ' + label} />
+                      <input type="number" min="1" max="99" inputMode="numeric" value={quantity} onFocus={event => event.currentTarget.select()} onChange={event => setSelection(current => ({ ...current, [variant.id]: event.target.value }))} aria-label={'Quantité de ' + card.card_name + ' ' + label} />
                     </label>}
                   </div>
                 })}
