@@ -78,13 +78,31 @@ export default function Navigation({ links }) {
     window.location.href = '/'
   }
 
-  const visibleLinks = links
-    .map(link => link.children
-      ? { ...link, children: link.children.filter(child => identity || !child.memberOnly) }
-      : link)
-    .filter(link => !link.memberOnly || identity)
-    .filter(link => !link.children || link.children.length > 0)
+  function filterVisibleLinks(items) {
+    return items
+      .filter(link => !link.memberOnly || identity)
+      .map(link => link.children
+        ? { ...link, children: filterVisibleLinks(link.children) }
+        : link)
+      .filter(link => !link.children || link.children.length > 0)
+  }
+
+  const visibleLinks = filterVisibleLinks(links)
   if (isAdmin) visibleLinks.push({ href: '/admin', label: 'Admin' })
+
+  function renderMenuItems(items) {
+    return items.map(item => item.children
+      ? (
+        <details className="collectionNavSubgroup" key={`${item.label}-${item.href}`}>
+          <summary>
+            <a href={item.href || item.children[0]?.href} onClick={event => event.stopPropagation()}>{item.label}</a>
+            <span aria-hidden="true">›</span>
+          </summary>
+          <div className="collectionNavSubpanel">{renderMenuItems(item.children)}</div>
+        </details>
+      )
+      : <a href={item.href} key={`${item.label}-${item.href}`}>{item.label}</a>)
+  }
 
   function renderLinks() {
     return visibleLinks.map(link => link.children
@@ -101,7 +119,7 @@ export default function Navigation({ links }) {
             <span aria-hidden="true">⌄</span>
           </summary>
           <div className="collectionNavPanel">
-            {link.children.map(child => <a href={child.href} key={child.href}>{child.label}</a>)}
+            {renderMenuItems(link.children)}
           </div>
         </details>
       )

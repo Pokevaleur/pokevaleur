@@ -31,7 +31,26 @@ const navLinks = [
       { href: '/collection?search=ETB', label: 'ETB' },
       { href: '/collection/cartes', label: 'Cartes', memberOnly: true },
       { href: '/collection/statistiques', label: 'Statistiques', memberOnly: true },
-      { href: '/collection/classeurs', label: 'Mes classeurs', memberOnly: true }
+      { href: '/collection/classeurs', label: 'Mes classeurs', memberOnly: true },
+      {
+        href: '/collection/statistiques',
+        label: 'Valeur',
+        memberOnly: true,
+        children: [
+          { href: '/collection/statistiques', label: 'Vue d’ensemble', memberOnly: true },
+          { href: '/collection', label: 'Produits scellés', memberOnly: true },
+          {
+            href: '/catalogue/cartes',
+            label: 'Cartes',
+            memberOnly: true,
+            children: [
+              { href: '/catalogue/cartes', label: 'Par série', memberOnly: true },
+              { href: '/catalogue/cartes', label: 'Carte individuelle', memberOnly: true },
+              { href: '/collection/stats?category=graded', label: 'Cartes gradées', memberOnly: true }
+            ]
+          }
+        ]
+      }
     ]
   },
   { href: '/opportunites', label: 'Watchlist' },
