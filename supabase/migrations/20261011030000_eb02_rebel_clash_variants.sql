@@ -431,4 +431,5 @@ FROM (
 ) AS desired(collector_number, variant_key, variant_label, finish_code)
 JOIN public.cards c
   ON c.card_set_id = (SELECT id FROM public.card_sets WHERE set_code = 'swsh2' AND language = 'FR')
- AND c.collector_number = desired.collector_number;
+ AND c.collector_number = desired.collector_number
+ON CONFLICT (card_id, variant_key) DO NOTHING;
