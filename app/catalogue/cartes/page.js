@@ -6,6 +6,7 @@ import { fetchAllRows } from '../../../lib/supabase-pagination'
 import styles from './page.module.css'
 
 const ALL_SERIES = '__all_series__'
+const MCDONALDS_SERIES = '__mcdonalds_series__'
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets(id,set_name,set_code),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
 
 const FRENCH_SET_CODES = {
@@ -48,6 +49,12 @@ function relatedSet(card) {
   return Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
 }
 
+function isMcDonaldsSet(set) {
+  const family = String(set?.series_name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
+  const name = String(set?.set_name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
+  return family.includes('mcdonald') || name.includes('mcdonald')
+}
+
 export default function CardCataloguePage() {
   const supabase = useMemo(() => createClient(), [])
   const [sets, setSets] = useState([])
@@ -73,7 +80,7 @@ export default function CardCataloguePage() {
     let cancelled = false
     async function initialize() {
       const [{ data: setRows, error: setLoadError }, { data: { user: signedInUser } }] = await Promise.all([
-        supabase.from('card_sets').select('id,set_name,set_code,language,release_date,advertised_card_count,checklist_scope_note')
+        supabase.from('card_sets').select('id,series_name,set_name,set_code,language,release_date,advertised_card_count,checklist_scope_note')
           .eq('is_public', true).eq('language', 'FR').order('release_date', { ascending: false }).order('set_name'),
         supabase.auth.getUser()
       ])
@@ -82,7 +89,7 @@ export default function CardCataloguePage() {
       else {
         setSets(setRows || [])
         const requestedSetId = new URLSearchParams(window.location.search).get('set')
-        if ((setRows || []).some(set => set.id === requestedSetId)) setSetId(requestedSetId)
+        if (requestedSetId === MCDONALDS_SERIES || (setRows || []).some(set => set.id === requestedSetId)) setSetId(requestedSetId)
       }
       setUser(signedInUser || null)
       if (signedInUser) {
@@ -151,7 +158,10 @@ export default function CardCataloguePage() {
       setOwned({})
       setSelection({})
       try {
-        const setIds = setId === ALL_SERIES ? sets.map(set => set.id) : [setId]
+        const mcDonaldSetIds = sets.filter(isMcDonaldsSet).map(set => set.id)
+        const setIds = setId === ALL_SERIES
+          ? sets.map(set => set.id)
+          : setId === MCDONALDS_SERIES ? mcDonaldSetIds : [setId]
         if (!setIds.length) return
         const term = query.trim().replace(/[%_]/g, '\\$&')
         const { data: rows, error: loadError } = await fetchAllRows(() => {
@@ -190,7 +200,10 @@ export default function CardCataloguePage() {
     return () => { cancelled = true; window.clearTimeout(timer) }
   }, [supabase, setId, query, profileId, sets])
 
-  const selectedSet = sets.find(set => set.id === setId)
+  const selectedSet = setId === MCDONALDS_SERIES
+    ? { id: MCDONALDS_SERIES, set_code: 'MCD', set_name: 'McDonald’s · toutes les années', series_name: 'Collection McDonald’s' }
+    : sets.find(set => set.id === setId)
+  const selectedMcDonaldsSet = setId === MCDONALDS_SERIES
   const visibleCards = cards.filter(card => {
     const term = filterQuery.trim().toLocaleLowerCase('fr')
     return !term || (String(card.collector_number || '') + ' ' + card.card_name).toLocaleLowerCase('fr').includes(term)
@@ -280,7 +293,8 @@ export default function CardCataloguePage() {
             {seriesPickerOpen && <div className={styles.seriesPickerOptions} role="listbox" aria-label="Séries du catalogue">
               <button type="button" role="option" aria-selected={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>Choisir une série…</button>
               <button type="button" role="option" aria-selected={setId === ALL_SERIES} className={setId === ALL_SERIES ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
-              {sets.map(set => <button type="button" role="option" aria-selected={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>{seriesLabel(set)}</button>)}
+              <button type="button" role="option" aria-selected={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
+              {sets.map(set => <button type="button" role="option" aria-selected={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
             </div>}
           </div>
         </label>
@@ -289,7 +303,7 @@ export default function CardCataloguePage() {
           <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu" />
         </label>}
         {selectedSet && <label className={styles.searchField}>
-          <span>Filtrer cette série</span>
+          <span>{selectedMcDonaldsSet ? 'Filtrer les éditions McDonald’s' : 'Filtrer cette série'}</span>
           <input type="search" value={filterQuery} onChange={event => { setFilterQuery(event.target.value); setSelection({}) }} placeholder="Numéro ou nom…" />
         </label>}
         {profiles.length > 1 && <label className={styles.profileField}>
@@ -308,7 +322,9 @@ export default function CardCataloguePage() {
 
       {selectedSet && !loadingCards && !error && <div className={styles.setSummary}>
         <div><strong>{seriesLabel(selectedSet)}</strong><span>{visibleCards.length}{filterQuery ? ' résultat(s)' : ' cartes dans la liste du catalogue'}</span></div>
-        <a href={'/collection/cartes?set=' + encodeURIComponent(setId) + '&collection=owned'}>Voir mes cartes de cette série →</a>
+        <a href={selectedMcDonaldsSet
+          ? '/collection/classeurs?set=mcdonalds'
+          : '/collection/cartes?set=' + encodeURIComponent(setId) + '&collection=owned'}>{selectedMcDonaldsSet ? 'Voir mon classeur McDonald’s →' : 'Voir mes cartes de cette série →'}</a>
       </div>}
 
       {cards.length > 0 && !loadingCards && (
@@ -323,7 +339,7 @@ export default function CardCataloguePage() {
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
-                <span className={styles.cardNumber}>{setId === ALL_SERIES ? seriesLabel(set) + ' · ' : ''}N° {card.collector_number}</span>
+                <span className={styles.cardNumber}>{setId === ALL_SERIES ? seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}N° {card.collector_number}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
                 <span className={styles.rarity}>{card.rarity_label || 'Rareté non renseignée'}</span>
               </div>

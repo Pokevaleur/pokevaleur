@@ -6,7 +6,10 @@ import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
 import styles from './binders.module.css'
 
+const MCDONALDS_BINDER_ID = 'mcdonalds'
+
 function shortCode(set) {
+  if (set?.id === MCDONALDS_BINDER_ID) return 'MCD'
   const code = String(set?.set_code || '').trim().toUpperCase()
   const match = code.match(/^(?:SWSH|EB|SV|EV|ME|SM|SL|XY|BW|DP|PL|HGSS)[\s-]*(\d+(?:\.\d+)?)([A-Z]*)$/)
   if (match) {
@@ -21,12 +24,24 @@ function normalize(value) {
   return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
 }
 
+function isMcDonaldsSet(set) {
+  const family = normalize(set?.series_name)
+  const name = normalize(set?.set_name)
+  return family.includes('mcdonald') || name.includes('mcdonald')
+}
+
+function setYear(set) {
+  const fromDate = set?.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : NaN
+  return Number.isFinite(fromDate) ? fromDate : Number(String(set?.set_name || '').match(/20\d{2}/)?.[0]) || 0
+}
+
 
 const GENERATED_COVER_ALIASES = [["mascarade crepusculaire","mascarade-crepusculaire"],["evolutions prismatiques","evolutions-prismatiques"],["ecarlate et violet 151","ecarlate-violet-151"],["etincelles deferlantes","etincelles-deferlantes"],["alliance infaillible","alliance-infaillible"],["harmonie des esprits","harmonie-des-esprits"],["flammes obsidiennes","flammes-obsidiennes"],["destinees radieuses","destinees-radieuses"],["evolutions a paldea","evolution-a-paldea"],["rivalites destinees","rivalites-destinees"],["gardiens ascendants","gardiens-ascendants"],["evolutions celestes","evolutions-celestes"],["majeste des dragons","majeste-des-dragons"],["heros transcendants","heros-transcendants"],["forces temporelles","forces-temporelles"],["couronne stellaire","couronne-stellaire"],["evolution a paldea","evolution-a-paldea"],["stars etincelantes","stars-etincelantes"],["tenebres embrasees","tenebres-embrasees"],["aventures ensemble","aventures-ensemble"],["clash des rebelles","clash-des-rebelles"],["lumiere interdite","lumiere-interdite"],["vigueur spectrale","vigueur-spectrale"],["origines antiques","origines-antiques"],["tempete argentee","tempete-argentee"],["voltage eclatant","voltage-eclatant"],["offensive vapeur","offensive-vapeur"],["eclipse cosmique","eclipse-cosmique"],["epee et bouclier","epee-et-bouclier"],["styles de combat","styles-de-combat"],["faille paradoxe","faille-paradoxe"],["tempete celeste","tempete-celeste"],["poing de fusion","poing-de-fusion"],["ombres ardentes","ombres-ardentes"],["impulsion turbo","impulsion-turbo"],["invasion carmin","invasion-carmin"],["fable nebuleuse","fable-nebuleuse"],["astres radieux","astres-radieux"],["origine perdue","origine-perdue"],["tonnerre perdu","tonnerre-perdu"],["voie du maitre","voie-du-maitre"],["flamme blanche","flamme-blanche"],["regne de glace","regne-de-glace"],["soleil et lune","soleil-et-lune"],["poings furieux","poings-furieux"],["ciel rugissant","ciel-rugissant"],["mega evolution","mega-evolution"],["zenith supreme","zenith-supreme-variante"],["rupture turbo","rupture-turbo"],["foudre noire","foudre-noire"],["celebrations","celebrations"],["ultra prisme","ultra-prisme"],["duo de choc","duo-de-choc"],["generations","generations"],["pokemon go","pokemon-go"],["primo choc","primo-choc"],["etincelles","etincelles-xy"],["evolutions","evolutions-xy"],["151","ecarlate-violet-151"],["xy","xy"]]
 
 function generatedCoverFor(set) {
   const name = normalize(set?.set_name).replace(/[^a-z0-9]+/g, ' ').trim()
   const code = shortCode(set)
+  if (set?.id === MCDONALDS_BINDER_ID || (code === 'MCD' && name.includes('mcdonald'))) return '/binder-covers/mcdonalds-collection.webp'
   if (code === 'ME2' || name.includes('flammes fantasmagoriques')) return '/binder-covers/flammes-fantasmagoriques.webp'
   if (code === 'EV4.5' || name.includes('destinees de paldea')) return '/binder-covers/destinees-de-paldea.webp'
   if (code === 'MEP') return '/binder-covers/mega-evolution.webp'
@@ -44,6 +59,10 @@ function colorFor(value) {
 
 function imageFor(card) {
   return card?.image_url || card?.image_source_url || ''
+}
+
+function cardSetFor(card) {
+  return Array.isArray(card?.card_sets) ? card.card_sets[0] : card?.card_sets
 }
 
 function pdfVariantLabel(variant) {
@@ -103,7 +122,7 @@ function loadPdfImage(url) {
   })
 }
 
-async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, coverArt, profileName, ownerDisplayName, profileCreatedAt, ownedOnSet, copiesOnSet, missingOnSet, onProgress }) {
+async function createBinderPdf({ set, cards, extraVariants = [], binderSections = null, variantCopies, coverArt, profileName, ownerDisplayName, profileCreatedAt, ownedOnSet, copiesOnSet, missingOnSet, onProgress }) {
   const { jsPDF } = await import('jspdf')
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true })
   const pageWidth = pdf.internal.pageSize.getWidth()
@@ -164,7 +183,21 @@ async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, 
   const cardsPerPage = 12
   const masterPageCount = cards.length ? Math.ceil(cards.length / cardsPerPage) : (extraVariants.length ? 0 : 1)
   const extraPageCount = Math.ceil(extraVariants.length / cardsPerPage)
-  const totalPages = Math.max(1, masterPageCount + extraPageCount)
+  const sectionPages = binderSections?.length ? binderSections.flatMap(section => {
+    const pages = []
+    const masterCount = Math.ceil(section.cards.length / cardsPerPage)
+    const outsideCount = Math.ceil(section.extras.length / cardsPerPage)
+    for (let index = 0; index < masterCount; index += 1) {
+      pages.push({ kind: 'master', section, index, count: masterCount,
+        items: section.cards.slice(index * cardsPerPage, (index + 1) * cardsPerPage).map(card => ({ kind: 'master', card })) })
+    }
+    for (let index = 0; index < outsideCount; index += 1) {
+      pages.push({ kind: 'extra', section, index, count: outsideCount,
+        items: section.extras.slice(index * cardsPerPage, (index + 1) * cardsPerPage).map(item => ({ kind: 'extra', ...item })) })
+    }
+    return pages
+  }) : null
+  const totalPages = Math.max(1, sectionPages?.length || masterPageCount + extraPageCount)
   const marginX = 9
   const gridTop = 28
   const gridBottom = 285
@@ -174,24 +207,28 @@ async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, 
   const overflowDetails = []
 
   for (let pageIndex = 0; pageIndex < totalPages; pageIndex += 1) {
-    const isExtraPage = extraPageCount > 0 && pageIndex >= masterPageCount
+    const sectionPage = sectionPages?.[pageIndex]
+    const isExtraPage = sectionPage ? sectionPage.kind === 'extra' : extraPageCount > 0 && pageIndex >= masterPageCount
     pdf.addPage('a4', 'portrait')
     pdf.setFillColor(249, 250, 252)
     pdf.rect(0, 0, pageWidth, pageHeight, 'F')
     pdf.setTextColor(23, 47, 78)
     pdf.setFont('helvetica', 'bold')
     pdf.setFontSize(13)
-    pdf.text(isExtraPage ? 'Hors Master Set · ' + extraVariants.length + ' versions' : set.set_name, marginX, 14)
+    const sectionLabel = sectionPage?.section.set.set_name
+    pdf.text(isExtraPage
+      ? 'Hors Master Set · ' + (sectionPage?.section.extras.length ?? extraVariants.length) + ' versions' + (sectionLabel ? ' · ' + sectionLabel : '')
+      : sectionLabel || set.set_name, marginX, 14)
     pdf.setFont('helvetica', 'normal')
     pdf.setFontSize(8)
     pdf.text(isExtraPage
-      ? 'Page ' + (pageIndex - masterPageCount + 1) + '/' + extraPageCount
-      : seriesCode + ' · Page ' + (pageIndex + 1) + '/' + masterPageCount, pageWidth - marginX, 14, { align: 'right' })
+      ? 'Page ' + (sectionPage ? sectionPage.index + 1 : pageIndex - masterPageCount + 1) + '/' + (sectionPage?.count || extraPageCount)
+      : (sectionPage ? shortCode(sectionPage.section.set) + ' · ' : seriesCode + ' · ') + 'Page ' + (sectionPage ? sectionPage.index + 1 : pageIndex + 1) + '/' + (sectionPage?.count || masterPageCount), pageWidth - marginX, 14, { align: 'right' })
     pdf.setDrawColor(210, 219, 229)
     pdf.line(marginX, 19, pageWidth - marginX, 19)
     onProgress('Création du PDF : page ' + (pageIndex + 1) + ' sur ' + totalPages + '…')
 
-    const pageItems = isExtraPage
+    const pageItems = sectionPage ? sectionPage.items : isExtraPage
       ? extraVariants.slice((pageIndex - masterPageCount) * cardsPerPage, (pageIndex - masterPageCount + 1) * cardsPerPage).map(item => ({ kind: 'extra', ...item }))
       : cards.slice(pageIndex * cardsPerPage, (pageIndex + 1) * cardsPerPage).map(card => ({ kind: 'master', card }))
     const images = await Promise.all(pageItems.map(item => loadPdfImage(binderCopiesForItem(item, variantCopies).length ? imageFor(item.card) : '')))
@@ -205,6 +242,7 @@ async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, 
       const h = cellHeight - 3
       const ownedCopies = binderCopiesForItem(item, variantCopies)
       const ownedVariants = binderVariantsForItem(item).map(variant => ({ variant, count: (variantCopies[variant.id] || []).length })).filter(variant => variant.count > 0)
+      const missingVariants = binderVariantsForItem(item).filter(variant => !(variantCopies[variant.id] || []).length)
 
       pdf.setFillColor(ownedCopies.length ? 255 : 232, ownedCopies.length ? 253 : 237, ownedCopies.length ? 245 : 243)
       pdf.setDrawColor(ownedCopies.length ? 165 : 150, ownedCopies.length ? 191 : 161, ownedCopies.length ? 174 : 174)
@@ -258,6 +296,13 @@ async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, 
         pdf.setFont('helvetica', 'bold')
         pdf.setFontSize(6.5)
         pdf.text('À COMPLÉTER', x + 3, numberY + (item.kind === 'extra' ? 8 : 4))
+      }
+      if (item.kind === 'master' && missingVariants.length && ownedCopies.length) {
+        pdf.setTextColor(137, 86, 34)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(5.2)
+        const missingLabel = pdf.splitTextToSize('Manquantes : ' + missingVariants.map(pdfVariantLabel).join(', '), w - 6).slice(0, 2)
+        pdf.text(missingLabel, x + 3, y + h - 5)
       }
     })
     pdf.setTextColor(91, 105, 122)
@@ -752,9 +797,29 @@ function BindersContent() {
     return () => { cancelled = true }
   }, [supabase])
 
-  const selectedSet = sets.find(set => set.id === requestedSetId) || null
-  const ownedSets = sets.filter(set => (ownedCardCounts[set.id] || 0) > 0 || (ownedExtraCounts[set.id] || 0) > 0)
-  const displayedSets = showAllBinders ? sets : ownedSets
+  const mcDonaldSets = sets.filter(isMcDonaldsSet).sort((a, b) => setYear(a) - setYear(b) || a.set_name.localeCompare(b.set_name, 'fr'))
+  const mcDonaldSetIds = mcDonaldSets.map(set => set.id)
+  const mcDonaldBinder = {
+    id: MCDONALDS_BINDER_ID,
+    set_code: 'MCD',
+    set_name: 'McDonald’s',
+    series_name: 'Collection McDonald’s',
+    memberSets: mcDonaldSets,
+  }
+  const selectedSet = requestedSetId === MCDONALDS_BINDER_ID
+    ? mcDonaldBinder
+    : sets.find(set => set.id === requestedSetId) || null
+  const allLibrarySets = (() => {
+    const firstMcDonaldsIndex = sets.findIndex(isMcDonaldsSet)
+    const regularSets = sets.filter(set => !isMcDonaldsSet(set))
+    if (firstMcDonaldsIndex < 0) return regularSets
+    const beforeMcDonalds = sets.slice(0, firstMcDonaldsIndex).filter(set => !isMcDonaldsSet(set))
+    return [...beforeMcDonalds, mcDonaldBinder, ...regularSets.filter(set => !beforeMcDonalds.some(existing => existing.id === set.id))]
+  })()
+  const ownedSets = allLibrarySets.filter(set => set.id === MCDONALDS_BINDER_ID
+    ? set.memberSets.some(member => (ownedCardCounts[member.id] || 0) > 0 || (ownedExtraCounts[member.id] || 0) > 0)
+    : (ownedCardCounts[set.id] || 0) > 0 || (ownedExtraCounts[set.id] || 0) > 0)
+  const displayedSets = showAllBinders ? allLibrarySets : ownedSets
 
   useEffect(() => {
     setPdfFile(null)
@@ -774,9 +839,12 @@ function BindersContent() {
       setCardsLoading(true)
       setError('')
       try {
-        const { data: cardRows, error: cardError } = await supabase.from('cards')
-          .select('id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_label,variant_key,is_master_set_target)')
-          .eq('card_set_id', selectedSet.id).order('guide_order', { ascending: true }).order('collector_number')
+        let cardQuery = supabase.from('cards')
+          .select('id,card_set_id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets(id,set_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,is_master_set_target)')
+        cardQuery = selectedSet.id === MCDONALDS_BINDER_ID
+          ? cardQuery.in('card_set_id', mcDonaldSetIds)
+          : cardQuery.eq('card_set_id', selectedSet.id)
+        const { data: cardRows, error: cardError } = await cardQuery.order('guide_order', { ascending: true }).order('collector_number')
         if (cardError) throw cardError
         const variants = (cardRows || []).flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
         const extraItems = (cardRows || []).flatMap(card => (card.card_print_variants || [])
@@ -806,15 +874,20 @@ function BindersContent() {
     }
     loadBinder()
     return () => { cancelled = true }
-  }, [supabase, selectedSet?.id, profileId])
+  }, [supabase, selectedSet?.id, profileId, mcDonaldSetIds.join(',')])
 
   const copiesOnSet = useMemo(
     () => cards.reduce((sum, card) => sum + (card.card_print_variants || []).reduce((n, variant) => n + (variantCopies[variant.id] || []).length, 0), 0),
     [cards, variantCopies]
   )
-  const ownedOnSet = ownedCardCounts[requestedSetId] || 0
-  const setTotal = cards.length || Number(selectedSet?.advertised_card_count || 0)
-  const missingOnSet = Math.max(setTotal - ownedOnSet, 0)
+  const isMcDonaldsBinder = selectedSet?.id === MCDONALDS_BINDER_ID
+  const ownedOnSet = isMcDonaldsBinder
+    ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
+    : ownedCardCounts[requestedSetId] || 0
+  const setTotal = cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
+  const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target).length, 0)
+  const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && (variantCopies[variant.id] || []).length).length, 0)
+  const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
   const missingBinderRows = cards.flatMap(card => (card.card_print_variants || [])
     .filter(variant => variant.is_master_set_target && !(variantCopies[variant.id] || []).length)
     .map(variant => ({ card, variant, label: pdfVariantLabel(variant) })))
@@ -823,14 +896,38 @@ function BindersContent() {
     label: row.label,
     rows: missingBinderRows.filter(candidate => candidate.variant.variant_key === row.variant.variant_key),
   }])).values()].sort((a, b) => a.label.localeCompare(b.label, 'fr'))
+  const familySections = useMemo(() => isMcDonaldsBinder
+    ? mcDonaldSets.map(set => ({
+      set,
+      cards: cards.filter(card => card.card_set_id === set.id),
+      extras: extraVariants.filter(item => item.card.card_set_id === set.id),
+    })).filter(section => section.cards.length || section.extras.length)
+    : [], [isMcDonaldsBinder, mcDonaldSets, cards, extraVariants])
+  const familySpreads = useMemo(() => familySections.flatMap(section => {
+    const masterCount = Math.ceil(section.cards.length / cardsPerSpread)
+    const extraCount = Math.ceil(section.extras.length / cardsPerSpread)
+    const spreads = []
+    for (let index = 0; index < masterCount; index += 1) spreads.push({
+      kind: 'master', section, index, count: masterCount,
+      items: section.cards.slice(index * cardsPerSpread, (index + 1) * cardsPerSpread).map(card => ({ kind: 'master', card })),
+    })
+    for (let index = 0; index < extraCount; index += 1) spreads.push({
+      kind: 'extra', section, index, count: extraCount,
+      items: section.extras.slice(index * cardsPerSpread, (index + 1) * cardsPerSpread).map(item => ({ kind: 'extra', ...item })),
+    })
+    return spreads
+  }), [familySections, cardsPerSpread])
   const cardsPerBookPage = cardsPerSpread === 16 ? 16 : 12
   const masterSpreadCount = cards.length ? Math.ceil(cards.length / cardsPerSpread) : (extraVariants.length ? 0 : 1)
   const extraSpreadCount = Math.ceil(extraVariants.length / cardsPerSpread)
-  const totalSpreads = Math.max(1, masterSpreadCount + extraSpreadCount)
+  const totalSpreads = isMcDonaldsBinder
+    ? Math.max(1, familySpreads.length)
+    : Math.max(1, masterSpreadCount + extraSpreadCount)
   const totalBookPages = (cardsPerSpread === 16 ? 1 : 2) * totalSpreads
   const page = Math.max(0, Math.min(Number.isFinite(rawPage) ? rawPage : 0, totalSpreads - 1))
-  const isExtraSpread = extraSpreadCount > 0 && page >= masterSpreadCount
-  const pageItems = isExtraSpread
+  const familyPage = isMcDonaldsBinder ? familySpreads[page] : null
+  const isExtraSpread = familyPage ? familyPage.kind === 'extra' : extraSpreadCount > 0 && page >= masterSpreadCount
+  const pageItems = familyPage ? familyPage.items : isExtraSpread
     ? extraVariants.slice((page - masterSpreadCount) * cardsPerSpread, (page - masterSpreadCount + 1) * cardsPerSpread).map(item => ({ kind: 'extra', ...item }))
     : cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread).map(card => ({ kind: 'master', card }))
   const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageItems[index] || null)
@@ -851,11 +948,12 @@ function BindersContent() {
       [copy.card_print_variant_id]: (current[copy.card_print_variant_id] || []).filter(row => row.id !== copy.id),
     }))
     setOwnedCopyCount(current => Math.max(current - 1, 0))
+    const owningSetId = owningCard?.card_set_id || owningExtra?.card.card_set_id || selectedSet.id
     if (owningCard && !cardStillOwned) {
-      setOwnedCardCounts(current => ({ ...current, [selectedSet.id]: Math.max((current[selectedSet.id] || 0) - 1, 0) }))
+      setOwnedCardCounts(current => ({ ...current, [owningSetId]: Math.max((current[owningSetId] || 0) - 1, 0) }))
     }
     if (owningExtra && remainingForVariant.length === 0) {
-      setOwnedExtraCounts(current => ({ ...current, [selectedSet.id]: Math.max((current[selectedSet.id] || 0) - 1, 0) }))
+      setOwnedExtraCounts(current => ({ ...current, [owningSetId]: Math.max((current[owningSetId] || 0) - 1, 0) }))
     }
     setZoomedCard(current => current ? { ...current, copies: (current.copies || []).filter(row => row.id !== copy.id) } : current)
   }
@@ -866,9 +964,12 @@ function BindersContent() {
       setCopyNotice('Aucune variante manquante dans le Master Set.')
       return
     }
+    const rowNumber = row => isMcDonaldsBinder
+      ? setYear(cardSetFor(row.card)) + ' · ' + row.card.collector_number
+      : row.card.collector_number
     const textToCopy = variantKey
-      ? [...new Set(rows.map(row => row.card.collector_number).filter(Boolean))].join(', ')
-      : rows.map(row => row.card.collector_number + ' (' + row.label + ')').join(', ')
+      ? [...new Set(rows.map(rowNumber).filter(Boolean))].join(', ')
+      : rows.map(row => rowNumber(row) + ' (' + row.label + ')').join(', ')
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(textToCopy)
@@ -884,7 +985,7 @@ function BindersContent() {
         textarea.remove()
         if (!copied) throw new Error('La copie n’est pas disponible dans ce navigateur.')
       }
-      const count = variantKey ? [...new Set(rows.map(row => row.card.collector_number).filter(Boolean))].length : rows.length
+      const count = variantKey ? [...new Set(rows.map(rowNumber).filter(Boolean))].length : rows.length
       setCopyNotice(count + ' variante' + (count === 1 ? '' : 's') + ' manquante' + (count === 1 ? '' : 's') + ' copiée' + (count === 1 ? '' : 's') + '.')
     } catch (copyError) {
       setCopyNotice('Copie impossible : ' + (copyError.message || 'sélectionne les numéros manuellement.'))
@@ -902,6 +1003,7 @@ function BindersContent() {
         set: selectedSet,
         cards,
         extraVariants,
+        binderSections: isMcDonaldsBinder ? familySections : null,
         variantCopies,
         coverArt,
         profileName,
@@ -976,6 +1078,10 @@ function BindersContent() {
   if (!user) return <main className={styles.page}><p className={styles.status}>Redirection vers la connexion…</p></main>
 
   const libraryMode = !selectedSet
+  const currentSectionSet = familyPage?.section.set || selectedSet
+  const currentSectionLabel = isMcDonaldsBinder && familyPage
+    ? setYear(currentSectionSet) + ' · ' + currentSectionSet.set_name
+    : shortCode(selectedSet)
   const [coverStart, coverEnd] = colorFor(selectedSet?.set_code)
   const generatedCoverArt = selectedSet && generatedCoverFor(selectedSet)
   const coverArt = selectedSet && (generatedCoverArt || (shortCode(selectedSet) === 'EV8' ? '/binder-covers/etincelles-deferlantes.svg' : etbImages[selectedSet.id]))
@@ -998,7 +1104,7 @@ function BindersContent() {
         <section className={styles.librarySummary} aria-label="Résumé de la bibliothèque">
           <strong>{ownedSets.length} classeur{ownedSets.length === 1 ? '' : 's'} avec des cartes</strong><span>{ownedCopyCount} cartes dans {profileName}</span>
         </section>
-        {sets.length > ownedSets.length && <div className={styles.libraryControls}>
+        {allLibrarySets.length > ownedSets.length && <div className={styles.libraryControls}>
           <span>{showAllBinders ? 'Toutes les séries du catalogue' : 'Tes séries en cours'}</span>
           <button type="button" className={styles.allBindersButton} onClick={() => setShowAllBinders(value => !value)}>
             {showAllBinders ? 'Masquer les séries sans carte' : 'Voir toutes les séries'}
@@ -1007,26 +1113,28 @@ function BindersContent() {
         {displayedSets.length ? <section className={styles.library} aria-label="Bibliothèque des séries">
           {displayedSets.map(set => {
             const [start, end] = colorFor(set.set_code)
-            const masterOwned = ownedCardCounts[set.id] || 0
-            const extraOwned = ownedExtraCounts[set.id] || 0
+            const memberSets = set.id === MCDONALDS_BINDER_ID ? set.memberSets : [set]
+            const masterOwned = memberSets.reduce((sum, member) => sum + (ownedCardCounts[member.id] || 0), 0)
+            const extraOwned = memberSets.reduce((sum, member) => sum + (ownedExtraCounts[member.id] || 0), 0)
             const hasCards = masterOwned > 0 || extraOwned > 0
             const spineCover = generatedCoverFor(set) || etbImages[set.id]
             return <button key={set.id} type="button" className={hasCards ? styles.spineActive : styles.spine}
               style={{ '--spine-start': start, '--spine-end': end }}
               onClick={() => navigate({ open: false, set: set.id })}
-              aria-label={'Ouvrir le classeur ' + set.set_name + ', ' + masterOwned + ' cartes du Master Set et ' + extraOwned + ' versions hors Master Set possédées'}>
-              {hasCards && spineCover && <span className={styles.spineArtwork} aria-hidden="true"><img src={spineCover} alt="" loading="lazy" /></span>}
+              aria-label={'Ouvrir le classeur ' + set.set_name + (set.id === MCDONALDS_BINDER_ID ? ' (' + memberSets.length + ' éditions annuelles)' : '') + ', ' + masterOwned + ' cartes du Master Set et ' + extraOwned + ' versions hors Master Set possédées'}>
+              {(hasCards || set.id === MCDONALDS_BINDER_ID) && spineCover && <span className={styles.spineArtwork} aria-hidden="true"><img src={spineCover} alt="" loading="lazy" /></span>}
               <span className={styles.spineCode}>{shortCode(set)}</span>
               <span className={styles.spineMarker} aria-hidden="true" />
             </button>
           })}
-        </section> : <p className={styles.empty}>{sets.length ? 'Tu n’as pas encore de carte dans un classeur.' : 'Aucune série française n’est publiée dans le catalogue.'}</p>}
+        </section> : <p className={styles.empty}>{allLibrarySets.length ? 'Tu n’as pas encore de carte dans un classeur.' : 'Aucune série française n’est publiée dans le catalogue.'}</p>}
         {requestedSetId && selectedSet && <p className={styles.notice}>Série sélectionnée : {selectedSet.set_name}</p>}
         <section className={styles.seriesJump} aria-label="Accès à un classeur">
           <label htmlFor="binder-series">Choisir une série</label>
           <select id="binder-series" value={requestedSetId} onChange={event => navigate({ open: false, set: event.target.value })}>
             <option value="">Sélectionner une série</option>
-            {sets.map(set => <option key={set.id} value={set.id}>{shortCode(set)} · {set.set_name}</option>)}
+            <option value={MCDONALDS_BINDER_ID}>MCD · McDonald’s (toutes les années)</option>
+            {sets.filter(set => !isMcDonaldsSet(set)).map(set => <option key={set.id} value={set.id}>{shortCode(set)} · {set.set_name}</option>)}
           </select>
         </section>
       </> : !isOpen ? <>
@@ -1093,20 +1201,22 @@ function BindersContent() {
         </div>
         <header className={styles.openHeader}>
           <div><h1>{selectedSet.set_name}</h1></div>
-          <p>{ownedOnSet} possédée{ownedOnSet === 1 ? '' : 's'} · {missingOnSet} emplacement{missingOnSet === 1 ? '' : 's'} à compléter · {extraVariants.length} version{extraVariants.length === 1 ? '' : 's'} hors Master Set</p>
+          <p>{isMcDonaldsBinder ? mcDonaldSets.length + ' éditions annuelles · ' : ''}{ownedOnSet} possédée{ownedOnSet === 1 ? '' : 's'} · {missingOnSet} variante{missingOnSet === 1 ? '' : 's'} à compléter · {extraVariants.length} version{extraVariants.length === 1 ? '' : 's'} hors Master Set</p>
         </header>
         {error && <p className={styles.error} role="alert">{error}</p>}
         {cardsLoading ? <p className={styles.status}>Chargement des cartes du classeur…</p> : <>
           <nav className={styles.pageNav} aria-label="Navigation du classeur">
             <button type="button" onClick={() => navigate({ open: true, page: Math.max(page - 1, 0) })} disabled={page === 0} aria-label="Double page précédente">←</button>
-            <span>{isExtraSpread
-              ? 'Hors Master ' + (page - masterSpreadCount + 1) + '/' + extraSpreadCount
-              : 'Master ' + (masterSpreadCount ? page + 1 : 0) + '/' + masterSpreadCount}</span>
+            <span>{familyPage
+              ? setYear(familyPage.section.set) + ' · ' + (isExtraSpread ? 'Hors Master ' : 'Master ') + (familyPage.index + 1) + '/' + familyPage.count
+              : isExtraSpread
+                ? 'Hors Master ' + (page - masterSpreadCount + 1) + '/' + extraSpreadCount
+                : 'Master ' + (masterSpreadCount ? page + 1 : 0) + '/' + masterSpreadCount}</span>
             <button type="button" onClick={() => navigate({ open: true, page: Math.min(page + 1, totalSpreads - 1) })} disabled={page >= totalSpreads - 1} aria-label="Double page suivante">→</button>
           </nav>
-          <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(isExtraSpread ? 'Hors Master Set, ' : 'Master Set, ') + (cardsPerSpread === 16 ? 'page ' : 'double page ') + (isExtraSpread ? page - masterSpreadCount + 1 : page + 1)}>
+          <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(familyPage ? familyPage.section.set.set_name + ', ' : '') + (isExtraSpread ? 'Hors Master Set, ' : 'Master Set, ') + (cardsPerSpread === 16 ? 'page ' : 'double page ') + (familyPage ? familyPage.index + 1 : isExtraSpread ? page - masterSpreadCount + 1 : page + 1)}>
             {pageSides.map(side => <section key={side} className={styles.bookPage} aria-label={cardsPerSpread === 16 ? 'Page du classeur' : side === 0 ? 'Page de gauche' : 'Page de droite'}>
-              <div className={styles.pageTop}><span>{isExtraSpread ? 'Hors Master Set · ' + extraVariants.length : shortCode(selectedSet)}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
+              <div className={styles.pageTop}><span>{isExtraSpread ? 'Hors Master Set · ' + (familyPage?.section.extras.length || extraVariants.length) : currentSectionLabel}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
                 {spreadSlots.slice(side * cardsPerBookPage, side * cardsPerBookPage + cardsPerBookPage).map((item, slotIndex) => {
                   const card = item?.card
@@ -1114,9 +1224,10 @@ function BindersContent() {
                   const ownedCopies = binderCopiesForItem(item, variantCopies)
                   const copyCount = ownedCopies.length
                   const cardArt = imageFor(card)
+                  const missingVariants = variants.filter(variant => !(variantCopies[variant.id] || []).length)
                   if (card && copyCount) {
                     return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotOpen}
-                      onClick={() => setZoomedCard({ ...card, setName: selectedSet.set_name, copies: ownedCopies })}
+                      onClick={() => setZoomedCard({ ...card, setName: cardSetFor(card)?.set_name || selectedSet.set_name, copies: ownedCopies })}
                       aria-label={'Voir ' + (item.kind === 'extra' ? pdfVariantLabel(item.variant) + ' de ' : '') + card.card_name + ', ' + ownedCopies.length + ' exemplaire' + (ownedCopies.length === 1 ? '' : 's')}>
                       <div className={styles.thumb}>
                         {cardArt ? <img src={cardArt} alt="" loading="lazy" /> : <span>Illustration absente</span>}
@@ -1125,6 +1236,7 @@ function BindersContent() {
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
                       <span className={styles.cardNumber}>{card.collector_number}</span>
+                      {missingVariants.length > 0 && <span className={styles.extraVariantLabel}>Manque : {missingVariants.map(pdfVariantLabel).join(', ')}</span>}
                       {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{pdfVariantLabel(item.variant)}</span>}
                     </button>
                   }
@@ -1132,12 +1244,13 @@ function BindersContent() {
                     {card ? <>
                       <span className={styles.emptyNumber}>{card?.collector_number || '—'}</span>
                       <span className={styles.emptyHint}>À compléter</span>
+                      {missingVariants.length > 0 && <span className={styles.extraVariantLabel}>{missingVariants.map(pdfVariantLabel).join(', ')}</span>}
                       {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{pdfVariantLabel(item.variant)}</span>}
                     </> : <><span className={styles.emptyNumber}>—</span><span className={styles.emptyHint}>Emplacement libre</span></>}
                   </article>
                 })}
               </div>
-              <div className={styles.pageFooter}><span>{profileName}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}/{totalBookPages}</span></div>
+          <div className={styles.pageFooter}><span>{profileName}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}/{totalBookPages}</span></div>
             </section>)}
           </section>
         </>}
