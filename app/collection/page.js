@@ -819,7 +819,7 @@ export default function CollectionPage() {
       <nav className="collectionTabs" aria-label="Sections de la collection">
         <a className="active" href="#objets" aria-current="page">Mes objets</a>
         <a href="/collection/stats">Stats collection</a>
-        <a href="/collection/statistiques" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
+        <a href="/collection/valeur" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
       </nav>
       <section className="collectionTotals" id="collection-stats" aria-label="Résumé de la collection">
         <div className="collectionTotalsHead">

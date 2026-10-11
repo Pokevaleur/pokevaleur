@@ -33,19 +33,19 @@ const navLinks = [
       { href: '/collection/statistiques', label: 'Statistiques', memberOnly: true },
       { href: '/collection/classeurs', label: 'Mes classeurs', memberOnly: true },
       {
-        href: '/collection/statistiques',
+        href: '/collection/valeur',
         label: 'Valeur',
         memberOnly: true,
         children: [
-          { href: '/collection/statistiques', label: 'Vue d’ensemble', memberOnly: true },
-          { href: '/collection', label: 'Produits scellés', memberOnly: true },
+          { href: '/collection/valeur', label: 'Vue d’ensemble', memberOnly: true },
+          { href: '/collection/valeur/scelles', label: 'Produits scellés', memberOnly: true },
           {
             href: '/collection/valeur/cartes',
             label: 'Cartes',
             memberOnly: true,
             children: [
               { href: '/collection/valeur/cartes', label: 'Par série', memberOnly: true },
-              { href: '/catalogue/cartes', label: 'Carte individuelle', memberOnly: true },
+              { href: '/collection/valeur/cartes/individuelle', label: 'Carte individuelle', memberOnly: true },
               { href: '/collection/stats?category=graded', label: 'Cartes gradées', memberOnly: true }
             ]
           }

@@ -282,7 +282,7 @@ export default function CardValuesBySeriesPage() {
 
   return (
     <main className={styles.page}>
-      <a className={styles.backLink} href="/collection/statistiques">← Ma collection · Valeur</a>
+      <a className={styles.backLink} href="/collection/valeur">← Ma collection · Valeur</a>
       <header className={styles.hero}>
         <span className={styles.eyebrow}>MA COLLECTION · VALEUR DES CARTES</span>
         <h1>Une série, toutes ses cartes</h1>
