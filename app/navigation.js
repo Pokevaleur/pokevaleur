@@ -95,8 +95,8 @@ export default function Navigation({ links }) {
       ? (
         <details className="collectionNavSubgroup" key={`${item.label}-${item.href}`}>
           <summary>
-            <a href={item.href || item.children[0]?.href} onClick={event => event.stopPropagation()}>{item.label}</a>
-            <span aria-hidden="true">›</span>
+            <span>{item.label}</span>
+            <span className="collectionNavChevron" aria-hidden="true">›</span>
           </summary>
           <div className="collectionNavSubpanel">{renderMenuItems(item.children)}</div>
         </details>
@@ -109,14 +109,8 @@ export default function Navigation({ links }) {
       ? (
         <details className="collectionNavGroup" key={link.label}>
           <summary>
-            <a
-              href={link.href || link.children[0]?.href}
-              aria-label={`Aller à ${link.label}`}
-              onClick={event => event.stopPropagation()}
-            >
-              {link.label}
-            </a>
-            <span aria-hidden="true">⌄</span>
+            <span>{link.label}</span>
+            <span className="collectionNavChevron" aria-hidden="true">⌄</span>
           </summary>
           <div className="collectionNavPanel">
             {renderMenuItems(link.children)}
