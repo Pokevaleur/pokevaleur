@@ -544,7 +544,7 @@ export default function CollectionStatsPage() {
       <nav className="collectionTabs valuePageTabs" aria-label="Sections de la collection">
         <a href="/collection">Ma collection</a>
         <a className="active" href="/collection/stats" aria-current="page">Stats collection</a>
-        <a href="/collection/statistiques" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
+        <a href="/collection/valeur" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
       </nav>
 
       <section className="collectionStatsHero">

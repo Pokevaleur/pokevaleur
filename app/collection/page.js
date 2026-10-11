@@ -819,7 +819,7 @@ export default function CollectionPage() {
       <nav className="collectionTabs" aria-label="Sections de la collection">
         <a className="active" href="#objets" aria-current="page">Mes objets</a>
         <a href="/collection/stats">Stats collection</a>
-        <a href="/collection/statistiques" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
+        <a href="/collection/valeur" aria-label="Valeur en euros"><span className="collectionEuroIcon" aria-hidden="true">€</span> Valeur</a>
       </nav>
       <section className="collectionTotals" id="collection-stats" aria-label="Résumé de la collection">
         <div className="collectionTotalsHead">
@@ -954,7 +954,7 @@ export default function CollectionPage() {
                         </label>
                         <label>
                           Quantité
-                          <input type="number" min="1" value={editForm.quantity} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} />
+                          <input type="number" min="1" value={editForm.quantity} onFocus={e => e.currentTarget.select()} onChange={e => setEditForm({ ...editForm, quantity: e.target.value })} />
                         </label>
                         <label>
                           État du scellé
@@ -1170,7 +1170,9 @@ export default function CollectionPage() {
               <input
                 type="number"
                 min="1"
+                inputMode="numeric"
                 value={form.quantity}
+                onFocus={e => e.currentTarget.select()}
                 onChange={e => setForm({ ...form, quantity: e.target.value })}
               />
             </label>
