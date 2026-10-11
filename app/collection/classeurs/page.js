@@ -100,7 +100,7 @@ function loadPdfImage(url) {
   })
 }
 
-async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, coverArt, profileName, profileCreatedAt, ownedOnSet, copiesOnSet, missingOnSet, onProgress }) {
+async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, coverArt, profileName, ownerDisplayName, profileCreatedAt, ownedOnSet, copiesOnSet, missingOnSet, onProgress }) {
   const { jsPDF } = await import('jspdf')
   const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true })
   const pageWidth = pdf.internal.pageSize.getWidth()
@@ -109,7 +109,7 @@ async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, 
   const dateLabel = new Date().toLocaleDateString('fr-FR')
   const seriesCode = shortCode(set)
   const title = 'PokéValeur - ' + seriesCode + ' - ' + set.set_name
-  pdf.setProperties({ title, subject: 'Classeur de cartes Pokémon', author: profileName || 'PokéValeur', creator: 'PokéValeur' })
+  pdf.setProperties({ title, subject: 'Classeur de cartes Pokémon', author: ownerDisplayName || 'PokéValeur', creator: 'PokéValeur' })
 
   pdf.setFillColor(16, 31, 57)
   pdf.rect(0, 0, pageWidth, pageHeight, 'F')
@@ -148,13 +148,15 @@ async function createBinderPdf({ set, cards, extraVariants = [], variantCopies, 
     pdf.text('Hors Master Set · ' + extraVariants.length + ' versions', pageWidth / 2, 276, { align: 'center' })
   }
   pdf.setFontSize(9)
-  pdf.text('Collection de ' + (profileName || 'Ma collection') + (profileCreatedAt ? ' · créée le ' + new Date(profileCreatedAt).toLocaleDateString('fr-FR') : ''), pageWidth / 2, 281, { align: 'center' })
+  pdf.text('Propriétaire : ' + (ownerDisplayName || 'Pseudo non renseigné'), pageWidth / 2, 280, { align: 'center' })
+  pdf.setFontSize(8)
+  pdf.text('Collection « ' + (profileName || 'Ma collection') + ' »' + (profileCreatedAt ? ' · créée le ' + new Date(profileCreatedAt).toLocaleDateString('fr-FR') : ''), pageWidth / 2, 284, { align: 'center' })
   pdf.setFont('helvetica', 'bold')
   pdf.setFontSize(12)
-  pdf.text('pokevaleur.fr', pageWidth / 2, 286, { align: 'center' })
+  pdf.text('pokevaleur.fr', pageWidth / 2, 289, { align: 'center' })
   pdf.setFont('helvetica', 'normal')
   pdf.setFontSize(8)
-  pdf.text('Exporté le ' + dateLabel, pageWidth / 2, 291, { align: 'center' })
+  pdf.text('Exporté le ' + dateLabel, pageWidth / 2, 294, { align: 'center' })
 
   const cardsPerPage = 12
   const masterPageCount = cards.length ? Math.ceil(cards.length / cardsPerPage) : (extraVariants.length ? 0 : 1)
@@ -608,6 +610,7 @@ function BindersContent() {
   const isOpen = params.get('open') === '1'
   const rawPage = Number.parseInt(params.get('page') || '0', 10)
   const [user, setUser] = useState(null)
+  const [ownerDisplayName, setOwnerDisplayName] = useState('')
   const [sets, setSets] = useState([])
   const [showAllBinders, setShowAllBinders] = useState(false)
   const [profiles, setProfiles] = useState([])
@@ -627,6 +630,7 @@ function BindersContent() {
   const [pdfNotice, setPdfNotice] = useState('')
   const [pdfFile, setPdfFile] = useState(null)
   const [pdfCanShare, setPdfCanShare] = useState(false)
+  const [copyNotice, setCopyNotice] = useState('')
   const [zoomedCard, setZoomedCard] = useState(null)
   const [cardsPerSpread, setCardsPerSpread] = useState(24)
 
@@ -648,6 +652,9 @@ function BindersContent() {
           return
         }
         const signedUser = auth.user
+        const { data: ownerProfile } = await supabase.from('profiles')
+          .select('display_name').eq('id', signedUser.id).maybeSingle()
+        const ownerName = String(ownerProfile?.display_name || signedUser.user_metadata?.display_name || signedUser.user_metadata?.username || '').trim()
         const { data: profileRows, error: profileError } = await supabase.from('collection_profiles')
           .select('id,display_name,is_default,profile_type,created_at').order('created_at')
         if (profileError) throw profileError
@@ -662,6 +669,7 @@ function BindersContent() {
         if (setError) throw setError
         if (cancelled) return
         setUser(signedUser)
+        setOwnerDisplayName(ownerName)
         setProfiles(profileRows || [])
         setProfileId(activeProfile.id)
         setProfileCreatedAt(activeProfile.created_at || '')
@@ -804,6 +812,14 @@ function BindersContent() {
   const ownedOnSet = ownedCardCounts[requestedSetId] || 0
   const setTotal = cards.length || Number(selectedSet?.advertised_card_count || 0)
   const missingOnSet = Math.max(setTotal - ownedOnSet, 0)
+  const missingBinderRows = cards.flatMap(card => (card.card_print_variants || [])
+    .filter(variant => variant.is_master_set_target && !(variantCopies[variant.id] || []).length)
+    .map(variant => ({ card, variant, label: pdfVariantLabel(variant) })))
+  const missingBinderGroups = [...new Map(missingBinderRows.map(row => [row.variant.variant_key, {
+    key: row.variant.variant_key,
+    label: row.label,
+    rows: missingBinderRows.filter(candidate => candidate.variant.variant_key === row.variant.variant_key),
+  }])).values()].sort((a, b) => a.label.localeCompare(b.label, 'fr'))
   const cardsPerBookPage = cardsPerSpread === 16 ? 16 : 12
   const masterSpreadCount = cards.length ? Math.ceil(cards.length / cardsPerSpread) : (extraVariants.length ? 0 : 1)
   const extraSpreadCount = Math.ceil(extraVariants.length / cardsPerSpread)
@@ -841,6 +857,37 @@ function BindersContent() {
     setZoomedCard(current => current ? { ...current, copies: (current.copies || []).filter(row => row.id !== copy.id) } : current)
   }
 
+  async function copyMissingBinderNumbers(variantKey = null) {
+    const rows = variantKey ? missingBinderRows.filter(row => row.variant.variant_key === variantKey) : missingBinderRows
+    if (!rows.length) {
+      setCopyNotice('Aucune variante manquante dans le Master Set.')
+      return
+    }
+    const textToCopy = variantKey
+      ? [...new Set(rows.map(row => row.card.collector_number).filter(Boolean))].join(', ')
+      : rows.map(row => row.card.collector_number + ' (' + row.label + ')').join(', ')
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(textToCopy)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = textToCopy
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        const copied = document.execCommand('copy')
+        textarea.remove()
+        if (!copied) throw new Error('La copie n’est pas disponible dans ce navigateur.')
+      }
+      const count = variantKey ? [...new Set(rows.map(row => row.card.collector_number).filter(Boolean))].length : rows.length
+      setCopyNotice(count + ' variante' + (count === 1 ? '' : 's') + ' manquante' + (count === 1 ? '' : 's') + ' copiée' + (count === 1 ? '' : 's') + '.')
+    } catch (copyError) {
+      setCopyNotice('Copie impossible : ' + (copyError.message || 'sélectionne les numéros manuellement.'))
+    }
+  }
+
   async function prepareBinderPdf() {
     if (!selectedSet || pdfBusy || cardsLoading) return
     setPdfBusy(true)
@@ -855,6 +902,7 @@ function BindersContent() {
         variantCopies,
         coverArt,
         profileName,
+        ownerDisplayName,
         profileCreatedAt,
         ownedOnSet,
         copiesOnSet,
@@ -1008,6 +1056,18 @@ function BindersContent() {
               <div><strong>{copiesOnSet}</strong><span>exemplaires possédés</span></div>
               <div><strong>{extraVariants.length}</strong><span>versions hors Master Set</span></div>
             </div>
+            <section className={styles.missingCopyPanel} aria-label="Copier les variantes manquantes">
+              <strong>Copier les manquantes du Master Set</strong>
+              <div className={styles.missingCopyActions}>
+                <button type="button" onClick={() => copyMissingBinderNumbers()} disabled={!missingBinderRows.length}>
+                  Toutes ({missingBinderRows.length})
+                </button>
+                {missingBinderGroups.map(group => <button key={group.key} type="button" onClick={() => copyMissingBinderNumbers(group.key)} disabled={!group.rows.length}>
+                  {group.label} ({group.rows.length})
+                </button>)}
+              </div>
+              {copyNotice && <p role="status">{copyNotice}</p>}
+            </section>
             <div className={styles.coverActions}>
               <button className={styles.openButton} type="button" onClick={() => navigate({ open: true, page: 0 })}>Ouvrir le classeur <span aria-hidden="true">→</span></button>
               {pdfFile ? <div className={styles.pdfReadyActions}>

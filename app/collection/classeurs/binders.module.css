@@ -53,6 +53,13 @@
 .stats > div { display:flex; flex-direction:column; gap:4px; min-height:80px; padding:14px; border:1px solid #dce3eb; border-radius:14px; background:#ffffffd9; }
 .stats strong { color:#173c73; font-size:1.45rem; }
 .stats span { color:#69788a; font-size:.82rem; }
+.missingCopyPanel { padding:13px; margin:-8px 0 18px; border:1px solid #dce3eb; border-radius:14px; background:#ffffffd9; }
+.missingCopyPanel > strong { display:block; margin-bottom:9px; color:#263b52; font-size:.9rem; }
+.missingCopyActions { display:flex; flex-wrap:wrap; gap:7px; }
+.missingCopyActions button { min-height:38px; padding:8px 11px; border:1px solid #cbd6e2; border-radius:10px; background:#f4f7fa; color:#173c73; font:inherit; font-size:.8rem; font-weight:750; cursor:pointer; }
+.missingCopyActions button:hover:not(:disabled) { border-color:#809bb5; background:#eaf0f5; }
+.missingCopyActions button:disabled { opacity:.5; cursor:not-allowed; }
+.missingCopyPanel p { margin:9px 0 0; color:#536477; font-size:.8rem; }
 .openButton { display:flex; align-items:center; justify-content:space-between; gap:18px; width:100%; min-height:50px; padding:12px 17px; border:0; border-radius:12px; background:#173c73; color:#fff; font:inherit; font-weight:800; cursor:pointer; }
 .openButton:hover { background:#24559a; }
 .coverActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
