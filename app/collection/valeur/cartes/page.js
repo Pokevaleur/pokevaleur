@@ -58,6 +58,17 @@ function formatPrice(value, currency = 'EUR') {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(value)
 }
 
+function priceBasisLabel(price) {
+  if (price?.basis === 'avg30') return 'moyenne Cardmarket sur 30 jours'
+  if (price?.basis === 'avg30-holo') return 'moyenne Cardmarket holographique sur 30 jours'
+  if (price?.basis === 'avg7' || price?.basis === 'avg7-holo') return 'moyenne Cardmarket sur 7 jours'
+  if (price?.basis === 'avg' || price?.basis === 'avg-holo') return 'prix moyen Cardmarket'
+  if (price?.basis === 'trend' || price?.basis === 'trend-holo') return 'tendance Cardmarket'
+  if (price?.basis === 'marketPrice') return 'prix de marché TCGplayer'
+  if (price?.basis === 'midPrice') return 'prix médian TCGplayer'
+  return ''
+}
+
 function imageUrl(card) {
   const direct = card.image_url?.trim()
   if (direct) {
@@ -106,6 +117,8 @@ export default function CardValuesBySeriesPage() {
   const [gradingFilter, setGradingFilter] = useState('all')
   const [search, setSearch] = useState('')
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
+  const [marketPricesLoading, setMarketPricesLoading] = useState(false)
+  const [priceDetailsCard, setPriceDetailsCard] = useState(null)
   const seriesPickerRef = useRef(null)
 
   useEffect(() => {
@@ -164,12 +177,14 @@ export default function CardValuesBySeriesPage() {
       return
     }
     let cancelled = false
+    const pricesController = new AbortController()
     async function loadCards() {
       setCardsLoading(true)
+      setMarketPricesLoading(false)
       setError('')
       try {
         const { data: cardRows, error: cardError } = await fetchAllRows(() => supabase.from('cards')
-          .select('id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_label,variant_key,is_master_set_target)')
+          .select('id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets(set_code),card_print_variants(id,variant_label,variant_key,finish_code,is_master_set_target)')
           .eq('card_set_id', setId).order('guide_order', { ascending: true }))
         if (cardError) throw cardError
         if (cancelled) return
@@ -210,14 +225,40 @@ export default function CardValuesBySeriesPage() {
           return { ...card, variants, copies, rawPrice, gradedPrice, latestGradedCopy }
         })
         setCards(mapped)
+        setCardsLoading(false)
+        setMarketPricesLoading(true)
+        try {
+          const response = await fetch('/api/card-prices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cards: mapped.map(card => ({
+              id: card.id,
+              image_source_url: card.image_source_url,
+              set_code: card.card_sets?.set_code,
+              collector_number: card.collector_number,
+              variants: card.variants.map(variant => ({ finish_code: variant.finish_code }))
+            })) }),
+            signal: pricesController.signal
+          })
+          if (response.ok) {
+            const { prices = [] } = await response.json()
+            const pricesByCard = new Map(prices.map(price => [price.cardId, price]))
+            if (!cancelled) setCards(current => current.map(card => ({ ...card, marketPrice: pricesByCard.get(card.id) || null })))
+          }
+        } catch (priceError) {
+          if (priceError.name !== 'AbortError') console.warn('Les prix externes sont indisponibles pour le moment.', priceError)
+        } finally {
+          if (!cancelled) setMarketPricesLoading(false)
+        }
       } catch (loadError) {
         if (!cancelled) setError(loadError.message || 'Impossible de charger les cartes et leurs valeurs.')
       } finally {
         if (!cancelled) setCardsLoading(false)
+        if (!cancelled) setMarketPricesLoading(false)
       }
     }
     loadCards()
-    return () => { cancelled = true }
+    return () => { cancelled = true; pricesController.abort() }
   }, [supabase, setId, profileId])
 
   const selectedSet = sets.find(set => set.id === setId)
@@ -281,6 +322,7 @@ export default function CardValuesBySeriesPage() {
           <div><span>{seriesLabel(selectedSet).split(' — ')[0] || 'SÉRIE'}</span><h2>{selectedSet.set_name.replace(/Classique(?=30e)/i, 'Classique ')}</h2></div>
           <p><strong>{filteredCards.length}</strong> cartes affichées · <strong>{ownedCount}</strong> possédées</p>
         </div>
+        {marketPricesLoading && <p className={styles.priceStatus} role="status">Récupération des prix de référence…</p>}
         {cardsLoading ? <p className={styles.message} role="status">Chargement des cartes et des prix…</p> : filteredCards.length ? (
           <div className={styles.grid}>
             {filteredCards.map(card => {
@@ -288,21 +330,23 @@ export default function CardValuesBySeriesPage() {
               const price = gradingFilter === 'graded' ? card.gradedPrice : card.rawPrice
               const gradedOwned = card.copies.filter(copy => copy.ownership_type === 'graded')
               const override = card.latestGradedCopy?.current_value_override
-              const displayedPrice = gradingFilter === 'graded' && override != null ? Number(override) : price ? Number(price.amount) : null
+              const marketPrice = card.marketPrice?.amount != null ? card.marketPrice : null
+              const selectedPrice = gradingFilter === 'graded' ? price : (marketPrice || price)
+              const displayedPrice = gradingFilter === 'graded' && override != null ? Number(override) : selectedPrice ? Number(selectedPrice.amount) : null
+              const displayCurrency = gradingFilter === 'graded' && override != null ? 'EUR' : selectedPrice?.currency || 'EUR'
               const latestCopy = card.latestGradedCopy
               return <article className={styles.card} key={card.id}>
                 <div className={styles.art}>
                   {imageUrl(card) ? <img src={imageUrl(card)} alt={card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.dataset.imageMissing = 'true' }} /> : <span>Illustration<br />indisponible</span>}
                   <span className={owned ? styles.statusOwned : styles.statusMissing}>{owned ? 'Possédée' : 'Manquante'}</span>
-                  {displayedPrice != null && <strong className={styles.price}>{formatPrice(displayedPrice, price?.currency || 'EUR')}</strong>}
+                  {displayedPrice != null && <button type="button" className={styles.price} aria-label={`Voir le détail du prix de ${card.card_name}`} onClick={() => setPriceDetailsCard({ ...card, shownAmount: displayedPrice, shownCurrency: displayCurrency, shownSource: override != null ? 'Valeur renseignée pour ma carte gradée' : selectedPrice?.source || 'Prix de référence', shownObservedAt: selectedPrice?.observed_at || selectedPrice?.observedAt || null })}>{formatPrice(displayedPrice, displayCurrency)}</button>}
                 </div>
                 <div className={styles.cardInfo}>
                   <span className={styles.number}>N° {card.collector_number}</span>
                   <h3>{card.card_name}</h3>
                   <p>{card.rarity_label || 'Rareté non renseignée'}</p>
                   {gradingFilter === 'graded' && latestCopy && <small className={styles.gradeInfo}>{latestCopy.card_grading_companies?.abbreviation || latestCopy.card_grading_companies?.company_name} · note {latestCopy.grade_label || latestCopy.grade}</small>}
-                  {displayedPrice == null && <small className={styles.noPrice}>Valeur non renseignée</small>}
-                  {displayedPrice != null && price && <small className={styles.source}>Source : {price.source} · {new Date(price.observed_at).toLocaleDateString('fr-FR')}</small>}
+                  {displayedPrice == null && <small className={styles.noPrice}>{gradingFilter === 'graded' ? 'Prix gradé indisponible' : 'Prix indisponible'}</small>}
                   {gradingFilter === 'all' && gradedOwned.length > 0 && <small className={styles.gradeInfo}>{gradedOwned.length} exemplaire{gradedOwned.length > 1 ? 's' : ''} gradé{gradedOwned.length > 1 ? 's' : ''} dans la collection</small>}
                   {card.variants.length > 1 && <small className={styles.variantCount}>{card.variants.length} variantes de référence</small>}
                 </div>
@@ -310,9 +354,35 @@ export default function CardValuesBySeriesPage() {
             })}
           </div>
         ) : <p className={styles.message}>Aucune carte ne correspond à ces filtres.</p>}
-        {!cardsLoading && cards.length > 0 && <p className={styles.note}>Les valeurs affichées proviennent des ventes confirmées ou estimations enregistrées. Les annonces seules ne sont pas utilisées comme cote.</p>}
+        {!cardsLoading && cards.length > 0 && <details className={styles.note}>
+          <summary>Sources et méthode des prix</summary>
+          <p>La pastille affiche uniquement le prix en euros. Cardmarket est prioritaire, avec sa moyenne sur 30 jours quand elle est disponible. En son absence, une valeur de marché TCGplayer peut servir de secours, convertie en euros avec le taux de référence daté de Frankfurter.</p>
+          <p>Appuie sur le prix d’une carte pour voir la source, la moyenne Cardmarket sur 30 jours, la date des données et, si nécessaire, le détail de la conversion. Les valeurs sont indicatives et concernent les cartes non gradées. Les sources peuvent parfois confondre deux impressions proches ; aucune valeur n’est inventée quand elles ne trouvent pas de correspondance fiable.</p>
+        </details>}
       </section>}
       {!selectedSet && !loading && <p className={styles.message}>Choisis une série pour afficher toutes ses cartes et leurs valeurs.</p>}
+      {priceDetailsCard && <div className={styles.dialogBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setPriceDetailsCard(null) }}>
+        <section className={styles.priceDialog} role="dialog" aria-modal="true" aria-labelledby="price-dialog-title">
+          <button type="button" className={styles.dialogClose} aria-label="Fermer" onClick={() => setPriceDetailsCard(null)}>×</button>
+          <span className={styles.eyebrow}>DÉTAIL DU PRIX</span>
+          <h2 id="price-dialog-title">{priceDetailsCard.card_name} · N° {priceDetailsCard.collector_number}</h2>
+          <p className={styles.dialogMainPrice}>{formatPrice(priceDetailsCard.shownAmount, priceDetailsCard.shownCurrency)}</p>
+          <p>{priceDetailsCard.shownSource}{priceDetailsCard.marketPrice?.basis ? ` · ${priceBasisLabel(priceDetailsCard.marketPrice)}` : ''}</p>
+          {priceDetailsCard.marketPrice?.cardmarket && <div className={styles.dialogDetails}>
+            <strong>Cardmarket · moyennes sur 30 jours</strong>
+            {priceDetailsCard.marketPrice.cardmarket['avg30'] != null && <span>Normale : {formatPrice(priceDetailsCard.marketPrice.cardmarket['avg30'], 'EUR')}</span>}
+            {priceDetailsCard.marketPrice.cardmarket['avg30-holo'] != null && <span>Holographique : {formatPrice(priceDetailsCard.marketPrice.cardmarket['avg30-holo'], 'EUR')}</span>}
+            {priceDetailsCard.marketPrice.cardmarket.updated && <small>Données Cardmarket actualisées le {new Date(priceDetailsCard.marketPrice.cardmarket.updated).toLocaleDateString('fr-FR')}</small>}
+          </div>}
+          {priceDetailsCard.marketPrice?.chosenFallback && <div className={styles.dialogDetails}>
+            <strong>Secours TCGplayer</strong>
+            <span>{formatPrice(priceDetailsCard.marketPrice.chosenFallback.amount, 'USD')} · {priceDetailsCard.marketPrice.chosenFallback.field}</span>
+            {priceDetailsCard.marketPrice.exchange && <small>Conversion USD → EUR : {priceDetailsCard.marketPrice.exchange.rate} · taux du {new Date(priceDetailsCard.marketPrice.exchange.date).toLocaleDateString('fr-FR')}</small>}
+          </div>}
+          {priceDetailsCard.shownObservedAt && <small className={styles.dialogDate}>Données source : {new Date(priceDetailsCard.shownObservedAt).toLocaleDateString('fr-FR')}</small>}
+          <p className={styles.dialogFootnote}>Cote indicative pour une carte non gradée. Une carte gradée peut avoir une valeur différente.</p>
+        </section>
+      </div>}
     </main>
   )
 }

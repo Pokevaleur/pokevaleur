@@ -39,6 +39,7 @@
 .statusOwned,.statusMissing{position:absolute;top:9px;left:9px;padding:5px 8px;border:1px solid #ffffffa8;border-radius:999px;background:#eff8f8;color:#1d7652;font-size:.68rem;font-weight:850;box-shadow:0 2px 7px #1424381a}
 .statusMissing{background:#fff5e5;color:#8a6414}
 .price{position:absolute;right:8px;bottom:9px;padding:7px 9px;border:1px solid #ffffffa8;border-radius:999px;background:#eef1ff;color:#172d69;font-size:.84rem;box-shadow:0 2px 8px #1424381a}
+.price{font-weight:800;cursor:pointer}.price:hover,.price:focus-visible{background:#dfe6ff;outline:2px solid #4359a4;outline-offset:2px}
 .cardInfo{display:grid;gap:4px;padding:12px 13px 14px}
 .number{color:#697789;font-size:.75rem;font-weight:850}
 .cardInfo h3{margin:0;color:#172b43;font-size:1rem;line-height:1.2}
@@ -48,6 +49,8 @@
 .noPrice{color:#7a8492;font-style:italic}
 .note,.message,.error{padding:13px 15px;border:1px solid #dfe5ec;border-radius:12px;background:#fff;color:#68778a;line-height:1.45}
 .note{margin:16px 0 0;font-size:.82rem}
+.note summary{color:#214867;font-weight:750;cursor:pointer}.note p{margin:10px 0 0}.priceStatus{margin:0 0 12px;color:#68778a;font-size:.85rem}
+.dialogBackdrop{position:fixed;z-index:1000;inset:0;display:grid;place-items:center;padding:20px;background:#0b1d32a8}.priceDialog{position:relative;width:min(100%,480px);max-height:min(85vh,720px);overflow:auto;padding:24px;border:1px solid #d9e0e9;border-radius:20px;background:#fff;color:#172b43;box-shadow:0 22px 60px #08182b55}.priceDialog h2{margin:8px 36px 8px 0;font-size:1.35rem;line-height:1.2}.priceDialog>p{color:#53657b;line-height:1.45}.dialogClose{position:absolute;top:12px;right:14px;width:36px;height:36px;border:0;border-radius:50%;background:#edf1f6;color:#24364a;font-size:1.6rem;cursor:pointer}.dialogMainPrice{margin:0!important;color:#1b3478!important;font-size:1.8rem;font-weight:850}.dialogDetails{display:grid;gap:6px;margin:14px 0;padding:12px;border-radius:12px;background:#f4f6fb;color:#47576d;font-size:.9rem}.dialogDetails strong{color:#172b43}.dialogDetails small,.dialogDate,.dialogFootnote{color:#68778a;font-size:.78rem;line-height:1.45}.dialogFootnote{margin-top:16px!important;padding-top:12px;border-top:1px solid #e6eaf0}
 .error{border-color:#efc8c8;background:#fff6f6;color:#9c3030}
 @media(max-width:700px){.page{padding:20px 16px 48px}.controls{grid-template-columns:1fr;gap:13px;padding:14px}.hero{padding:20px}.resultsHeader{align-items:flex-start;flex-direction:column;gap:5px}.resultsHeader p{text-align:left}.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}.card{border-radius:13px}.art{aspect-ratio:5/7;padding:5px}.statusOwned,.statusMissing{top:5px;left:5px;padding:4px 5px;font-size:.58rem}.cardInfo{gap:3px;padding:8px 7px 10px}.number{font-size:.65rem}.cardInfo h3{font-size:.78rem;line-height:1.15;overflow-wrap:anywhere}.cardInfo p{font-size:.68rem;line-height:1.2}.price{right:5px;bottom:5px;font-size:.68rem;padding:5px 6px}.source,.noPrice,.gradeInfo,.variantCount{font-size:.62rem}.seriesPickerOptions{max-height:min(45vh,340px)}.seriesPickerOption,.seriesPickerOptionActive{font-size:.78rem;padding:7px 9px}}
 @media(max-width:360px){.grid{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}.cardInfo{padding:7px 5px 8px}.cardInfo h3{font-size:.72rem}.art{aspect-ratio:5/7}}
