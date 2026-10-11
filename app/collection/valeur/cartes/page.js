@@ -1,0 +1,258 @@
+'use client'
+
+import { useEffect, useMemo, useState } from 'react'
+import { createClient } from '../../../../lib/supabase-browser'
+import { fetchAllRows } from '../../../../lib/supabase-pagination.js'
+import styles from './cards-value.module.css'
+
+const OWNERSHIP_FILTERS = [
+  ['all', 'Toutes'],
+  ['owned', 'Possédées'],
+  ['missing', 'Manquantes']
+]
+
+const GRADING_FILTERS = [
+  ['all', 'Toutes'],
+  ['raw', 'Non gradées'],
+  ['graded', 'Mes gradées']
+]
+
+function formatPrice(value, currency = 'EUR') {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(value)
+}
+
+function imageUrl(card) {
+  const direct = card.image_url?.trim()
+  if (direct) {
+    const path = direct.split('?')[0].replace(/\/$/, '')
+    if (/\.(png|jpe?g|webp)$/i.test(path)) return direct
+    return path + '/low.webp'
+  }
+  const parts = (card.image_source_url || '').split('/').filter(Boolean)
+  const setsIndex = parts.lastIndexOf('sets')
+  if (setsIndex < 1 || setsIndex + 2 >= parts.length) return ''
+  const language = parts[setsIndex - 1]
+  const setCode = parts[setsIndex + 1]
+  const localId = parts[setsIndex + 2]
+  let seriesEnd = 0
+  while (seriesEnd < setCode.length && /[a-z]/i.test(setCode[seriesEnd])) seriesEnd += 1
+  const seriesCode = setCode.slice(0, seriesEnd)
+  return seriesCode && language && localId
+    ? `https://assets.tcgdex.net/${language}/${seriesCode}/${setCode}/${encodeURIComponent(localId)}/low.webp`
+    : ''
+}
+
+function latestRawPrice(observations = []) {
+  return observations
+    .filter(row => row.price_kind === 'raw' && row.observation_type !== 'observed_listing')
+    .sort((a, b) => new Date(b.observed_at) - new Date(a.observed_at))[0] || null
+}
+
+function latestGradedPrice(observations = [], copies = []) {
+  const gradedCopies = copies.filter(copy => copy.ownership_type === 'graded')
+  const matches = observations.filter(row => row.price_kind === 'graded' && gradedCopies.some(copy => (
+    copy.grading_company_id === row.grading_company_id && Number(copy.grade) === Number(row.grade)
+  )))
+  return matches.sort((a, b) => new Date(b.observed_at) - new Date(a.observed_at))[0] || null
+}
+
+export default function CardValuesBySeriesPage() {
+  const supabase = useMemo(() => createClient(), [])
+  const [sets, setSets] = useState([])
+  const [setId, setSetId] = useState('')
+  const [cards, setCards] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [cardsLoading, setCardsLoading] = useState(false)
+  const [error, setError] = useState('')
+  const [profileId, setProfileId] = useState('')
+  const [ownershipFilter, setOwnershipFilter] = useState('all')
+  const [gradingFilter, setGradingFilter] = useState('all')
+  const [search, setSearch] = useState('')
+
+  useEffect(() => {
+    let cancelled = false
+    async function loadSets() {
+      try {
+        const { data: { user }, error: authError } = await supabase.auth.getUser()
+        if (authError || !user) {
+          window.location.replace('/login?next=%2Fcollection%2Fvaleur%2Fcartes')
+          return
+        }
+        const [profileResult, setResult] = await Promise.all([
+          supabase.from('collection_profiles').select('id,is_default').order('created_at'),
+          supabase.from('card_sets').select('id,set_name,set_code,release_date').eq('is_public', true).eq('language', 'FR').order('release_date', { ascending: false })
+        ])
+        if (profileResult.error) throw profileResult.error
+        if (setResult.error) throw setResult.error
+        if (cancelled) return
+        const savedProfileId = window.localStorage.getItem('pokevaleur-collection:' + user.id)
+        const profile = (profileResult.data || []).find(row => row.id === savedProfileId)
+          || (profileResult.data || []).find(row => row.is_default)
+          || (profileResult.data || [])[0]
+        setProfileId(profile?.id || '')
+        setSets(setResult.data || [])
+        const requested = new URLSearchParams(window.location.search).get('set') || ''
+        if ((setResult.data || []).some(row => row.id === requested)) setSetId(requested)
+      } catch (loadError) {
+        if (!cancelled) setError(loadError.message || 'Impossible de charger les séries.')
+      } finally {
+        if (!cancelled) setLoading(false)
+      }
+    }
+    loadSets()
+    return () => { cancelled = true }
+  }, [supabase])
+
+  useEffect(() => {
+    if (!setId || !profileId) {
+      setCards([])
+      return
+    }
+    let cancelled = false
+    async function loadCards() {
+      setCardsLoading(true)
+      setError('')
+      try {
+        const { data: cardRows, error: cardError } = await fetchAllRows(() => supabase.from('cards')
+          .select('id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_print_variants(id,variant_label,variant_key,is_master_set_target)')
+          .eq('card_set_id', setId).order('guide_order', { ascending: true }))
+        if (cardError) throw cardError
+        if (cancelled) return
+        const variantIds = (cardRows || []).flatMap(card => (card.card_print_variants || []).map(variant => variant.id))
+        let copyRows = []
+        let priceRows = []
+        for (let offset = 0; offset < variantIds.length; offset += 100) {
+          const batch = variantIds.slice(offset, offset + 100)
+          const [copies, prices] = await Promise.all([
+            supabase.from('collection_cards').select('id,card_print_variant_id,ownership_type,grade,grade_label,grading_company_id,current_value_override,card_grading_companies(company_name,abbreviation)').eq('collection_profile_id', profileId).in('card_print_variant_id', batch),
+            supabase.from('card_price_observations').select('card_print_variant_id,price_kind,grading_company_id,grade,observation_type,amount,currency,source,observed_at').in('card_print_variant_id', batch).in('observation_type', ['confirmed_sale', 'estimate']).order('observed_at', { ascending: false })
+          ])
+          if (copies.error) throw copies.error
+          if (prices.error) throw prices.error
+          copyRows = copyRows.concat(copies.data || [])
+          priceRows = priceRows.concat(prices.data || [])
+        }
+        if (cancelled) return
+        const copiesByVariant = new Map()
+        for (const copy of copyRows) {
+          const rows = copiesByVariant.get(copy.card_print_variant_id) || []
+          rows.push(copy)
+          copiesByVariant.set(copy.card_print_variant_id, rows)
+        }
+        const pricesByVariant = new Map()
+        for (const price of priceRows) {
+          const rows = pricesByVariant.get(price.card_print_variant_id) || []
+          rows.push(price)
+          pricesByVariant.set(price.card_print_variant_id, rows)
+        }
+        const mapped = (cardRows || []).map(card => {
+          const variants = card.card_print_variants || []
+          const copies = variants.flatMap(variant => copiesByVariant.get(variant.id) || [])
+          const observations = variants.flatMap(variant => pricesByVariant.get(variant.id) || [])
+          const rawPrice = latestRawPrice(observations)
+          const gradedPrice = latestGradedPrice(observations, copies)
+          const latestGradedCopy = copies.filter(copy => copy.ownership_type === 'graded').sort((a, b) => Number(b.grade) - Number(a.grade))[0]
+          return { ...card, variants, copies, rawPrice, gradedPrice, latestGradedCopy }
+        })
+        setCards(mapped)
+      } catch (loadError) {
+        if (!cancelled) setError(loadError.message || 'Impossible de charger les cartes et leurs valeurs.')
+      } finally {
+        if (!cancelled) setCardsLoading(false)
+      }
+    }
+    loadCards()
+    return () => { cancelled = true }
+  }, [supabase, setId, profileId])
+
+  const selectedSet = sets.find(set => set.id === setId)
+  const filteredCards = cards.filter(card => {
+    const owned = card.copies.length > 0
+    if (ownershipFilter === 'owned' && !owned) return false
+    if (ownershipFilter === 'missing' && owned) return false
+    if (gradingFilter === 'graded' && !card.latestGradedCopy) return false
+    const needle = search.trim().toLocaleLowerCase('fr')
+    return !needle || `${card.card_name} ${card.collector_number}`.toLocaleLowerCase('fr').includes(needle)
+  })
+  const ownedCount = cards.filter(card => card.copies.length > 0).length
+
+  function changeSet(value) {
+    setSetId(value)
+    const url = new URL(window.location.href)
+    if (value) url.searchParams.set('set', value)
+    else url.searchParams.delete('set')
+    window.history.replaceState({}, '', url)
+  }
+
+  return (
+    <main className={styles.page}>
+      <a className={styles.backLink} href="/collection/statistiques">← Ma collection · Valeur</a>
+      <header className={styles.hero}>
+        <span className={styles.eyebrow}>MA COLLECTION · VALEUR DES CARTES</span>
+        <h1>Une série, toutes ses cartes</h1>
+        <p>Retrouve les cartes et leurs prix de référence. Les pastilles indiquent si chaque carte est dans ta collection.</p>
+      </header>
+
+      <section className={styles.controls} aria-label="Choix de la série et filtres">
+        <label className={styles.seriesSelect}>Série
+          <select value={setId} onChange={event => changeSet(event.target.value)} disabled={loading}>
+            <option value="">Choisir une série…</option>
+            {sets.map(set => <option key={set.id} value={set.id}>{set.set_code ? set.set_code.toUpperCase() + ' — ' : ''}{set.set_name}</option>)}
+          </select>
+        </label>
+        <label className={styles.search}>Rechercher une carte
+          <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Nom ou numéro" />
+        </label>
+        <div className={styles.filterBlock} role="group" aria-label="Filtrer par présence dans la collection">
+          <span>Dans ma collection</span>
+          <div className={styles.chips}>{OWNERSHIP_FILTERS.map(([key, label]) => <button key={key} type="button" aria-pressed={ownershipFilter === key} className={ownershipFilter === key ? styles.chipActive : styles.chip} onClick={() => setOwnershipFilter(key)}>{label}</button>)}</div>
+        </div>
+        <div className={styles.filterBlock} role="group" aria-label="Filtrer les cartes gradées">
+          <span>État de gradation</span>
+          <div className={styles.chips}>{GRADING_FILTERS.map(([key, label]) => <button key={key} type="button" aria-pressed={gradingFilter === key} className={gradingFilter === key ? styles.chipActive : styles.chip} onClick={() => setGradingFilter(key)}>{label}</button>)}</div>
+        </div>
+      </section>
+
+      {error && <p className={styles.error} role="alert">{error}</p>}
+      {loading ? <p className={styles.message} role="status">Chargement des séries…</p> : null}
+      {!loading && !sets.length && <p className={styles.message}>Aucune série française n’est disponible.</p>}
+      {selectedSet && <section aria-live="polite">
+        <div className={styles.resultsHeader}>
+          <div><span>{selectedSet.set_code || 'SÉRIE'}</span><h2>{selectedSet.set_name}</h2></div>
+          <p><strong>{filteredCards.length}</strong> cartes affichées · <strong>{ownedCount}</strong> possédées</p>
+        </div>
+        {cardsLoading ? <p className={styles.message} role="status">Chargement des cartes et des prix…</p> : filteredCards.length ? (
+          <div className={styles.grid}>
+            {filteredCards.map(card => {
+              const owned = card.copies.length > 0
+              const price = gradingFilter === 'graded' ? card.gradedPrice : card.rawPrice
+              const gradedOwned = card.copies.filter(copy => copy.ownership_type === 'graded')
+              const override = card.latestGradedCopy?.current_value_override
+              const displayedPrice = gradingFilter === 'graded' && override != null ? Number(override) : price ? Number(price.amount) : null
+              const latestCopy = card.latestGradedCopy
+              return <article className={styles.card} key={card.id}>
+                <div className={styles.art}>
+                  {imageUrl(card) ? <img src={imageUrl(card)} alt={card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.dataset.imageMissing = 'true' }} /> : <span>Illustration<br />indisponible</span>}
+                  <span className={owned ? styles.statusOwned : styles.statusMissing}>{owned ? 'Possédée' : 'Manquante'}</span>
+                  {displayedPrice != null && <strong className={styles.price}>{formatPrice(displayedPrice, price?.currency || 'EUR')}</strong>}
+                </div>
+                <div className={styles.cardInfo}>
+                  <span className={styles.number}>N° {card.collector_number}</span>
+                  <h3>{card.card_name}</h3>
+                  <p>{card.rarity_label || 'Rareté non renseignée'}</p>
+                  {gradingFilter === 'graded' && latestCopy && <small className={styles.gradeInfo}>{latestCopy.card_grading_companies?.abbreviation || latestCopy.card_grading_companies?.company_name} · note {latestCopy.grade_label || latestCopy.grade}</small>}
+                  {displayedPrice == null && <small className={styles.noPrice}>Valeur non renseignée</small>}
+                  {displayedPrice != null && price && <small className={styles.source}>Source : {price.source} · {new Date(price.observed_at).toLocaleDateString('fr-FR')}</small>}
+                  {gradingFilter === 'all' && gradedOwned.length > 0 && <small className={styles.gradeInfo}>{gradedOwned.length} exemplaire{gradedOwned.length > 1 ? 's' : ''} gradé{gradedOwned.length > 1 ? 's' : ''} dans la collection</small>}
+                  {card.variants.length > 1 && <small className={styles.variantCount}>{card.variants.length} variantes de référence</small>}
+                </div>
+              </article>
+            })}
+          </div>
+        ) : <p className={styles.message}>Aucune carte ne correspond à ces filtres.</p>}
+        {!cardsLoading && cards.length > 0 && <p className={styles.note}>Les valeurs affichées proviennent des ventes confirmées ou estimations enregistrées. Les annonces seules ne sont pas utilisées comme cote.</p>}
+      </section>}
+      {!selectedSet && !loading && <p className={styles.message}>Choisis une série pour afficher toutes ses cartes et leurs valeurs.</p>}
+    </main>
+  )
+}

@@ -40,11 +40,11 @@ const navLinks = [
           { href: '/collection/statistiques', label: 'Vue d’ensemble', memberOnly: true },
           { href: '/collection', label: 'Produits scellés', memberOnly: true },
           {
-            href: '/catalogue/cartes',
+            href: '/collection/valeur/cartes',
             label: 'Cartes',
             memberOnly: true,
             children: [
-              { href: '/catalogue/cartes', label: 'Par série', memberOnly: true },
+              { href: '/collection/valeur/cartes', label: 'Par série', memberOnly: true },
               { href: '/catalogue/cartes', label: 'Carte individuelle', memberOnly: true },
               { href: '/collection/stats?category=graded', label: 'Cartes gradées', memberOnly: true }
             ]
