@@ -350,7 +350,7 @@ export default function CardCataloguePage() {
         </section>
       )}
 
-      {cards.length > 0 && !loadingCards && <aside className={styles.addBar} aria-label="Valider l’ajout à la collection">
+      {cards.length > 0 && !loadingCards && !seriesPickerOpen && <aside className={styles.addBar} aria-label="Valider l’ajout à la collection">
         <p aria-live="polite">{selectedRows.length} impression{selectedRows.length > 1 ? 's' : ''} sélectionnée{selectedRows.length > 1 ? 's' : ''} · {selectedCopies} exemplaire{selectedCopies > 1 ? 's' : ''}</p>
         <button type="button" disabled={!selectedRows.length || saving} onClick={addSelectedVariants}>
           {saving ? 'Ajout en cours…' : 'Ajouter à ma collection'}
