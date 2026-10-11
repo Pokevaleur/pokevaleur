@@ -75,7 +75,7 @@ export default function CollectionValueOverviewPage() {
       <nav className={styles.breadcrumb} aria-label="Fil d’Ariane"><a href="/collection">Ma collection</a><span>›</span><span>Valeurs</span></nav>
       <header className={styles.pageHeader}>
         <span className={styles.eyebrow}>MA COLLECTION · VALEURS</span>
-        <h1>Valeur de {state.profileName}</h1>
+        <h1>Valeur de {state.profileName === 'Ma collection' ? 'ma collection' : state.profileName}</h1>
         <p>Retrouve séparément la valeur de tes cartes et de tes produits scellés.</p>
       </header>
 
