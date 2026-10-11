@@ -312,12 +312,12 @@ export default function CardCataloguePage() {
       {cards.length > 0 && !loadingCards && (
         <section className={styles.checklist} aria-label={selectedSet ? 'Liste des cartes de ' + seriesLabel(selectedSet) : 'Résultats de recherche'}>
           {!visibleCards.length && <p className={styles.hint}>Aucune carte ne correspond à ce filtre.</p>}
-          {visibleCards.map(card => {
+          {visibleCards.map((card, index) => {
             const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
             const set = relatedSet(card)
             return <article className={styles.cardRow} key={card.id}>
               <button className={styles.thumbButton} type="button" onClick={() => setZoomedCard(card)} aria-label={'Voir l’image de ' + card.card_name}>
-                {card.image_url ? <img src={card.image_url} alt="" loading="lazy" onError={event => { event.currentTarget.style.display = 'none' }} /> : <span>Image</span>}
+                {card.image_url ? <img src={card.image_url} alt={card.card_name} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} onError={event => { const image = event.currentTarget; if (!image.dataset.pngFallback && image.src.includes('/low.webp')) { image.dataset.pngFallback = 'true'; image.src = image.src.replace('/low.webp', '/low.png'); return } image.style.display = 'none'; image.parentElement?.setAttribute('data-image-error', 'true') }} /> : <span>Image indisponible</span>}
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
@@ -350,7 +350,7 @@ export default function CardCataloguePage() {
         </section>
       )}
 
-      {cards.length > 0 && !loadingCards && <aside className={styles.addBar} aria-label="Valider l’ajout à la collection">
+      {cards.length > 0 && !loadingCards && !seriesPickerOpen && <aside className={styles.addBar} aria-label="Valider l’ajout à la collection">
         <p aria-live="polite">{selectedRows.length} impression{selectedRows.length > 1 ? 's' : ''} sélectionnée{selectedRows.length > 1 ? 's' : ''} · {selectedCopies} exemplaire{selectedCopies > 1 ? 's' : ''}</p>
         <button type="button" disabled={!selectedRows.length || saving} onClick={addSelectedVariants}>
           {saving ? 'Ajout en cours…' : 'Ajouter à ma collection'}
