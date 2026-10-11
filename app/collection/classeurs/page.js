@@ -27,7 +27,8 @@ const GENERATED_COVER_ALIASES = [["mascarade crepusculaire","mascarade-crepuscul
 function generatedCoverFor(set) {
   const name = normalize(set?.set_name).replace(/[^a-z0-9]+/g, ' ').trim()
   const code = shortCode(set)
-  if (code === 'ME2') return 'https://cdn.assets.prezly.com/9b0d3f37-29be-40a9-bf86-db242fe360cf/JCC_Pokemon_ETB_FR.png'
+  if (code === 'ME2' || name.includes('flammes fantasmagoriques')) return '/binder-covers/flammes-fantasmagoriques.webp'
+  if (code === 'EV4.5' || name.includes('destinees de paldea')) return '/binder-covers/destinees-de-paldea.webp'
   if (code === 'MEP') return '/binder-covers/mega-evolution.webp'
   if (name === 'ecarlate et violet' || code === 'EV1') return '/binder-covers/ecarlate-et-violet.webp'
   if (name === 'xy' || code === 'XY1') return '/binder-covers/xy.webp'
