@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../../lib/supabase-pagination.js'
 import styles from './cards-value.module.css'
@@ -16,6 +16,43 @@ const GRADING_FILTERS = [
   ['raw', 'Non gradées'],
   ['graded', 'Mes gradées']
 ]
+
+const FRENCH_SET_CODES = {
+  swsh1: 'EB01',
+  swsh2: 'EB02',
+  swsh3: 'EB03',
+  'swsh3.5': 'EB03.5',
+  swsh4: 'EB04',
+  'swsh4.5': 'EB04.5',
+  'swsh4.5sv': 'EB04.5 SV',
+  swsh5: 'EB05',
+  swsh6: 'EB06',
+  swsh7: 'EB07',
+  cel25: 'EB07.5',
+  cel25cc: 'EB07.5 CC',
+  swsh8: 'EB08',
+  swsh9: 'EB09',
+  swsh9tg: 'EB09 TG',
+  swsh10: 'EB10',
+  swsh10tg: 'EB10 TG',
+  'swsh10.5': 'EB10.5',
+  swsh11: 'EB11',
+  swsh11tg: 'EB11 TG',
+  swsh12: 'EB12',
+  swsh12tg: 'EB12 TG',
+  'swsh12.5': 'EB12.5',
+  'swsh12.5gg': 'EB12.5 GG',
+  '30th': '30C',
+  '30th-c': '30CC'
+}
+
+function seriesLabel(set) {
+  const code = String(set?.set_code || '').trim().toLowerCase()
+  const rawCode = set?.set_code || ''
+  const displayCode = FRENCH_SET_CODES[code] || (/^sv\d/i.test(rawCode) ? 'EV' + rawCode.slice(2).toUpperCase() : rawCode.toUpperCase())
+  const name = String(set?.set_name || 'Série').replace(/Classique(?=30e)/i, 'Classique ')
+  return (displayCode ? displayCode + ' — ' : '') + name
+}
 
 function formatPrice(value, currency = 'EUR') {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency }).format(value)
@@ -68,6 +105,8 @@ export default function CardValuesBySeriesPage() {
   const [ownershipFilter, setOwnershipFilter] = useState('all')
   const [gradingFilter, setGradingFilter] = useState('all')
   const [search, setSearch] = useState('')
+  const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
+  const seriesPickerRef = useRef(null)
 
   useEffect(() => {
     let cancelled = false
@@ -102,6 +141,22 @@ export default function CardValuesBySeriesPage() {
     loadSets()
     return () => { cancelled = true }
   }, [supabase])
+
+  useEffect(() => {
+    if (!seriesPickerOpen) return
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setSeriesPickerOpen(false)
+    }
+    const closeOnOutsideClick = event => {
+      if (!seriesPickerRef.current?.contains(event.target)) setSeriesPickerOpen(false)
+    }
+    window.addEventListener('keydown', closeOnEscape)
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => {
+      window.removeEventListener('keydown', closeOnEscape)
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+    }
+  }, [seriesPickerOpen])
 
   useEffect(() => {
     if (!setId || !profileId) {
@@ -195,10 +250,15 @@ export default function CardValuesBySeriesPage() {
 
       <section className={styles.controls} aria-label="Choix de la série et filtres">
         <label className={styles.seriesSelect}>Série
-          <select value={setId} onChange={event => changeSet(event.target.value)} disabled={loading}>
-            <option value="">Choisir une série…</option>
-            {sets.map(set => <option key={set.id} value={set.id}>{set.set_code ? set.set_code.toUpperCase() + ' — ' : ''}{set.set_name}</option>)}
-          </select>
+          <div className={styles.seriesPicker} ref={seriesPickerRef}>
+            <button type="button" className={styles.seriesPickerTrigger} aria-haspopup="listbox" aria-expanded={seriesPickerOpen} disabled={loading} onClick={() => setSeriesPickerOpen(open => !open)}>
+              <span>{selectedSet ? seriesLabel(selectedSet) : 'Choisir une série…'}</span>
+              <span className={styles.seriesPickerChevron} aria-hidden="true">▾</span>
+            </button>
+            {seriesPickerOpen && <div className={styles.seriesPickerOptions} role="listbox" aria-label="Séries du catalogue">
+              {sets.map(set => <button type="button" role="option" aria-selected={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { changeSet(set.id); setSeriesPickerOpen(false) }}>{seriesLabel(set)}</button>)}
+            </div>}
+          </div>
         </label>
         <label className={styles.search}>Rechercher une carte
           <input type="search" value={search} onChange={event => setSearch(event.target.value)} placeholder="Nom ou numéro" />
@@ -218,7 +278,7 @@ export default function CardValuesBySeriesPage() {
       {!loading && !sets.length && <p className={styles.message}>Aucune série française n’est disponible.</p>}
       {selectedSet && <section aria-live="polite">
         <div className={styles.resultsHeader}>
-          <div><span>{selectedSet.set_code || 'SÉRIE'}</span><h2>{selectedSet.set_name}</h2></div>
+          <div><span>{seriesLabel(selectedSet).split(' — ')[0] || 'SÉRIE'}</span><h2>{selectedSet.set_name.replace(/Classique(?=30e)/i, 'Classique ')}</h2></div>
           <p><strong>{filteredCards.length}</strong> cartes affichées · <strong>{ownedCount}</strong> possédées</p>
         </div>
         {cardsLoading ? <p className={styles.message} role="status">Chargement des cartes et des prix…</p> : filteredCards.length ? (
