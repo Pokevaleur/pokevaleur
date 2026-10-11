@@ -8,6 +8,42 @@ import styles from './page.module.css'
 const ALL_SERIES = '__all_series__'
 const MCDONALDS_SERIES = '__mcdonalds_series__'
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets(id,set_name,set_code),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
+const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
+
+function normalizedCardName(name) {
+  return String(name || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
+}
+
+function mcdonaldsCardImageCandidates(card, set, matchingImages = []) {
+  if (!isMcDonaldsSet(set)) return card.image_url ? [card.image_url] : []
+
+  const year = String(set?.set_name || '').match(/20\d{2}/)?.[0]
+  const number = String(card.collector_number || '').match(/\d+/)?.[0]
+  const tcgApiImage = year && number && MCDONALDS_PTCG_IMAGE_YEARS.has(year)
+    ? `https://images.pokemontcg.io/mcd${year.slice(-2)}/${Number(number)}.png`
+    : null
+  const originalImage = card.image_url || ''
+  const hasUnavailableTcgdexPath = originalImage.includes('assets.tcgdex.net/fr/mc/')
+  const candidates = [
+    tcgApiImage,
+    !hasUnavailableTcgdexPath ? originalImage : null,
+    ...matchingImages,
+    hasUnavailableTcgdexPath ? originalImage : null
+  ].filter(Boolean)
+  return [...new Set(candidates)]
+}
+
+function advanceCardImage(event, candidates) {
+  const image = event.currentTarget
+  const nextIndex = Number(image.dataset.imageIndex || 0) + 1
+  if (candidates[nextIndex]) {
+    image.dataset.imageIndex = String(nextIndex)
+    image.src = candidates[nextIndex]
+    return
+  }
+  image.style.display = 'none'
+  image.parentElement?.setAttribute('data-image-error', 'true')
+}
 
 const FRENCH_SET_CODES = {
   swsh1: 'EB01',
@@ -62,6 +98,7 @@ export default function CardCataloguePage() {
   const [query, setQuery] = useState('')
   const [filterQuery, setFilterQuery] = useState('')
   const [cards, setCards] = useState([])
+  const [cardImageCandidates, setCardImageCandidates] = useState({})
   const [owned, setOwned] = useState({})
   const [profiles, setProfiles] = useState([])
   const [profileId, setProfileId] = useState('')
@@ -137,6 +174,7 @@ export default function CardCataloguePage() {
   useEffect(() => {
     if (!setId) {
       setCards([])
+      setCardImageCandidates({})
       setOwned({})
       setSelection({})
       setLoadingCards(false)
@@ -144,6 +182,7 @@ export default function CardCataloguePage() {
     }
     if (setId === ALL_SERIES && !query.trim()) {
       setCards([])
+      setCardImageCandidates({})
       setOwned({})
       setSelection({})
       setLoadingCards(false)
@@ -172,6 +211,40 @@ export default function CardCataloguePage() {
         if (loadError) throw loadError
         if (cancelled) return
         const cardRows = rows || []
+        const mcDonaldCards = cardRows.filter(card => isMcDonaldsSet(relatedSet(card)))
+        const imageCandidates = {}
+        if (mcDonaldCards.length) {
+          const searchNames = Array.from(new Set(mcDonaldCards.flatMap(card => {
+            const name = card.card_name || ''
+            return [name, name.replace(/[’‘`´]/g, "'") , name.replace(/'/g, '’')]
+          })))
+          const matchingCards = []
+          try {
+            for (let offset = 0; offset < searchNames.length; offset += 50) {
+              const { data, error: imageLoadError } = await fetchAllRows(() => supabase.from('cards')
+                .select('card_name,image_url,card_sets(set_name)')
+                .in('card_name', searchNames.slice(offset, offset + 50))
+                .not('image_url', 'is', null))
+              if (!imageLoadError) matchingCards.push(...(data || []))
+            }
+          } catch {
+            // The catalog stays usable when an optional cross-set image lookup is unavailable.
+          }
+          const matchingImagesByName = new Map()
+          for (const candidate of matchingCards) {
+            const candidateSet = Array.isArray(candidate.card_sets) ? candidate.card_sets[0] : candidate.card_sets
+            if (!candidate.image_url || isMcDonaldsSet(candidateSet)) continue
+            const name = normalizedCardName(candidate.card_name)
+            if (!name) continue
+            const current = matchingImagesByName.get(name) || []
+            if (!current.includes(candidate.image_url)) current.push(candidate.image_url)
+            matchingImagesByName.set(name, current)
+          }
+          for (const card of mcDonaldCards) {
+            const set = relatedSet(card)
+            imageCandidates[card.id] = mcdonaldsCardImageCandidates(card, set, matchingImagesByName.get(normalizedCardName(card.card_name)) || [])
+          }
+        }
         const variantIds = Array.from(new Set(cardRows.flatMap(card => (card.card_print_variants || []).map(variant => variant.id))))
         let copyRows = []
         if (profileId && variantIds.length) {
@@ -190,7 +263,7 @@ export default function CardCataloguePage() {
           if (!ownership[copy.card_print_variant_id]) ownership[copy.card_print_variant_id] = []
           ownership[copy.card_print_variant_id].push(copy)
         }
-        if (!cancelled) { setCards(cardRows); setOwned(ownership) }
+        if (!cancelled) { setCardImageCandidates(imageCandidates); setCards(cardRows); setOwned(ownership) }
       } catch {
         if (!cancelled) setError('Impossible de charger les cartes de cette série. Réessaie dans un instant.')
       } finally {
@@ -333,9 +406,11 @@ export default function CardCataloguePage() {
           {visibleCards.map((card, index) => {
             const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
             const set = relatedSet(card)
+            const imageCandidates = cardImageCandidates[card.id] || (card.image_url ? [card.image_url] : [])
+            const imageUrl = imageCandidates[0] || ''
             return <article className={styles.cardRow} key={card.id}>
               <button className={styles.thumbButton} type="button" onClick={() => setZoomedCard(card)} aria-label={'Voir l’image de ' + card.card_name}>
-                {card.image_url ? <img src={card.image_url} alt={card.card_name} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} onError={event => { const image = event.currentTarget; if (!image.dataset.pngFallback && image.src.includes('/low.webp')) { image.dataset.pngFallback = 'true'; image.src = image.src.replace('/low.webp', '/low.png'); return } image.style.display = 'none'; image.parentElement?.setAttribute('data-image-error', 'true') }} /> : <span>Image indisponible</span>}
+                {imageUrl ? <img src={imageUrl} alt={card.card_name} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} onError={event => advanceCardImage(event, imageCandidates)} /> : <span>Image indisponible</span>}
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
@@ -381,7 +456,7 @@ export default function CardCataloguePage() {
       {zoomedCard && <div className={styles.modal} role="presentation" onClick={() => setZoomedCard(null)}>
         <div className={styles.modalContent} role="dialog" aria-modal="true" aria-label={'Carte ' + zoomedCard.card_name} onClick={event => event.stopPropagation()}>
           <button type="button" className={styles.closeButton} onClick={() => setZoomedCard(null)} aria-label="Fermer">×</button>
-          <img src={zoomedCard.image_url} alt={zoomedCard.card_name} />
+          <img src={cardImageCandidates[zoomedCard.id]?.[0] || zoomedCard.image_url} alt={zoomedCard.card_name} onError={event => advanceCardImage(event, cardImageCandidates[zoomedCard.id] || [zoomedCard.image_url].filter(Boolean))} />
           <p>{zoomedCard.card_name} · {zoomedCard.collector_number}</p>
         </div>
       </div>}
