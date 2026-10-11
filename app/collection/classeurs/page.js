@@ -10,7 +10,7 @@ function shortCode(set) {
   const code = String(set?.set_code || '').trim().toUpperCase()
   const match = code.match(/^(?:SWSH|EB|SV|EV|ME|SM|SL|XY|BW|DP|PL|HGSS)[\s-]*(\d+(?:\.\d+)?)([A-Z]*)$/)
   if (match) {
-    const prefix = /^(?:SWSH|EB)/.test(code) ? 'EB' : /^(?:SV|EV|ME)/.test(code) ? 'EV' : /^SM/.test(code) ? 'SL' : (code.match(/^[A-Z]+/) || [''])[0]
+    const prefix = /^(?:SWSH|EB)/.test(code) ? 'EB' : /^(?:SV|EV)/.test(code) ? 'EV' : /^ME/.test(code) ? 'ME' : /^SM/.test(code) ? 'SL' : (code.match(/^[A-Z]+/) || [''])[0]
     const number = Number(match[1])
     return prefix + (prefix === 'EB' && number < 10 ? '0' : '') + number + match[2]
   }
@@ -27,6 +27,8 @@ const GENERATED_COVER_ALIASES = [["mascarade crepusculaire","mascarade-crepuscul
 function generatedCoverFor(set) {
   const name = normalize(set?.set_name).replace(/[^a-z0-9]+/g, ' ').trim()
   const code = shortCode(set)
+  if (code === 'ME2') return 'https://cdn.assets.prezly.com/9b0d3f37-29be-40a9-bf86-db242fe360cf/JCC_Pokemon_ETB_FR.png'
+  if (code === 'MEP') return '/binder-covers/mega-evolution.webp'
   if (name === 'ecarlate et violet' || code === 'EV1') return '/binder-covers/ecarlate-et-violet.webp'
   if (name === 'xy' || code === 'XY1') return '/binder-covers/xy.webp'
   const match = GENERATED_COVER_ALIASES.find(([alias]) => name.includes(alias))
@@ -1007,11 +1009,12 @@ function BindersContent() {
             const masterOwned = ownedCardCounts[set.id] || 0
             const extraOwned = ownedExtraCounts[set.id] || 0
             const hasCards = masterOwned > 0 || extraOwned > 0
+            const spineCover = generatedCoverFor(set) || etbImages[set.id]
             return <button key={set.id} type="button" className={hasCards ? styles.spineActive : styles.spine}
               style={{ '--spine-start': start, '--spine-end': end }}
               onClick={() => navigate({ open: false, set: set.id })}
               aria-label={'Ouvrir le classeur ' + set.set_name + ', ' + masterOwned + ' cartes du Master Set et ' + extraOwned + ' versions hors Master Set possédées'}>
-              {hasCards && generatedCoverFor(set) && <span className={styles.spineArtwork} aria-hidden="true"><img src={generatedCoverFor(set)} alt="" loading="lazy" /></span>}
+              {hasCards && spineCover && <span className={styles.spineArtwork} aria-hidden="true"><img src={spineCover} alt="" loading="lazy" /></span>}
               <span className={styles.spineCode}>{shortCode(set)}</span>
               <span className={styles.spineMarker} aria-hidden="true" />
             </button>
