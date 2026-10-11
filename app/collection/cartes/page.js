@@ -576,6 +576,11 @@ export default function CardChecklistPage() {
   }
 
   const visibleCards = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
+  const visibleOwnedCopyCount = visibleCards.reduce((total, card) => total +
+    (card.card_print_variants || [])
+      .filter(variant => variant.is_master_set_target)
+      .reduce((cardTotal, variant) => cardTotal + (owned[variant.id] || []).length, 0), 0
+  )
   const missingVariantRows = cards.flatMap(card => (card.card_print_variants || [])
     .filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && !(owned[variant.id] || []).length)
     .map(variant => ({ card, variant, label: missingVariantLabel(variant) })))
@@ -953,7 +958,7 @@ export default function CardChecklistPage() {
             <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, numéro ou artiste…" />
           </label>
           {!query.trim() && <p className={styles.scope}>Saisis un nom, un numéro ou un artiste pour retrouver tes cartes dans les séries françaises.</p>}
-          {!!query.trim() && <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> résultat{visibleCards.length > 1 ? 's' : ''} pour « {query.trim()} » · jusqu’à 500 cartes affichées</p>}
+          {!!query.trim() && <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's différentes' : ' différente'} pour « {query.trim()} » · <strong>{visibleOwnedCopyCount}</strong> exemplaire{visibleOwnedCopyCount > 1 ? 's possédés' : ' possédé'}</p>}
           {cardsLoading ? <p className={styles.status}>Recherche dans toutes les séries…</p> : query.trim() && (
             <section className={styles.cardGrid} aria-label="Résultats toutes séries">
               {!visibleCards.length && !error && <p className={styles.empty}>Aucune carte ne correspond à « {query.trim()} ».</p>}
@@ -1010,7 +1015,7 @@ export default function CardChecklistPage() {
               <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, numéro ou artiste…" />
             </label>
             <p className={styles.scope}>
-              {visibleCards.length} carte{visibleCards.length > 1 ? 's' : ''} affichée{visibleCards.length > 1 ? 's' : ''} selon le filtre. Les ajouts se font depuis le Catalogue.
+              {visibleCards.length} carte{visibleCards.length > 1 ? 's différentes' : ' différente'} affichée{visibleCards.length > 1 ? 's' : ''} selon le filtre · {visibleOwnedCopyCount} exemplaire{visibleOwnedCopyCount > 1 ? 's possédés' : ' possédé'} sur ces cartes. Les ajouts se font depuis le Catalogue.
             </p>
           </section>
 

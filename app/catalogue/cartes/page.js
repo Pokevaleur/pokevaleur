@@ -32,7 +32,9 @@ const FRENCH_SET_CODES = {
   swsh12: 'EB12',
   swsh12tg: 'EB12 TG',
   'swsh12.5': 'EB12.5',
-  'swsh12.5gg': 'EB12.5 GG'
+  'swsh12.5gg': 'EB12.5 GG',
+  '30th': '30C',
+  '30th-c': '30CC'
 }
 
 function seriesLabel(set) {
