@@ -43,6 +43,227 @@ function imageFor(card) {
   return card?.image_url || card?.image_source_url || ''
 }
 
+function pdfVariantLabel(variant) {
+  const key = String(variant?.variant_key || '').toLocaleLowerCase('fr')
+  const known = {
+    standard: 'Normale', normal: 'Normale', reverse: 'Reverse', holo: 'Holo', holofoil: 'Holo',
+    reverse_pokeball: 'Reverse Poké Ball', reverse_masterball: 'Reverse Master Ball',
+    holo_cosmos: 'Holo Cosmos', cosmos_holo: 'Holo Cosmos', holo_galaxy: 'Holo Galaxy'
+  }
+  return known[key] || variant?.variant_label || variant?.variant_key || variant?.finish_code || 'Variante'
+}
+
+function loadPdfImage(url) {
+  if (!url) return Promise.resolve(null)
+  return new Promise(resolve => {
+    const image = new Image()
+    let settled = false
+    const finish = value => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeout)
+      resolve(value)
+    }
+    const timeout = window.setTimeout(() => finish(null), 12000)
+    try {
+      if (new URL(url, window.location.href).origin !== window.location.origin) image.crossOrigin = 'anonymous'
+    } catch { /* Let the browser try relative and data URLs as supplied. */ }
+    image.onload = () => {
+      try {
+        const maxSide = 520
+        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+        const context = canvas.getContext('2d')
+        if (!context) return finish(null)
+        context.fillStyle = '#ffffff'
+        context.fillRect(0, 0, canvas.width, canvas.height)
+        context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        finish({ data: canvas.toDataURL('image/jpeg', 0.82), width: canvas.width, height: canvas.height })
+      } catch { finish(null) }
+    }
+    image.onerror = () => finish(null)
+    try { image.src = url } catch { finish(null) }
+  })
+}
+
+async function createBinderPdf({ set, cards, variantCopies, coverArt, ownedOnSet, copiesOnSet, missingOnSet, onProgress }) {
+  const { jsPDF } = await import('jspdf')
+  const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true })
+  const pageWidth = pdf.internal.pageSize.getWidth()
+  const pageHeight = pdf.internal.pageSize.getHeight()
+  const coverImage = await loadPdfImage(coverArt)
+  const dateLabel = new Date().toLocaleDateString('fr-FR')
+  const seriesCode = shortCode(set)
+  const title = 'PokéValeur - ' + seriesCode + ' - ' + set.set_name
+  pdf.setProperties({ title, subject: 'Classeur de cartes Pokémon', author: 'PokéValeur', creator: 'PokéValeur' })
+
+  pdf.setFillColor(16, 31, 57)
+  pdf.rect(0, 0, pageWidth, pageHeight, 'F')
+  pdf.setFillColor(245, 184, 46)
+  pdf.rect(0, 0, pageWidth, 7, 'F')
+  pdf.setTextColor(255, 255, 255)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(13)
+  pdf.text('POKÉVALEUR · CLASSEUR', pageWidth / 2, 20, { align: 'center' })
+
+  const artBox = { x: 17, y: 32, w: pageWidth - 34, h: 192 }
+  pdf.setFillColor(255, 255, 255)
+  pdf.roundedRect(artBox.x, artBox.y, artBox.w, artBox.h, 5, 5, 'F')
+  if (coverImage) {
+    const aspect = coverImage.width / coverImage.height
+    const boxAspect = artBox.w / artBox.h
+    const drawW = aspect > boxAspect ? artBox.w : artBox.h * aspect
+    const drawH = aspect > boxAspect ? artBox.w / aspect : artBox.h
+    pdf.addImage(coverImage.data, 'JPEG', artBox.x + (artBox.w - drawW) / 2, artBox.y + (artBox.h - drawH) / 2, drawW, drawH, 'binder-cover', 'FAST')
+  } else {
+    pdf.setTextColor(23, 60, 115)
+    pdf.setFontSize(30)
+    pdf.text(seriesCode, pageWidth / 2, artBox.y + artBox.h / 2, { align: 'center' })
+  }
+  pdf.setTextColor(255, 255, 255)
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(22)
+  const coverTitle = pdf.splitTextToSize(set.set_name, pageWidth - 36)
+  pdf.text(coverTitle.slice(0, 2), pageWidth / 2, 244, { align: 'center' })
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(10)
+  pdf.text(seriesCode + (set.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' }) : ''), pageWidth / 2, 260, { align: 'center' })
+  pdf.text(ownedOnSet + ' cartes possédées · ' + copiesOnSet + ' exemplaires · ' + missingOnSet + ' emplacements à compléter', pageWidth / 2, 270, { align: 'center' })
+  pdf.setFont('helvetica', 'bold')
+  pdf.setFontSize(12)
+  pdf.text('pokevaleur.fr', pageWidth / 2, 285, { align: 'center' })
+  pdf.setFont('helvetica', 'normal')
+  pdf.setFontSize(8)
+  pdf.text('Exporté le ' + dateLabel, pageWidth / 2, 291, { align: 'center' })
+
+  const cardsPerPage = 12
+  const totalPages = Math.max(1, Math.ceil(cards.length / cardsPerPage))
+  const marginX = 9
+  const gridTop = 28
+  const gridBottom = 285
+  const gridWidth = pageWidth - marginX * 2
+  const cellWidth = gridWidth / 3
+  const cellHeight = (gridBottom - gridTop) / 4
+  const overflowDetails = []
+
+  for (let pageIndex = 0; pageIndex < totalPages; pageIndex += 1) {
+    pdf.addPage('a4', 'portrait')
+    pdf.setFillColor(249, 250, 252)
+    pdf.rect(0, 0, pageWidth, pageHeight, 'F')
+    pdf.setTextColor(23, 47, 78)
+    pdf.setFont('helvetica', 'bold')
+    pdf.setFontSize(13)
+    pdf.text(set.set_name, marginX, 14)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(8)
+    pdf.text(seriesCode + ' · Page ' + (pageIndex + 1) + '/' + totalPages, pageWidth - marginX, 14, { align: 'right' })
+    pdf.setDrawColor(210, 219, 229)
+    pdf.line(marginX, 19, pageWidth - marginX, 19)
+    onProgress('Création du PDF : page ' + (pageIndex + 1) + ' sur ' + totalPages + '…')
+
+    const pageCards = cards.slice(pageIndex * cardsPerPage, (pageIndex + 1) * cardsPerPage)
+    const images = await Promise.all(pageCards.map(card => loadPdfImage(imageFor(card))))
+    pageCards.forEach((card, cardIndex) => {
+      const column = cardIndex % 3
+      const row = Math.floor(cardIndex / 3)
+      const x = marginX + column * cellWidth + 2
+      const y = gridTop + row * cellHeight + 1.5
+      const w = cellWidth - 4
+      const h = cellHeight - 3
+      const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
+      const ownedVariants = variants.map(variant => ({ variant, count: (variantCopies[variant.id] || []).length })).filter(item => item.count > 0)
+
+      pdf.setFillColor(ownedVariants.length ? 255 : 244, ownedVariants.length ? 255 : 246, ownedVariants.length ? 255 : 249)
+      pdf.setDrawColor(ownedVariants.length ? 189 : 222, ownedVariants.length ? 203 : 226, ownedVariants.length ? 218 : 231)
+      pdf.roundedRect(x, y, w, h, 2.5, 2.5, 'FD')
+      const imageData = images[cardIndex]
+      if (imageData) {
+        const imageBox = { x: x + (w - 25) / 2, y: y + 2, w: 25, h: 35 }
+        const aspect = imageData.width / imageData.height
+        const drawW = aspect > imageBox.w / imageBox.h ? imageBox.w : imageBox.h * aspect
+        const drawH = aspect > imageBox.w / imageBox.h ? imageBox.w / aspect : imageBox.h
+        pdf.addImage(imageData.data, 'JPEG', imageBox.x + (imageBox.w - drawW) / 2, imageBox.y + (imageBox.h - drawH) / 2, drawW, drawH, undefined, 'FAST')
+      }
+
+      pdf.setTextColor(31, 48, 67)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(7.2)
+      const nameLines = pdf.splitTextToSize(card.card_name || 'Carte sans nom', w - 6).slice(0, 2)
+      pdf.text(nameLines, x + 3, y + 41)
+      const numberY = y + 41 + nameLines.length * 3.1 + 1
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(6.6)
+      pdf.text('N° ' + (card.collector_number || '—'), x + 3, numberY)
+
+      if (ownedVariants.length) {
+        const lines = []
+        for (const item of ownedVariants) {
+          const label = pdfVariantLabel(item.variant) + ' ×' + item.count
+          lines.push(...pdf.splitTextToSize(label, w - 6))
+        }
+        if (lines.length > 4) {
+          overflowDetails.push({ number: card.collector_number, name: card.card_name, variants: ownedVariants })
+          lines.splice(4, lines.length - 4, 'Détails des variantes en fin de PDF')
+        }
+        pdf.setTextColor(72, 91, 111)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(5.6)
+        pdf.text(lines, x + 3, Math.min(numberY + 3.5, y + h - 10), { lineHeightFactor: 1.05 })
+      } else {
+        pdf.setTextColor(117, 127, 139)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(6.5)
+        pdf.text('À compléter', x + 3, numberY + 4)
+      }
+    })
+    pdf.setTextColor(91, 105, 122)
+    pdf.setFont('helvetica', 'normal')
+    pdf.setFontSize(7.5)
+    pdf.text('PokéValeur · pokevaleur.fr', marginX, 291)
+    pdf.text('Classeur ' + (pageIndex + 1) + '/' + totalPages, pageWidth - marginX, 291, { align: 'right' })
+  }
+
+  if (overflowDetails.length) {
+    onProgress('Ajout du détail des variantes possédées…')
+    let detailPage = 0
+    let detailY = Infinity
+    function startDetailPage() {
+      pdf.addPage('a4', 'portrait')
+      pdf.setFillColor(255, 255, 255)
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F')
+      pdf.setTextColor(23, 47, 78)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(14)
+      pdf.text('Détail des variantes possédées', marginX, 16)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(8)
+      pdf.text(set.set_name + ' · Suite ' + (detailPage + 1), marginX, 22)
+      pdf.setTextColor(91, 105, 122)
+      pdf.setFontSize(7.5)
+      pdf.text('PokéValeur · pokevaleur.fr', marginX, 291)
+      detailPage += 1
+      detailY = 32
+    }
+    for (const row of overflowDetails) {
+      const variantText = row.variants.map(item => pdfVariantLabel(item.variant) + ' ×' + item.count).join(' · ')
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(7.5)
+      const wrapped = pdf.splitTextToSize('N° ' + row.number + ' · ' + row.name + ' : ' + variantText, pageWidth - marginX * 2)
+      const rowHeight = Math.max(7, wrapped.length * 3.5)
+      if (detailY + rowHeight > 284) startDetailPage()
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(7.5)
+      pdf.setTextColor(45, 61, 80)
+      pdf.text(wrapped, marginX, detailY)
+      detailY += rowHeight
+    }
+  }
+
+  return pdf
+}
+
 
 const CARD_CONDITIONS = [
   { value: 'near_mint', label: 'Quasi neuve' },
@@ -59,6 +280,7 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
   const [photosLoading, setPhotosLoading] = useState(true)
   const [uploading, setUploading] = useState(false)
   const [saving, setSaving] = useState(false)
+  const [deleting, setDeleting] = useState(false)
   const [condition, setCondition] = useState(copies[0]?.raw_condition || '')
   const [conditionDetails, setConditionDetails] = useState(copies[0]?.condition_details || '')
   const [message, setMessage] = useState('')
@@ -74,14 +296,12 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
   useEffect(() => {
     setCondition(selectedCopy?.raw_condition || '')
     setConditionDetails(selectedCopy?.condition_details || '')
-    setMessage('')
   }, [selectedCopyId])
 
   useEffect(() => {
     if (!selectedCopy) return
     let cancelled = false
     setPhotosLoading(true)
-    setMessage('')
     async function loadPhotos() {
       try {
         const { data, error } = await supabase.from('collection_card_photos')
@@ -213,6 +433,51 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
     }
   }
 
+  async function removeSelectedCopy() {
+    if (!selectedCopy || deleting || saving || uploading) return
+    const copyIndex = localCopies.findIndex(copy => copy.id === selectedCopy.id)
+    const copyDescription = 'l’exemplaire ' + (copyIndex + 1) + ' de ' + card.card_name +
+      ' (N° ' + card.collector_number + (selectedCopy.variantLabel ? ', variante ' + selectedCopy.variantLabel : '') + ')'
+    if (!window.confirm('Retirer ' + copyDescription + ' de ta collection ? Les autres exemplaires et la fiche du catalogue resteront en place.')) return
+
+    setDeleting(true)
+    setMessage('')
+    try {
+      const { data: photoRows, error: photosError } = await supabase.from('collection_card_photos')
+        .select('photo_path').eq('collection_card_id', selectedCopy.id)
+      if (photosError) throw photosError
+
+      const { data: deletedRow, error } = await supabase.from('collection_cards').delete()
+        .eq('id', selectedCopy.id).eq('collection_profile_id', profileId).select('id').maybeSingle()
+      if (error) throw error
+      if (!deletedRow) throw new Error('Cet exemplaire n’a pas été trouvé dans le profil sélectionné.')
+
+      const photoPaths = [...new Set([selectedCopy.photo_path, ...(photoRows || []).map(photo => photo.photo_path)].filter(Boolean))]
+      let photoCleanupFailed = false
+      if (photoPaths.length) {
+        const { error: storageError } = await supabase.storage.from('collection-images').remove(photoPaths)
+        photoCleanupFailed = Boolean(storageError)
+      }
+
+      const nextCopies = localCopies.filter(copy => copy.id !== selectedCopy.id)
+      setLocalCopies(nextCopies)
+      onCopyDeleted(selectedCopy)
+      if (nextCopies.length) {
+        const nextIndex = Math.min(copyIndex, nextCopies.length - 1)
+        setSelectedCopyId(nextCopies[nextIndex].id)
+      } else {
+        onClose()
+      }
+      setMessage(photoCleanupFailed
+        ? 'Exemplaire retiré de la collection, mais ses photos n’ont pas toutes pu être supprimées.'
+        : 'Exemplaire retiré de la collection.')
+    } catch (error) {
+      setMessage('Suppression impossible : ' + (error.message || 'réessaie plus tard.'))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   const conditionIsCustom = condition && !CARD_CONDITIONS.some(option => option.value === condition)
   return (
     <div className={styles.detailBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) onClose() }}>
@@ -223,8 +488,9 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
             <p className={styles.kicker}>Fiche de collection</p>
             <h2>{card.card_name}</h2>
             <p>{card.setName} · N° {card.collector_number}</p>
+            <p className={styles.detailVariant}>Variante sélectionnée : <strong>{selectedCopy?.variantLabel || 'Non précisée'}</strong></p>
           </div>
-          <span className={styles.detailCopyCount}>{copies.length} exemplaire{copies.length > 1 ? 's' : ''}</span>
+          <span className={styles.detailCopyCount}>{localCopies.length} exemplaire{localCopies.length > 1 ? 's' : ''}</span>
         </header>
 
         <div className={styles.detailLayout}>
@@ -234,11 +500,11 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
           </figure>
 
           <div className={styles.detailContent}>
-            {copies.length > 1 && <div className={styles.copyTabs} role="tablist" aria-label="Choisir un exemplaire">
-              {copies.map((copy, index) => <button key={copy.id} type="button" role="tab"
+            {localCopies.length > 1 && <div className={styles.copyTabs} role="tablist" aria-label="Choisir un exemplaire">
+              {localCopies.map((copy, index) => <button key={copy.id} type="button" role="tab"
                 aria-selected={copy.id === selectedCopy?.id} className={copy.id === selectedCopy?.id ? styles.copyTabActive : styles.copyTab}
-                onClick={() => setSelectedCopyId(copy.id)}>
-                Exemplaire {index + 1}{copy.variantLabel ? ' · ' + copy.variantLabel : ''}
+                onClick={() => { setMessage(''); setSelectedCopyId(copy.id) }}>
+                Exemplaire {index + 1}{copy.variantLabel ? ' · ' + copy.variantLabel : ''}{copy.raw_condition ? ' · ' + (CARD_CONDITIONS.find(option => option.value === copy.raw_condition)?.label || copy.raw_condition) : ''}
               </button>)}
             </div>}
 
@@ -257,6 +523,9 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
               </label>
               <button type="button" className={styles.detailSave} onClick={saveCondition} disabled={saving}>
                 {saving ? 'Enregistrement…' : 'Enregistrer l’état'}
+              </button>
+              <button type="button" className={styles.detailDelete} onClick={removeSelectedCopy} disabled={saving || uploading || deleting}>
+                {deleting ? 'Suppression…' : 'Retirer cet exemplaire de ma collection'}
               </button>
             </section>
 
@@ -314,6 +583,10 @@ function BindersContent() {
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
   const [error, setError] = useState('')
+  const [pdfBusy, setPdfBusy] = useState(false)
+  const [pdfNotice, setPdfNotice] = useState('')
+  const [pdfFile, setPdfFile] = useState(null)
+  const [pdfCanShare, setPdfCanShare] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
   const [cardsPerSpread, setCardsPerSpread] = useState(24)
 
@@ -426,6 +699,12 @@ function BindersContent() {
   const displayedSets = showAllBinders ? sets : ownedSets
 
   useEffect(() => {
+    setPdfFile(null)
+    setPdfCanShare(false)
+    setPdfNotice('')
+  }, [selectedSet?.id, profileId, cards, variantCopies])
+
+  useEffect(() => {
     if (!selectedSet || !profileId) {
       setCards([])
       setVariantCopies({})
@@ -445,8 +724,9 @@ function BindersContent() {
         let copies = []
         for (let offset = 0; offset < ids.length; offset += 250) {
           const { data, error: copyError } = await supabase.from('collection_cards')
-            .select('id,card_print_variant_id,ownership_type,grade_label,raw_condition,condition_details,photo_path')
+            .select('id,card_print_variant_id,ownership_type,grade_label,raw_condition,condition_details,photo_path,created_at')
             .eq('collection_profile_id', profileId).in('card_print_variant_id', ids.slice(offset, offset + 250))
+            .order('created_at', { ascending: true }).order('id', { ascending: true })
           if (copyError) throw copyError
           copies = copies.concat(data || [])
         }
@@ -479,6 +759,94 @@ function BindersContent() {
   const pageCards = cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread)
   const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageCards[index] || null)
   const pageSides = cardsPerSpread === 16 ? [0] : [0, 1]
+
+  function handleCopyDeleted(copy) {
+    const remainingForVariant = (variantCopies[copy.card_print_variant_id] || []).filter(row => row.id !== copy.id)
+    const owningCard = cards.find(card => (card.card_print_variants || []).some(variant => variant.id === copy.card_print_variant_id))
+    const cardStillOwned = (owningCard?.card_print_variants || []).some(variant =>
+      variant.id === copy.card_print_variant_id
+        ? remainingForVariant.length > 0
+        : (variantCopies[variant.id] || []).length > 0
+    )
+
+    setVariantCopies(current => ({
+      ...current,
+      [copy.card_print_variant_id]: (current[copy.card_print_variant_id] || []).filter(row => row.id !== copy.id),
+    }))
+    setOwnedCopyCount(current => Math.max(current - 1, 0))
+    if (owningCard && !cardStillOwned) {
+      setOwnedCardCounts(current => ({ ...current, [selectedSet.id]: Math.max((current[selectedSet.id] || 0) - 1, 0) }))
+    }
+    setZoomedCard(current => current ? { ...current, copies: (current.copies || []).filter(row => row.id !== copy.id) } : current)
+  }
+
+  async function prepareBinderPdf() {
+    if (!selectedSet || pdfBusy || cardsLoading) return
+    setPdfBusy(true)
+    setPdfFile(null)
+    setPdfCanShare(false)
+    setPdfNotice('Préparation du classeur…')
+    try {
+      const pdf = await createBinderPdf({
+        set: selectedSet,
+        cards,
+        variantCopies,
+        coverArt,
+        ownedOnSet,
+        copiesOnSet,
+        missingOnSet,
+        onProgress: setPdfNotice,
+      })
+      const slug = normalize(selectedSet.set_name).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
+      const fileName = 'pokevaleur-' + shortCode(selectedSet).toLowerCase() + '-' + (slug || 'classeur') + '.pdf'
+      const file = new File([pdf.output('blob')], fileName, { type: 'application/pdf' })
+      let canShareFile = false
+      try {
+        canShareFile = typeof navigator.share === 'function'
+          && typeof navigator.canShare === 'function'
+          && navigator.canShare({ files: [file] })
+      } catch { canShareFile = false }
+      setPdfFile(file)
+      setPdfCanShare(canShareFile)
+      setPdfNotice(canShareFile
+        ? 'PDF prêt. Appuyez sur « Partager » pour choisir une application.'
+        : 'PDF prêt à télécharger.')
+    } catch (pdfError) {
+      setPdfNotice('Impossible de créer le PDF : ' + (pdfError.message || 'réessayez.'))
+    } finally {
+      setPdfBusy(false)
+    }
+  }
+
+  async function sharePreparedBinderPdf() {
+    if (!pdfFile || !pdfCanShare || pdfBusy) return
+    setPdfBusy(true)
+    try {
+      await navigator.share({
+        files: [pdfFile],
+        title: 'Classeur ' + selectedSet.set_name + ' · PokéValeur',
+        text: 'Mon classeur ' + selectedSet.set_name + ' sur PokéValeur · pokevaleur.fr',
+      })
+      setPdfNotice('Le classeur a été partagé.')
+    } catch (shareError) {
+      setPdfNotice(shareError?.name === 'AbortError' ? 'Partage annulé.' : 'Le partage n’a pas abouti. Vous pouvez télécharger le PDF.')
+    } finally {
+      setPdfBusy(false)
+    }
+  }
+
+  function downloadPreparedBinderPdf() {
+    if (!pdfFile || pdfBusy) return
+    const url = URL.createObjectURL(pdfFile)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = pdfFile.name
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.setTimeout(() => URL.revokeObjectURL(url), 60000)
+    setPdfNotice('PDF téléchargé. Vous pouvez le joindre à un message ou le partager depuis votre téléphone.')
+  }
 
   function navigate(next) {
     const query = new URLSearchParams()
@@ -573,7 +941,18 @@ function BindersContent() {
               <div><strong>{missingOnSet}</strong><span>emplacements à compléter</span></div>
               <div><strong>{copiesOnSet}</strong><span>exemplaires possédés</span></div>
             </div>
-            <button className={styles.openButton} type="button" onClick={() => navigate({ open: true, page: 0 })}>Ouvrir le classeur <span aria-hidden="true">→</span></button>
+            <div className={styles.coverActions}>
+              <button className={styles.openButton} type="button" onClick={() => navigate({ open: true, page: 0 })}>Ouvrir le classeur <span aria-hidden="true">→</span></button>
+              {pdfFile ? <div className={styles.pdfReadyActions}>
+                {pdfCanShare && <button className={styles.shareButton} type="button" onClick={sharePreparedBinderPdf} disabled={pdfBusy}>
+                  {pdfBusy ? 'Ouverture du partage…' : 'Partager le PDF'}
+                </button>}
+                <button className={styles.downloadButton} type="button" onClick={downloadPreparedBinderPdf} disabled={pdfBusy}>Télécharger le PDF</button>
+              </div> : <button className={styles.shareButton} type="button" onClick={prepareBinderPdf} disabled={pdfBusy || cardsLoading}>
+                {pdfBusy ? 'Création du PDF…' : 'Créer le PDF à partager'}
+              </button>}
+            </div>
+            {pdfNotice && <p className={styles.shareNotice} role="status">{pdfNotice}</p>}
           </div>
         </section>
       </> : <>
@@ -637,7 +1016,7 @@ function BindersContent() {
         </>}
       </>}
       {zoomedCard && <CardCopyDialog supabase={supabase} user={user} profileId={profileId} card={zoomedCard}
-        copies={zoomedCard.copies || []} onClose={() => setZoomedCard(null)} />}
+        copies={zoomedCard.copies || []} onCopyDeleted={handleCopyDeleted} onClose={() => setZoomedCard(null)} />}
     </main>
   )
 }

@@ -283,6 +283,18 @@ function formatMissingCardNumbers(numbers) {
   return parts.join(', ')
 }
 
+function missingVariantLabel(variant) {
+  const key = String(variant?.variant_key || '').toLocaleLowerCase('fr')
+  const knownLabels = {
+    standard: 'Normale', normal: 'Normale', reverse: 'Reverse', holo: 'Holo',
+    holofoil: 'Holo', reverse_pokeball: 'Reverse Poké Ball', reverse_masterball: 'Reverse Master Ball',
+    holo_cosmos: 'Holo Cosmos', cosmos_holo: 'Holo Cosmos', holo_galaxy: 'Holo Galaxy',
+    holo_pattern: 'Holo à motif', catalog_base: 'Variante de base'
+  }
+  if (knownLabels[key]) return knownLabels[key]
+  return variant?.variant_label || variant?.variant_key || variant?.finish_code || 'Autre variante'
+}
+
 function normalizeCardSearch(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
@@ -564,12 +576,14 @@ export default function CardChecklistPage() {
   }
 
   const visibleCards = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
-  const missingCardsForCopy = useMemo(
-    () => baseFilteredCards.filter(card => matchesCollectionFilter(card, 'missing')),
-    [baseFilteredCards, owned, checklistFilter, selectedVersions]
-  )
-  const missingCardNumbers = [...new Set(missingCardsForCopy.map(card => card.collector_number).filter(Boolean))]
-  const formattedMissingCardNumbers = formatMissingCardNumbers(missingCardNumbers)
+  const missingVariantRows = cards.flatMap(card => (card.card_print_variants || [])
+    .filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && !(owned[variant.id] || []).length)
+    .map(variant => ({ card, variant, label: missingVariantLabel(variant) })))
+  const missingVariantGroups = [...new Map(missingVariantRows.map(row => [row.variant.variant_key, {
+    key: row.variant.variant_key,
+    label: row.label,
+    rows: missingVariantRows.filter(candidate => candidate.variant.variant_key === row.variant.variant_key)
+  }])).values()].sort((a, b) => a.label.localeCompare(b.label, 'fr'))
 
   const visibleTargetVariants = visibleCards.flatMap(card => (card.card_print_variants || []).filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && matchesVariantCollectionFilter(variant, collectionFilter)))
   const visibleMissingVariantIds = collectMissingTargetVariantIds(
@@ -641,12 +655,18 @@ export default function CardChecklistPage() {
     window.history.replaceState({}, '', url)
   }
 
-  async function copyMissingCardNumbers() {
-    if (!missingCardNumbers.length) {
-      setNotice('Aucun numéro manquant avec les filtres actuels.')
+  async function copyMissingCardNumbers(variantKey = null) {
+    const rows = variantKey
+      ? missingVariantRows.filter(row => row.variant.variant_key === variantKey)
+      : missingVariantRows
+    if (!rows.length) {
+      setNotice('Aucune variante manquante dans cette série avec les filtres actuels.')
       return
     }
-    const textToCopy = formatMissingCardNumbers(missingCardNumbers)
+    const numbers = [...new Set(rows.map(row => row.card.collector_number).filter(Boolean))]
+    const textToCopy = variantKey
+      ? formatMissingCardNumbers(numbers)
+      : rows.map(row => row.card.collector_number + ' (' + row.label + ')').join(', ')
     try {
       if (navigator.clipboard?.writeText) {
         await navigator.clipboard.writeText(textToCopy)
@@ -662,7 +682,7 @@ export default function CardChecklistPage() {
         textarea.remove()
         if (!copied) throw new Error('La copie n’est pas disponible dans ce navigateur.')
       }
-      setNotice(missingCardNumbers.length + ' numéro' + (missingCardNumbers.length > 1 ? 's' : '') + ' manquant' + (missingCardNumbers.length > 1 ? 's' : '') + ' copié' + (missingCardNumbers.length > 1 ? 's' : '') + '.')
+      setNotice((variantKey ? numbers.length : rows.length) + ' variante' + ((variantKey ? numbers.length : rows.length) > 1 ? 's' : '') + ' manquante' + ((variantKey ? numbers.length : rows.length) > 1 ? 's' : '') + ' copiée' + ((variantKey ? numbers.length : rows.length) > 1 ? 's' : '') + '.')
     } catch (copyError) {
       setNotice('Copie impossible : ' + (copyError.message || 'sélectionne les numéros manuellement.'))
     }
@@ -908,6 +928,21 @@ export default function CardChecklistPage() {
           >{label}</button>
         ))}
       </div>}
+
+      {selectedSet && !isCatalogOnlySet && !cardsLoading && <section className={styles.copyMissingPanel} aria-label="Copier les variantes manquantes">
+        <div>
+          <strong>Copier les cartes manquantes</strong>
+          <p>Choisis une variante pour distinguer, par exemple, une carte normale de sa version reverse.</p>
+        </div>
+        <div className={styles.copyMissingActions}>
+          <button type="button" className={styles.copyMissingButton} onClick={() => copyMissingCardNumbers()} disabled={!missingVariantRows.length}>
+            Toutes les manquantes ({missingVariantRows.length})
+          </button>
+          {missingVariantGroups.map(group => <button type="button" key={group.key} className={styles.copyMissingButton} onClick={() => copyMissingCardNumbers(group.key)}>
+            {group.label} ({group.rows.length})
+          </button>)}
+        </div>
+      </section>}
 
       {!sets.length && !error && <p className={styles.empty}>Aucune série de cartes n’est publiée pour le moment.</p>}
       {!isAllSeriesSelected && !selectedSet && !loading && !query.trim() && <p className={styles.seriesPrompt}>Choisis une série pour afficher la liste complète de ses cartes de Master Set, ou lance une recherche dans ta collection.</p>}

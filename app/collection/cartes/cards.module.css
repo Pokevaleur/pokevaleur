@@ -279,6 +279,14 @@
 .collectionCardFilter { background:#fff; color:#263549; }
 .collectionCardFilter:hover { border-color:#8b6c2c; }
 .collectionCardFilterActive { background:#173654; border-color:#173654; color:#fff; }
+.copyMissingPanel { display:grid; gap:12px; margin:0 0 18px; padding:14px 16px; border:1px solid #dce2e9; border-radius:14px; background:#f8faff; }
+.copyMissingPanel strong { color:#173654; }
+.copyMissingPanel p { margin:4px 0 0; color:#687587; font-size:.84rem; line-height:1.4; }
+.copyMissingActions { display:flex; flex-wrap:wrap; gap:8px; }
+.copyMissingButton { min-height:38px; padding:7px 12px; border:1px solid #cbd5e1; border-radius:999px; background:#fff; color:#263549; font:inherit; font-size:.84rem; font-weight:700; cursor:pointer; }
+.copyMissingButton:hover:not(:disabled) { border-color:#173c84; color:#173c84; }
+.copyMissingButton:disabled { opacity:.5; cursor:not-allowed; }
+.copyMissingButton:focus-visible { outline:3px solid #e7b929; outline-offset:2px; }
 
 .scopeDetails { margin-top:8px; color:#8994a1; font-size:.72rem; }
 .scopeDetails summary { display:inline-block; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }

@@ -55,6 +55,18 @@
 .stats span { color:#69788a; font-size:.82rem; }
 .openButton { display:flex; align-items:center; justify-content:space-between; gap:18px; width:100%; min-height:50px; padding:12px 17px; border:0; border-radius:12px; background:#173c73; color:#fff; font:inherit; font-weight:800; cursor:pointer; }
 .openButton:hover { background:#24559a; }
+.coverActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.coverActions .openButton { min-width:0; }
+.pdfReadyActions { grid-column:1 / -1; display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; }
+.shareButton { min-height:50px; padding:10px 14px; border:1px solid #c5a348; border-radius:12px; background:#fff; color:#173c73; font:inherit; font-weight:800; cursor:pointer; }
+.shareButton:hover:not(:disabled) { background:#fff9e9; border-color:#a57a16; }
+.shareButton:disabled { opacity:.55; cursor:wait; }
+.shareButton:focus-visible { outline:3px solid #e7b929; outline-offset:2px; }
+.downloadButton { min-height:50px; padding:10px 14px; border:1px solid #ccd6e1; border-radius:12px; background:#f5f8fb; color:#30445b; font:inherit; font-weight:750; cursor:pointer; }
+.downloadButton:hover:not(:disabled) { background:#eaf0f5; border-color:#9aabbd; }
+.downloadButton:disabled { opacity:.55; cursor:wait; }
+.downloadButton:focus-visible { outline:3px solid #e7b929; outline-offset:2px; }
+.shareNotice { padding:10px 12px; margin:10px 0 0; border-radius:10px; background:#fff; color:#536477; font-size:.84rem; line-height:1.4; }
 .openHeader { display:flex; align-items:flex-end; justify-content:space-between; gap:16px; margin:10px 0 20px; }
 .openHeader > p { margin:0 0 4px; color:#637286; }
 .spread { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; padding:14px; border:1px solid #d6dde7; border-radius:20px; background:linear-gradient(145deg,color-mix(in srgb,var(--spread-accent,#a5dfd4) 9%,#fbfaf6),#f4f6f2 54%,color-mix(in srgb,var(--spread-accent,#a5dfd4) 12%,#fff)); box-shadow:0 15px 36px #29375018; }
@@ -88,6 +100,8 @@
 .detailHeader .kicker { margin-bottom:5px; }
 .detailHeader h2 { margin:0; font-size:clamp(1.45rem,3vw,2rem); line-height:1.1; }
 .detailHeader p:last-child { margin:7px 0 0; color:#657386; }
+.detailHeader .detailVariant { margin-top:8px; color:#354b61; font-size:.88rem; }
+.detailVariant strong { color:#173c73; }
 .detailCopyCount { flex:0 0 auto; padding:8px 11px; border:1px solid #dae1e8; border-radius:999px; background:#fff; color:#42556b; font-size:.85rem; font-weight:750; }
 .detailLayout { display:grid; grid-template-columns:minmax(180px,280px) minmax(0,1fr); align-items:start; gap:22px; }
 .detailCatalogArt { position:sticky; top:0; display:flex; min-height:320px; flex-direction:column; align-items:center; justify-content:center; gap:8px; margin:0; padding:14px; border:1px solid #e0e4e8; border-radius:15px; background:#fff; }
@@ -105,6 +119,10 @@
 .detailField textarea { min-height:70px; resize:vertical; }
 .detailSave { min-height:40px; padding:9px 13px; margin-top:12px; border:0; border-radius:9px; background:#173c73; color:#fff; font:inherit; font-size:.85rem; font-weight:750; cursor:pointer; }
 .detailSave:disabled { opacity:.6; cursor:wait; }
+.detailDelete { display:block; min-height:40px; padding:9px 13px; margin-top:10px; border:1px solid #d9a4a4; border-radius:9px; background:#fff7f7; color:#922f36; font:inherit; font-size:.84rem; font-weight:750; cursor:pointer; }
+.detailDelete:hover:not(:disabled) { border-color:#a8323a; background:#fff0f0; }
+.detailDelete:disabled { opacity:.55; cursor:wait; }
+.detailDelete:focus-visible { outline:3px solid #e7b929; outline-offset:2px; }
 .photoPanelHeading { display:flex; align-items:center; justify-content:space-between; gap:10px; }
 .photoPanelHeading p { margin:4px 0 0; color:#728092; font-size:.8rem; }
 .photoAddButton { position:relative; display:inline-flex; min-height:38px; align-items:center; justify-content:center; padding:8px 12px; overflow:hidden; border-radius:9px; background:#eaf0f5; color:#173c73; font-size:.82rem; font-weight:800; cursor:pointer; }
@@ -127,6 +145,8 @@
  .closedBinder { width:min(78vw,330px); min-height:370px; }
  .coverFace { min-height:344px; padding:20px; }
  .coverDetails { width:100%; }
+ .coverActions { grid-template-columns:1fr; }
+ .pdfReadyActions { grid-template-columns:1fr; }
  .openHeader { align-items:start; flex-direction:column; gap:8px; }
  .spread { gap:7px; padding:7px; border-radius:14px; }
  .bookPage { padding:6px; }
