@@ -1420,7 +1420,7 @@ function BindersContent() {
                       onClick={() => setZoomedCard({ ...card, image_url: itemArt || card.image_url, setName: cardSetFor(card)?.set_name || selectedSet.set_name, copies: ownedCopies })}
                       aria-label={'Voir ' + (item.kind === 'extra' ? binderExtraLabel(item) + ' de ' : '') + card.card_name + ', ' + ownedCopies.length + ' exemplaire' + (ownedCopies.length === 1 ? '' : 's')}>
                       <div className={styles.thumb}>
-                        {cardArt ? <CardArtwork card={card} src={itemArt} alt="" /> : <span>Illustration absente</span>}
+                        {itemArt ? <CardArtwork card={card} src={itemArt} alt="" /> : <span>Illustration absente</span>}
                         <span className={styles.slotZoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                         {copyCount > 1 && <b className={styles.copyBadge}>×{copyCount}</b>}
                       </div>
