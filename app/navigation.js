@@ -117,7 +117,7 @@ export default function Navigation({ links }) {
           </div>
         </details>
       )
-      : <a href={link.href} key={link.href}>{link.label}</a>)
+      : <a href={link.label === 'Accueil' && identity ? '/collection/accueil' : link.href} key={link.href}>{link.label}</a>)
   }
   const accountMenu = identity && (
     <details className="accountMenu">

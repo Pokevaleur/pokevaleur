@@ -8,6 +8,8 @@ import styles from './home.module.css'
 export default function SiteHeader({ links }) {
   const pathname = usePathname()
   const home = pathname === '/'
+  const fullMockup = pathname === '/collection/accueil' || pathname === '/rejoindre'
+  if (fullMockup) return null
   if (!home) return <header className="topbar"><BrandLogo className="brand" />{pathname !== '/login' && <Navigation links={links} />}</header>
   return <header className={styles.header}>
     <BrandLogo className={styles.brand} />
