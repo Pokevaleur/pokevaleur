@@ -78,7 +78,7 @@ function pdfVariantLabel(variant) {
 }
 
 function binderExtraLabel(item) {
-  if (item?.category === 'promo') return 'Promo SVP ' + String(item.card?.collector_number || '').replace(/^SVP\\s*/i, '')
+  if (item?.category === 'promo') return 'Promo SVP ' + String(item.card?.collector_number || '').replace(/^SVP\s*/i, '')
   if (item?.category === 'stamp') return item.variant?.variant_label || 'Carte tampon'
   return pdfVariantLabel(item?.variant)
 }
@@ -1319,7 +1319,7 @@ function BindersContent() {
         {!isPromoCatalogView && promoCatalogItems.length > 0 && <button type="button" className={styles.bonusCardsCatalogButton}
           onClick={() => navigate({ open: true, page: 0, promos: true })}
           aria-label={'Voir les ' + promoCatalogItems.length + ' promos du catalogue'}>
-          Voir les {promoCatalogItems.length} promos EV9
+          Voir les {promoCatalogItems.length} promos du catalogue
         </button>}
         {error && <p className={styles.error} role="alert">{error}</p>}
         {cardsLoading ? <p className={styles.status}>Chargement des cartes du classeur…</p> : <>
