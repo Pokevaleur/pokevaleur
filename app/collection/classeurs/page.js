@@ -888,8 +888,12 @@ function BindersContent() {
     ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
     : ownedCardCounts[requestedSetId] || 0
   const setTotal = cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
-  const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target).length, 0)
+  const catalogMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target).length, 0)
+  // EV8.5 uses PokéValeur's defined scope: numbered cards, all variants and the eight energy versions; promos/stamps are Ultra Master Set.
+  const masterVariantTotal = shortCode(selectedSet) === 'EV8.5' ? 455 : catalogMasterVariantTotal
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && (variantCopies[variant.id] || []).length).length, 0)
+  const seriesCompletionPercent = setTotal ? Math.round((ownedOnSet / setTotal) * 100) : 0
+  const masterSetCompletionPercent = masterVariantTotal ? Math.round((ownedMasterVariantTotal / masterVariantTotal) * 100) : 0
   const ownedExtraVariantTotal = extraVariants.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
   const distinctOwnedVersionTotal = ownedMasterVariantTotal + ownedExtraVariantTotal
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
@@ -1197,12 +1201,20 @@ function BindersContent() {
             <p className={styles.kicker}>Ton classeur de série</p>
             <h2>{selectedSet.set_name}</h2>
             <div className={styles.stats}>
-              <div title="Nombre de numéros de carte distincts dans la série, hits compris."><strong>{setTotal}</strong><span>numéros au catalogue</span></div>
-              <div title="Un numéro ne compte qu’une fois, même si tu possèdes plusieurs exemplaires ou variantes."><strong>{ownedOnSet}</strong><span>numéros distincts possédés</span></div>
-              <div title="Variantes du Master Set qu’il te manque encore."><strong>{missingOnSet}</strong><span>emplacements du Master Set à compléter</span></div>
-              <div title="Nombre total d’exemplaires physiques, doublons et versions hors Master Set compris."><strong>{copiesOnSet}</strong><span>exemplaires possédés</span></div>
-              <div title="Chaque version d’impression possédée compte une fois, même si tu en as plusieurs exemplaires."><strong>{distinctOwnedVersionTotal}</strong><span>versions distinctes possédées</span></div>
-              <div title="Variantes cataloguées qui ne font pas partie du périmètre Master Set défini pour cette série."><strong>{extraVariants.length}</strong><span>versions hors Master Set au catalogue</span></div>
+              <div className={styles.progressStat}>
+                <strong>{ownedOnSet} / {setTotal}</strong>
+                <span>Série complète · {seriesCompletionPercent}%</span>
+                <a href="/guide/classeurs#serie-complete">Qu’est-ce que la série complète ?</a>
+              </div>
+              <div className={styles.progressStat}>
+                <strong>{ownedMasterVariantTotal} / {masterVariantTotal}</strong>
+                <span>Master Set · {masterSetCompletionPercent}%</span>
+                <a href="/guide/classeurs#master-set">Qu’est-ce que le Master Set ?</a>
+              </div>
+              <div className={styles.progressStat} title="Nombre total d’exemplaires physiques de la série, doublons compris.">
+                <strong>{copiesOnSet}</strong>
+                <span>cartes possédées (doublons compris)</span>
+              </div>
             </div>
             <details className={styles.breakdown}>
               <summary>Détail par rareté et par version</summary>
