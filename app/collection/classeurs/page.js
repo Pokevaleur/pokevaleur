@@ -63,6 +63,35 @@ function imageFor(card) {
   return card?.image_url || card?.image_source_url || ''
 }
 
+function imageCandidatesFor(source) {
+  if (!source) return []
+  const candidates = [source]
+  if (source.includes('assets.tcgdex.net/')) {
+    const high = source.replace(/\\/low\\.(webp|png|jpg)$/i, '/high.$1')
+    const english = source.replace('/fr/', '/en/')
+    const englishHigh = high.replace('/fr/', '/en/')
+    candidates.push(high, english, englishHigh)
+  }
+  return [...new Set(candidates)]
+}
+
+function CardArtwork({ card, alt, className, loading = 'lazy', src }) {
+  const primary = src || imageFor(card)
+  const fallbacks = src && src !== imageFor(card) ? imageCandidatesFor(imageFor(card)) : []
+  const candidates = [...new Set([...imageCandidatesFor(primary), ...fallbacks])]
+  const [candidateIndex, setCandidateIndex] = useState(0)
+  if (!candidates.length || candidateIndex >= candidates.length) {
+    return <span className={className} role=\"img\" aria-label={alt}>Illustration indisponible</span>
+  }
+  return <img
+    className={className}
+    src={candidates[candidateIndex]}
+    alt={alt}
+    loading={loading}
+    onError={() => setCandidateIndex(index => index + 1)}
+  />
+}
+
 function cardSetFor(card) {
   return Array.isArray(card?.card_sets) ? card.card_sets[0] : card?.card_sets
 }
@@ -108,7 +137,7 @@ function BonusCatalogImageDialog({ card, label, imageUrl, onClose }) {
       <button type="button" className={styles.bonusZoomClose} onClick={onClose} aria-label="Fermer l’agrandissement">×</button>
       <p className={styles.kicker}>Catalogue · {label}</p>
       <h2 id="bonus-zoom-title">{card.card_name} · {card.collector_number}</h2>
-      <img className={styles.bonusZoomImage} src={imageUrl} alt={card.category === 'stamp' ? 'Carte Évoli avec tampon Pokémon Day' : card.card_name + ', ' + label} />
+      <CardArtwork card={card} src={imageUrl} className={styles.bonusZoomImage} alt={card.category === 'stamp' ? 'Carte avec tampon Pokémon Day' : card.card_name + ', ' + label} loading="eager" />
     </section>
   </div>
 }
@@ -620,7 +649,7 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
 
         <div className={styles.detailLayout}>
           <figure className={styles.detailCatalogArt}>
-            {imageFor(card) ? <img src={imageFor(card)} alt={'Illustration catalogue de ' + card.card_name} /> : <span>Illustration indisponible</span>}
+            <CardArtwork card={card} alt={'Illustration catalogue de ' + card.card_name} loading="eager" />
             <figcaption>Illustration du catalogue</figcaption>
           </figure>
 
@@ -1361,7 +1390,7 @@ function BindersContent() {
                       onClick={() => setZoomedBonusCard({ card: { ...card, category: item.category }, label: bonusLabel, imageUrl: catalogArt })}
                       aria-label={'Agrandir ' + card.card_name + ', ' + bonusLabel}>
                       <div className={styles.thumb}>
-                        {catalogArt ? <img src={catalogArt} alt="" loading="lazy" /> : <span>Illustration indisponible</span>}
+                        {catalogArt ? <CardArtwork card={card} src={catalogArt} alt="" /> : <span>Illustration indisponible</span>}
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
                       <span className={styles.cardNumber}>{card.collector_number}</span>
@@ -1373,7 +1402,7 @@ function BindersContent() {
                       onClick={() => setZoomedCard({ ...card, setName: cardSetFor(card)?.set_name || selectedSet.set_name, copies: ownedCopies })}
                       aria-label={'Voir ' + (item.kind === 'extra' ? binderExtraLabel(item) + ' de ' : '') + card.card_name + ', ' + ownedCopies.length + ' exemplaire' + (ownedCopies.length === 1 ? '' : 's')}>
                       <div className={styles.thumb}>
-                        {cardArt ? <img src={cardArt} alt="" loading="lazy" /> : <span>Illustration absente</span>}
+                        {cardArt ? <CardArtwork card={card} alt="" /> : <span>Illustration absente</span>}
                         <span className={styles.slotZoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                         {copyCount > 1 && <b className={styles.copyBadge}>×{copyCount}</b>}
                       </div>
