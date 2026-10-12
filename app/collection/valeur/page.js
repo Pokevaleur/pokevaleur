@@ -72,11 +72,9 @@ export default function CollectionValueOverviewPage() {
   const total = (state.cardsValue || 0) + (state.sealedValue || 0)
   return (
     <main className={styles.page}>
-      <nav className={styles.breadcrumb} aria-label="Fil d’Ariane"><a href="/collection">Ma collection</a><span>›</span><span>Valeurs</span></nav>
       <header className={styles.pageHeader}>
-        <span className={styles.eyebrow}>MA COLLECTION · VALEURS</span>
         <h1>Valeur de {state.profileName === 'Ma collection' ? 'ma collection' : state.profileName}</h1>
-        <p>Retrouve séparément la valeur de tes cartes et de tes produits scellés.</p>
+        <p>Cartes et produits scellés</p>
       </header>
 
       {state.error && <section className={styles.error} role="alert"><strong>Valeurs indisponibles</strong><p>{state.error}</p></section>}
@@ -84,10 +82,10 @@ export default function CollectionValueOverviewPage() {
         <section className={styles.totalCard} aria-label="Estimation globale">
           <span className={styles.eyebrow}>ESTIMATION GLOBALE</span>
           <strong>{hasAnyValue ? euro(total) : 'Aucune valeur disponible'}</strong>
-          <small>Cartes et produits possédés · mise à jour au {state.calculatedAt?.toLocaleDateString('fr-FR')}</small>
+          <small>Mise à jour au {state.calculatedAt?.toLocaleDateString('fr-FR')}</small>
         </section>
 
-        <h2 className={styles.sectionTitle}>Que veux-tu estimer ?</h2>
+        <h2 className={styles.sectionTitle}>Détail de ma collection</h2>
         <div className={styles.options}>
           <a className={styles.option} href="/collection/valeur/cartes">
             <span className={`${styles.icon} ${styles.cardIcon}`} aria-hidden="true">C</span>
@@ -104,7 +102,7 @@ export default function CollectionValueOverviewPage() {
             <span className={styles.explore}>Explorer <b aria-hidden="true">→</b></span>
           </a>
         </div>
-        <p className={styles.sourceNote}>Estimations avec source et date des prix.</p>
+        <p className={styles.sourceNote}>Sources et dates des prix</p>
       </>}
       <nav className={styles.bottomNav} aria-label="Navigation principale">
         <a href="/"><span className={styles.navDot} aria-hidden="true" />Accueil</a>
