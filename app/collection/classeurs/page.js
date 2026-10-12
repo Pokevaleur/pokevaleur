@@ -1193,9 +1193,9 @@ function BindersContent() {
             <h2>{selectedSet.set_name}</h2>
             <div className={styles.stats}>
               <div><strong>{setTotal}</strong><span>cartes au catalogue</span></div>
-              <div><strong>{ownedOnSet}</strong><span>cartes possédées</span></div>
+              <div><strong>{ownedOnSet}</strong><span>cartes différentes possédées</span></div>
               <div><strong>{missingOnSet}</strong><span>emplacements à compléter</span></div>
-              <div><strong>{copiesOnSet}</strong><span>exemplaires possédés</span></div>
+              
               <div><strong>{extraVariants.length}</strong><span>versions hors Master Set</span></div>
               <div>
                 <strong>{ownedOnSet}/{setTotal} · {seriesCompletionPercent}%</strong>
