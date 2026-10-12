@@ -876,11 +876,13 @@ function BindersContent() {
     return () => { cancelled = true }
   }, [supabase, selectedSet?.id, profileId, mcDonaldSetIds.join(',')])
 
-  const copiesOnSet = useMemo(
-    () => cards.reduce((sum, card) => sum + (card.card_print_variants || []).reduce((n, variant) => n + (variantCopies[variant.id] || []).length, 0), 0)
-      + extraVariants.reduce((sum, item) => sum + (variantCopies[item.variant.id] || []).length, 0),
-    [cards, extraVariants, variantCopies]
-  )
+  const copiesOnSet = useMemo(() => {
+    const variantIds = new Set([
+      ...cards.flatMap(card => (card.card_print_variants || []).map(variant => variant.id)),
+      ...extraVariants.map(item => item.variant.id)
+    ])
+    return [...variantIds].reduce((sum, variantId) => sum + (variantCopies[variantId] || []).length, 0)
+  }, [cards, extraVariants, variantCopies])
   const isMcDonaldsBinder = selectedSet?.id === MCDONALDS_BINDER_ID
   const ownedOnSet = isMcDonaldsBinder
     ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
