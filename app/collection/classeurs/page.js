@@ -893,6 +893,36 @@ function BindersContent() {
   const ownedExtraVariantTotal = extraVariants.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
   const distinctOwnedVersionTotal = ownedMasterVariantTotal + ownedExtraVariantTotal
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
+  const binderCardsById = useMemo(() => {
+    const byId = new Map()
+    cards.forEach(card => byId.set(card.id, card))
+    extraVariants.forEach(item => byId.set(item.card.id, item.card))
+    return [...byId.values()]
+  }, [cards, extraVariants])
+  const rarityBreakdown = useMemo(() => {
+    const groups = new Map()
+    binderCardsById.forEach(card => {
+      const label = card.rarity_label || 'Autre'
+      const group = groups.get(label) || { label, total: 0, owned: 0 }
+      group.total += 1
+      if ((card.card_print_variants || []).some(variant => (variantCopies[variant.id] || []).length > 0)) group.owned += 1
+      groups.set(label, group)
+    })
+    return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label, 'fr'))
+  }, [binderCardsById, variantCopies])
+  const printVariantBreakdown = useMemo(() => {
+    const byId = new Map()
+    binderCardsById.forEach(card => (card.card_print_variants || []).forEach(variant => byId.set(variant.id, variant)))
+    const groups = new Map()
+    byId.forEach(variant => {
+      const key = variant.variant_key || variant.variant_label || 'other'
+      const group = groups.get(key) || { key, label: pdfVariantLabel(variant), total: 0, owned: 0 }
+      group.total += 1
+      if ((variantCopies[variant.id] || []).length > 0) group.owned += 1
+      groups.set(key, group)
+    })
+    return [...groups.values()].sort((a, b) => a.label.localeCompare(b.label, 'fr'))
+  }, [binderCardsById, variantCopies])
   const missingBinderRows = cards.flatMap(card => (card.card_print_variants || [])
     .filter(variant => variant.is_master_set_target && !(variantCopies[variant.id] || []).length)
     .map(variant => ({ card, variant, label: pdfVariantLabel(variant) })))
@@ -1174,6 +1204,19 @@ function BindersContent() {
               <div title="Chaque version d’impression possédée compte une fois, même si tu en as plusieurs exemplaires."><strong>{distinctOwnedVersionTotal}</strong><span>versions distinctes possédées</span></div>
               <div title="Variantes cataloguées qui ne font pas partie du périmètre Master Set défini pour cette série."><strong>{extraVariants.length}</strong><span>versions hors Master Set au catalogue</span></div>
             </div>
+            <details className={styles.breakdown}>
+              <summary>Détail par rareté et par version</summary>
+              <div className={styles.breakdownGrid}>
+                <section>
+                  <h3>Numéros possédés par rareté</h3>
+                  {rarityBreakdown.map(group => <p key={group.label}><span>{group.label}</span><strong>{group.owned}/{group.total}</strong></p>)}
+                </section>
+                <section>
+                  <h3>Versions possédées par finition</h3>
+                  {printVariantBreakdown.map(group => <p key={group.key} title="Chaque version imprimée compte une fois, même si plusieurs exemplaires sont possédés."><span>{group.label}</span><strong>{group.owned}/{group.total}</strong></p>)}
+                </section>
+              </div>
+            </details>
             <section className={styles.missingCopyPanel} aria-label="Copier les variantes manquantes">
               <strong>Copier les manquantes du Master Set</strong>
               <div className={styles.missingCopyActions}>
