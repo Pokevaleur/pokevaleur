@@ -29,9 +29,9 @@ const navLinks = [
     children: [
       { href: '/collection', label: 'Produits scellés' },
       { href: '/collection?search=ETB', label: 'ETB' },
-      { href: '/collection/cartes', label: 'Cartes', memberOnly: true },
+      { href: '/collection/cartes', label: 'Mes cartes' },
       { href: '/collection/statistiques', label: 'Statistiques', memberOnly: true },
-      { href: '/collection/classeurs', label: 'Mes classeurs', memberOnly: true },
+      { href: '/collection/classeurs', label: 'Mes classeurs' },
       {
         href: '/collection/valeur',
         label: 'Valeur',
