@@ -53,6 +53,12 @@
 .stats > div { display:flex; flex-direction:column; gap:4px; min-height:80px; padding:14px; border:1px solid #dce3eb; border-radius:14px; background:#ffffffd9; }
 .stats strong { color:#173c73; font-size:1.45rem; }
 .stats span { color:#69788a; font-size:.82rem; }
+.stats small { margin-top:3px; color:#69788a; font-size:.74rem; }
+.statExplanation { margin-top:2px; color:#52677e; font-size:.76rem; }
+.statExplanation summary { width:max-content; color:#315987; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+.statExplanation p { margin:6px 0 0; color:#536477; font-size:.76rem; line-height:1.45; }
+.bonusCardsButton { align-self:flex-start; margin-top:5px; padding:7px 10px; border:1px solid #cbd6e2; border-radius:9px; background:#f4f7fa; color:#173c73; font:inherit; font-size:.78rem; font-weight:750; cursor:pointer; }
+.bonusCardsButton:hover { border-color:#809bb5; background:#eaf0f5; }
 .missingCopyPanel { padding:13px; margin:-8px 0 18px; border:1px solid #dce3eb; border-radius:14px; background:#ffffffd9; }
 .missingCopyPanel > strong { display:block; margin-bottom:9px; color:#263b52; font-size:.9rem; }
 .missingCopyActions { display:flex; flex-wrap:wrap; gap:7px; }
