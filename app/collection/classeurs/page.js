@@ -119,8 +119,25 @@ function binderExtraLabel(item) {
 }
 
 function bonusCatalogImageFor(item) {
-  if (item?.category === 'stamp' || item?.variant?.checklist_group === 'stamp') return POKEMON_DAY_STAMP_IMAGE
-  return item?.card?.image_url || ''
+  const card = item?.card
+  const isStamp = item?.category === 'stamp' || item?.variant?.checklist_group === 'stamp'
+  if (!card) return ''
+  if (isStamp) {
+    const cardNumber = String(card.collector_number || '').match(/\d+/)?.[0]
+    const number = cardNumber ? String(Number(cardNumber)).padStart(3, '0') : ''
+    const label = normalize((item?.variant?.variant_label || '') + ' ' + (item?.variant?.variant_key || ''))
+    const stampVariant = label.includes('ultra ball') ? 'ultra-ball-league'
+      : label.includes('master ball') ? 'master-ball-league'
+        : label.includes('eb games') ? 'eb-games'
+          : label.includes('logo') || label.includes('tampon') ? 'set-logo' : ''
+    if (number && stampVariant) return '/api/ev9-image/' + number + '?variant=' + stampVariant
+    const set = cardSetFor(card)
+    const setCode = String(set?.set_code || '').toUpperCase()
+    if (number === '074' && (setCode.includes('8.5') || normalize(set?.set_name).includes('evolutions prismatiques'))) {
+      return POKEMON_DAY_STAMP_IMAGE
+    }
+  }
+  return imageFor(card)
 }
 
 function BonusCatalogImageDialog({ card, label, imageUrl, onClose }) {
@@ -298,7 +315,7 @@ async function createBinderPdf({ set, cards, extraVariants = [], binderSections 
     const pageItems = sectionPage ? sectionPage.items : isExtraPage
       ? extraVariants.slice((pageIndex - masterPageCount) * cardsPerPage, (pageIndex - masterPageCount + 1) * cardsPerPage).map(item => ({ kind: 'extra', ...item }))
       : cards.slice(pageIndex * cardsPerPage, (pageIndex + 1) * cardsPerPage).map(card => ({ kind: 'master', card }))
-    const images = await Promise.all(pageItems.map(item => loadPdfImage(binderCopiesForItem(item, variantCopies).length ? imageFor(item.card) : '')))
+    const images = await Promise.all(pageItems.map(item => loadPdfImage(binderCopiesForItem(item, variantCopies).length ? (item.kind === 'extra' ? bonusCatalogImageFor(item) : imageFor(item.card)) : '')))
     pageItems.forEach((item, cardIndex) => {
       const card = item.card
       const column = cardIndex % 3
@@ -1383,6 +1400,7 @@ function BindersContent() {
                   const cardArt = imageFor(card)
                   const missingVariants = variants.filter(variant => !(variantCopies[variant.id] || []).length)
                   const isPromoOrStamp = ['promo', 'stamp'].includes(item?.category || item?.variant?.checklist_group)
+                  const itemArt = item?.kind === 'extra' && isPromoOrStamp ? bonusCatalogImageFor(item) : cardArt
                   if (card && (isBonusCatalogView || isPromoCatalogView) && item?.kind === 'extra' && (isPromoCatalogView ? item?.category === 'promo' : isPromoOrStamp)) {
                     const catalogArt = bonusCatalogImageFor(item)
                     const bonusLabel = binderExtraLabel(item)
@@ -1399,10 +1417,10 @@ function BindersContent() {
                   }
                   if (card && copyCount) {
                     return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotOpen}
-                      onClick={() => setZoomedCard({ ...card, setName: cardSetFor(card)?.set_name || selectedSet.set_name, copies: ownedCopies })}
+                      onClick={() => setZoomedCard({ ...card, image_url: itemArt || card.image_url, setName: cardSetFor(card)?.set_name || selectedSet.set_name, copies: ownedCopies })}
                       aria-label={'Voir ' + (item.kind === 'extra' ? binderExtraLabel(item) + ' de ' : '') + card.card_name + ', ' + ownedCopies.length + ' exemplaire' + (ownedCopies.length === 1 ? '' : 's')}>
                       <div className={styles.thumb}>
-                        {cardArt ? <CardArtwork card={card} alt="" /> : <span>Illustration absente</span>}
+                        {cardArt ? <CardArtwork card={card} src={itemArt} alt="" /> : <span>Illustration absente</span>}
                         <span className={styles.slotZoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
                         {copyCount > 1 && <b className={styles.copyBadge}>×{copyCount}</b>}
                       </div>
