@@ -79,12 +79,12 @@ export default function RejoindrePage() {
 
       <section className={styles.features} aria-label="Les espaces de ta collection">
         {destinations.map((item, index) => (
-          <a className={`${styles.feature} ${styles[item.id]}`} href={hrefFor(item.href)} key={item.id}>
+          <a className={`${styles.feature} ${styles[item.id]}`} href={item.href} key={item.id}>
             <span className={styles.copy}>
               <span className={styles.featureNumber}>0{index + 1} · POKÉVALEUR</span>
               <span className={styles.featureTitle}>{item.title}</span>
               <span className={styles.description}>{item.description}</span>
-              <span className={styles.action}>{member ? item.action : 'Découvrir cet espace'} <span aria-hidden="true">→</span></span>
+              <span className={styles.action}>{item.action} <span aria-hidden="true">→</span></span>
             </span>
             <span className={styles.art} aria-hidden="true">
               {item.images ? (
