@@ -81,7 +81,7 @@ function CardArtwork({ card, alt, className, loading = 'lazy', src }) {
   const candidates = [...new Set([...imageCandidatesFor(primary), ...fallbacks])]
   const [candidateIndex, setCandidateIndex] = useState(0)
   if (!candidates.length || candidateIndex >= candidates.length) {
-    return <span className={className} role=\"img\" aria-label={alt}>Illustration indisponible</span>
+    return <span className={className} role="img" aria-label={alt}>Illustration indisponible</span>
   }
   return <img
     className={className}
