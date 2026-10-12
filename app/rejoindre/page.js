@@ -1,7 +1,7 @@
 'use client'
 
 import { useEffect, useMemo, useState } from 'react'
-import { createClient } from '../lib/supabase-browser'
+import { createClient } from '../../lib/supabase-browser'
 import styles from './page.module.css'
 
 const destinations = [
