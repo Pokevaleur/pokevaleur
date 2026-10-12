@@ -877,8 +877,9 @@ function BindersContent() {
   }, [supabase, selectedSet?.id, profileId, mcDonaldSetIds.join(',')])
 
   const copiesOnSet = useMemo(
-    () => cards.reduce((sum, card) => sum + (card.card_print_variants || []).reduce((n, variant) => n + (variantCopies[variant.id] || []).length, 0), 0),
-    [cards, variantCopies]
+    () => cards.reduce((sum, card) => sum + (card.card_print_variants || []).reduce((n, variant) => n + (variantCopies[variant.id] || []).length, 0), 0)
+      + extraVariants.reduce((sum, item) => sum + (variantCopies[item.variant.id] || []).length, 0),
+    [cards, extraVariants, variantCopies]
   )
   const isMcDonaldsBinder = selectedSet?.id === MCDONALDS_BINDER_ID
   const ownedOnSet = isMcDonaldsBinder
@@ -887,6 +888,8 @@ function BindersContent() {
   const setTotal = cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
   const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target).length, 0)
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && (variantCopies[variant.id] || []).length).length, 0)
+  const ownedExtraVariantTotal = extraVariants.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
+  const distinctOwnedVersionTotal = ownedMasterVariantTotal + ownedExtraVariantTotal
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
   const missingBinderRows = cards.flatMap(card => (card.card_print_variants || [])
     .filter(variant => variant.is_master_set_target && !(variantCopies[variant.id] || []).length)
@@ -1162,11 +1165,12 @@ function BindersContent() {
             <p className={styles.kicker}>Ton classeur de série</p>
             <h2>{selectedSet.set_name}</h2>
             <div className={styles.stats}>
-              <div><strong>{setTotal}</strong><span>cartes au catalogue</span></div>
-              <div><strong>{ownedOnSet}</strong><span>cartes possédées</span></div>
-              <div><strong>{missingOnSet}</strong><span>emplacements à compléter</span></div>
-              <div><strong>{copiesOnSet}</strong><span>exemplaires possédés</span></div>
-              <div><strong>{extraVariants.length}</strong><span>versions hors Master Set</span></div>
+              <div title="Nombre de numéros de carte distincts dans la série, hits compris."><strong>{setTotal}</strong><span>numéros au catalogue</span></div>
+              <div title="Un numéro ne compte qu’une fois, même si tu possèdes plusieurs exemplaires ou variantes."><strong>{ownedOnSet}</strong><span>numéros distincts possédés</span></div>
+              <div title="Variantes du Master Set qu’il te manque encore."><strong>{missingOnSet}</strong><span>emplacements du Master Set à compléter</span></div>
+              <div title="Nombre total d’exemplaires physiques, doublons et versions hors Master Set compris."><strong>{copiesOnSet}</strong><span>exemplaires possédés</span></div>
+              <div title="Chaque version d’impression possédée compte une fois, même si tu en as plusieurs exemplaires."><strong>{distinctOwnedVersionTotal}</strong><span>versions distinctes possédées</span></div>
+              <div title="Variantes cataloguées qui ne font pas partie du périmètre Master Set défini pour cette série."><strong>{extraVariants.length}</strong><span>versions hors Master Set au catalogue</span></div>
             </div>
             <section className={styles.missingCopyPanel} aria-label="Copier les variantes manquantes">
               <strong>Copier les manquantes du Master Set</strong>
