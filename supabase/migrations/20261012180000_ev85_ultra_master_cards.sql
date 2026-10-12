@@ -36,6 +36,7 @@ create policy "Published bonus cards are readable"
 update public.card_print_variants variant
 set variant_key = 'stamp_pokemon_day',
     variant_label = 'Tampon Pokémon Day',
+    finish_code = 'stamp',
     checklist_group = 'stamp',
     is_master_set_target = false
 from public.cards card
