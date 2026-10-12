@@ -78,7 +78,7 @@ function pdfVariantLabel(variant) {
 }
 
 function binderExtraLabel(item) {
-  if (item?.category === 'promo') return 'Promo SVP ' + (item.card?.collector_number || '')
+  if (item?.category === 'promo') return 'Promo SVP ' + String(item.card?.collector_number || '').replace(/^SVP\\s*/i, '')
   if (item?.category === 'stamp') return item.variant?.variant_label || 'Carte tampon'
   return pdfVariantLabel(item?.variant)
 }
@@ -689,6 +689,7 @@ function BindersContent() {
   const requestedSetId = params.get('set') || ''
   const isOpen = params.get('open') === '1'
   const isBonusCatalogView = params.get('catalog') === '1'
+  const isPromoCatalogView = params.get('promos') === '1'
   const rawPage = Number.parseInt(params.get('page') || '0', 10)
   const [user, setUser] = useState(null)
   const [ownerDisplayName, setOwnerDisplayName] = useState('')
@@ -941,6 +942,24 @@ function BindersContent() {
   const promoStampItems = extraVariants.filter(item => ['promo', 'stamp'].includes(item.category || item.variant?.checklist_group))
   const promoStampTotal = promoStampItems.length
   const ownedPromoStampTotal = promoStampItems.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
+  const promoCatalogItems = (() => {
+    const items = new Map()
+    for (const card of cards) {
+      for (const variant of card.card_print_variants || []) {
+        if (variant.checklist_group === 'promo' && variant.is_master_set_target) {
+          items.set(variant.id, { card, variant, category: 'promo' })
+        }
+      }
+    }
+    for (const item of extraVariants) {
+      if ((item.category || item.variant?.checklist_group) === 'promo' && item.card?.card_set_id !== selectedSet?.id) {
+        items.set(item.variant.id, item)
+      }
+    }
+    return [...items.values()].sort((a, b) =>
+      String(a.card?.collector_number || '').localeCompare(String(b.card?.collector_number || ''), 'fr', { numeric: true })
+    )
+  })()
   const seriesCompletionPercent = setTotal ? Math.round((ownedOnSet / setTotal) * 100) : 0
   const masterSetCompletionPercent = masterVariantTotal ? Math.round((ownedMasterVariantTotal / masterVariantTotal) * 100) : 0
   const ultraMasterTotal = masterVariantTotal + promoStampTotal
@@ -978,16 +997,21 @@ function BindersContent() {
   const cardsPerBookPage = cardsPerSpread === 16 ? 16 : 12
   const masterSpreadCount = cards.length ? Math.ceil(cards.length / cardsPerSpread) : (extraVariants.length ? 0 : 1)
   const extraSpreadCount = Math.ceil(extraVariants.length / cardsPerSpread)
-  const totalSpreads = isMcDonaldsBinder
-    ? Math.max(1, familySpreads.length)
-    : Math.max(1, masterSpreadCount + extraSpreadCount)
+  const promoCatalogSpreadCount = Math.ceil(promoCatalogItems.length / cardsPerSpread)
+  const totalSpreads = isPromoCatalogView
+    ? Math.max(1, promoCatalogSpreadCount)
+    : isMcDonaldsBinder
+      ? Math.max(1, familySpreads.length)
+      : Math.max(1, masterSpreadCount + extraSpreadCount)
   const totalBookPages = (cardsPerSpread === 16 ? 1 : 2) * totalSpreads
   const page = Math.max(0, Math.min(Number.isFinite(rawPage) ? rawPage : 0, totalSpreads - 1))
   const familyPage = isMcDonaldsBinder ? familySpreads[page] : null
-  const isExtraSpread = familyPage ? familyPage.kind === 'extra' : extraSpreadCount > 0 && page >= masterSpreadCount
-  const pageItems = familyPage ? familyPage.items : isExtraSpread
-    ? extraVariants.slice((page - masterSpreadCount) * cardsPerSpread, (page - masterSpreadCount + 1) * cardsPerSpread).map(item => ({ kind: 'extra', ...item }))
-    : cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread).map(card => ({ kind: 'master', card }))
+  const isExtraSpread = isPromoCatalogView ? false : familyPage ? familyPage.kind === 'extra' : extraSpreadCount > 0 && page >= masterSpreadCount
+  const pageItems = isPromoCatalogView
+    ? promoCatalogItems.slice(page * cardsPerSpread, (page + 1) * cardsPerSpread).map(item => ({ kind: 'extra', ...item }))
+    : familyPage ? familyPage.items : isExtraSpread
+      ? extraVariants.slice((page - masterSpreadCount) * cardsPerSpread, (page - masterSpreadCount + 1) * cardsPerSpread).map(item => ({ kind: 'extra', ...item }))
+      : cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread).map(card => ({ kind: 'master', card }))
   const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageItems[index] || null)
   const pageSides = cardsPerSpread === 16 ? [0] : [0, 1]
 
@@ -1130,6 +1154,7 @@ function BindersContent() {
     if (next.open) query.set('open', '1')
     if (next.page !== undefined) query.set('page', String(next.page))
     if (next.catalog ?? isBonusCatalogView) query.set('catalog', '1')
+    if (next.promos ?? isPromoCatalogView) query.set('promos', '1')
     router.push('/collection/classeurs' + (query.size ? '?' + query.toString() : ''))
   }
 
@@ -1287,13 +1312,22 @@ function BindersContent() {
         </div>
         <header className={styles.openHeader}>
           <div><h1>{selectedSet.set_name}</h1></div>
-          <p>{isMcDonaldsBinder ? mcDonaldSets.length + ' éditions annuelles · ' : ''}{ownedOnSet} possédée{ownedOnSet === 1 ? '' : 's'} · {missingOnSet} variante{missingOnSet === 1 ? '' : 's'} à compléter · {extraVariants.length} version{extraVariants.length === 1 ? '' : 's'} hors Master Set</p>
+          <p>{isPromoCatalogView
+            ? promoCatalogItems.length + ' promos du catalogue · visibles même si elles ne sont pas possédées'
+            : (isMcDonaldsBinder ? mcDonaldSets.length + ' éditions annuelles · ' : '') + ownedOnSet + ' possédée' + (ownedOnSet === 1 ? '' : 's') + ' · ' + missingOnSet + ' variante' + (missingOnSet === 1 ? '' : 's') + ' à compléter · ' + extraVariants.length + ' version' + (extraVariants.length === 1 ? '' : 's') + ' hors Master Set'}</p>
         </header>
+        {!isPromoCatalogView && promoCatalogItems.length > 0 && <button type="button" className={styles.bonusCardsCatalogButton}
+          onClick={() => navigate({ open: true, page: 0, promos: true })}
+          aria-label={'Voir les ' + promoCatalogItems.length + ' promos du catalogue'}>
+          Voir les {promoCatalogItems.length} promos EV9
+        </button>}
         {error && <p className={styles.error} role="alert">{error}</p>}
         {cardsLoading ? <p className={styles.status}>Chargement des cartes du classeur…</p> : <>
           <nav className={styles.pageNav} aria-label="Navigation du classeur">
             <button type="button" onClick={() => navigate({ open: true, page: Math.max(page - 1, 0) })} disabled={page === 0} aria-label="Double page précédente">←</button>
-            <span>{familyPage
+            <span>{isPromoCatalogView
+              ? 'Promos du catalogue ' + (page + 1) + '/' + Math.max(1, promoCatalogSpreadCount)
+              : familyPage
               ? setYear(familyPage.section.set) + ' · ' + (isExtraSpread ? 'Hors Master ' : 'Master ') + (familyPage.index + 1) + '/' + familyPage.count
               : isExtraSpread
                 ? 'Hors Master ' + (page - masterSpreadCount + 1) + '/' + extraSpreadCount
@@ -1302,7 +1336,7 @@ function BindersContent() {
           </nav>
           <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(familyPage ? familyPage.section.set.set_name + ', ' : '') + (isExtraSpread ? 'Hors Master Set, ' : 'Master Set, ') + (cardsPerSpread === 16 ? 'page ' : 'double page ') + (familyPage ? familyPage.index + 1 : isExtraSpread ? page - masterSpreadCount + 1 : page + 1)}>
             {pageSides.map(side => <section key={side} className={styles.bookPage} aria-label={cardsPerSpread === 16 ? 'Page du classeur' : side === 0 ? 'Page de gauche' : 'Page de droite'}>
-              <div className={styles.pageTop}><span>{isExtraSpread ? 'Hors Master Set · ' + (familyPage?.section.extras.length || extraVariants.length) : currentSectionLabel}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
+              <div className={styles.pageTop}><span>{isPromoCatalogView ? 'Catalogue · Promos' : isExtraSpread ? 'Hors Master Set · ' + (familyPage?.section.extras.length || extraVariants.length) : currentSectionLabel}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
                 {spreadSlots.slice(side * cardsPerBookPage, side * cardsPerBookPage + cardsPerBookPage).map((item, slotIndex) => {
                   const card = item?.card
@@ -1312,7 +1346,7 @@ function BindersContent() {
                   const cardArt = imageFor(card)
                   const missingVariants = variants.filter(variant => !(variantCopies[variant.id] || []).length)
                   const isPromoOrStamp = ['promo', 'stamp'].includes(item?.category || item?.variant?.checklist_group)
-                  if (card && isBonusCatalogView && item?.kind === 'extra' && isPromoOrStamp) {
+                  if (card && (isBonusCatalogView || isPromoCatalogView) && item?.kind === 'extra' && (isPromoCatalogView ? item?.category === 'promo' : isPromoOrStamp)) {
                     const catalogArt = bonusCatalogImageFor(item)
                     const bonusLabel = binderExtraLabel(item)
                     return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotCatalog}
