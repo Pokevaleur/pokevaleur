@@ -9,9 +9,12 @@ test('the current product takes precedence over a saved invitation', () => {
 test('a saved invitation still works without a current destination', () => {
   assert.equal(resolvePostLoginPath(origin, null, '/collection/rejoindre?token=saved'), '/collection/rejoindre?token=saved')
 })
+test('a login without a requested or saved destination opens the collection value overview', () => {
+  assert.equal(resolvePostLoginPath(origin, null, null), '/collection/valeur')
+})
 test('external destinations and lookalike paths are rejected', () => {
   for (const path of ['https://example.org/collection', '//example.org/collection', '/collection-fake', '/catalogue-fake', 'https://example.org/catalogue#proposer-produit', 'javascript:alert(1)']) {
-    assert.equal(resolvePostLoginPath(origin, path, null), '/collection')
+    assert.equal(resolvePostLoginPath(origin, path, null), '/collection/valeur')
   }
 })
 

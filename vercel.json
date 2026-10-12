@@ -1,4 +1,4 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": { "deploymentEnabled": { "codex/browser-tests": false } }
+  "git": { "deploymentEnabled": { "codex/browser-tests": false, "codex/login-default-valeurs": false } }
 }

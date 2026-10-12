@@ -937,14 +937,14 @@ export default function CardChecklistPage() {
       {selectedSet && !isCatalogOnlySet && !cardsLoading && <section className={styles.copyMissingPanel} aria-label="Copier les variantes manquantes">
         <div>
           <strong>Copier les cartes manquantes</strong>
-          <p>Choisis une variante pour distinguer, par exemple, une carte normale de sa version reverse.</p>
+          <p>Choisis une action pour copier toutes les cartes manquantes ou seulement une variante.</p>
         </div>
         <div className={styles.copyMissingActions}>
           <button type="button" className={styles.copyMissingButton} onClick={() => copyMissingCardNumbers()} disabled={!missingVariantRows.length}>
-            Toutes les manquantes ({missingVariantRows.length})
+            Copier toutes les manquantes ({missingVariantRows.length})
           </button>
           {missingVariantGroups.map(group => <button type="button" key={group.key} className={styles.copyMissingButton} onClick={() => copyMissingCardNumbers(group.key)}>
-            {group.label} ({group.rows.length})
+            Copier {group.label} ({group.rows.length})
           </button>)}
         </div>
       </section>}
