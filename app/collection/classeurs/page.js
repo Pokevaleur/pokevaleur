@@ -846,7 +846,7 @@ function BindersContent() {
       setError('')
       try {
         let cardQuery = supabase.from('cards')
-          .select('id,card_set_id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets(id,set_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,checklist_group,is_master_set_target)')
+          .select('id,card_set_id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,checklist_group,is_master_set_target)')
         cardQuery = selectedSet.id === MCDONALDS_BINDER_ID
           ? cardQuery.in('card_set_id', mcDonaldSetIds)
           : cardQuery.eq('card_set_id', selectedSet.id)
@@ -864,7 +864,7 @@ function BindersContent() {
         let bonusCards = []
         for (let offset = 0; offset < bonusCardIds.length; offset += 100) {
           const { data, error: bonusCardError } = await supabase.from('cards')
-            .select('id,card_set_id,collector_number,card_name,image_url,image_source_url,guide_order,card_sets(id,set_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,checklist_group,is_master_set_target)')
+            .select('id,card_set_id,collector_number,card_name,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,checklist_group,is_master_set_target)')
             .in('id', bonusCardIds.slice(offset, offset + 100))
           if (bonusCardError) throw bonusCardError
           bonusCards = bonusCards.concat(data || [])
