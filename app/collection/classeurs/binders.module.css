@@ -49,10 +49,13 @@
 .coverCrystal { position:absolute; top:16px; right:18px; color:#ffffffbd; font-size:3.5rem; text-shadow:0 0 24px #fff; }
 .coverDetails { position:relative; }
 .coverDetails h2 { margin:0 0 22px; font-size:clamp(1.6rem,3vw,2.2rem); line-height:1.1; }
-.stats { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:10px; margin:18px 0 24px; }
-.stats > div { display:flex; flex-direction:column; gap:4px; min-height:80px; padding:14px; border:1px solid #dce3eb; border-radius:14px; background:#ffffffd9; }
-.stats strong { color:#173c73; font-size:1.45rem; }
+.stats { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:10px; margin:18px 0 24px; }
+.stats > div { display:flex; flex-direction:column; align-items:flex-start; gap:6px; min-height:106px; padding:14px; border:1px solid #dce3eb; border-radius:14px; background:#ffffffd9; }
+.stats strong { color:#173c73; font-size:clamp(1.25rem,2vw,1.55rem); }
 .stats span { color:#69788a; font-size:.82rem; }
+.progressStat a { margin-top:auto; color:#805f1e; font-size:.75rem; font-weight:750; text-decoration:underline; text-underline-offset:3px; }
+.progressStat a:hover { color:#173c73; }
+.progressStat a:focus-visible { outline:3px solid #e7b929; outline-offset:3px; border-radius:3px; }
 .breakdown { margin:-8px 0 18px; border:1px solid #dce3eb; border-radius:14px; background:#ffffffd9; }
 .breakdown summary { padding:12px 13px; color:#263b52; font-size:.88rem; font-weight:750; cursor:pointer; }
 .breakdownGrid { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:14px; padding:0 13px 13px; }
@@ -162,6 +165,7 @@
  .closedBinder { width:min(78vw,330px); min-height:370px; }
  .coverFace { min-height:344px; padding:20px; }
  .coverDetails { width:100%; }
+ .stats { grid-template-columns:1fr; }
  .coverActions { grid-template-columns:1fr; }
  .pdfReadyActions { grid-template-columns:1fr; }
  .openHeader { align-items:start; flex-direction:column; gap:8px; }
