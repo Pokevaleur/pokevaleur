@@ -184,7 +184,7 @@ export default function CardValuesBySeriesPage() {
       setError('')
       try {
         const { data: cardRows, error: cardError } = await fetchAllRows(() => supabase.from('cards')
-          .select('id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets(set_code),card_print_variants(id,variant_label,variant_key,finish_code,is_master_set_target)')
+          .select('id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(set_code),card_print_variants(id,variant_label,variant_key,finish_code,is_master_set_target)')
           .eq('card_set_id', setId).order('guide_order', { ascending: true }))
         if (cardError) throw cardError
         if (cancelled) return
