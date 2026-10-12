@@ -26,8 +26,6 @@
 .cardPocket img{display:block;width:100%;height:100%;object-fit:cover;object-position:center;border-radius:3px}
 .binderCovers{display:flex;align-items:center;justify-content:center;gap:4px;width:27%;height:87%;transform:perspective(500px) rotateY(-5deg)}
 .binderCovers img{display:block;width:32%;height:100%;object-fit:cover;border:3px solid #173250;border-radius:5px;box-shadow:0 9px 15px #15283c40}
-.binderCovers img:nth-child(2){height:98%}
-.binderCovers img:nth-child(3){height:96%}
 .graded .art{background:linear-gradient(130deg,#f1e9f4 0%,#fffaf0 53%,#edf1f7 100%)}
 .displayCase{position:relative;display:flex;align-items:center;justify-content:center;width:min(100%,465px);height:255px;padding:8px 12px 30px;border:1px solid #b58a36;border-radius:14px 14px 7px 7px;background:linear-gradient(145deg,#172a43,#0d1b2d 60%,#273b55);box-shadow:0 13px 23px #1424394d;transform:perspective(700px) rotateX(1deg)}
 .slabs{display:flex;align-items:flex-end;justify-content:center;gap:12px;width:100%;height:91%}
