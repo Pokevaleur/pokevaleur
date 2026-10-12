@@ -7,7 +7,7 @@ import styles from './page.module.css'
 
 const ALL_SERIES = '__all_series__'
 const MCDONALDS_SERIES = '__mcdonalds_series__'
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets(id,set_name,set_code),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
 const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
 
 function normalizedCardName(name) {
@@ -222,7 +222,7 @@ export default function CardCataloguePage() {
           try {
             for (let offset = 0; offset < searchNames.length; offset += 50) {
               const { data, error: imageLoadError } = await fetchAllRows(() => supabase.from('cards')
-                .select('card_name,image_url,card_sets(set_name)')
+                .select('card_name,image_url,card_sets!cards_card_set_id_fkey(set_name)')
                 .in('card_name', searchNames.slice(offset, offset + 50))
                 .not('image_url', 'is', null))
               if (!imageLoadError) matchingCards.push(...(data || []))

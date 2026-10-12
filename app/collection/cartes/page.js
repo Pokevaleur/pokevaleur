@@ -469,7 +469,7 @@ export default function CardChecklistPage() {
       try {
         const escapedTerm = term.replace(/[%_]/g, '\\$&')
         const pattern = '%' + escapedTerm + '%'
-        const fields = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,image_source_url,card_sets(set_name,set_code),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
+        const fields = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,image_source_url,card_sets!cards_card_set_id_fkey(set_name,set_code),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
         const [nameResult, numberResult] = await Promise.all([
           supabase.from('cards').select(fields).in('card_set_id', searchableSetIds)
             .ilike('card_name', pattern).order('card_name', { ascending: true }).limit(500),
