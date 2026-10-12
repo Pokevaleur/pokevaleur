@@ -36,6 +36,7 @@ export default function LoginPage() {
   const isSignUp = mode === 'signup'
 
   useEffect(() => {
+    if (new URLSearchParams(window.location.search).get('mode') === 'signup') setMode('signup')
     setIsCatalogueProposal(new URLSearchParams(window.location.search).get('next') === '/catalogue#proposer-produit')
     if (new URLSearchParams(window.location.search).get('reset') === 'invalid') {
       setMessage('Ce lien de réinitialisation est invalide ou a expiré. Demande un nouveau lien.')
