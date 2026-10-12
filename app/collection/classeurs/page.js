@@ -77,6 +77,12 @@ function pdfVariantLabel(variant) {
   return known[key] || variant?.variant_label || variant?.variant_key || variant?.finish_code || 'Variante'
 }
 
+function isJumboVariant(variant) {
+  const label = String(variant?.variant_label || '')
+  const key = String(variant?.variant_key || '')
+  return variant?.checklist_group === 'jumbo' || /^jumbo(?:_|$)/i.test(key) || /jumbo|grand format/i.test(label)
+}
+
 function binderExtraLabel(item) {
   if (item?.category === 'promo') return 'Promo SVP ' + String(item.card?.collector_number || '').replace(/^SVP\s*/i, '')
   if (item?.category === 'stamp') return item.variant?.variant_label || 'Carte tampon'
@@ -109,7 +115,7 @@ function BonusCatalogImageDialog({ card, label, imageUrl, onClose }) {
 
 function binderVariantsForItem(item) {
   if (item?.kind === 'extra') return item.variant ? [item.variant] : []
-  return (item?.card?.card_print_variants || []).filter(variant => variant.is_master_set_target)
+  return (item?.card?.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant))
 }
 
 function binderCopiesForItem(item, variantCopies) {
@@ -881,9 +887,9 @@ function BindersContent() {
           : cardQuery.eq('card_set_id', selectedSet.id)
         const { data: cardRows, error: cardError } = await cardQuery.order('guide_order', { ascending: true }).order('collector_number')
         if (cardError) throw cardError
-        const variants = (cardRows || []).flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
+        const variants = (cardRows || []).flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)))
         const extraItems = (cardRows || []).flatMap(card => (card.card_print_variants || [])
-          .filter(variant => !variant.is_master_set_target)
+          .filter(variant => !variant.is_master_set_target && !isJumboVariant(variant))
           .map(variant => ({ card, variant, category: variant.checklist_group })))
         const { data: bonusRows, error: bonusError } = await supabase.from('card_set_bonus_cards')
           .select('card_id,category').eq('card_set_id', selectedSet.id)
@@ -899,8 +905,10 @@ function BindersContent() {
           bonusCards = bonusCards.concat(data || [])
         }
         const bonusItems = bonusCards.flatMap(card => (card.card_print_variants || [])
+          .filter(variant => !isJumboVariant(variant))
           .map(variant => ({ card, variant, category: bonusCategoryByCard.get(card.id) })))
         const allExtraItems = [...extraItems, ...bonusItems]
+          .filter(item => !isJumboVariant(item.variant) && item.category !== 'jumbo')
         const ids = [...variants, ...allExtraItems.map(item => item.variant)].map(variant => variant.id)
         let copies = []
         for (let offset = 0; offset < ids.length; offset += 250) {
@@ -928,16 +936,16 @@ function BindersContent() {
   }, [supabase, selectedSet?.id, profileId, mcDonaldSetIds.join(',')])
 
   const copiesOnSet = useMemo(
-    () => cards.reduce((sum, card) => sum + (card.card_print_variants || []).reduce((n, variant) => n + (variantCopies[variant.id] || []).length, 0), 0),
+    () => cards.reduce((sum, card) => sum + (card.card_print_variants || []).reduce((n, variant) => n + (isJumboVariant(variant) ? 0 : (variantCopies[variant.id] || []).length), 0), 0),
     [cards, variantCopies]
   )
   const isMcDonaldsBinder = selectedSet?.id === MCDONALDS_BINDER_ID
   const ownedOnSet = isMcDonaldsBinder
     ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
-    : ownedCardCounts[requestedSetId] || 0
+    : cards.filter(card => (card.card_print_variants || []).some(variant => !isJumboVariant(variant) && (variantCopies[variant.id] || []).length > 0)).length
   const setTotal = cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
-  const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target).length, 0)
-  const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && (variantCopies[variant.id] || []).length).length, 0)
+  const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)).length, 0)
+  const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
   const promoStampItems = extraVariants.filter(item => ['promo', 'stamp'].includes(item.category || item.variant?.checklist_group))
   const promoStampTotal = promoStampItems.length
@@ -966,7 +974,7 @@ function BindersContent() {
   const ownedUltraMasterTotal = ownedMasterVariantTotal + ownedPromoStampTotal
   const ultraMasterCompletionPercent = ultraMasterTotal ? Math.round((ownedUltraMasterTotal / ultraMasterTotal) * 100) : 0
   const missingBinderRows = cards.flatMap(card => (card.card_print_variants || [])
-    .filter(variant => variant.is_master_set_target && !(variantCopies[variant.id] || []).length)
+    .filter(variant => variant.is_master_set_target && !isJumboVariant(variant) && !(variantCopies[variant.id] || []).length)
     .map(variant => ({ card, variant, label: pdfVariantLabel(variant) })))
   const missingBinderGroups = [...new Map(missingBinderRows.map(row => [row.variant.variant_key, {
     key: row.variant.variant_key,
