@@ -126,16 +126,16 @@ function bonusCatalogImageFor(item) {
     const cardNumber = String(card.collector_number || '').match(/\d+/)?.[0]
     const number = cardNumber ? String(Number(cardNumber)).padStart(3, '0') : ''
     const label = normalize((item?.variant?.variant_label || '') + ' ' + (item?.variant?.variant_key || ''))
+    const set = cardSetFor(card)
+    const setCode = String(set?.set_code || '').toUpperCase()
+    if (number === '074' && (label.includes('pokemon day') || setCode.includes('8.5') || normalize(set?.set_name).includes('evolutions prismatiques'))) {
+      return POKEMON_DAY_STAMP_IMAGE
+    }
     const stampVariant = label.includes('ultra ball') ? 'ultra-ball-league'
       : label.includes('master ball') ? 'master-ball-league'
         : label.includes('eb games') ? 'eb-games'
-          : label.includes('logo') || label.includes('tampon') ? 'set-logo' : ''
+          : label.includes('logo') ? 'set-logo' : ''
     if (number && stampVariant) return '/api/ev9-image/' + number + '?variant=' + stampVariant
-    const set = cardSetFor(card)
-    const setCode = String(set?.set_code || '').toUpperCase()
-    if (number === '074' && (setCode.includes('8.5') || normalize(set?.set_name).includes('evolutions prismatiques'))) {
-      return POKEMON_DAY_STAMP_IMAGE
-    }
   }
   return imageFor(card)
 }
