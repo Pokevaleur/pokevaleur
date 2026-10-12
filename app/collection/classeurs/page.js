@@ -67,7 +67,7 @@ function imageCandidatesFor(source) {
   if (!source) return []
   const candidates = [source]
   if (source.includes('assets.tcgdex.net/')) {
-    const high = source.replace(/\\/low\\.(webp|png|jpg)$/i, '/high.$1')
+    const high = source.replace(/\/low\.(webp|png|jpg)$/i, '/high.$1')
     const english = source.replace('/fr/', '/en/')
     const englishHigh = high.replace('/fr/', '/en/')
     candidates.push(high, english, englishHigh)
