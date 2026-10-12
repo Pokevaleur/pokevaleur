@@ -11,10 +11,24 @@ const binderCovers = [
 ]
 
 const fallbackCards = [
-  { id: 'nymphali', card_name: 'Nymphali-ex', image_url: '/catalogue/nymphali-ex-30-ans.webp' },
-  { id: 'amphinobi', card_name: 'Amphinobi-ex', image_url: '/catalogue/amphinobi-ex-30-ans.webp' },
-  { id: 'florizarre', card_name: 'Méga-Florizarre-ex', image_url: '/catalogue/mega-florizarre-ex.webp' },
-  { id: 'ampibidou', card_name: 'Ampibidou-ex', image_url: '/catalogue/ampibidou-ex-mashynn.webp' },
+  { id: 'sv09-001', card_name: 'Chenipan', collector_number: '001/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/001/low.webp' },
+  { id: 'sv09-002', card_name: 'Chrysacier', collector_number: '002/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/002/low.webp' },
+  { id: 'sv09-003', card_name: 'Papilusion', collector_number: '003/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/003/low.webp' },
+  { id: 'sv09-004', card_name: 'Paras', collector_number: '004/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/004/low.webp' },
+  { id: 'sv09-005', card_name: 'Parasect', collector_number: '005/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/005/low.webp' },
+  { id: 'sv09-006', card_name: 'Chlorobule', collector_number: '006/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/006/low.webp' },
+  { id: 'sv09-007', card_name: 'Fragilady', collector_number: '007/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/007/low.webp' },
+  { id: 'sv09-008', card_name: 'Maracachi', collector_number: '008/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/008/low.webp' },
+  { id: 'sv09-009', card_name: 'Carabing', collector_number: '009/159', image_url: 'https://assets.tcgdex.net/fr/sv/sv09/009/low.webp' },
+]
+
+const fallbackEtbProducts = [
+  { id: 'etb-30e-anniversaire', name: 'Coffret Dresseur d’élite 30e Anniversaire', image_url: 'https://www.pokepedia.fr/images/5/5f/Coffret_Dresseur_d%27%C3%A9lite_30e_Anniversaire.png' },
+  { id: 'etb-celebrations', name: 'Coffret Dresseur d’élite Célébrations', image_url: 'https://www.pokepedia.fr/images/2/23/Coffret_Dresseur_d%27%C3%A9lite_C%C3%A9l%C3%A9brations.png' },
+  { id: 'etb-destinees-occultes', name: 'Coffret Dresseur d’élite Destinées Occultes', image_url: 'https://www.pokepedia.fr/images/6/64/Coffret_Dresseur_d%27%C3%A9lite_Destin%C3%A9es_Occultes.png' },
+  { id: 'etb-destinees-radieuses', name: 'Coffret Dresseur d’élite Destinées Radieuses', image_url: 'https://www.pokepedia.fr/images/8/8f/Coffret_Dresseur_d%27%C3%A9lite_Destin%C3%A9es_Radieuses.png' },
+  { id: 'etb-151', name: 'Coffret Dresseur d’élite Écarlate et Violet – 151', image_url: 'https://www.pokepedia.fr/images/7/79/Coffret_Dresseur_d%27%C3%A9lite_%C3%89carlate_et_Violet_151.png' },
+  { id: 'etb-aventures-ensemble', name: 'Coffret Dresseur d’élite Aventures Ensemble', image_url: 'https://www.pokepedia.fr/images/2/21/Coffret_Dresseur_d%27%C3%A9lite_%C3%89carlate_et_Violet_Aventures_Ensemble.png' },
 ]
 
 const destinations = [
@@ -52,7 +66,7 @@ function normalized(value) {
 export default function RejoindrePage() {
   const [member, setMember] = useState(false)
   const [showcaseCards, setShowcaseCards] = useState([])
-  const [etbProducts, setEtbProducts] = useState([])
+  const [etbProducts, setEtbProducts] = useState(fallbackEtbProducts)
   const supabase = useMemo(() => createClient(), [])
 
   useEffect(() => {
@@ -129,8 +143,7 @@ export default function RejoindrePage() {
   const cardsForArt = showcaseCards.length ? showcaseCards : fallbackCards
   const cardsForBinder = Array.from({ length: 9 }, (_, index) => cardsForArt[index % cardsForArt.length])
   const gradedCards = cardsForArt.slice(0, 3)
-  const sealedFallback = [{ id: 'bundle', name: 'Bundle Pokémon scellé', image_url: '/catalogue/bundle-30e-anniversaire-fr.jpg' }]
-  const productsForShelf = etbProducts.length ? etbProducts : sealedFallback
+  const productsForShelf = etbProducts.length ? etbProducts : fallbackEtbProducts
 
   return (
     <main className={styles.page}>
