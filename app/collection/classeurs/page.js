@@ -892,8 +892,8 @@ function BindersContent() {
   // EV8.5 uses PokéValeur's defined scope: numbered cards, all variants and the eight energy versions; promos/stamps are Ultra Master Set.
   const masterVariantTotal = shortCode(selectedSet) === 'EV8.5' ? 455 : catalogMasterVariantTotal
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && (variantCopies[variant.id] || []).length).length, 0)
-  const seriesCompletionPercent = setTotal ? Math.round((ownedOnSet / setTotal) * 100) : 0
-  const masterSetCompletionPercent = masterVariantTotal ? Math.round((ownedMasterVariantTotal / masterVariantTotal) * 100) : 0
+  const seriesCompletionPercent = setTotal ? ((ownedOnSet / setTotal) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : '0'
+  const masterSetCompletionPercent = masterVariantTotal ? ((ownedMasterVariantTotal / masterVariantTotal) * 100).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : '0'
   const ownedExtraVariantTotal = extraVariants.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
   const distinctOwnedVersionTotal = ownedMasterVariantTotal + ownedExtraVariantTotal
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
