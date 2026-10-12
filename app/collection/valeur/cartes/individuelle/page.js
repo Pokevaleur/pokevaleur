@@ -60,7 +60,7 @@ export default function IndividualCardValuePage() {
       setError('')
       try {
         const safe = needle.replace(/[%_,()]/g, ' ').replace(/\s+/g, ' ').trim()
-        const cardFields = 'id,collector_number,card_name,rarity_label,image_url,image_source_url,card_print_variants(id,finish_code),card_sets!inner(set_code,set_name,language,is_public)'
+        const cardFields = 'id,collector_number,card_name,rarity_label,image_url,image_source_url,card_print_variants(id,finish_code),card_sets!cards_card_set_id_fkey!inner(set_code,set_name,language,is_public)'
         const [nameResult, numberResult] = await Promise.all([
           fetchAllRows(() => supabase.from('cards').select(cardFields)
             .ilike('card_name', `%${safe}%`).eq('card_sets.language', 'FR').eq('card_sets.is_public', true)
