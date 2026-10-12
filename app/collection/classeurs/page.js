@@ -7,6 +7,8 @@ import { fetchAllRows } from '../../../lib/supabase-pagination'
 import styles from './binders.module.css'
 
 const MCDONALDS_BINDER_ID = 'mcdonalds'
+// Dedicated scan of the actual Pokémon Day stamp variant; regular TCGdex art for #074 omits the stamp.
+const POKEMON_DAY_STAMP_IMAGE = 'https://media.dotesports.com/wp-content/uploads/2025/02/Eevee-Pokemon-Day-stamp-1.jpg'
 
 function shortCode(set) {
   if (set?.id === MCDONALDS_BINDER_ID) return 'MCD'
@@ -79,6 +81,30 @@ function binderExtraLabel(item) {
   if (item?.category === 'promo') return 'Promo SVP ' + (item.card?.collector_number || '')
   if (item?.category === 'stamp') return item.variant?.variant_label || 'Carte tampon'
   return pdfVariantLabel(item?.variant)
+}
+
+function bonusCatalogImageFor(item) {
+  if (item?.category === 'stamp' || item?.variant?.checklist_group === 'stamp') return POKEMON_DAY_STAMP_IMAGE
+  return item?.card?.image_url || ''
+}
+
+function BonusCatalogImageDialog({ card, label, imageUrl, onClose }) {
+  useEffect(() => {
+    const handleKeyDown = event => {
+      if (event.key === 'Escape') onClose()
+    }
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [onClose])
+
+  return <div className={styles.bonusZoomBackdrop} onClick={onClose}>
+    <section className={styles.bonusZoomDialog} role="dialog" aria-modal="true" aria-labelledby="bonus-zoom-title" onClick={event => event.stopPropagation()}>
+      <button type="button" className={styles.bonusZoomClose} onClick={onClose} aria-label="Fermer l’agrandissement">×</button>
+      <p className={styles.kicker}>Catalogue · {label}</p>
+      <h2 id="bonus-zoom-title">{card.card_name} · {card.collector_number}</h2>
+      <img className={styles.bonusZoomImage} src={imageUrl} alt={card.category === 'stamp' ? 'Carte Évoli avec tampon Pokémon Day' : card.card_name + ', ' + label} />
+    </section>
+  </div>
 }
 
 function binderVariantsForItem(item) {
@@ -687,6 +713,7 @@ function BindersContent() {
   const [pdfCanShare, setPdfCanShare] = useState(false)
   const [copyNotice, setCopyNotice] = useState('')
   const [zoomedCard, setZoomedCard] = useState(null)
+  const [zoomedBonusCard, setZoomedBonusCard] = useState(null)
   const [cardsPerSpread, setCardsPerSpread] = useState(24)
 
   useEffect(() => {
@@ -1286,14 +1313,18 @@ function BindersContent() {
                   const missingVariants = variants.filter(variant => !(variantCopies[variant.id] || []).length)
                   const isPromoOrStamp = ['promo', 'stamp'].includes(item?.category || item?.variant?.checklist_group)
                   if (card && isBonusCatalogView && item?.kind === 'extra' && isPromoOrStamp) {
-                    return <article key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} className={styles.slotCatalog}>
+                    const catalogArt = bonusCatalogImageFor(item)
+                    const bonusLabel = binderExtraLabel(item)
+                    return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotCatalog}
+                      onClick={() => setZoomedBonusCard({ card: { ...card, category: item.category }, label: bonusLabel, imageUrl: catalogArt })}
+                      aria-label={'Agrandir ' + card.card_name + ', ' + bonusLabel}>
                       <div className={styles.thumb}>
-                        {cardArt ? <img src={cardArt} alt={'Illustration de ' + card.card_name} loading="lazy" /> : <span>Illustration absente</span>}
+                        {catalogArt ? <img src={catalogArt} alt="" loading="lazy" /> : <span>Illustration indisponible</span>}
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
                       <span className={styles.cardNumber}>{card.collector_number}</span>
-                      <span className={styles.extraVariantLabel}>{binderExtraLabel(item)}</span>
-                    </article>
+                      <span className={styles.extraVariantLabel}>{bonusLabel}</span>
+                    </button>
                   }
                   if (card && copyCount) {
                     return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotOpen}
@@ -1327,6 +1358,7 @@ function BindersContent() {
       </>}
       {zoomedCard && <CardCopyDialog supabase={supabase} user={user} profileId={profileId} card={zoomedCard}
         copies={zoomedCard.copies || []} onCopyDeleted={handleCopyDeleted} onClose={() => setZoomedCard(null)} />}
+      {zoomedBonusCard && <BonusCatalogImageDialog {...zoomedBonusCard} onClose={() => setZoomedBonusCard(null)} />}
     </main>
   )
 }
