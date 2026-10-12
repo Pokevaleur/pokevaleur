@@ -662,6 +662,7 @@ function BindersContent() {
   const params = useSearchParams()
   const requestedSetId = params.get('set') || ''
   const isOpen = params.get('open') === '1'
+  const isBonusCatalogView = params.get('catalog') === '1'
   const rawPage = Number.parseInt(params.get('page') || '0', 10)
   const [user, setUser] = useState(null)
   const [ownerDisplayName, setOwnerDisplayName] = useState('')
@@ -1101,6 +1102,7 @@ function BindersContent() {
     if (nextSetId) query.set('set', nextSetId)
     if (next.open) query.set('open', '1')
     if (next.page !== undefined) query.set('page', String(next.page))
+    if (next.catalog ?? isBonusCatalogView) query.set('catalog', '1')
     router.push('/collection/classeurs' + (query.size ? '?' + query.toString() : ''))
   }
 
@@ -1192,11 +1194,6 @@ function BindersContent() {
             <p className={styles.kicker}>Ton classeur de série</p>
             <h2>{selectedSet.set_name}</h2>
             <div className={styles.stats}>
-              <div><strong>{setTotal}</strong><span>cartes au catalogue</span></div>
-              <div><strong>{ownedOnSet}</strong><span>cartes différentes possédées</span></div>
-              <div><strong>{missingOnSet}</strong><span>emplacements à compléter</span></div>
-              
-              <div><strong>{extraVariants.length}</strong><span>versions hors Master Set</span></div>
               <div>
                 <strong>{ownedOnSet}/{setTotal} · {seriesCompletionPercent}%</strong>
                 <span>Série complète</span>
@@ -1218,9 +1215,14 @@ function BindersContent() {
                 <strong>{ownedPromoStampTotal}/{promoStampTotal}</strong>
                 <span>promos et tampons · Ultra Master Set</span>
                 <button type="button" className={styles.bonusCardsButton}
-                  onClick={() => navigate({ open: true, page: masterSpreadCount })}
-                  aria-label="Afficher les promos et les cartes tampon">
-                  Voir les promos et tampons
+                  onClick={() => navigate({ open: true, page: masterSpreadCount, catalog: false })}
+                  aria-label="Ouvrir les emplacements des promos et cartes tampon">
+                  Ouvrir les emplacements
+                </button>
+                <button type="button" className={styles.bonusCardsCatalogButton}
+                  onClick={() => navigate({ open: true, page: masterSpreadCount, catalog: true })}
+                  aria-label="Voir les images des huit promos et de la carte tampon du catalogue">
+                  Voir les 8 promos + le tampon
                 </button>
                 <small>{ownedUltraMasterTotal}/{ultraMasterTotal} · {ultraMasterCompletionPercent}% de l’Ultra Master Set</small>
               </div>}
@@ -1282,6 +1284,17 @@ function BindersContent() {
                   const copyCount = ownedCopies.length
                   const cardArt = imageFor(card)
                   const missingVariants = variants.filter(variant => !(variantCopies[variant.id] || []).length)
+                  const isPromoOrStamp = ['promo', 'stamp'].includes(item?.category || item?.variant?.checklist_group)
+                  if (card && isBonusCatalogView && item?.kind === 'extra' && isPromoOrStamp) {
+                    return <article key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} className={styles.slotCatalog}>
+                      <div className={styles.thumb}>
+                        {cardArt ? <img src={cardArt} alt={'Illustration de ' + card.card_name} loading="lazy" /> : <span>Illustration absente</span>}
+                      </div>
+                      <strong className={styles.cardName}>{card.card_name}</strong>
+                      <span className={styles.cardNumber}>{card.collector_number}</span>
+                      <span className={styles.extraVariantLabel}>{binderExtraLabel(item)}</span>
+                    </article>
+                  }
                   if (card && copyCount) {
                     return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotOpen}
                       onClick={() => setZoomedCard({ ...card, setName: cardSetFor(card)?.set_name || selectedSet.set_name, copies: ownedCopies })}
