@@ -8,7 +8,7 @@ import styles from './binders.module.css'
 
 const MCDONALDS_BINDER_ID = 'mcdonalds'
 // Dedicated scan of the actual Pokémon Day stamp variant; regular TCGdex art for #074 omits the stamp.
-const POKEMON_DAY_STAMP_IMAGE = 'https://media.dotesports.com/wp-content/uploads/2025/02/Eevee-Pokemon-Day-stamp-1.jpg'
+const POKEMON_DAY_STAMP_IMAGE = 'https://www.dealicash.fr/images/tag-67/evoli-074-131-promo-stamp-scelle-pokemon-ev8-5-evolution-prismatique-fr-670763-1-l.webp'
 
 function shortCode(set) {
   if (set?.id === MCDONALDS_BINDER_ID) return 'MCD'
