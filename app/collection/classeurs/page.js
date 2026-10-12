@@ -666,7 +666,7 @@ function CardCopyDialog({ supabase, user, profileId, card, copies, onClose }) {
 
         <div className={styles.detailLayout}>
           <figure className={styles.detailCatalogArt}>
-            <CardArtwork card={card} alt={'Illustration catalogue de ' + card.card_name} loading="eager" />
+            <CardArtwork card={card} src={card.artwork_url} alt={'Illustration catalogue de ' + card.card_name} loading="eager" />
             <figcaption>Illustration du catalogue</figcaption>
           </figure>
 
@@ -1417,7 +1417,7 @@ function BindersContent() {
                   }
                   if (card && copyCount) {
                     return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotOpen}
-                      onClick={() => setZoomedCard({ ...card, image_url: itemArt || card.image_url, setName: cardSetFor(card)?.set_name || selectedSet.set_name, copies: ownedCopies })}
+                      onClick={() => setZoomedCard({ ...card, artwork_url: itemArt, setName: cardSetFor(card)?.set_name || selectedSet.set_name, copies: ownedCopies })}
                       aria-label={'Voir ' + (item.kind === 'extra' ? binderExtraLabel(item) + ' de ' : '') + card.card_name + ', ' + ownedCopies.length + ' exemplaire' + (ownedCopies.length === 1 ? '' : 's')}>
                       <div className={styles.thumb}>
                         {itemArt ? <CardArtwork card={card} src={itemArt} alt="" /> : <span>Illustration absente</span>}
