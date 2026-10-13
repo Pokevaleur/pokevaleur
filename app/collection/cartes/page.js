@@ -451,13 +451,22 @@ export default function CardChecklistPage() {
         .eq('card_set_id', setId).order('guide_order', { ascending: true })
       if (cardError) throw cardError
       if (cancelled) return
-      const { data: copyRows, error: copyError } = await supabase.from('collection_cards')
-        .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)')
-        .eq('collection_profile_id', profileId)
-      if (copyError) throw copyError
+      const copyRows = []
+      const copyPageSize = 500
+      for (let offset = 0; ; offset += copyPageSize) {
+        const { data, error: copyError } = await supabase.from('collection_cards')
+          .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)')
+          .eq('collection_profile_id', profileId)
+          .order('created_at', { ascending: true })
+          .order('id', { ascending: true })
+          .range(offset, offset + copyPageSize - 1)
+        if (copyError) throw copyError
+        copyRows.push(...(data || []))
+        if (!data || data.length < copyPageSize) break
+      }
       if (cancelled) return
       const ownership = {}
-      for (const copy of copyRows || []) {
+      for (const copy of copyRows) {
         if (!ownership[copy.card_print_variant_id]) ownership[copy.card_print_variant_id] = []
         ownership[copy.card_print_variant_id].push(copy)
       }
