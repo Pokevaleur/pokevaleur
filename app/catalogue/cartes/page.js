@@ -328,7 +328,7 @@ export default function CardCataloguePage() {
       card.collector_number, card.card_name, card.card_type, card.rarity_label, variantText,
       energyElementSearchTerms(card), set?.set_name, isGoldEnergy(card) ? 'Gold dorée' : ''
     ].join(' '))
-    return !term || term.split(/\\s+/).every(token => searchText.includes(token))
+    return !term || term.split(/\s+/).every(token => searchText.includes(token))
   })
   const selectedRows = Object.entries(selection).filter(([, qty]) => Number(qty) > 0)
   const selectedCopies = selectedRows.reduce((sum, [, qty]) => sum + Number(qty || 0), 0)
