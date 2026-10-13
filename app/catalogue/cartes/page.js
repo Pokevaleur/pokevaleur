@@ -423,23 +423,23 @@ export default function CardCataloguePage() {
       </header>
 
       <section className={styles.selectionPanel} aria-label="Choix de la série et de la collection">
-        <label className={styles.seriesField}>
+        <div className={styles.seriesField}>
           <span>Série</span>
           <div className={styles.seriesPicker} ref={seriesPickerRef}>
-            <button type="button" className={styles.seriesPickerTrigger} aria-haspopup="listbox" aria-expanded={seriesPickerOpen} disabled={loadingSets} onClick={() => setSeriesPickerOpen(open => !open)}>
-              <span>{selectedSet ? seriesLabel(selectedSet) : setId === ALL_SERIES ? 'Toutes les séries · rechercher' : 'Choisir une série…'}</span>
+            <button type="button" className={styles.seriesPickerTrigger} aria-haspopup="dialog" aria-expanded={seriesPickerOpen} disabled={loadingSets} onClick={() => setSeriesPickerOpen(open => !open)}>
+              <span>{selectedSet ? seriesLabel(selectedSet) : setId === ALL_SERIES ? isEnergySearch(query) ? 'Énergies · toutes les séries' : 'Toutes les séries · rechercher' : 'Choisir une série…'}</span>
               <span className={styles.seriesPickerChevron} aria-hidden="true">▾</span>
             </button>
             {seriesPickerOpen && <div className={styles.seriesPickerOptions} role="dialog" aria-label="Séries du catalogue">
               <label className={styles.seriesPickerSearch}><span>Rechercher une série</span><input type="search" value={seriesPickerQuery} onChange={event => setSeriesPickerQuery(event.target.value)} placeholder="Nom, code ou année…" autoFocus /></label>
-              <button type="button" role="option" aria-selected={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
-              <button type="button" role="option" aria-selected={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
-              <button type="button" role="option" aria-selected={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies · toutes les séries</button>
-              <button type="button" role="option" aria-selected={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
-              {filteredSets.map(set => <button type="button" role="option" aria-selected={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
+              <button type="button" role="button" aria-pressed={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
+              <button type="button" role="button" aria-pressed={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
+              <button type="button" role="button" aria-pressed={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies · toutes les séries</button>
+              <button type="button" role="button" aria-pressed={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
+              {filteredSets.map(set => <button type="button" role="button" aria-pressed={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
             </div>}
           </div>
-        </label>
+        </div>
         {setId === ALL_SERIES && <label className={styles.searchField}>
           <span>Nom, numéro ou finition</span>
           <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu, 257, Gold" />
@@ -487,7 +487,7 @@ export default function CardCataloguePage() {
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
-                <span className={styles.cardNumber}>{setId === ALL_SERIES ? seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}N° {card.collector_number}{card.card_type === 'Énergie' && set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
+                <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}N° {card.collector_number}{card.card_type === 'Énergie' && set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
                 <span className={styles.rarity}>{isGoldEnergy(card) ? 'Gold · ' : ''}{card.rarity_label || 'Rareté non renseignée'}</span>
               </div>
