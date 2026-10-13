@@ -155,6 +155,12 @@ function isJumboVariant(variant) {
   return variant?.checklist_group === 'jumbo' || /^jumbo(?:_|$)/i.test(key) || /jumbo|grand format/i.test(label)
 }
 
+function isMasterSetVariant(variant) {
+  return Boolean(variant?.is_master_set_target)
+    && !isPromoStampCategory(variant?.checklist_group)
+    && !isJumboVariant(variant)
+}
+
 function binderExtraLabel(item) {
   if (item?.category === 'promo') return 'Promo SVP ' + String(item.card?.collector_number || '').replace(/^SVP\s*/i, '')
   if (item?.category === 'stamp') return item.variant?.variant_label || 'Carte tampon'
@@ -204,7 +210,7 @@ function BonusCatalogImageDialog({ card, label, imageUrl, onClose }) {
 
 function binderVariantsForItem(item) {
   if (item?.kind === 'extra') return item.variant ? [item.variant] : []
-  return (item?.card?.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant))
+  return (item?.card?.card_print_variants || []).filter(isMasterSetVariant)
 }
 
 function binderCopiesForItem(item, variantCopies) {
@@ -886,7 +892,7 @@ function BindersContent() {
         const energyExtraVariantIds = new Set()
         for (const variant of variants) {
           if (cardTypeById.get(variant.card_id) !== 'Énergie') continue
-          if (variant.is_master_set_target) energyCardIds.add(variant.card_id)
+          if (isMasterSetVariant(variant)) energyCardIds.add(variant.card_id)
           else energyExtraVariantIds.add(variant.id)
         }
         setOwnedEnergyCardCount(energyCardIds.size)
@@ -897,7 +903,7 @@ function BindersContent() {
         for (const variant of variants) {
           const setId = cardSetById.get(variant.card_id)
           if (!setId) continue
-          if (variant.is_master_set_target) {
+          if (isMasterSetVariant(variant)) {
             if (!setCards[setId]) setCards[setId] = new Set()
             setCards[setId].add(variant.card_id)
           } else {
@@ -1046,9 +1052,9 @@ function BindersContent() {
         const { data: rawCardRows, error: cardError } = await cardQuery.order('guide_order', { ascending: true }).order('collector_number')
         if (cardError) throw cardError
         const cardRows = isEnergyBinder ? [...(rawCardRows || [])].sort(sortEnergyCards) : (rawCardRows || [])
-        const variants = isPromoStampBinder ? [] : cardRows.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)))
+        const variants = isPromoStampBinder ? [] : cardRows.flatMap(card => (card.card_print_variants || []).filter(isMasterSetVariant))
         const extraItems = cardRows.flatMap(card => (card.card_print_variants || [])
-          .filter(variant => (isPromoStampBinder ? isPromoStampCategory(variant.checklist_group) : !variant.is_master_set_target) && !isJumboVariant(variant))
+          .filter(variant => (isPromoStampBinder ? isPromoStampCategory(variant.checklist_group) : !isMasterSetVariant(variant)) && !isJumboVariant(variant))
           .map(variant => ({ card, variant, category: variant.checklist_group })))
         const { data: bonusRows, error: bonusError } = isEnergyBinder || isPromoStampBinder
           ? { data: [], error: null }
@@ -1083,7 +1089,7 @@ function BindersContent() {
         const grouped = {}
         for (const copy of copies) grouped[copy.card_print_variant_id] = [...(grouped[copy.card_print_variant_id] || []), copy]
         const binderCards = isPromoStampBinder ? [] : cardRows.filter(card => (card.card_print_variants || []).some(variant =>
-          variant.is_master_set_target && (!isEnergyBinder || (grouped[variant.id] || []).length > 0)
+          isMasterSetVariant(variant) && (!isEnergyBinder || (grouped[variant.id] || []).length > 0)
         ))
         const binderExtras = isEnergyBinder || isPromoStampBinder
           ? allExtraItems.filter(item => (grouped[item.variant.id] || []).length > 0)
@@ -1115,10 +1121,10 @@ function BindersContent() {
     ? new Set([...cards.map(card => card.id), ...extraVariants.map(item => item.card.id)]).size
     : isMcDonaldsBinder
       ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
-      : cards.filter(card => (card.card_print_variants || []).some(variant => !isJumboVariant(variant) && (variantCopies[variant.id] || []).length > 0)).length
+      : cards.filter(card => (card.card_print_variants || []).some(variant => isMasterSetVariant(variant) && (variantCopies[variant.id] || []).length > 0)).length
   const setTotal = isEnergyBinder || isPromoStampBinder ? ownedOnSet : cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
-  const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)).length, 0)
-  const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
+  const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(isMasterSetVariant).length, 0)
+  const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => isMasterSetVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
   const promoStampItems = extraVariants.filter(item => ['promo', 'stamp'].includes(item.category || item.variant?.checklist_group))
   const promoStampTotal = promoStampItems.length
@@ -1127,7 +1133,7 @@ function BindersContent() {
     const items = new Map()
     for (const card of cards) {
       for (const variant of card.card_print_variants || []) {
-        if (variant.checklist_group === 'promo' && variant.is_master_set_target) {
+        if (variant.checklist_group === 'promo') {
           items.set(variant.id, { card, variant, category: 'promo' })
         }
       }
@@ -1147,7 +1153,7 @@ function BindersContent() {
   const ownedUltraMasterTotal = ownedMasterVariantTotal + ownedPromoStampTotal
   const ultraMasterCompletionPercent = ultraMasterTotal ? Math.round((ownedUltraMasterTotal / ultraMasterTotal) * 100) : 0
   const missingBinderRows = cards.flatMap(card => (card.card_print_variants || [])
-    .filter(variant => variant.is_master_set_target && !isJumboVariant(variant) && !(variantCopies[variant.id] || []).length)
+    .filter(variant => isMasterSetVariant(variant) && !(variantCopies[variant.id] || []).length)
     .map(variant => ({ card, variant, label: pdfVariantLabel(variant) })))
   const missingBinderGroups = [...new Map(missingBinderRows.map(row => [row.variant.variant_key, {
     key: row.variant.variant_key,
@@ -1201,9 +1207,9 @@ function BindersContent() {
     const owningCard = cards.find(card => (card.card_print_variants || []).some(variant => variant.id === copy.card_print_variant_id))
     const owningExtra = extraVariants.find(item => item.variant.id === copy.card_print_variant_id)
     const cardStillOwned = (owningCard?.card_print_variants || []).some(variant =>
-      variant.id === copy.card_print_variant_id
+      isMasterSetVariant(variant) && (variant.id === copy.card_print_variant_id
         ? remainingForVariant.length > 0
-        : (variantCopies[variant.id] || []).length > 0
+        : (variantCopies[variant.id] || []).length > 0)
     )
 
     setVariantCopies(current => ({
@@ -1214,10 +1220,10 @@ function BindersContent() {
     const owningEnergyCard = owningCard || owningExtra?.card
     if (isPromoStampBinder && owningExtra && remainingForVariant.length === 0) {
       setOwnedPromoStampVariantCount(current => Math.max(current - 1, 0))
-      if (owningExtra.variant.is_master_set_target) {
+      if (isMasterSetVariant(owningExtra.variant)) {
         const { data: masterVariants, error: masterVariantsError } = await supabase.from('card_print_variants')
-          .select('id').eq('card_id', owningExtra.card.id).eq('is_master_set_target', true)
-        const masterVariantIds = (masterVariants || []).map(variant => variant.id)
+          .select('id,checklist_group,is_master_set_target').eq('card_id', owningExtra.card.id).eq('is_master_set_target', true)
+        const masterVariantIds = (masterVariants || []).filter(isMasterSetVariant).map(variant => variant.id)
         if (!masterVariantsError && masterVariantIds.length) {
           const { data: remainingMasterCopies, error: remainingCopiesError } = await supabase.from('collection_cards')
             .select('id').eq('collection_profile_id', profileId).in('card_print_variant_id', masterVariantIds)
@@ -1232,7 +1238,7 @@ function BindersContent() {
     }
     if (isEnergyBinder && owningEnergyCard?.card_type === 'Énergie') {
       const energyMasterStillOwned = (owningEnergyCard.card_print_variants || []).some(variant =>
-        variant.is_master_set_target && (variant.id === copy.card_print_variant_id
+        isMasterSetVariant(variant) && (variant.id === copy.card_print_variant_id
           ? remainingForVariant.length > 0
           : (variantCopies[variant.id] || []).length > 0)
       )
