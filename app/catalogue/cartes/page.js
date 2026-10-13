@@ -70,6 +70,7 @@ const FRENCH_SET_CODES = {
   swsh12tg: 'EB12 TG',
   'swsh12.5': 'EB12.5',
   'swsh12.5gg': 'EB12.5 GG',
+  mee30: 'MEE 30 ans',
   '30th': '30C',
   '30th-c': '30CC'
 }
