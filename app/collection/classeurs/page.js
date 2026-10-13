@@ -1126,20 +1126,20 @@ function BindersContent() {
   const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(isMasterSetVariant).length, 0)
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => isMasterSetVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
-  const promoStampItems = extraVariants.filter(item => ['promo', 'stamp'].includes(item.category || item.variant?.checklist_group))
+  const promoStampItems = extraVariants.filter(item => isPromoStampCategory(item.category || item.variant?.checklist_group) && item.variant?.is_master_set_target)
   const promoStampTotal = promoStampItems.length
   const ownedPromoStampTotal = promoStampItems.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
   const promoCatalogItems = (() => {
     const items = new Map()
     for (const card of cards) {
       for (const variant of card.card_print_variants || []) {
-        if (variant.checklist_group === 'promo') {
+        if (variant.checklist_group === 'promo' && variant.is_master_set_target) {
           items.set(variant.id, { card, variant, category: 'promo' })
         }
       }
     }
     for (const item of extraVariants) {
-      if ((item.category || item.variant?.checklist_group) === 'promo' && item.card?.card_set_id !== selectedSet?.id) {
+      if ((item.category || item.variant?.checklist_group) === 'promo' && item.variant?.is_master_set_target && item.card?.card_set_id !== selectedSet?.id) {
         items.set(item.variant.id, item)
       }
     }
@@ -1514,8 +1514,8 @@ function BindersContent() {
                 </button>
                 <button type="button" className={styles.bonusCardsCatalogButton}
                   onClick={() => navigate({ open: true, page: masterSpreadCount, catalog: true })}
-                  aria-label="Voir les images des huit promos et de la carte tampon du catalogue">
-                  Voir les 8 promos + le tampon
+                  aria-label={"Voir les " + promoCatalogItems.length + " promos françaises incluses dans le catalogue"}>
+                  Voir les {promoCatalogItems.length} promos incluses
                 </button>
                 <small>{ownedUltraMasterTotal}/{ultraMasterTotal} · {ultraMasterCompletionPercent}% de l’Ultra Master Set</small>
               </div>}
