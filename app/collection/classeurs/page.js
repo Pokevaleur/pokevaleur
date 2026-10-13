@@ -1115,7 +1115,10 @@ function BindersContent() {
   const copiesOnSet = useMemo(() => {
     const variantIds = isEnergyBinder || isPromoStampBinder
       ? [...new Set([...cards.flatMap(card => (card.card_print_variants || []).map(variant => variant.id)), ...extraVariants.map(item => item.variant.id)])]
-      : [...new Set(cards.flatMap(card => (card.card_print_variants || []).filter(variant => !isJumboVariant(variant)).map(variant => variant.id)))]
+      : [...new Set([
+        ...cards.flatMap(card => (card.card_print_variants || []).filter(variant => !isJumboVariant(variant)).map(variant => variant.id)),
+        ...extraVariants.filter(item => !isJumboVariant(item.variant)).map(item => item.variant.id)
+      ])]
     return variantIds.reduce((sum, id) => sum + (variantCopies[id] || []).length, 0)
   }, [cards, extraVariants, isEnergyBinder, isPromoStampBinder, variantCopies])
   const ownedOnSet = isEnergyBinder || isPromoStampBinder
@@ -1498,7 +1501,7 @@ function BindersContent() {
                 <strong>{ownedMasterVariantTotal}/{masterVariantTotal} · {masterSetCompletionPercent}%</strong>
                 <span>Master Set</span>
                 <details className={styles.statExplanation}>
-                  <summary>{isEv9Binder ? 'ⓘ Voir le détail des décomptes EV9' : 'Explication'}</summary>
+                  <summary>{isEv9Binder ? 'Voir détail' : 'Explication'}</summary>
                   {isEv9Binder ? <>
                     <p>Série complète : 190 cartes.</p>
                     <p>Master Set PokéValeur : 339 variantes, énergies incluses.</p>
