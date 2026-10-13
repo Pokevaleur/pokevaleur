@@ -1111,6 +1111,7 @@ function BindersContent() {
   const isMcDonaldsBinder = selectedSet?.id === MCDONALDS_BINDER_ID
   const isEnergyBinder = selectedSet?.id === ENERGY_BINDER_ID
   const isPromoStampBinder = selectedSet?.id === PROMO_STAMP_BINDER_ID
+  const isEv9Binder = selectedSet?.set_code === 'SV09'
   const copiesOnSet = useMemo(() => {
     const variantIds = isEnergyBinder || isPromoStampBinder
       ? [...new Set([...cards.flatMap(card => (card.card_print_variants || []).map(variant => variant.id)), ...extraVariants.map(item => item.variant.id)])]
@@ -1126,20 +1127,20 @@ function BindersContent() {
   const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(isMasterSetVariant).length, 0)
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => isMasterSetVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
-  const promoStampItems = extraVariants.filter(item => isPromoStampCategory(item.category || item.variant?.checklist_group) && item.variant?.is_master_set_target)
+  const promoStampItems = extraVariants.filter(item => isPromoStampCategory(item.category || item.variant?.checklist_group) && (!isEv9Binder || item.variant?.is_master_set_target))
   const promoStampTotal = promoStampItems.length
   const ownedPromoStampTotal = promoStampItems.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
   const promoCatalogItems = (() => {
     const items = new Map()
     for (const card of cards) {
       for (const variant of card.card_print_variants || []) {
-        if (variant.checklist_group === 'promo' && variant.is_master_set_target) {
+        if (variant.checklist_group === 'promo' && (!isEv9Binder || variant.is_master_set_target)) {
           items.set(variant.id, { card, variant, category: 'promo' })
         }
       }
     }
     for (const item of extraVariants) {
-      if ((item.category || item.variant?.checklist_group) === 'promo' && item.variant?.is_master_set_target && item.card?.card_set_id !== selectedSet?.id) {
+      if ((item.category || item.variant?.checklist_group) === 'promo' && (!isEv9Binder || item.variant?.is_master_set_target) && item.card?.card_set_id !== selectedSet?.id) {
         items.set(item.variant.id, item)
       }
     }
@@ -1497,10 +1498,12 @@ function BindersContent() {
                 <strong>{ownedMasterVariantTotal}/{masterVariantTotal} · {masterSetCompletionPercent}%</strong>
                 <span>Master Set</span>
                 <details className={styles.statExplanation}>
-                  <summary>Détail des décomptes</summary>
-                  <p>Série complète : 190 cartes.</p>
-                  <p>Master Set PokéValeur : 339 variantes, énergies incluses.</p>
-                  <p>Ultra Master Set : 377 au total (339 du Master Set + 7 promos françaises + 31 cartes tampon). Les promos SVP 185, SVP 186 et SVP 193 sont exclues, car elles ne sont pas sorties en France.</p>
+                  <summary>{isEv9Binder ? 'Détail des décomptes' : 'Explication'}</summary>
+                  {isEv9Binder ? <>
+                    <p>Série complète : 190 cartes.</p>
+                    <p>Master Set PokéValeur : 339 variantes, énergies incluses.</p>
+                    <p>Ultra Master Set : 377 au total (339 du Master Set + 7 promos françaises + 31 cartes tampon). Les promos SVP 185, SVP 186 et SVP 193 sont exclues, car elles ne sont pas sorties en France.</p>
+                  </> : <p>Le Master Set PokéValeur comprend toutes les variantes et les énergies de la série. Les promos et cartes tampon s’ajoutent pour former l’Ultra Master Set.</p>}
                 </details>
               </div>
               <div><strong>{copiesOnSet}</strong><span>cartes possédées (doublons compris)</span></div>
@@ -1514,8 +1517,8 @@ function BindersContent() {
                 </button>
                 <button type="button" className={styles.bonusCardsCatalogButton}
                   onClick={() => navigate({ open: true, page: masterSpreadCount, catalog: true })}
-                  aria-label={"Voir les " + promoCatalogItems.length + " promos françaises incluses dans le catalogue"}>
-                  Voir les {promoCatalogItems.length} promos incluses
+                  aria-label={isEv9Binder ? "Voir les " + promoCatalogItems.length + " promos françaises incluses dans le catalogue" : "Voir les images des huit promos et de la carte tampon du catalogue"}>
+                  {isEv9Binder ? "Voir les " + promoCatalogItems.length + " promos incluses" : "Voir les 8 promos + le tampon"}
                 </button>
                 <small>{ownedUltraMasterTotal}/{ultraMasterTotal} · {ultraMasterCompletionPercent}% de l’Ultra Master Set</small>
               </div>}
