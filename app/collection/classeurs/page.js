@@ -1497,8 +1497,10 @@ function BindersContent() {
                 <strong>{ownedMasterVariantTotal}/{masterVariantTotal} · {masterSetCompletionPercent}%</strong>
                 <span>Master Set</span>
                 <details className={styles.statExplanation}>
-                  <summary>Explication</summary>
-                  <p>Le Master Set PokéValeur comprend toutes les variantes et les énergies de la série. Les promos et cartes tampon s’ajoutent pour former l’Ultra Master Set.</p>
+                  <summary>Détail des décomptes</summary>
+                  <p>Série complète : 190 cartes.</p>
+                  <p>Master Set PokéValeur : 339 variantes, énergies incluses.</p>
+                  <p>Ultra Master Set : 377 au total (339 du Master Set + 7 promos françaises + 31 cartes tampon). Les promos SVP 185, SVP 186 et SVP 193 sont exclues, car elles ne sont pas sorties en France.</p>
                 </details>
               </div>
               <div><strong>{copiesOnSet}</strong><span>cartes possédées (doublons compris)</span></div>
