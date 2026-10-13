@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
 import styles from './page.module.css'
@@ -89,6 +89,11 @@ function isGoldEnergy(card) {
   return card?.card_type === 'Énergie' && /hyper rare/i.test(card?.rarity_label || '')
 }
 
+function isEnergySearch(value) {
+  return ['energie', 'energy', 'plante', 'grass', 'feu', 'fire', 'eau', 'water', 'electri', 'lightning', 'foudre', 'psy', 'psychic', 'combat', 'fighting', 'obscurite', 'darkness', 'metal', 'incolore', 'colorless', 'gold', 'dore']
+    .some(alias => normalizedSearchText(value).includes(alias))
+}
+
 function normalizedSearchText(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
@@ -137,6 +142,7 @@ export default function CardCataloguePage() {
   const [saving, setSaving] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
+  const [seriesPickerQuery, setSeriesPickerQuery] = useState('')
   const seriesPickerRef = useRef(null)
 
   useEffect(() => {
@@ -247,6 +253,16 @@ export default function CardCataloguePage() {
           const failed = results.find(result => result.error)
           if (failed) throw failed.error
           cardRows = [...new Map(results.flatMap(result => result.data || []).map(card => [card.id, card])).values()]
+          if (isEnergySearch(term)) {
+            cardRows.sort((left, right) => {
+              const leftSet = relatedSet(left)
+              const rightSet = relatedSet(right)
+              const dateOrder = String(rightSet?.release_date || '').localeCompare(String(leftSet?.release_date || ''))
+              if (dateOrder) return dateOrder
+              const nameOrder = seriesLabel(leftSet).localeCompare(seriesLabel(rightSet), 'fr')
+              return nameOrder || String(left.collector_number || '').localeCompare(String(right.collector_number || ''), 'fr', { numeric: true })
+            })
+          }
         } else {
           const { data: rows, error: loadError } = await fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
             .order('guide_order', { ascending: true }).order('collector_number', { ascending: true }))
@@ -316,6 +332,7 @@ export default function CardCataloguePage() {
     return () => { cancelled = true; window.clearTimeout(timer) }
   }, [supabase, setId, query, profileId, sets])
 
+  const filteredSets = sets.filter(set => normalizedSearchText([seriesLabel(set), set.series_name, set.set_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
   const selectedSet = setId === MCDONALDS_SERIES
     ? { id: MCDONALDS_SERIES, set_code: 'MCD', set_name: 'McDonald’s · toutes les années', series_name: 'Collection McDonald’s' }
     : sets.find(set => set.id === setId)
@@ -413,11 +430,13 @@ export default function CardCataloguePage() {
               <span>{selectedSet ? seriesLabel(selectedSet) : setId === ALL_SERIES ? 'Toutes les séries · rechercher' : 'Choisir une série…'}</span>
               <span className={styles.seriesPickerChevron} aria-hidden="true">▾</span>
             </button>
-            {seriesPickerOpen && <div className={styles.seriesPickerOptions} role="listbox" aria-label="Séries du catalogue">
-              <button type="button" role="option" aria-selected={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>Choisir une série…</button>
-              <button type="button" role="option" aria-selected={setId === ALL_SERIES} className={setId === ALL_SERIES ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
-              <button type="button" role="option" aria-selected={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
-              {sets.map(set => <button type="button" role="option" aria-selected={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
+            {seriesPickerOpen && <div className={styles.seriesPickerOptions} role="dialog" aria-label="Séries du catalogue">
+              <label className={styles.seriesPickerSearch}><span>Rechercher une série</span><input type="search" value={seriesPickerQuery} onChange={event => setSeriesPickerQuery(event.target.value)} placeholder="Nom, code ou année…" autoFocus /></label>
+              <button type="button" role="option" aria-selected={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
+              <button type="button" role="option" aria-selected={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
+              <button type="button" role="option" aria-selected={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies · toutes les séries</button>
+              <button type="button" role="option" aria-selected={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
+              {filteredSets.map(set => <button type="button" role="option" aria-selected={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
             </div>}
           </div>
         </label>
@@ -456,9 +475,13 @@ export default function CardCataloguePage() {
           {visibleCards.map((card, index) => {
             const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
             const set = relatedSet(card)
+            const previousSet = index ? relatedSet(visibleCards[index - 1]) : null
+            const showEnergyGroup = setId === ALL_SERIES && isEnergySearch(query) && set?.id !== previousSet?.id
             const imageCandidates = cardImageCandidates[card.id] || (card.image_url ? [card.image_url] : [])
             const imageUrl = imageCandidates[0] || ''
-            return <article className={styles.cardRow} key={card.id}>
+            return <Fragment key={card.id}>
+              {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
+              <article className={styles.cardRow}>
               <button className={styles.thumbButton} type="button" onClick={() => setZoomedCard(card)} aria-label={'Voir l’image de ' + card.card_name}>
                 {imageUrl ? <img src={imageUrl} alt={card.card_name} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} onError={event => advanceCardImage(event, imageCandidates)} /> : <span>Image indisponible</span>}
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
@@ -489,6 +512,7 @@ export default function CardCataloguePage() {
                 })}
               </div>
             </article>
+            </Fragment>
           })}
         </section>
       )}
