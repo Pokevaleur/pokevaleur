@@ -7,11 +7,13 @@ import { fetchAllRows } from '../../../lib/supabase-pagination'
 import styles from './binders.module.css'
 
 const MCDONALDS_BINDER_ID = 'mcdonalds'
+const ENERGY_BINDER_ID = 'all-energies'
 // Dedicated scan of the actual Pokémon Day stamp variant; regular TCGdex art for #074 omits the stamp.
 const POKEMON_DAY_STAMP_IMAGE = 'https://www.dealicash.fr/images/tag-67/evoli-074-131-promo-stamp-scelle-pokemon-ev8-5-evolution-prismatique-fr-670763-1-l.webp'
 
 function shortCode(set) {
   if (set?.id === MCDONALDS_BINDER_ID) return 'MCD'
+  if (set?.id === ENERGY_BINDER_ID) return 'ÉNERGIES'
   const code = String(set?.set_code || '').trim().toUpperCase()
   const match = code.match(/^(?:SWSH|EB|SV|EV|ME|SM|SL|XY|BW|DP|PL|HGSS)[\s-]*(\d+(?:\.\d+)?)([A-Z]*)$/)
   if (match) {
@@ -35,6 +37,24 @@ function isMcDonaldsSet(set) {
 function setYear(set) {
   const fromDate = set?.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : NaN
   return Number.isFinite(fromDate) ? fromDate : Number(String(set?.set_name || '').match(/20\d{2}/)?.[0]) || 0
+}
+
+function isStandaloneEnergySet(set) {
+  return normalize(set?.set_name).includes('energie')
+}
+
+function sortEnergyCards(a, b) {
+  const aSet = cardSetFor(a)
+  const bSet = cardSetFor(b)
+  return setYear(aSet) - setYear(bSet)
+    || (aSet?.set_name || '').localeCompare(bSet?.set_name || '', 'fr')
+    || (Number(a?.guide_order) || 0) - (Number(b?.guide_order) || 0)
+    || String(a?.collector_number || '').localeCompare(String(b?.collector_number || ''), 'fr', { numeric: true })
+}
+
+function energyCardNumber(card) {
+  const number = String(card?.collector_number || '—')
+  return /^UEN-/i.test(number) ? 'Sans numéro' : number
 }
 
 
@@ -752,6 +772,8 @@ function BindersContent() {
   const [profileCreatedAt, setProfileCreatedAt] = useState('')
   const [ownedCardCounts, setOwnedCardCounts] = useState({})
   const [ownedExtraCounts, setOwnedExtraCounts] = useState({})
+  const [ownedEnergyCardCount, setOwnedEnergyCardCount] = useState(0)
+  const [ownedEnergyExtraCount, setOwnedEnergyExtraCount] = useState(0)
   const [ownedCopyCount, setOwnedCopyCount] = useState(0)
   const [cards, setCards] = useState([])
   const [extraVariants, setExtraVariants] = useState([])
@@ -826,12 +848,25 @@ function BindersContent() {
         }
         const cardIds = [...new Set(variants.map(variant => variant.card_id).filter(Boolean))]
         const cardSetById = new Map()
+        const cardTypeById = new Map()
         for (let offset = 0; offset < cardIds.length; offset += 250) {
           const { data, error: cardError } = await supabase.from('cards')
-            .select('id,card_set_id').in('id', cardIds.slice(offset, offset + 250))
+            .select('id,card_set_id,card_type').in('id', cardIds.slice(offset, offset + 250))
           if (cardError) throw cardError
-          for (const card of data || []) cardSetById.set(card.id, card.card_set_id)
+          for (const card of data || []) {
+            cardSetById.set(card.id, card.card_set_id)
+            cardTypeById.set(card.id, card.card_type)
+          }
         }
+        const energyCardIds = new Set()
+        const energyExtraVariantIds = new Set()
+        for (const variant of variants) {
+          if (cardTypeById.get(variant.card_id) !== 'Énergie') continue
+          if (variant.is_master_set_target) energyCardIds.add(variant.card_id)
+          else energyExtraVariantIds.add(variant.id)
+        }
+        setOwnedEnergyCardCount(energyCardIds.size)
+        setOwnedEnergyExtraCount(energyExtraVariantIds.size)
         const setCards = {}
         const setExtraVariants = {}
         for (const variant of variants) {
@@ -886,6 +921,14 @@ function BindersContent() {
 
   const mcDonaldSets = sets.filter(isMcDonaldsSet).sort((a, b) => setYear(a) - setYear(b) || a.set_name.localeCompare(b.set_name, 'fr'))
   const mcDonaldSetIds = mcDonaldSets.map(set => set.id)
+  const energySets = sets.filter(isStandaloneEnergySet)
+  const energyBinder = {
+    id: ENERGY_BINDER_ID,
+    set_code: 'NRG',
+    set_name: 'Énergies',
+    series_name: 'Toutes les séries',
+    memberSets: energySets,
+  }
   const mcDonaldBinder = {
     id: MCDONALDS_BINDER_ID,
     set_code: 'MCD',
@@ -895,17 +938,35 @@ function BindersContent() {
   }
   const selectedSet = requestedSetId === MCDONALDS_BINDER_ID
     ? mcDonaldBinder
-    : sets.find(set => set.id === requestedSetId) || null
+    : requestedSetId === ENERGY_BINDER_ID
+      ? energyBinder
+      : sets.find(set => set.id === requestedSetId) || null
   const allLibrarySets = (() => {
-    const firstMcDonaldsIndex = sets.findIndex(isMcDonaldsSet)
-    const regularSets = sets.filter(set => !isMcDonaldsSet(set))
-    if (firstMcDonaldsIndex < 0) return regularSets
-    const beforeMcDonalds = sets.slice(0, firstMcDonaldsIndex).filter(set => !isMcDonaldsSet(set))
-    return [...beforeMcDonalds, mcDonaldBinder, ...regularSets.filter(set => !beforeMcDonalds.some(existing => existing.id === set.id))]
+    const result = []
+    let insertedMcDonalds = false
+    let insertedEnergies = false
+    for (const set of sets) {
+      if (isMcDonaldsSet(set)) {
+        if (!insertedMcDonalds) result.push(mcDonaldBinder)
+        insertedMcDonalds = true
+        continue
+      }
+      if (isStandaloneEnergySet(set)) {
+        if (!insertedEnergies) result.push(energyBinder)
+        insertedEnergies = true
+        continue
+      }
+      result.push(set)
+    }
+    if (!insertedEnergies) result.push(energyBinder)
+    if (!insertedMcDonalds && mcDonaldSets.length) result.push(mcDonaldBinder)
+    return result
   })()
-  const ownedSets = allLibrarySets.filter(set => set.id === MCDONALDS_BINDER_ID
-    ? set.memberSets.some(member => (ownedCardCounts[member.id] || 0) > 0 || (ownedExtraCounts[member.id] || 0) > 0)
-    : (ownedCardCounts[set.id] || 0) > 0 || (ownedExtraCounts[set.id] || 0) > 0)
+  const ownedSets = allLibrarySets.filter(set => set.id === ENERGY_BINDER_ID
+    ? ownedEnergyCardCount > 0 || ownedEnergyExtraCount > 0
+    : set.id === MCDONALDS_BINDER_ID
+      ? set.memberSets.some(member => (ownedCardCounts[member.id] || 0) > 0 || (ownedExtraCounts[member.id] || 0) > 0)
+      : (ownedCardCounts[set.id] || 0) > 0 || (ownedExtraCounts[set.id] || 0) > 0)
   const displayedSets = showAllBinders ? allLibrarySets : ownedSets
 
   useEffect(() => {
@@ -927,18 +988,23 @@ function BindersContent() {
       setError('')
       try {
         let cardQuery = supabase.from('cards')
-          .select('id,card_set_id,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,checklist_group,is_master_set_target)')
-        cardQuery = selectedSet.id === MCDONALDS_BINDER_ID
-          ? cardQuery.in('card_set_id', mcDonaldSetIds)
-          : cardQuery.eq('card_set_id', selectedSet.id)
-        const { data: cardRows, error: cardError } = await cardQuery.order('guide_order', { ascending: true }).order('collector_number')
+          .select('id,card_set_id,card_type,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,checklist_group,is_master_set_target)')
+        const isEnergyBinder = selectedSet.id === ENERGY_BINDER_ID
+        cardQuery = isEnergyBinder
+          ? cardQuery.eq('card_type', 'Énergie')
+          : selectedSet.id === MCDONALDS_BINDER_ID
+            ? cardQuery.in('card_set_id', mcDonaldSetIds)
+            : cardQuery.eq('card_set_id', selectedSet.id)
+        const { data: rawCardRows, error: cardError } = await cardQuery.order('guide_order', { ascending: true }).order('collector_number')
         if (cardError) throw cardError
-        const variants = (cardRows || []).flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)))
-        const extraItems = (cardRows || []).flatMap(card => (card.card_print_variants || [])
+        const cardRows = isEnergyBinder ? [...(rawCardRows || [])].sort(sortEnergyCards) : (rawCardRows || [])
+        const variants = cardRows.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)))
+        const extraItems = cardRows.flatMap(card => (card.card_print_variants || [])
           .filter(variant => !variant.is_master_set_target && !isJumboVariant(variant))
           .map(variant => ({ card, variant, category: variant.checklist_group })))
-        const { data: bonusRows, error: bonusError } = await supabase.from('card_set_bonus_cards')
-          .select('card_id,category').eq('card_set_id', selectedSet.id)
+        const { data: bonusRows, error: bonusError } = isEnergyBinder
+          ? { data: [], error: null }
+          : await supabase.from('card_set_bonus_cards').select('card_id,category').eq('card_set_id', selectedSet.id)
         if (bonusError) throw bonusError
         const bonusCategoryByCard = new Map((bonusRows || []).map(row => [row.card_id, row.category]))
         const bonusCardIds = [...bonusCategoryByCard.keys()]
@@ -968,8 +1034,14 @@ function BindersContent() {
         if (cancelled) return
         const grouped = {}
         for (const copy of copies) grouped[copy.card_print_variant_id] = [...(grouped[copy.card_print_variant_id] || []), copy]
-        setCards((cardRows || []).filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target)))
-        setExtraVariants(allExtraItems)
+        const binderCards = cardRows.filter(card => (card.card_print_variants || []).some(variant =>
+          variant.is_master_set_target && (!isEnergyBinder || (grouped[variant.id] || []).length > 0)
+        ))
+        const binderExtras = isEnergyBinder
+          ? allExtraItems.filter(item => (grouped[item.variant.id] || []).length > 0)
+          : allExtraItems
+        setCards(binderCards)
+        setExtraVariants(binderExtras)
         setVariantCopies(grouped)
       } catch (loadError) {
         if (!cancelled) setError(loadError.message || 'Impossible de charger ce classeur.')
@@ -981,15 +1053,20 @@ function BindersContent() {
     return () => { cancelled = true }
   }, [supabase, selectedSet?.id, profileId, mcDonaldSetIds.join(',')])
 
-  const copiesOnSet = useMemo(
-    () => cards.reduce((sum, card) => sum + (card.card_print_variants || []).reduce((n, variant) => n + (isJumboVariant(variant) ? 0 : (variantCopies[variant.id] || []).length), 0), 0),
-    [cards, variantCopies]
-  )
   const isMcDonaldsBinder = selectedSet?.id === MCDONALDS_BINDER_ID
-  const ownedOnSet = isMcDonaldsBinder
-    ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
-    : cards.filter(card => (card.card_print_variants || []).some(variant => !isJumboVariant(variant) && (variantCopies[variant.id] || []).length > 0)).length
-  const setTotal = cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
+  const isEnergyBinder = selectedSet?.id === ENERGY_BINDER_ID
+  const copiesOnSet = useMemo(() => {
+    const variantIds = isEnergyBinder
+      ? [...new Set([...cards.flatMap(card => (card.card_print_variants || []).map(variant => variant.id)), ...extraVariants.map(item => item.variant.id)])]
+      : [...new Set(cards.flatMap(card => (card.card_print_variants || []).filter(variant => !isJumboVariant(variant)).map(variant => variant.id)))]
+    return variantIds.reduce((sum, id) => sum + (variantCopies[id] || []).length, 0)
+  }, [cards, extraVariants, isEnergyBinder, variantCopies])
+  const ownedOnSet = isEnergyBinder
+    ? new Set([...cards.map(card => card.id), ...extraVariants.map(item => item.card.id)]).size
+    : isMcDonaldsBinder
+      ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
+      : cards.filter(card => (card.card_print_variants || []).some(variant => !isJumboVariant(variant) && (variantCopies[variant.id] || []).length > 0)).length
+  const setTotal = isEnergyBinder ? ownedOnSet : cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
   const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)).length, 0)
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
@@ -1084,6 +1161,22 @@ function BindersContent() {
       [copy.card_print_variant_id]: (current[copy.card_print_variant_id] || []).filter(row => row.id !== copy.id),
     }))
     setOwnedCopyCount(current => Math.max(current - 1, 0))
+    const owningEnergyCard = owningCard || owningExtra?.card
+    if (isEnergyBinder && owningEnergyCard?.card_type === 'Énergie') {
+      const energyMasterStillOwned = (owningEnergyCard.card_print_variants || []).some(variant =>
+        variant.is_master_set_target && (variant.id === copy.card_print_variant_id
+          ? remainingForVariant.length > 0
+          : (variantCopies[variant.id] || []).length > 0)
+      )
+      if (owningCard && !energyMasterStillOwned) {
+        setOwnedEnergyCardCount(current => Math.max(current - 1, 0))
+        setCards(current => current.filter(card => card.id !== owningEnergyCard.id))
+      }
+      if (owningExtra && remainingForVariant.length === 0) {
+        setOwnedEnergyExtraCount(current => Math.max(current - 1, 0))
+        setExtraVariants(current => current.filter(item => item.variant.id !== copy.card_print_variant_id))
+      }
+    }
     const owningSetId = owningCard?.card_set_id || owningExtra?.card.card_set_id || selectedSet.id
     if (owningCard && !cardStillOwned) {
       setOwnedCardCounts(current => ({ ...current, [owningSetId]: Math.max((current[owningSetId] || 0) - 1, 0) }))
@@ -1225,6 +1318,9 @@ function BindersContent() {
   const coverArt = selectedSet && (generatedCoverArt || (shortCode(selectedSet) === 'EV8' ? '/binder-covers/etincelles-deferlantes.svg' : etbImages[selectedSet.id]))
   const profileName = profiles.find(profile => profile.id === profileId)?.display_name
     || (profiles.find(profile => profile.id === profileId)?.profile_type === 'child' ? 'Collection familiale' : 'Ma collection')
+  const binderEnergyYears = isEnergyBinder
+    ? [...new Set([...cards, ...extraVariants.map(item => item.card)].map(card => setYear(cardSetFor(card))).filter(Boolean))].sort((a, b) => a - b)
+    : []
 
   return (
     <main className={styles.page}>
@@ -1251,16 +1347,17 @@ function BindersContent() {
         {displayedSets.length ? <section className={styles.library} aria-label="Bibliothèque des séries">
           {displayedSets.map(set => {
             const [start, end] = colorFor(set.set_code)
-            const memberSets = set.id === MCDONALDS_BINDER_ID ? set.memberSets : [set]
-            const masterOwned = memberSets.reduce((sum, member) => sum + (ownedCardCounts[member.id] || 0), 0)
-            const extraOwned = memberSets.reduce((sum, member) => sum + (ownedExtraCounts[member.id] || 0), 0)
+            const isEnergyBinderCard = set.id === ENERGY_BINDER_ID
+            const memberSets = set.id === MCDONALDS_BINDER_ID || isEnergyBinderCard ? set.memberSets : [set]
+            const masterOwned = isEnergyBinderCard ? ownedEnergyCardCount : memberSets.reduce((sum, member) => sum + (ownedCardCounts[member.id] || 0), 0)
+            const extraOwned = isEnergyBinderCard ? ownedEnergyExtraCount : memberSets.reduce((sum, member) => sum + (ownedExtraCounts[member.id] || 0), 0)
             const hasCards = masterOwned > 0 || extraOwned > 0
             const spineCover = generatedCoverFor(set) || etbImages[set.id]
             return <button key={set.id} type="button" className={hasCards ? styles.spineActive : styles.spine}
               style={{ '--spine-start': start, '--spine-end': end }}
               onClick={() => navigate({ open: false, set: set.id })}
-              aria-label={'Ouvrir le classeur ' + set.set_name + (set.id === MCDONALDS_BINDER_ID ? ' (' + memberSets.length + ' éditions annuelles)' : '') + ', ' + masterOwned + ' cartes du Master Set et ' + extraOwned + ' versions hors Master Set possédées'}>
-              {(hasCards || set.id === MCDONALDS_BINDER_ID) && spineCover && <span className={styles.spineArtwork} aria-hidden="true"><img src={spineCover} alt="" loading="lazy" /></span>}
+              aria-label={'Ouvrir le classeur ' + set.set_name + (set.id === MCDONALDS_BINDER_ID ? ' (toutes les éditions annuelles)' : isEnergyBinderCard ? ' (toutes les années)' : '') + ', ' + masterOwned + ' cartes du Master Set et ' + extraOwned + ' versions hors Master Set possédées'}>
+              {(hasCards || set.id === MCDONALDS_BINDER_ID || isEnergyBinderCard) && spineCover && <span className={styles.spineArtwork} aria-hidden="true"><img src={spineCover} alt="" loading="lazy" /></span>}
               <span className={styles.spineCode}>{shortCode(set)}</span>
               <span className={styles.spineMarker} aria-hidden="true" />
             </button>
@@ -1272,7 +1369,8 @@ function BindersContent() {
           <select id="binder-series" value={requestedSetId} onChange={event => navigate({ open: false, set: event.target.value })}>
             <option value="">Sélectionner une série</option>
             <option value={MCDONALDS_BINDER_ID}>MCD · McDonald’s (toutes les années)</option>
-            {sets.filter(set => !isMcDonaldsSet(set)).map(set => <option key={set.id} value={set.id}>{shortCode(set)} · {set.set_name}</option>)}
+            <option value={ENERGY_BINDER_ID}>Énergies · toutes les années</option>
+            {sets.filter(set => !isMcDonaldsSet(set) && !isStandaloneEnergySet(set)).map(set => <option key={set.id} value={set.id}>{shortCode(set)} · {set.set_name}</option>)}
           </select>
         </section>
       </> : !isOpen ? <>
@@ -1297,9 +1395,15 @@ function BindersContent() {
           </article>
           )}
           <div className={styles.coverDetails}>
-            <p className={styles.kicker}>Ton classeur de série</p>
+            <p className={styles.kicker}>{isEnergyBinder ? 'Ton classeur d’énergies' : 'Ton classeur de série'}</p>
             <h2>{selectedSet.set_name}</h2>
+            {isEnergyBinder && <p>Cartes Énergie possédées, triées par année d’édition.</p>}
             <div className={styles.stats}>
+              {isEnergyBinder ? <>
+                <div><strong>{ownedOnSet}</strong><span>cartes Énergie différentes</span></div>
+                <div><strong>{copiesOnSet}</strong><span>exemplaires · doublons compris</span></div>
+                <div><strong>{binderEnergyYears.length ? binderEnergyYears[0] + '–' + binderEnergyYears[binderEnergyYears.length - 1] : '—'}</strong><span>années couvertes</span></div>
+              </> : <>
               <div>
                 <strong>{ownedOnSet}/{setTotal} · {seriesCompletionPercent}%</strong>
                 <span>Série complète</span>
@@ -1332,8 +1436,9 @@ function BindersContent() {
                 </button>
                 <small>{ownedUltraMasterTotal}/{ultraMasterTotal} · {ultraMasterCompletionPercent}% de l’Ultra Master Set</small>
               </div>}
+              </>}
             </div>
-            <section className={styles.missingCopyPanel} aria-label="Copier les variantes manquantes">
+            {!isEnergyBinder && <section className={styles.missingCopyPanel} aria-label="Copier les variantes manquantes">
               <strong>Copier les manquantes du Master Set</strong>
               <div className={styles.missingCopyActions}>
                 <button type="button" onClick={() => copyMissingBinderNumbers()} disabled={!missingBinderRows.length}>
@@ -1344,7 +1449,7 @@ function BindersContent() {
                 </button>)}
               </div>
               {copyNotice && <p role="status">{copyNotice}</p>}
-            </section>
+            </section>}
             <div className={styles.coverActions}>
               <button className={styles.openButton} type="button" onClick={() => navigate({ open: true, page: 0 })}>Ouvrir le classeur <span aria-hidden="true">→</span></button>
               {pdfFile ? <div className={styles.pdfReadyActions}>
@@ -1411,7 +1516,7 @@ function BindersContent() {
                         {catalogArt ? <CardArtwork card={card} src={catalogArt} alt="" /> : <span>Illustration indisponible</span>}
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
-                      <span className={styles.cardNumber}>{card.collector_number}</span>
+                      <span className={styles.cardNumber}>{isEnergyBinder ? energyCardNumber(card) + ' · ' + setYear(cardSetFor(card)) : card.collector_number}</span>
                       <span className={styles.extraVariantLabel}>{bonusLabel}</span>
                     </button>
                   }
@@ -1425,14 +1530,14 @@ function BindersContent() {
                         {copyCount > 1 && <b className={styles.copyBadge}>×{copyCount}</b>}
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
-                      <span className={styles.cardNumber}>{card.collector_number}</span>
+                      <span className={styles.cardNumber}>{isEnergyBinder ? energyCardNumber(card) + ' · ' + setYear(cardSetFor(card)) : card.collector_number}</span>
                       {missingVariants.length > 0 && <span className={styles.extraVariantLabel}>Manque : {missingVariants.map(pdfVariantLabel).join(', ')}</span>}
                       {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{binderExtraLabel(item)}</span>}
                     </button>
                   }
                   return <article key={item ? item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-') : 'empty-' + side + '-' + slotIndex} className={styles.slot}>
                     {card ? <>
-                      <span className={styles.emptyNumber}>{card?.collector_number || '—'}</span>
+                      <span className={styles.emptyNumber}>{card ? (isEnergyBinder ? energyCardNumber(card) + ' · ' + setYear(cardSetFor(card)) : card.collector_number) : '—'}</span>
                       <span className={styles.emptyHint}>À compléter</span>
                       {missingVariants.length > 0 && <span className={styles.extraVariantLabel}>{missingVariants.map(pdfVariantLabel).join(', ')}</span>}
                       {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{binderExtraLabel(item)}</span>}
