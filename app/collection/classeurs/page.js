@@ -1082,7 +1082,7 @@ function BindersContent() {
         if (cancelled) return
         const grouped = {}
         for (const copy of copies) grouped[copy.card_print_variant_id] = [...(grouped[copy.card_print_variant_id] || []), copy]
-        const binderCards = cardRows.filter(card => (card.card_print_variants || []).some(variant =>
+        const binderCards = isPromoStampBinder ? [] : cardRows.filter(card => (card.card_print_variants || []).some(variant =>
           variant.is_master_set_target && (!isEnergyBinder || (grouped[variant.id] || []).length > 0)
         ))
         const binderExtras = isEnergyBinder || isPromoStampBinder
@@ -1212,6 +1212,15 @@ function BindersContent() {
     }))
     setOwnedCopyCount(current => Math.max(current - 1, 0))
     const owningEnergyCard = owningCard || owningExtra?.card
+    if (isPromoStampBinder && owningExtra && remainingForVariant.length === 0) {
+      setOwnedPromoStampVariantCount(current => Math.max(current - 1, 0))
+      if (owningExtra.variant.is_master_set_target) {
+        setOwnedCardCounts(current => ({ ...current, [owningExtra.card.card_set_id]: Math.max((current[owningExtra.card.card_set_id] || 0) - 1, 0) }))
+      } else {
+        setOwnedExtraCounts(current => ({ ...current, [owningExtra.card.card_set_id]: Math.max((current[owningExtra.card.card_set_id] || 0) - 1, 0) }))
+      }
+      setExtraVariants(current => current.filter(item => item.variant.id !== copy.card_print_variant_id))
+    }
     if (isEnergyBinder && owningEnergyCard?.card_type === 'Énergie') {
       const energyMasterStillOwned = (owningEnergyCard.card_print_variants || []).some(variant =>
         variant.is_master_set_target && (variant.id === copy.card_print_variant_id
@@ -1398,16 +1407,17 @@ function BindersContent() {
           {displayedSets.map(set => {
             const [start, end] = colorFor(set.set_code)
             const isEnergyBinderCard = set.id === ENERGY_BINDER_ID
-            const memberSets = set.id === MCDONALDS_BINDER_ID || isEnergyBinderCard ? set.memberSets : [set]
-            const masterOwned = isEnergyBinderCard ? ownedEnergyCardCount : memberSets.reduce((sum, member) => sum + (ownedCardCounts[member.id] || 0), 0)
-            const extraOwned = isEnergyBinderCard ? ownedEnergyExtraCount : memberSets.reduce((sum, member) => sum + (ownedExtraCounts[member.id] || 0), 0)
+            const isPromoStampBinderCard = set.id === PROMO_STAMP_BINDER_ID
+            const memberSets = set.id === MCDONALDS_BINDER_ID || isEnergyBinderCard || isPromoStampBinderCard ? set.memberSets : [set]
+            const masterOwned = isEnergyBinderCard ? ownedEnergyCardCount : isPromoStampBinderCard ? 0 : memberSets.reduce((sum, member) => sum + (ownedCardCounts[member.id] || 0), 0)
+            const extraOwned = isEnergyBinderCard ? ownedEnergyExtraCount : isPromoStampBinderCard ? ownedPromoStampVariantCount : memberSets.reduce((sum, member) => sum + (ownedExtraCounts[member.id] || 0), 0)
             const hasCards = masterOwned > 0 || extraOwned > 0
             const spineCover = generatedCoverFor(set) || etbImages[set.id]
             return <button key={set.id} type="button" className={hasCards ? styles.spineActive : styles.spine}
               style={{ '--spine-start': start, '--spine-end': end }}
               onClick={() => navigate({ open: false, set: set.id })}
-              aria-label={'Ouvrir le classeur ' + set.set_name + (set.id === MCDONALDS_BINDER_ID ? ' (toutes les éditions annuelles)' : isEnergyBinderCard ? ' (toutes les années)' : '') + ', ' + masterOwned + ' cartes du Master Set et ' + extraOwned + ' versions hors Master Set possédées'}>
-              {(hasCards || set.id === MCDONALDS_BINDER_ID || isEnergyBinderCard) && spineCover && <span className={styles.spineArtwork} aria-hidden="true"><img src={spineCover} alt="" loading="lazy" /></span>}
+              aria-label={'Ouvrir le classeur ' + set.set_name + (set.id === MCDONALDS_BINDER_ID ? ' (toutes les éditions annuelles)' : isEnergyBinderCard || isPromoStampBinderCard ? ' (toutes les années)' : '') + ', ' + masterOwned + ' cartes du Master Set et ' + extraOwned + ' versions hors Master Set possédées'}>
+              {(hasCards || set.id === MCDONALDS_BINDER_ID || isEnergyBinderCard || isPromoStampBinderCard) && spineCover && <span className={styles.spineArtwork} aria-hidden="true"><img src={spineCover} alt="" loading="lazy" /></span>}
               <span className={styles.spineCode}>{shortCode(set)}</span>
               <span className={styles.spineMarker} aria-hidden="true" />
             </button>
@@ -1446,14 +1456,19 @@ function BindersContent() {
           </article>
           )}
           <div className={styles.coverDetails}>
-            <p className={styles.kicker}>{isEnergyBinder ? 'Ton classeur d’énergies' : 'Ton classeur de série'}</p>
+            <p className={styles.kicker}>{isEnergyBinder ? 'Ton classeur d’énergies' : isPromoStampBinder ? 'Ton classeur de promos et tampons' : 'Ton classeur de série'}</p>
             <h2>{selectedSet.set_name}</h2>
             {isEnergyBinder && <p>Cartes Énergie possédées, triées par année d’édition.</p>}
+            {isPromoStampBinder && <p>Promos et cartes tampon possédées, triées par année, série puis type.</p>}
             <div className={styles.stats}>
               {isEnergyBinder ? <>
                 <div><strong>{ownedOnSet}</strong><span>cartes Énergie différentes</span></div>
                 <div><strong>{copiesOnSet}</strong><span>exemplaires · doublons compris</span></div>
                 <div><strong>{binderEnergyYears.length ? binderEnergyYears[0] + '–' + binderEnergyYears[binderEnergyYears.length - 1] : '—'}</strong><span>années couvertes</span></div>
+              </> : isPromoStampBinder ? <>
+                <div><strong>{ownedOnSet}</strong><span>cartes promo ou tampon différentes</span></div>
+                <div><strong>{copiesOnSet}</strong><span>exemplaires · doublons compris</span></div>
+                <div><strong>{new Set(extraVariants.map(item => setYear(cardSetFor(item.card)))).size}</strong><span>années couvertes</span></div>
               </> : <>
               <div>
                 <strong>{ownedOnSet}/{setTotal} · {seriesCompletionPercent}%</strong>
@@ -1489,7 +1504,7 @@ function BindersContent() {
               </div>}
               </>}
             </div>
-            {!isEnergyBinder && <section className={styles.missingCopyPanel} aria-label="Copier les variantes manquantes">
+            {!isEnergyBinder && !isPromoStampBinder && <section className={styles.missingCopyPanel} aria-label="Copier les variantes manquantes">
               <strong>Copier les manquantes du Master Set</strong>
               <div className={styles.missingCopyActions}>
                 <button type="button" onClick={() => copyMissingBinderNumbers()} disabled={!missingBinderRows.length}>
@@ -1546,7 +1561,7 @@ function BindersContent() {
           </nav>
           <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(familyPage ? familyPage.section.set.set_name + ', ' : '') + (isExtraSpread ? 'Hors Master Set, ' : 'Master Set, ') + (cardsPerSpread === 16 ? 'page ' : 'double page ') + (familyPage ? familyPage.index + 1 : isExtraSpread ? page - masterSpreadCount + 1 : page + 1)}>
             {pageSides.map(side => <section key={side} className={styles.bookPage} aria-label={cardsPerSpread === 16 ? 'Page du classeur' : side === 0 ? 'Page de gauche' : 'Page de droite'}>
-              <div className={styles.pageTop}><span>{isPromoCatalogView ? 'Catalogue · Promos' : isExtraSpread ? 'Hors Master Set · ' + (familyPage?.section.extras.length || extraVariants.length) : currentSectionLabel}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
+              <div className={styles.pageTop}><span>{isPromoCatalogView ? 'Catalogue · Promos' : isPromoStampBinder ? 'Promos & tampons · ' + (page + 1) + '/' + extraSpreadCount : isExtraSpread ? 'Hors Master Set · ' + (familyPage?.section.extras.length || extraVariants.length) : currentSectionLabel}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
                 {spreadSlots.slice(side * cardsPerBookPage, side * cardsPerBookPage + cardsPerBookPage).map((item, slotIndex) => {
                   const card = item?.card
@@ -1567,7 +1582,7 @@ function BindersContent() {
                         {catalogArt ? <CardArtwork card={card} src={catalogArt} alt="" /> : <span>Illustration indisponible</span>}
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
-                      <span className={styles.cardNumber}>{isEnergyBinder ? energyCardNumber(card) + ' · ' + setYear(cardSetFor(card)) : card.collector_number}</span>
+                      <span className={styles.cardNumber}>{isEnergyBinder ? energyCardNumber(card) + ' · ' + setYear(cardSetFor(card)) : isPromoStampBinder ? setYear(cardSetFor(card)) + ' · ' + (cardSetFor(card)?.series_name || cardSetFor(card)?.set_name || '') + ' · ' + card.collector_number : card.collector_number}</span>
                       <span className={styles.extraVariantLabel}>{bonusLabel}</span>
                     </button>
                   }
@@ -1581,7 +1596,7 @@ function BindersContent() {
                         {copyCount > 1 && <b className={styles.copyBadge}>×{copyCount}</b>}
                       </div>
                       <strong className={styles.cardName}>{card.card_name}</strong>
-                      <span className={styles.cardNumber}>{isEnergyBinder ? energyCardNumber(card) + ' · ' + setYear(cardSetFor(card)) : card.collector_number}</span>
+                      <span className={styles.cardNumber}>{isEnergyBinder ? energyCardNumber(card) + ' · ' + setYear(cardSetFor(card)) : isPromoStampBinder ? setYear(cardSetFor(card)) + ' · ' + (cardSetFor(card)?.series_name || cardSetFor(card)?.set_name || '') + ' · ' + card.collector_number : card.collector_number}</span>
                       {missingVariants.length > 0 && <span className={styles.extraVariantLabel}>Manque : {missingVariants.map(pdfVariantLabel).join(', ')}</span>}
                       {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{binderExtraLabel(item)}</span>}
                     </button>
