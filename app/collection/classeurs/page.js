@@ -1196,7 +1196,7 @@ function BindersContent() {
   const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageItems[index] || null)
   const pageSides = cardsPerSpread === 16 ? [0] : [0, 1]
 
-  function handleCopyDeleted(copy) {
+  async function handleCopyDeleted(copy) {
     const remainingForVariant = (variantCopies[copy.card_print_variant_id] || []).filter(row => row.id !== copy.id)
     const owningCard = cards.find(card => (card.card_print_variants || []).some(variant => variant.id === copy.card_print_variant_id))
     const owningExtra = extraVariants.find(item => item.variant.id === copy.card_print_variant_id)
@@ -1215,7 +1215,16 @@ function BindersContent() {
     if (isPromoStampBinder && owningExtra && remainingForVariant.length === 0) {
       setOwnedPromoStampVariantCount(current => Math.max(current - 1, 0))
       if (owningExtra.variant.is_master_set_target) {
-        setOwnedCardCounts(current => ({ ...current, [owningExtra.card.card_set_id]: Math.max((current[owningExtra.card.card_set_id] || 0) - (current[owningExtra.card.card_set_id] > 1 ? 1 : 0), 0) }))
+        const { data: masterVariants, error: masterVariantsError } = await supabase.from('card_print_variants')
+          .select('id').eq('card_id', owningExtra.card.id).eq('is_master_set_target', true)
+        const masterVariantIds = (masterVariants || []).map(variant => variant.id)
+        if (!masterVariantsError && masterVariantIds.length) {
+          const { data: remainingMasterCopies, error: remainingCopiesError } = await supabase.from('collection_cards')
+            .select('id').eq('collection_profile_id', profileId).in('card_print_variant_id', masterVariantIds)
+          if (!remainingCopiesError && !(remainingMasterCopies || []).length) {
+            setOwnedCardCounts(current => ({ ...current, [owningExtra.card.card_set_id]: Math.max((current[owningExtra.card.card_set_id] || 0) - 1, 0) }))
+          }
+        }
       } else {
         setOwnedExtraCounts(current => ({ ...current, [owningExtra.card.card_set_id]: Math.max((current[owningExtra.card.card_set_id] || 0) - 1, 0) }))
       }
