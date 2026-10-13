@@ -1498,7 +1498,7 @@ function BindersContent() {
                 <strong>{ownedMasterVariantTotal}/{masterVariantTotal} · {masterSetCompletionPercent}%</strong>
                 <span>Master Set</span>
                 <details className={styles.statExplanation}>
-                  <summary>{isEv9Binder ? 'Détail des décomptes' : 'Explication'}</summary>
+                  <summary>{isEv9Binder ? 'ⓘ Voir le détail des décomptes EV9' : 'Explication'}</summary>
                   {isEv9Binder ? <>
                     <p>Série complète : 190 cartes.</p>
                     <p>Master Set PokéValeur : 339 variantes, énergies incluses.</p>
