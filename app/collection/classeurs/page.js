@@ -1050,7 +1050,7 @@ function BindersContent() {
         const extraItems = cardRows.flatMap(card => (card.card_print_variants || [])
           .filter(variant => (isPromoStampBinder ? isPromoStampCategory(variant.checklist_group) : !variant.is_master_set_target) && !isJumboVariant(variant))
           .map(variant => ({ card, variant, category: variant.checklist_group })))
-        const { data: bonusRows, error: bonusError } = isEnergyBinder
+        const { data: bonusRows, error: bonusError } = isEnergyBinder || isPromoStampBinder
           ? { data: [], error: null }
           : await supabase.from('card_set_bonus_cards').select('card_id,category').eq('card_set_id', selectedSet.id)
         if (bonusError) throw bonusError
