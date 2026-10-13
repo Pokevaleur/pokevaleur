@@ -10,10 +10,59 @@ function euro(value) {
   if (value == null) return 'Prix indisponible'
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value)
 }
+async function loadSeriesValueSummaries(supabase, copies) {
+  const bySet = new Map()
+  for (const copy of copies || []) {
+    const variant = copy.variant
+    const set = copy.card?.card_sets
+    if (!variant?.is_master_set_target || !variant.id || !set?.id) continue
+    let summary = bySet.get(set.id)
+    if (!summary) {
+      summary = { setId: set.id, label: set.set_name || 'Série sans nom', seriesName: set.series_name || '', releaseDate: set.release_date || null, ownedVariantIds: new Set(), pricedCopies: 0, unpricedCopies: 0, value: 0, total: 0 }
+      bySet.set(set.id, summary)
+    }
+    summary.ownedVariantIds.add(variant.id)
+    if (copy.price !== null && Number.isFinite(Number(copy.price))) {
+      summary.value += Number(copy.price)
+      summary.pricedCopies += 1
+    } else summary.unpricedCopies += 1
+  }
+  if (!bySet.size) return []
+  const setIds = [...bySet.keys()]
+  const cards = []
+  for (let offset = 0; offset < setIds.length; offset += 100) {
+    const result = await fetchAllRows(() => supabase.from('cards').select('id,card_set_id').in('card_set_id', setIds.slice(offset, offset + 100)))
+    if (result.error) throw result.error
+    cards.push(...(result.data || []))
+  }
+  const cardIds = [...new Set(cards.map(card => card.id).filter(Boolean))]
+  const cardSetById = new Map(cards.map(card => [card.id, card.card_set_id]))
+  const catalogVariants = []
+  for (let offset = 0; offset < cardIds.length; offset += 100) {
+    const result = await fetchAllRows(() => supabase.from('card_print_variants').select('id,card_id,is_master_set_target').in('card_id', cardIds.slice(offset, offset + 100)))
+    if (result.error) throw result.error
+    catalogVariants.push(...(result.data || []))
+  }
+  for (const variant of catalogVariants) {
+    if (!variant.is_master_set_target) continue
+    const summary = bySet.get(cardSetById.get(variant.card_id))
+    if (summary) summary.total += 1
+  }
+  return [...bySet.values()].map(summary => ({
+    ...summary,
+    ownedCount: summary.ownedVariantIds.size,
+    completion: summary.total ? Math.min(100, summary.ownedVariantIds.size / summary.total * 100) : null
+  })).sort((a, b) => {
+    if (a.releaseDate && b.releaseDate && a.releaseDate !== b.releaseDate) return a.releaseDate.localeCompare(b.releaseDate)
+    if (a.releaseDate && !b.releaseDate) return -1
+    if (!a.releaseDate && b.releaseDate) return 1
+    return a.label.localeCompare(b.label, 'fr')
+  })
+}
 
 export default function CollectionValueOverviewPage() {
   const supabase = useMemo(() => createClient(), [])
-  const [state, setState] = useState({ loading: true, error: '', profileName: 'Ma collection', cardsValue: null, cardCount: 0, sealedValue: null, sealedCount: 0, calculatedAt: null })
+  const [state, setState] = useState({ loading: true, error: '', profileName: 'Ma collection', cardsValue: null, cardCount: 0, sealedValue: null, sealedCount: 0, calculatedAt: null, seriesSummaries: [], seriesError: '' })
 
   useEffect(() => {
     let cancelled = false
@@ -49,6 +98,14 @@ export default function CollectionValueOverviewPage() {
           if (value !== null) { sealedValue += value * quantity; sealedPriced += quantity }
         }
 
+        let seriesSummaries = []
+        let seriesError = ''
+        try {
+          seriesSummaries = await loadSeriesValueSummaries(supabase, cardsResult.copies)
+        } catch (error) {
+          seriesError = error.message || 'Impossible de calculer la progression des séries.'
+        }
+
         if (cancelled) return
         setState({
           loading: false,
@@ -58,7 +115,9 @@ export default function CollectionValueOverviewPage() {
           cardCount: cardsResult.copies.length,
           sealedValue: sealedPriced ? sealedValue : null,
           sealedCount,
-          calculatedAt: new Date()
+          calculatedAt: new Date(),
+          seriesSummaries,
+          seriesError
         })
       } catch (error) {
         if (!cancelled) setState(current => ({ ...current, loading: false, error: error.message || 'Impossible de calculer les valeurs de la collection.' }))
@@ -85,6 +144,48 @@ export default function CollectionValueOverviewPage() {
           <small>Mise à jour au {state.calculatedAt?.toLocaleDateString('fr-FR')}</small>
         </section>
 
+
+        <section className={styles.seriesSection} aria-labelledby="series-overview-title">
+          <div className={styles.seriesHeader}>
+            <div>
+              <span className={styles.eyebrow}>MASTER SETS</span>
+              <h2 id="series-overview-title">Mes séries en cours</h2>
+              <p>Ta progression et la valeur estimée des cartes Master Set que tu possèdes.</p>
+            </div>
+          </div>
+          {state.seriesError
+            ? <p className={styles.seriesMessage} role="status">La progression des séries est indisponible pour le moment. {state.seriesError}</p>
+            : state.seriesSummaries.length
+              ? <div className={styles.seriesList}>
+                  {state.seriesSummaries.map(series => {
+                    const percentage = series.completion == null
+                      ? null
+                      : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(series.completion)
+                    return (
+                      <a className={styles.seriesRow} href={`/collection/valeur/cartes?set=${encodeURIComponent(series.setId)}`} key={series.setId}>
+                        <span className={styles.seriesName}>
+                          <strong>{series.label}</strong>
+                          {series.seriesName && <small>{series.seriesName}</small>}
+                        </span>
+                        <span className={styles.seriesCompletion}>
+                          <span className={styles.seriesCompletionLabel}>
+                            <span>Master Set</span>
+                            <strong>{series.ownedCount} / {series.total || '—'}{percentage !== null ? ` · ${percentage} %` : ''}</strong>
+                          </span>
+                          <span className={styles.seriesTrack} aria-hidden="true"><i style={{ width: `${series.completion ?? 0}%` }} /></span>
+                        </span>
+                        <span className={styles.seriesValue}>
+                          <strong>{series.pricedCopies ? euro(series.value) : 'Prix indisponible'}</strong>
+                          <small>{series.pricedCopies} carte{series.pricedCopies > 1 ? 's' : ''} cotée{series.pricedCopies > 1 ? 's' : ''}{series.unpricedCopies ? ` · ${series.unpricedCopies} sans cote` : ''}</small>
+                        </span>
+                        <span className={styles.seriesExplore}>Détail <b aria-hidden="true">→</b></span>
+                      </a>
+                    )
+                  })}
+                </div>
+              : <p className={styles.seriesMessage}>Les séries apparaîtront ici dès que tu posséderas une carte de leur Master Set.</p>}
+          <p className={styles.seriesFootnote}>La progression compte les variantes possédées une seule fois. La valeur additionne les exemplaires possédés cotés, y compris les doublons; les cartes sans prix restent signalées à part.</p>
+        </section>
         <h2 className={styles.sectionTitle}>Détail de ma collection</h2>
         <div className={styles.options}>
           <a className={styles.option} href="/collection/valeur/cartes">
