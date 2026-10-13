@@ -7,7 +7,7 @@ import styles from './page.module.css'
 
 const ALL_SERIES = '__all_series__'
 const MCDONALDS_SERIES = '__mcdonalds_series__'
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
 const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
 
 function normalizedCardName(name) {
@@ -83,6 +83,32 @@ function seriesLabel(set) {
 
 function relatedSet(card) {
   return Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+}
+
+function isGoldEnergy(card) {
+  return card?.card_type === 'Énergie' && /hyper rare/i.test(card?.rarity_label || '')
+}
+
+function normalizedSearchText(value) {
+  return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+}
+
+function energyElementSearchTerms(card) {
+  const aliases = {
+    plante: 'plante grass',
+    feu: 'feu fire',
+    eau: 'eau water',
+    electrique: 'electrique electric electrik lightning foudre',
+    psy: 'psy psychic',
+    combat: 'combat fighting',
+    obscurite: 'obscurite darkness',
+    metal: 'metal',
+    incolore: 'incolore colorless'
+  }
+  return (card?.element_types || []).flatMap(type => {
+    const normalizedType = normalizedSearchText(type)
+    return aliases[normalizedType] || [type]
+  }).join(' ')
 }
 
 function isMcDonaldsSet(set) {
@@ -203,14 +229,31 @@ export default function CardCataloguePage() {
           : setId === MCDONALDS_SERIES ? mcDonaldSetIds : [setId]
         if (!setIds.length) return
         const term = query.trim().replace(/[%_]/g, '\\$&')
-        const { data: rows, error: loadError } = await fetchAllRows(() => {
-          let request = supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
-          if (setId === ALL_SERIES && term) request = request.ilike('card_name', '%' + term + '%')
-          return request.order('guide_order', { ascending: true }).order('collector_number', { ascending: true })
-        })
-        if (loadError) throw loadError
+        let cardRows = []
+        if (setId === ALL_SERIES && term) {
+          const pattern = '%' + term + '%'
+          const searches = [
+            fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).ilike('card_name', pattern).order('guide_order', { ascending: true }).order('collector_number', { ascending: true })),
+            fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).ilike('collector_number', pattern).order('guide_order', { ascending: true }).order('collector_number', { ascending: true }))
+          ]
+          const normalizedTerm = normalizedSearchText(term)
+          if (['energie', 'energy', 'plante', 'grass', 'feu', 'fire', 'eau', 'water', 'electri', 'lightning', 'foudre', 'psy', 'psychic', 'combat', 'fighting', 'obscurite', 'darkness', 'metal', 'incolore', 'colorless', 'gold', 'dore'].some(alias => normalizedTerm.includes(alias))) {
+            searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).eq('card_type', 'Énergie').order('guide_order', { ascending: true }).order('collector_number', { ascending: true })))
+          }
+          if (normalizedTerm.includes('gold') || normalizedTerm.includes('dore')) {
+            searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).eq('card_type', 'Énergie').ilike('rarity_label', '%Hyper rare%').order('guide_order', { ascending: true }).order('collector_number', { ascending: true })))
+          }
+          const results = await Promise.all(searches)
+          const failed = results.find(result => result.error)
+          if (failed) throw failed.error
+          cardRows = [...new Map(results.flatMap(result => result.data || []).map(card => [card.id, card])).values()]
+        } else {
+          const { data: rows, error: loadError } = await fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
+            .order('guide_order', { ascending: true }).order('collector_number', { ascending: true }))
+          if (loadError) throw loadError
+          cardRows = rows || []
+        }
         if (cancelled) return
-        const cardRows = rows || []
         const mcDonaldCards = cardRows.filter(card => isMcDonaldsSet(relatedSet(card)))
         const imageCandidates = {}
         if (mcDonaldCards.length) {
@@ -278,8 +321,15 @@ export default function CardCataloguePage() {
     : sets.find(set => set.id === setId)
   const selectedMcDonaldsSet = setId === MCDONALDS_SERIES
   const visibleCards = cards.filter(card => {
-    const term = filterQuery.trim().toLocaleLowerCase('fr')
-    return !term || (String(card.collector_number || '') + ' ' + card.card_name).toLocaleLowerCase('fr').includes(term)
+    const term = normalizedSearchText(filterQuery.trim() || (setId === ALL_SERIES ? query.trim() : ''))
+    const set = relatedSet(card)
+    const variantText = (card.card_print_variants || []).map(variant => variant.variant_label || variant.variant_key).join(' ')
+    const searchText = normalizedSearchText([
+      card.collector_number, card.card_name, card.card_type, card.rarity_label, variantText,
+      energyElementSearchTerms(card), card.card_type === 'Énergie' ? 'energy energie' : '',
+      set?.set_name, isGoldEnergy(card) ? 'Gold dorée' : ''
+    ].join(' '))
+    return !term || term.split(/\s+/).every(token => searchText.includes(token))
   })
   const selectedRows = Object.entries(selection).filter(([, qty]) => Number(qty) > 0)
   const selectedCopies = selectedRows.reduce((sum, [, qty]) => sum + Number(qty || 0), 0)
@@ -372,8 +422,8 @@ export default function CardCataloguePage() {
           </div>
         </label>
         {setId === ALL_SERIES && <label className={styles.searchField}>
-          <span>Nom d’une carte</span>
-          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu" />
+          <span>Nom, numéro ou finition</span>
+          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu, 257, Gold" />
         </label>}
         {selectedSet && <label className={styles.searchField}>
           <span>{selectedMcDonaldsSet ? 'Filtrer les éditions McDonald’s' : 'Filtrer cette série'}</span>
@@ -414,9 +464,9 @@ export default function CardCataloguePage() {
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
-                <span className={styles.cardNumber}>{setId === ALL_SERIES ? seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}N° {card.collector_number}</span>
+                <span className={styles.cardNumber}>{setId === ALL_SERIES ? seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}N° {card.collector_number}{card.card_type === 'Énergie' && set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
-                <span className={styles.rarity}>{card.rarity_label || 'Rareté non renseignée'}</span>
+                <span className={styles.rarity}>{isGoldEnergy(card) ? 'Gold · ' : ''}{card.rarity_label || 'Rareté non renseignée'}</span>
               </div>
               <div className={styles.printings} role="group" aria-label={'Impressions de ' + card.card_name}>
                 {!variants.length && <span className={styles.noVariants}>Impressions à préciser</span>}
