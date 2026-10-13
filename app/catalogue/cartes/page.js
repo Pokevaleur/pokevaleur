@@ -326,7 +326,8 @@ export default function CardCataloguePage() {
     const variantText = (card.card_print_variants || []).map(variant => variant.variant_label || variant.variant_key).join(' ')
     const searchText = normalizedSearchText([
       card.collector_number, card.card_name, card.card_type, card.rarity_label, variantText,
-      energyElementSearchTerms(card), set?.set_name, isGoldEnergy(card) ? 'Gold dorée' : ''
+      energyElementSearchTerms(card), card.card_type === 'Énergie' ? 'energy energie' : '',
+      set?.set_name, isGoldEnergy(card) ? 'Gold dorée' : ''
     ].join(' '))
     return !term || term.split(/\s+/).every(token => searchText.includes(token))
   })
