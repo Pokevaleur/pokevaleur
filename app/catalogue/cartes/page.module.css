@@ -40,8 +40,15 @@
 .ownershipPopover::before{position:absolute;top:-5px;left:var(--ownership-arrow-left,9px);width:8px;height:8px;border-top:1px solid #d5dee8;border-left:1px solid #d5dee8;background:#fff;content:"";transform:rotate(45deg)}
 .ownershipPopover>strong{display:block;margin-bottom:6px;color:#1b3047;font-size:.82rem}
 .ownershipPopover ul{display:grid;gap:5px;margin:0;padding:0;list-style:none}
-.ownershipPopover li{display:flex;justify-content:space-between;gap:8px}
-.ownershipPopover li b{flex:0 0 auto;font-size:.73rem}
+.ownershipPopover li{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.ownershipLineActions{display:flex;align-items:center;gap:6px;flex:0 0 auto}
+.ownershipPopover li b{font-size:.73rem}
+.ownershipRemoveButton{display:grid;place-items:center;width:21px;height:21px;padding:0;border:1px solid #c9d2dc;border-radius:50%;background:#fff;color:#5c6d80;font:inherit;font-size:1rem;font-weight:800;line-height:1;cursor:pointer}
+.ownershipRemoveButton:hover,.ownershipRemoveButton:focus-visible{border-color:#8193a8;background:#f1f5f8;color:#263e58;outline:none}
+.ownershipRemoveButton:disabled{opacity:.38;cursor:not-allowed}
+.ownershipActionNotice{display:block;margin-top:7px;color:#8d3e33;font-size:.72rem}
+.ownershipUndo{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:7px;padding-top:7px;border-top:1px solid #e8edf2;color:#58697d;font-size:.69rem}
+.ownershipUndo button{flex:0 0 auto;padding:2px 6px;border:0;border-radius:6px;background:#edf3f8;color:#244969;font:inherit;font-weight:800;cursor:pointer}
 .ownershipPopover>small{display:block;margin-top:7px;color:#78879a;font-size:.67rem}
 .ownershipEmpty{display:block;color:#68798d}
 .printings{display:flex;flex-wrap:wrap;align-items:center;gap:8px}

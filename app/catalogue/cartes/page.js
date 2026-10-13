@@ -90,6 +90,10 @@ function isGoldEnergy(card) {
   return card?.card_type === 'Énergie' && /hyper rare/i.test(card?.rarity_label || '')
 }
 
+function isUnnumberedEnergyCard(card) {
+  return card?.card_type === 'Énergie' && /^UEN-/i.test(String(card?.collector_number || ''))
+}
+
 function isEnergySearch(value) {
   return ['energie', 'energy', 'plante', 'grass', 'feu', 'fire', 'eau', 'water', 'electri', 'lightning', 'foudre', 'psy', 'psychic', 'combat', 'fighting', 'obscurite', 'darkness', 'metal', 'incolore', 'colorless', 'gold', 'dore']
     .some(alias => normalizedSearchText(value).includes(alias))
@@ -144,6 +148,9 @@ export default function CardCataloguePage() {
   const [zoomedCard, setZoomedCard] = useState(null)
   const [ownershipCardId, setOwnershipCardId] = useState(null)
   const [ownershipPopoverPosition, setOwnershipPopoverPosition] = useState(null)
+  const [removingCopyId, setRemovingCopyId] = useState('')
+  const [removedCopies, setRemovedCopies] = useState([])
+  const [ownershipNotice, setOwnershipNotice] = useState('')
   const ownershipInfoRef = useRef(null)
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const [seriesPickerQuery, setSeriesPickerQuery] = useState('')
@@ -270,11 +277,22 @@ export default function CardCataloguePage() {
           if (normalizedTerm.includes('gold') || normalizedTerm.includes('dore')) {
             searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).eq('card_type', 'Énergie').ilike('rarity_label', '%Hyper rare%').order('guide_order', { ascending: true }).order('collector_number', { ascending: true })))
           }
+          const yearSearch = normalizedTerm.match(/^(20\d{2})$/)?.[1]
+          if (yearSearch) {
+            const carriedVisualSetCodes = yearSearch === '2018' ? ['uen17'] : yearSearch === '2021' ? ['uen20'] : []
+            const energyYearSetIds = sets.filter(set =>
+              String(set.release_date || '').startsWith(yearSearch) || carriedVisualSetCodes.includes(set.set_code)
+            ).map(set => set.id)
+            if (energyYearSetIds.length) {
+              searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', energyYearSetIds)
+                .eq('card_type', 'Énergie').order('guide_order', { ascending: true }).order('collector_number', { ascending: true })))
+            }
+          }
           const results = await Promise.all(searches)
           const failed = results.find(result => result.error)
           if (failed) throw failed.error
           cardRows = [...new Map(results.flatMap(result => result.data || []).map(card => [card.id, card])).values()]
-          if (isEnergySearch(term)) {
+          if (isEnergySearch(term) || yearSearch) {
             cardRows.sort((left, right) => {
               const leftSet = relatedSet(left)
               const rightSet = relatedSet(right)
@@ -332,8 +350,9 @@ export default function CardCataloguePage() {
           for (let offset = 0; offset < variantIds.length; offset += 100) {
             const variantBatch = variantIds.slice(offset, offset + 100)
             const { data, error: copyError } = await fetchAllRows(() => supabase.from('collection_cards')
-              .select('id,card_print_variant_id,ownership_type,grade,grade_label')
-              .eq('collection_profile_id', profileId).in('card_print_variant_id', variantBatch))
+              .select('id,card_print_variant_id,ownership_type,grade,grade_label,created_at')
+              .eq('collection_profile_id', profileId).in('card_print_variant_id', variantBatch)
+              .order('created_at', { ascending: false }))
             if (copyError) throw copyError
             copyRows.push(...(data || []))
           }
@@ -377,6 +396,8 @@ export default function CardCataloguePage() {
     setSelection({})
     setNotice('')
     setOwnershipCardId(null)
+    setRemovedCopies([])
+    setOwnershipNotice('')
     if (user) window.localStorage.setItem('pokevaleur-collection:' + user.id, nextId)
   }
 
@@ -387,6 +408,62 @@ export default function CardCataloguePage() {
       else delete next[variantId]
       return next
     })
+  }
+
+  async function removeOneCopy(variant, card) {
+    if (!user || !profileId || saving || removingCopyId) return
+    const copy = (owned[variant.id] || []).find(entry => entry.ownership_type === 'raw')
+    if (!copy) return
+    setRemovingCopyId(copy.id)
+    setOwnershipNotice('')
+    try {
+      const { data: deletedCopy, error: deleteError } = await supabase.from('collection_cards')
+        .delete()
+        .eq('id', copy.id)
+        .eq('user_id', user.id)
+        .eq('collection_profile_id', profileId)
+        .eq('card_print_variant_id', variant.id)
+        .select('*')
+        .single()
+      if (deleteError) throw deleteError
+      setOwned(current => ({
+        ...current,
+        [variant.id]: (current[variant.id] || []).filter(entry => entry.id !== deletedCopy.id)
+      }))
+      setRemovedCopies(current => [...current, {
+        row: deletedCopy,
+        cardName: card.card_name,
+        variantLabel: variant.variant_label,
+        profileId
+      }])
+    } catch (removeError) {
+      setOwnershipNotice('Impossible de retirer cette carte : ' + (removeError.message || 'réessaie.'))
+    } finally {
+      setRemovingCopyId('')
+    }
+  }
+
+  async function undoLastRemovedCopy() {
+    const removed = removedCopies[removedCopies.length - 1]
+    if (!removed || removed.profileId !== profileId || saving || removingCopyId) return
+    setSaving(true)
+    setOwnershipNotice('')
+    try {
+      const { data: restoredCopy, error: restoreError } = await supabase.from('collection_cards')
+        .insert(removed.row)
+        .select('*')
+        .single()
+      if (restoreError) throw restoreError
+      setOwned(current => ({
+        ...current,
+        [restoredCopy.card_print_variant_id]: [...(current[restoredCopy.card_print_variant_id] || []), restoredCopy]
+      }))
+      setRemovedCopies(current => current.slice(0, -1))
+    } catch (restoreError) {
+      setOwnershipNotice('Impossible d’annuler : ' + (restoreError.message || 'réessaie.'))
+    } finally {
+      setSaving(false)
+    }
   }
 
   async function addSelectedVariants() {
@@ -498,7 +575,7 @@ export default function CardCataloguePage() {
             const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
             const set = relatedSet(card)
             const previousSet = index ? relatedSet(visibleCards[index - 1]) : null
-            const showEnergyGroup = setId === ALL_SERIES && isEnergySearch(query) && set?.id !== previousSet?.id
+            const showEnergyGroup = setId === ALL_SERIES && (isEnergySearch(query) || /^20\d{2}$/.test(normalizedSearchText(query))) && set?.id !== previousSet?.id
             const imageCandidates = cardImageCandidates[card.id] || (card.image_url ? [card.image_url] : [])
             const imageUrl = imageCandidates[0] || ''
             const ownedVariants = variants.map(variant => ({
@@ -513,7 +590,7 @@ export default function CardCataloguePage() {
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
-                <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}N° {card.collector_number}{card.card_type === 'Énergie' && set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
+                <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}{isUnnumberedEnergyCard(card) ? 'Sans numéro' : 'N° ' + card.collector_number}{card.card_type === 'Énergie' && set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
                 <div className={styles.rarityRow}>
                   <span className={styles.rarity}>{isGoldEnergy(card) ? 'Gold · ' : ''}{card.rarity_label || 'Rareté non renseignée'}</span>
@@ -557,10 +634,32 @@ export default function CardCataloguePage() {
                           : ownedVariants.length
                             ? <ul>{ownedVariants.map(({ variant, copies }) => {
                               const label = variant.variant_label === 'Carte (suivi de base)' ? 'Carte' : variant.variant_label
-                              return <li key={variant.id}><span>{label}</span><b>{copies.length} exemplaire{copies.length > 1 ? 's' : ''}</b></li>
+                              const removableCopies = copies.filter(copy => copy.ownership_type === 'raw')
+                              const latestCopyId = removableCopies[0]?.id
+                              return <li key={variant.id}>
+                                <span>{label}</span>
+                                <div className={styles.ownershipLineActions}>
+                                  <b>{copies.length} exemplaire{copies.length > 1 ? 's' : ''}</b>
+                                  <button
+                                    type="button"
+                                    className={styles.ownershipRemoveButton}
+                                    aria-label={'Retirer un exemplaire de ' + label + ' pour ' + card.card_name}
+                                    title={removableCopies.length ? 'Retirer un exemplaire non gradé' : 'Aucun exemplaire non gradé à retirer'}
+                                    disabled={!latestCopyId || Boolean(removingCopyId) || saving}
+                                    onClick={() => removeOneCopy(variant, card)}
+                                  >{removingCopyId === latestCopyId ? '…' : '−'}</button>
+                                </div>
+                              </li>
                             })}</ul>
                             : <span className={styles.ownershipEmpty}>Aucun exemplaire de cette carte.</span>}
                       {profileId && <small>{profiles.find(profile => profile.id === profileId)?.display_name || 'Collection sélectionnée'}</small>}
+                      {ownershipNotice && <span className={styles.ownershipActionNotice} role="alert">{ownershipNotice}</span>}
+                      {removedCopies.length > 0 && removedCopies[removedCopies.length - 1].profileId === profileId && (
+                        <div className={styles.ownershipUndo}>
+                          <span>{removedCopies[removedCopies.length - 1].variantLabel} retirée · {removedCopies[removedCopies.length - 1].cardName}</span>
+                          <button type="button" onClick={undoLastRemovedCopy} disabled={saving || Boolean(removingCopyId)}>Annuler</button>
+                        </div>
+                      )}
                     </div>}
                   </span>
                 </div>
