@@ -65,7 +65,7 @@ async function loadSeriesValueSummaries(supabase, copies) {
 export default function CollectionValueOverviewPage() {
   const supabase = useMemo(() => createClient(), [])
   const [showAllSeries, setShowAllSeries] = useState(false)
-  const [state, setState] = useState({ loading: true, error: '', profileName: 'Ma collection', cardsValue: null, cardCount: 0, sealedValue: null, sealedCount: 0, calculatedAt: null, seriesSummaries: [], seriesError: '' })
+  const [state, setState] = useState({ loading: true, loadingMessage: 'Préparation du calcul…', error: '', profileName: 'Ma collection', cardsValue: null, cardCount: 0, sealedValue: null, sealedCount: 0, calculatedAt: null, seriesSummaries: [], seriesError: '' })
 
   useEffect(() => {
     let cancelled = false
@@ -77,6 +77,7 @@ export default function CollectionValueOverviewPage() {
           return
         }
         const { profile } = active
+        if (!cancelled) setState(current => ({ ...current, loadingMessage: 'Lecture des cartes et produits scellés…' }))
         const [itemsResult, productsResult, cardsResult] = await Promise.all([
           fetchAllRows(() => supabase.from('collection_items')
             .select('id,custom_name,quantity,product_id,current_value_override,sealed_condition')
@@ -101,6 +102,7 @@ export default function CollectionValueOverviewPage() {
           if (value !== null) { sealedValue += value * quantity; sealedPriced += quantity }
         }
 
+        if (!cancelled) setState(current => ({ ...current, loadingMessage: 'Calcul des valeurs et de la progression par série…' }))
         let seriesSummaries = []
         let seriesError = ''
         try {
@@ -141,7 +143,13 @@ export default function CollectionValueOverviewPage() {
       </header>
 
       {state.error && <section className={styles.error} role="alert"><strong>Valeurs indisponibles</strong><p>{state.error}</p></section>}
-      {state.loading ? <p className={styles.status} role="status">Calcul des valeurs de ta collection…</p> : !state.error && <>
+      {state.loading ? <section className={styles.status} role="status" aria-live="polite" aria-busy="true">
+        <strong>Calcul des valeurs de ta collection…</strong>
+        <span className={styles.statusMessage}>{state.loadingMessage}</span>
+        <div className={styles.progressTrack} role="progressbar" aria-label="Calcul des valeurs de la collection en cours" aria-valuetext={state.loadingMessage}>
+          <span className={styles.progressIndicator} />
+        </div>
+      </section> : !state.error && <>
         <section className={styles.totalCard} aria-label="Estimation globale">
           <span className={styles.eyebrow}>ESTIMATION GLOBALE</span>
           <strong>{hasAnyValue ? euro(total) : 'Aucune valeur disponible'}</strong>
