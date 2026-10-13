@@ -1215,7 +1215,7 @@ function BindersContent() {
     if (isPromoStampBinder && owningExtra && remainingForVariant.length === 0) {
       setOwnedPromoStampVariantCount(current => Math.max(current - 1, 0))
       if (owningExtra.variant.is_master_set_target) {
-        setOwnedCardCounts(current => ({ ...current, [owningExtra.card.card_set_id]: Math.max((current[owningExtra.card.card_set_id] || 0) - 1, 0) }))
+        setOwnedCardCounts(current => ({ ...current, [owningExtra.card.card_set_id]: Math.max((current[owningExtra.card.card_set_id] || 0) - (current[owningExtra.card.card_set_id] > 1 ? 1 : 0), 0) }))
       } else {
         setOwnedExtraCounts(current => ({ ...current, [owningExtra.card.card_set_id]: Math.max((current[owningExtra.card.card_set_id] || 0) - 1, 0) }))
       }
@@ -1240,7 +1240,7 @@ function BindersContent() {
     if (owningCard && !cardStillOwned) {
       setOwnedCardCounts(current => ({ ...current, [owningSetId]: Math.max((current[owningSetId] || 0) - 1, 0) }))
     }
-    if (owningExtra && remainingForVariant.length === 0) {
+    if (owningExtra && remainingForVariant.length === 0 && !isPromoStampBinder) {
       setOwnedExtraCounts(current => ({ ...current, [owningSetId]: Math.max((current[owningSetId] || 0) - 1, 0) }))
     }
     setZoomedCard(current => current ? { ...current, copies: (current.copies || []).filter(row => row.id !== copy.id) } : current)
