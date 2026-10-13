@@ -8,12 +8,14 @@ import styles from './binders.module.css'
 
 const MCDONALDS_BINDER_ID = 'mcdonalds'
 const ENERGY_BINDER_ID = 'all-energies'
+const PROMO_STAMP_BINDER_ID = 'all-promos-stamps'
 // Dedicated scan of the actual Pokémon Day stamp variant; regular TCGdex art for #074 omits the stamp.
 const POKEMON_DAY_STAMP_IMAGE = 'https://www.dealicash.fr/images/tag-67/evoli-074-131-promo-stamp-scelle-pokemon-ev8-5-evolution-prismatique-fr-670763-1-l.webp'
 
 function shortCode(set) {
   if (set?.id === MCDONALDS_BINDER_ID) return 'MCD'
   if (set?.id === ENERGY_BINDER_ID) return 'ÉNERGIES'
+  if (set?.id === PROMO_STAMP_BINDER_ID) return 'PROMOS'
   const code = String(set?.set_code || '').trim().toUpperCase()
   const match = code.match(/^(?:SWSH|EB|SV|EV|ME|SM|SL|XY|BW|DP|PL|HGSS)[\s-]*(\d+(?:\.\d+)?)([A-Z]*)$/)
   if (match) {
@@ -43,6 +45,25 @@ function isStandaloneEnergySet(set) {
   return normalize(set?.set_name).includes('energie')
 }
 
+function isDedicatedPromoSet(set) {
+  return normalize(set?.set_name).includes('promo')
+}
+
+function isPromoStampCategory(category) {
+  return category === 'promo' || category === 'stamp'
+}
+
+function sortPromoStampItems(a, b) {
+  const aSet = cardSetFor(a.card)
+  const bSet = cardSetFor(b.card)
+  return setYear(aSet) - setYear(bSet)
+    || String(aSet?.series_name || '').localeCompare(String(bSet?.series_name || ''), 'fr')
+    || String(aSet?.set_name || '').localeCompare(String(bSet?.set_name || ''), 'fr')
+    || String(a.category || '').localeCompare(String(b.category || ''), 'fr')
+    || String(a.card?.collector_number || '').localeCompare(String(b.card?.collector_number || ''), 'fr', { numeric: true })
+    || String(a.variant?.variant_label || '').localeCompare(String(b.variant?.variant_label || ''), 'fr')
+}
+
 function sortEnergyCards(a, b) {
   const aSet = cardSetFor(a)
   const bSet = cardSetFor(b)
@@ -63,6 +84,8 @@ const GENERATED_COVER_ALIASES = [["mascarade crepusculaire","mascarade-crepuscul
 function generatedCoverFor(set) {
   const name = normalize(set?.set_name).replace(/[^a-z0-9]+/g, ' ').trim()
   const code = shortCode(set)
+  if (set?.id === ENERGY_BINDER_ID) return '/binder-covers/all-energies.png'
+  if (set?.id === PROMO_STAMP_BINDER_ID) return '/binder-covers/promos-et-tampons.png'
   if (set?.id === MCDONALDS_BINDER_ID || (code === 'MCD' && name.includes('mcdonald'))) return '/binder-covers/mcdonalds-collection.webp'
   if (code === 'ME2' || name.includes('flammes fantasmagoriques')) return '/binder-covers/flammes-fantasmagoriques.webp'
   if (code === 'EV4.5' || name.includes('destinees de paldea')) return '/binder-covers/destinees-de-paldea.webp'
@@ -774,6 +797,7 @@ function BindersContent() {
   const [ownedExtraCounts, setOwnedExtraCounts] = useState({})
   const [ownedEnergyCardCount, setOwnedEnergyCardCount] = useState(0)
   const [ownedEnergyExtraCount, setOwnedEnergyExtraCount] = useState(0)
+  const [ownedPromoStampVariantCount, setOwnedPromoStampVariantCount] = useState(0)
   const [ownedCopyCount, setOwnedCopyCount] = useState(0)
   const [cards, setCards] = useState([])
   const [extraVariants, setExtraVariants] = useState([])
@@ -842,7 +866,7 @@ function BindersContent() {
         const variants = []
         for (let offset = 0; offset < variantIds.length; offset += 250) {
           const { data, error: variantError } = await supabase.from('card_print_variants')
-            .select('id,card_id,is_master_set_target').in('id', variantIds.slice(offset, offset + 250))
+            .select('id,card_id,is_master_set_target,checklist_group').in('id', variantIds.slice(offset, offset + 250))
           if (variantError) throw variantError
           variants.push(...(data || []))
         }
@@ -867,6 +891,7 @@ function BindersContent() {
         }
         setOwnedEnergyCardCount(energyCardIds.size)
         setOwnedEnergyExtraCount(energyExtraVariantIds.size)
+        setOwnedPromoStampVariantCount(new Set(variants.filter(variant => isPromoStampCategory(variant.checklist_group)).map(variant => variant.id)).size)
         const setCards = {}
         const setExtraVariants = {}
         for (const variant of variants) {
@@ -929,6 +954,13 @@ function BindersContent() {
     series_name: 'Toutes les séries',
     memberSets: energySets,
   }
+  const promoStampBinder = {
+    id: PROMO_STAMP_BINDER_ID,
+    set_code: 'PROMO',
+    set_name: 'Promos & tampons',
+    series_name: 'Toutes les séries',
+    memberSets: [],
+  }
   const mcDonaldBinder = {
     id: MCDONALDS_BINDER_ID,
     set_code: 'MCD',
@@ -940,11 +972,14 @@ function BindersContent() {
     ? mcDonaldBinder
     : requestedSetId === ENERGY_BINDER_ID
       ? energyBinder
-      : sets.find(set => set.id === requestedSetId) || null
+      : requestedSetId === PROMO_STAMP_BINDER_ID
+        ? promoStampBinder
+        : sets.find(set => set.id === requestedSetId) || null
   const allLibrarySets = (() => {
     const result = []
     let insertedMcDonalds = false
     let insertedEnergies = false
+    let insertedPromoStamps = false
     for (const set of sets) {
       if (isMcDonaldsSet(set)) {
         if (!insertedMcDonalds) result.push(mcDonaldBinder)
@@ -956,15 +991,23 @@ function BindersContent() {
         insertedEnergies = true
         continue
       }
+      if (isDedicatedPromoSet(set)) {
+        if (!insertedPromoStamps) result.push(promoStampBinder)
+        insertedPromoStamps = true
+        continue
+      }
       result.push(set)
     }
     if (!insertedEnergies) result.push(energyBinder)
+    if (!insertedPromoStamps) result.push(promoStampBinder)
     if (!insertedMcDonalds && mcDonaldSets.length) result.push(mcDonaldBinder)
     return result
   })()
   const ownedSets = allLibrarySets.filter(set => set.id === ENERGY_BINDER_ID
     ? ownedEnergyCardCount > 0 || ownedEnergyExtraCount > 0
-    : set.id === MCDONALDS_BINDER_ID
+    : set.id === PROMO_STAMP_BINDER_ID
+      ? ownedPromoStampVariantCount > 0
+      : set.id === MCDONALDS_BINDER_ID
       ? set.memberSets.some(member => (ownedCardCounts[member.id] || 0) > 0 || (ownedExtraCounts[member.id] || 0) > 0)
       : (ownedCardCounts[set.id] || 0) > 0 || (ownedExtraCounts[set.id] || 0) > 0)
   const displayedSets = showAllBinders ? allLibrarySets : ownedSets
@@ -987,20 +1030,25 @@ function BindersContent() {
       setCardsLoading(true)
       setError('')
       try {
-        let cardQuery = supabase.from('cards')
-          .select('id,card_set_id,card_type,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,checklist_group,is_master_set_target)')
         const isEnergyBinder = selectedSet.id === ENERGY_BINDER_ID
+        const isPromoStampBinder = selectedSet.id === PROMO_STAMP_BINDER_ID
+        let cardQuery = supabase.from('cards')
+          .select(isPromoStampBinder
+            ? 'id,card_set_id,card_type,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,series_name,set_code,release_date),card_print_variants!inner(id,variant_label,variant_key,checklist_group,is_master_set_target)'
+            : 'id,card_set_id,card_type,collector_number,card_name,rarity_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,series_name,set_code,release_date),card_print_variants(id,variant_label,variant_key,checklist_group,is_master_set_target)')
         cardQuery = isEnergyBinder
           ? cardQuery.eq('card_type', 'Énergie')
-          : selectedSet.id === MCDONALDS_BINDER_ID
-            ? cardQuery.in('card_set_id', mcDonaldSetIds)
-            : cardQuery.eq('card_set_id', selectedSet.id)
+          : isPromoStampBinder
+            ? cardQuery.in('card_print_variants.checklist_group', ['promo', 'stamp'])
+            : selectedSet.id === MCDONALDS_BINDER_ID
+              ? cardQuery.in('card_set_id', mcDonaldSetIds)
+              : cardQuery.eq('card_set_id', selectedSet.id)
         const { data: rawCardRows, error: cardError } = await cardQuery.order('guide_order', { ascending: true }).order('collector_number')
         if (cardError) throw cardError
         const cardRows = isEnergyBinder ? [...(rawCardRows || [])].sort(sortEnergyCards) : (rawCardRows || [])
-        const variants = cardRows.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)))
+        const variants = isPromoStampBinder ? [] : cardRows.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)))
         const extraItems = cardRows.flatMap(card => (card.card_print_variants || [])
-          .filter(variant => !variant.is_master_set_target && !isJumboVariant(variant))
+          .filter(variant => (isPromoStampBinder ? isPromoStampCategory(variant.checklist_group) : !variant.is_master_set_target) && !isJumboVariant(variant))
           .map(variant => ({ card, variant, category: variant.checklist_group })))
         const { data: bonusRows, error: bonusError } = isEnergyBinder
           ? { data: [], error: null }
@@ -1037,9 +1085,10 @@ function BindersContent() {
         const binderCards = cardRows.filter(card => (card.card_print_variants || []).some(variant =>
           variant.is_master_set_target && (!isEnergyBinder || (grouped[variant.id] || []).length > 0)
         ))
-        const binderExtras = isEnergyBinder
+        const binderExtras = isEnergyBinder || isPromoStampBinder
           ? allExtraItems.filter(item => (grouped[item.variant.id] || []).length > 0)
           : allExtraItems
+        if (isPromoStampBinder) binderExtras.sort(sortPromoStampItems)
         setCards(binderCards)
         setExtraVariants(binderExtras)
         setVariantCopies(grouped)
@@ -1055,18 +1104,19 @@ function BindersContent() {
 
   const isMcDonaldsBinder = selectedSet?.id === MCDONALDS_BINDER_ID
   const isEnergyBinder = selectedSet?.id === ENERGY_BINDER_ID
+  const isPromoStampBinder = selectedSet?.id === PROMO_STAMP_BINDER_ID
   const copiesOnSet = useMemo(() => {
-    const variantIds = isEnergyBinder
+    const variantIds = isEnergyBinder || isPromoStampBinder
       ? [...new Set([...cards.flatMap(card => (card.card_print_variants || []).map(variant => variant.id)), ...extraVariants.map(item => item.variant.id)])]
       : [...new Set(cards.flatMap(card => (card.card_print_variants || []).filter(variant => !isJumboVariant(variant)).map(variant => variant.id)))]
     return variantIds.reduce((sum, id) => sum + (variantCopies[id] || []).length, 0)
-  }, [cards, extraVariants, isEnergyBinder, variantCopies])
-  const ownedOnSet = isEnergyBinder
+  }, [cards, extraVariants, isEnergyBinder, isPromoStampBinder, variantCopies])
+  const ownedOnSet = isEnergyBinder || isPromoStampBinder
     ? new Set([...cards.map(card => card.id), ...extraVariants.map(item => item.card.id)]).size
     : isMcDonaldsBinder
       ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
       : cards.filter(card => (card.card_print_variants || []).some(variant => !isJumboVariant(variant) && (variantCopies[variant.id] || []).length > 0)).length
-  const setTotal = isEnergyBinder ? ownedOnSet : cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
+  const setTotal = isEnergyBinder || isPromoStampBinder ? ownedOnSet : cards.length || (isMcDonaldsBinder ? 0 : Number(selectedSet?.advertised_card_count || 0))
   const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant)).length, 0)
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => variant.is_master_set_target && !isJumboVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
@@ -1370,7 +1420,8 @@ function BindersContent() {
             <option value="">Sélectionner une série</option>
             <option value={MCDONALDS_BINDER_ID}>MCD · McDonald’s (toutes les années)</option>
             <option value={ENERGY_BINDER_ID}>Énergies · toutes les années</option>
-            {sets.filter(set => !isMcDonaldsSet(set) && !isStandaloneEnergySet(set)).map(set => <option key={set.id} value={set.id}>{shortCode(set)} · {set.set_name}</option>)}
+            <option value={PROMO_STAMP_BINDER_ID}>Promos & tampons · toutes les années</option>
+            {sets.filter(set => !isMcDonaldsSet(set) && !isStandaloneEnergySet(set) && !isDedicatedPromoSet(set)).map(set => <option key={set.id} value={set.id}>{shortCode(set)} · {set.set_name}</option>)}
           </select>
         </section>
       </> : !isOpen ? <>
