@@ -94,3 +94,10 @@
 .seriesToggle:hover{background:#e8edf5}
 .seriesToggle:focus-visible{outline:3px solid #d7b34e;outline-offset:2px}
 @media(max-width:760px){.seriesToggle{margin-top:2px;padding:8px 12px;font-size:.69rem}}
+
+.status{display:grid;gap:10px}
+.statusMessage{color:#758193;font-size:.88rem;line-height:1.4}
+.progressTrack{position:relative;overflow:hidden;width:100%;height:7px;border-radius:999px;background:#e9edf3}
+.progressIndicator{position:absolute;inset:0 auto 0 0;width:35%;border-radius:inherit;background:linear-gradient(90deg,#365aa2,#8a73bd);animation:collectionValueProgress 1.5s ease-in-out infinite}
+@keyframes collectionValueProgress{from{transform:translateX(-110%)}to{transform:translateX(310%)}}
+@media(prefers-reduced-motion:reduce){.progressIndicator{width:100%;animation:none;opacity:.65}}
