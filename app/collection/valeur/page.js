@@ -53,15 +53,18 @@ async function loadSeriesValueSummaries(supabase, copies) {
     ownedCount: summary.ownedVariantIds.size,
     completion: summary.total ? Math.min(100, summary.ownedVariantIds.size / summary.total * 100) : null
   })).sort((a, b) => {
-    if (a.releaseDate && b.releaseDate && a.releaseDate !== b.releaseDate) return a.releaseDate.localeCompare(b.releaseDate)
-    if (a.releaseDate && !b.releaseDate) return -1
-    if (!a.releaseDate && b.releaseDate) return 1
+    const aHasValue = a.pricedCopies > 0
+    const bHasValue = b.pricedCopies > 0
+    if (aHasValue !== bHasValue) return aHasValue ? -1 : 1
+    if (aHasValue && a.value !== b.value) return b.value - a.value
+    if (a.completion !== b.completion) return (b.completion ?? -1) - (a.completion ?? -1)
     return a.label.localeCompare(b.label, 'fr')
   })
 }
 
 export default function CollectionValueOverviewPage() {
   const supabase = useMemo(() => createClient(), [])
+  const [showAllSeries, setShowAllSeries] = useState(false)
   const [state, setState] = useState({ loading: true, error: '', profileName: 'Ma collection', cardsValue: null, cardCount: 0, sealedValue: null, sealedCount: 0, calculatedAt: null, seriesSummaries: [], seriesError: '' })
 
   useEffect(() => {
@@ -128,6 +131,7 @@ export default function CollectionValueOverviewPage() {
   }, [supabase])
 
   const hasAnyValue = state.cardsValue != null || state.sealedValue != null
+  const displayedSeries = showAllSeries ? state.seriesSummaries : state.seriesSummaries.slice(0, 5)
   const total = (state.cardsValue || 0) + (state.sealedValue || 0)
   return (
     <main className={styles.page}>
@@ -145,19 +149,37 @@ export default function CollectionValueOverviewPage() {
         </section>
 
 
+        <h2 className={styles.sectionTitle}>Détail de ma collection</h2>
+        <div className={styles.options}>
+          <a className={styles.option} href="/collection/valeur/cartes">
+            <span className={`${styles.icon} ${styles.cardIcon}`} aria-hidden="true">C</span>
+            <div className={styles.optionHeading}><strong>Cartes</strong><span>Valeur carte par carte, par série ou pour toute ta collection.</span></div>
+            <strong className={styles.optionValue}>{euro(state.cardsValue)}</strong>
+            <small>{state.cardCount} cartes possédées</small>
+            <span className={styles.explore}>Explorer <b aria-hidden="true">→</b></span>
+          </a>
+          <a className={styles.option} href="/collection/valeur/scelles">
+            <span className={`${styles.icon} ${styles.sealedIcon}`} aria-hidden="true">S</span>
+            <div className={styles.optionHeading}><strong>Produits scellés</strong><span>Valeur de tes ETB, displays, coffrets et autres produits.</span></div>
+            <strong className={styles.optionValue}>{euro(state.sealedValue)}</strong>
+            <small>{state.sealedCount} produits possédés</small>
+            <span className={styles.explore}>Explorer <b aria-hidden="true">→</b></span>
+          </a>
+        </div>
+        <p className={styles.sourceNote}>Sources et dates des prix</p>
         <section className={styles.seriesSection} aria-labelledby="series-overview-title">
           <div className={styles.seriesHeader}>
             <div>
-              <span className={styles.eyebrow}>MASTER SETS</span>
-              <h2 id="series-overview-title">Mes séries en cours</h2>
-              <p>Ta progression et la valeur estimée des cartes Master Set que tu possèdes.</p>
+              <span className={styles.eyebrow}>MES MASTER SETS</span>
+              <h2 id="series-overview-title">Valeur et progression par série</h2>
+              <p>Les cinq séries ayant la valeur estimée la plus élevée s’affichent d’abord. Ouvre une ligne pour voir les cartes de la série.</p>
             </div>
           </div>
           {state.seriesError
             ? <p className={styles.seriesMessage} role="status">La progression des séries est indisponible pour le moment. {state.seriesError}</p>
             : state.seriesSummaries.length
               ? <div className={styles.seriesList}>
-                  {state.seriesSummaries.map(series => {
+                  {displayedSeries.map(series => {
                     const percentage = series.completion == null
                       ? null
                       : new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 1 }).format(series.completion)
@@ -182,28 +204,13 @@ export default function CollectionValueOverviewPage() {
                       </a>
                     )
                   })}
+                  {state.seriesSummaries.length > 5 && <button className={styles.seriesToggle} type="button" aria-expanded={showAllSeries} onClick={() => setShowAllSeries(value => !value)}>
+                    {showAllSeries ? 'Réduire la liste' : `Afficher toutes les séries (${state.seriesSummaries.length})`}
+                  </button>}
                 </div>
               : <p className={styles.seriesMessage}>Les séries apparaîtront ici dès que tu posséderas une carte de leur Master Set.</p>}
           <p className={styles.seriesFootnote}>La progression compte les variantes possédées une seule fois. La valeur additionne les exemplaires possédés cotés, y compris les doublons; les cartes sans prix restent signalées à part.</p>
         </section>
-        <h2 className={styles.sectionTitle}>Détail de ma collection</h2>
-        <div className={styles.options}>
-          <a className={styles.option} href="/collection/valeur/cartes">
-            <span className={`${styles.icon} ${styles.cardIcon}`} aria-hidden="true">C</span>
-            <div className={styles.optionHeading}><strong>Cartes</strong><span>Valeur carte par carte, par série ou pour toute ta collection.</span></div>
-            <strong className={styles.optionValue}>{euro(state.cardsValue)}</strong>
-            <small>{state.cardCount} cartes possédées</small>
-            <span className={styles.explore}>Explorer <b aria-hidden="true">→</b></span>
-          </a>
-          <a className={styles.option} href="/collection/valeur/scelles">
-            <span className={`${styles.icon} ${styles.sealedIcon}`} aria-hidden="true">S</span>
-            <div className={styles.optionHeading}><strong>Produits scellés</strong><span>Valeur de tes ETB, displays, coffrets et autres produits.</span></div>
-            <strong className={styles.optionValue}>{euro(state.sealedValue)}</strong>
-            <small>{state.sealedCount} produits possédés</small>
-            <span className={styles.explore}>Explorer <b aria-hidden="true">→</b></span>
-          </a>
-        </div>
-        <p className={styles.sourceNote}>Sources et dates des prix</p>
       </>}
       <nav className={styles.bottomNav} aria-label="Navigation principale">
         <a href="/"><span className={styles.navDot} aria-hidden="true" />Accueil</a>
