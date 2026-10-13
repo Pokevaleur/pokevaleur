@@ -37,7 +37,7 @@
 .ownershipInfoButton{display:grid;place-items:center;width:22px;height:22px;padding:0;border:1px solid #c9d2dc;border-radius:50%;background:transparent;color:#748195;font:inherit;font-size:.7rem;font-weight:800;line-height:1;cursor:pointer}
 .ownershipInfoButton:hover,.ownershipInfoButton:focus-visible,.ownershipInfoButton[aria-expanded="true"]{border-color:#8193a8;background:#f1f5f8;color:#263e58;outline:none}
 .ownershipPopover{position:absolute;z-index:12;top:calc(100% + 8px);left:0;box-sizing:border-box;width:min(270px,calc(100vw - 24px));padding:11px 12px;border:1px solid #d5dee8;border-radius:12px;background:#fff;color:#28394d;box-shadow:0 8px 24px #10253d2a;font-size:.78rem;line-height:1.4}
-.ownershipPopover::before{position:absolute;top:-5px;right:9px;width:8px;height:8px;border-top:1px solid #d5dee8;border-left:1px solid #d5dee8;background:#fff;content:"";transform:rotate(45deg)}
+.ownershipPopover::before{position:absolute;top:-5px;left:9px;width:8px;height:8px;border-top:1px solid #d5dee8;border-left:1px solid #d5dee8;background:#fff;content:"";transform:rotate(45deg)}
 .ownershipPopover>strong{display:block;margin-bottom:6px;color:#1b3047;font-size:.82rem}
 .ownershipPopover ul{display:grid;gap:5px;margin:0;padding:0;list-style:none}
 .ownershipPopover li{display:flex;justify-content:space-between;gap:8px}
@@ -85,4 +85,4 @@
 
 .seriesPickerSearch{display:grid;gap:5px;padding:9px 10px;border-bottom:1px solid #dce3eb;background:#f7f9fc;color:#42536a;font-size:.73rem;font-weight:750}.seriesPickerSearch input{width:100%;min-height:38px;padding:7px 9px;border:1px solid #cbd4df;border-radius:8px;background:#fff;color:#14263a;font:inherit;font-weight:500}.energyGroupHeading{margin:18px 0 0;padding:10px 14px;border:1px solid #dce3eb;border-bottom:0;border-radius:12px 12px 0 0;background:#edf3f8;color:#264663;font-size:.95rem;font-weight:850}.energyGroupHeading+.cardRow{border-top-left-radius:0;border-top-right-radius:0}
 @media(max-width:480px){.seriesPickerOptions{max-height:55vh}.energyGroupHeading{font-size:.86rem}}
-@media(max-width:480px){.ownershipPopover{right:0;left:auto}}
+@media(max-width:480px){.ownershipPopover{right:0;left:auto}.ownershipPopover::before{right:9px;left:auto}}
