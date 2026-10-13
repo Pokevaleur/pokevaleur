@@ -1,6 +1,8 @@
 'use client'
 
 import styles from './collection-mockup.module.css'
+import Navigation from './navigation'
+import navLinks from './navigation-links'
 
 const destinations = [
   { name: 'Mes classeurs', href: '/collection/classeurs', className: 'binders' },
@@ -20,17 +22,9 @@ export default function CollectionMockup({ isMember = true }) {
         />
 
         <a className={styles.brandLink} href={isMember ? '/collection/accueil' : '/'} aria-label="PokéValeur, accueil" />
-        <details className={styles.menu}>
-          <summary aria-label="Ouvrir le menu" />
-          <nav className={styles.menuPanel} aria-label="Navigation">
-            <a href={isMember ? '/collection/accueil' : '/'}>Accueil</a>
-            <a href="/catalogue">Catalogue</a>
-            <a href="/collection">Produits scellés</a>
-            <a href="/collection/cartes">Mes cartes</a>
-            <a href="/collection/classeurs">Mes classeurs</a>
-            <a href="/profil">Mon profil</a>
-          </nav>
-        </details>
+        <div className={styles.menu}>
+          <Navigation links={navLinks} mobileOnly overlayTrigger />
+        </div>
         <a className={styles.profileLink} href={isMember ? '/profil' : '/login'} aria-label={isMember ? 'Mon profil' : 'Connexion'} />
 
         {destinations.map(destination => (
