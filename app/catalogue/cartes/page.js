@@ -168,8 +168,15 @@ export default function CardCataloguePage() {
       if (setLoadError) setError('Le catalogue de cartes ne peut pas être chargé pour le moment.')
       else {
         setSets(setRows || [])
-        const requestedSetId = new URLSearchParams(window.location.search).get('set')
-        if (requestedSetId === MCDONALDS_SERIES || (setRows || []).some(set => set.id === requestedSetId)) setSetId(requestedSetId)
+        const searchParams = new URLSearchParams(window.location.search)
+        const requestedSetId = searchParams.get('set')
+        const requestedSearch = searchParams.get('search')
+        if (requestedSearch) {
+          setSetId(ALL_SERIES)
+          setQuery(requestedSearch)
+        } else if (requestedSetId === MCDONALDS_SERIES || (setRows || []).some(set => set.id === requestedSetId)) {
+          setSetId(requestedSetId)
+        }
       }
       setUser(signedInUser || null)
       if (signedInUser) {
@@ -553,6 +560,7 @@ export default function CardCataloguePage() {
               <button type="button" role="button" aria-pressed={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
               <button type="button" role="button" aria-pressed={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
               <button type="button" role="button" aria-pressed={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies · toutes les séries</button>
+              <button type="button" role="button" aria-pressed={setId === ALL_SERIES && normalizedSearchText(query) === '2024'} className={setId === ALL_SERIES && normalizedSearchText(query) === '2024' ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('2024'); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies ©2024</button>
               <button type="button" role="button" aria-pressed={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
               {filteredSets.map(set => <button type="button" role="button" aria-pressed={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
             </div>}
