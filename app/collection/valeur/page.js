@@ -167,12 +167,12 @@ export default function CollectionValueOverviewPage() {
           </a>
         </div>
         <p className={styles.sourceNote}>Sources et dates des prix</p>
-<section className={styles.seriesSection} aria-labelledby="series-overview-title">
+        <section className={styles.seriesSection} aria-labelledby="series-overview-title">
           <div className={styles.seriesHeader}>
             <div>
               <span className={styles.eyebrow}>MES MASTER SETS</span>
               <h2 id="series-overview-title">Valeur et progression par série</h2>
-              <p>Les séries les plus valorisées s’affichent d’abord. Ouvre une ligne pour voir les cartes de la série.</p>
+              <p>Les cinq séries ayant la valeur estimée la plus élevée s’affichent d’abord. Ouvre une ligne pour voir les cartes de la série.</p>
             </div>
           </div>
           {state.seriesError
