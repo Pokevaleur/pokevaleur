@@ -18,8 +18,9 @@
 .setSummary span{color:#657487;font-size:.82rem}
 .setSummary a{color:#0b4a78;font-size:.84rem;font-weight:800;text-decoration:none}
 .setSummary a:hover{text-decoration:underline}
-.checklist{overflow:hidden;border:1px solid #dce3eb;border-radius:16px;background:#fff}
+.checklist{overflow:visible;border:1px solid #dce3eb;border-radius:16px;background:#fff}
 .cardRow{display:grid;grid-template-columns:68px minmax(145px,.85fr) minmax(260px,1.7fr);align-items:center;gap:14px;min-height:96px;padding:10px 14px;border-bottom:1px solid #e8edf2}
+.cardRowWithOwnership{position:relative;z-index:3}
 .cardRow:nth-child(even){background:#f7f9fc}
 .cardRow:last-child{border-bottom:0}
 .thumbButton{position:relative;display:grid;place-items:center;width:62px;height:78px;padding:3px;overflow:hidden;border:1px solid #dfe5ed;border-radius:7px;background:#fff;cursor:zoom-in}
@@ -31,6 +32,18 @@
 .nameButton{max-width:100%;padding:0;border:0;background:transparent;color:#16283e;font:inherit;font-size:.98rem;font-weight:850;text-align:left;cursor:zoom-in}
 .nameButton:hover{text-decoration:underline}
 .rarity{color:#637287;font-size:.78rem}
+.rarityRow{display:flex;align-items:center;gap:6px;min-width:0}
+.ownershipInfo{position:relative;display:inline-flex;flex:0 0 auto}
+.ownershipInfoButton{display:grid;place-items:center;width:22px;height:22px;padding:0;border:1px solid #c9d2dc;border-radius:50%;background:transparent;color:#748195;font:inherit;font-size:.7rem;font-weight:800;line-height:1;cursor:pointer}
+.ownershipInfoButton:hover,.ownershipInfoButton:focus-visible,.ownershipInfoButton[aria-expanded="true"]{border-color:#8193a8;background:#f1f5f8;color:#263e58;outline:none}
+.ownershipPopover{position:absolute;z-index:12;top:calc(100% + 8px);right:-4px;box-sizing:border-box;width:min(270px,calc(100vw - 24px));padding:11px 12px;border:1px solid #d5dee8;border-radius:12px;background:#fff;color:#28394d;box-shadow:0 8px 24px #10253d2a;font-size:.78rem;line-height:1.4}
+.ownershipPopover::before{position:absolute;top:-5px;right:9px;width:8px;height:8px;border-top:1px solid #d5dee8;border-left:1px solid #d5dee8;background:#fff;content:"";transform:rotate(45deg)}
+.ownershipPopover>strong{display:block;margin-bottom:6px;color:#1b3047;font-size:.82rem}
+.ownershipPopover ul{display:grid;gap:5px;margin:0;padding:0;list-style:none}
+.ownershipPopover li{display:flex;justify-content:space-between;gap:8px}
+.ownershipPopover li b{flex:0 0 auto;font-size:.73rem}
+.ownershipPopover>small{display:block;margin-top:7px;color:#78879a;font-size:.67rem}
+.ownershipEmpty{display:block;color:#68798d}
 .printings{display:flex;flex-wrap:wrap;align-items:center;gap:8px}
 .printing{display:flex;align-items:center;gap:9px;min-height:40px;padding:5px 9px;border:1px solid #d9e0e8;border-radius:10px;background:#fff}
 .printingCheck{display:flex;align-items:center;gap:7px;color:#33445a;font-size:.82rem;font-weight:750;cursor:pointer}
