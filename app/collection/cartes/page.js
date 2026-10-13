@@ -335,8 +335,26 @@ export default function CardChecklistPage() {
   const [gradingVariant, setGradingVariant] = useState('')
   const [savingGrade, setSavingGrade] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
+  const [checklistRefreshKey, setChecklistRefreshKey] = useState(0)
+  const lastForegroundRefreshRef = useRef(0)
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const seriesPickerRef = useRef(null)
+
+  useEffect(() => {
+    const refreshOnReturn = () => {
+      if (document.visibilityState === 'hidden') return
+      const now = Date.now()
+      if (now - lastForegroundRefreshRef.current < 1500) return
+      lastForegroundRefreshRef.current = now
+      setChecklistRefreshKey(key => key + 1)
+    }
+    window.addEventListener('focus', refreshOnReturn)
+    document.addEventListener('visibilitychange', refreshOnReturn)
+    return () => {
+      window.removeEventListener('focus', refreshOnReturn)
+      document.removeEventListener('visibilitychange', refreshOnReturn)
+    }
+  }, [])
 
   useEffect(() => {
     if (!zoomedCard && !seriesPickerOpen) return
@@ -449,7 +467,7 @@ export default function CardChecklistPage() {
     loadChecklist().catch(loadError => { if (!cancelled) setError(loadError.message || 'Impossible de charger les cartes.') })
       .finally(() => { if (!cancelled) setCardsLoading(false) })
     return () => { cancelled = true }
-  }, [supabase, setId, profileId])
+  }, [supabase, setId, profileId, checklistRefreshKey])
 
   useEffect(() => {
     if (!profileId || (setId !== ALL_SERIES_FILTER && setId !== '')) return
@@ -1003,8 +1021,20 @@ export default function CardChecklistPage() {
               <span style={{ width: completion + '%' }} />
             </div>
             <details className={styles.scopeDetails}>
-              <summary>Détails du calcul</summary>
-              <p className={styles.scope}>{selectedSet.checklist_scope_note} Les variantes (Normale, Reverse, tamponnée…) comptent séparément. Une carte est complète seulement lorsque toutes ses variantes sont possédées.</p>
+              <summary>{selectedSet.set_code === 'SV09' ? 'Décompte de référence EV9' : 'Détails du calcul'}</summary>
+              {selectedSet.set_code === 'SV09' ? (
+                <div className={styles.scope}>
+                  <p>{selectedSet.checklist_scope_note} Les nombres ci-dessous sont le périmètre retenu pour la checklist EV9 :</p>
+                  <ul>
+                    <li><strong>190 cartes</strong> dans la série complète.</li>
+                    <li><strong>339 cartes</strong> dans le Master Set PokéValeur.</li>
+                    <li><strong>377 cartes</strong> dans l’Ultra Master Set : 339 du Master Set, 7 promos et 31 cartes avec tampon.</li>
+                  </ul>
+                  <p>Les promos SVP 185, SVP 186 et SVP 193 sont exclues, car elles ne sont pas sorties en France. Les variantes (Normale, Reverse, Holo, promo ou tampon) se comptent séparément dans le suivi correspondant.</p>
+                </div>
+              ) : (
+                <p className={styles.scope}>{selectedSet.checklist_scope_note} Les variantes (Normale, Reverse, tamponnée…) comptent séparément. Une carte est complète seulement lorsque toutes ses variantes sont possédées.</p>
+              )}
             </details>
           </section>
           )}
