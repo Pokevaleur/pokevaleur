@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '../lib/supabase-browser'
 import { AVATARS, ProfileAvatar } from '../lib/profile-avatars'
 
-export default function Navigation({ links }) {
+export default function Navigation({ links, mobileOnly = false, overlayTrigger = false }) {
   const [isAdmin, setIsAdmin] = useState(false)
   const [identity, setIdentity] = useState(null)
   const [authState, setAuthState] = useState('checking')
@@ -138,12 +138,12 @@ export default function Navigation({ links }) {
 
   return (
     <>
-      <nav className="desktopNav">
+      {!mobileOnly && <nav className="desktopNav">
         {renderLinks()}
         {accountMenu || (authState === 'signed-out' && <a href="/login" className="btn small">Connexion</a>)}
-      </nav>
+      </nav>}
       <details className="mobileMenu">
-        <summary aria-label="Ouvrir le menu">☰</summary>
+        <summary aria-label="Ouvrir le menu">{overlayTrigger ? null : '☰'}</summary>
         <div className="mobileMenuPanel">
           {identity && (
             <section className="mobileAccountCard" aria-label="Mon compte">
