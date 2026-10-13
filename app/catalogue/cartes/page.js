@@ -143,6 +143,7 @@ export default function CardCataloguePage() {
   const [saving, setSaving] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
   const [ownershipCardId, setOwnershipCardId] = useState(null)
+  const [ownershipPopoverPosition, setOwnershipPopoverPosition] = useState(null)
   const ownershipInfoRef = useRef(null)
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const [seriesPickerQuery, setSeriesPickerQuery] = useState('')
@@ -212,8 +213,15 @@ export default function CardCataloguePage() {
     const closeOnOutsideClick = event => {
       if (!ownershipInfoRef.current?.contains(event.target)) setOwnershipCardId(null)
     }
+    const closeOnViewportMove = () => setOwnershipCardId(null)
     document.addEventListener('pointerdown', closeOnOutsideClick)
-    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
+    document.addEventListener('scroll', closeOnViewportMove, true)
+    window.addEventListener('resize', closeOnViewportMove)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+      document.removeEventListener('scroll', closeOnViewportMove, true)
+      window.removeEventListener('resize', closeOnViewportMove)
+    }
   }, [ownershipCardId])
 
   useEffect(() => {
@@ -517,9 +525,30 @@ export default function CardCataloguePage() {
                       aria-expanded={ownershipCardId === card.id}
                       aria-controls={'ownership-info-' + card.id}
                       title="Voir ma collection pour cette carte"
-                      onClick={() => setOwnershipCardId(current => current === card.id ? null : card.id)}
+                      onClick={event => {
+                        if (ownershipCardId === card.id) {
+                          setOwnershipCardId(null)
+                          return
+                        }
+                        const rect = event.currentTarget.getBoundingClientRect()
+                        const width = Math.max(0, Math.min(270, window.innerWidth - 24))
+                        const left = Math.max(12, Math.min(rect.left, window.innerWidth - width - 12))
+                        const below = rect.bottom + 8
+                        const top = below + 220 <= window.innerHeight - 12
+                          ? below
+                          : Math.max(12, rect.top - 188)
+                        const arrowLeft = Math.max(8, Math.min(rect.left + rect.width / 2 - left - 4, width - 18))
+                        setOwnershipPopoverPosition({
+                          position: 'fixed',
+                          left: left + 'px',
+                          top: top + 'px',
+                          width: width + 'px',
+                          '--ownership-arrow-left': arrowLeft + 'px'
+                        })
+                        setOwnershipCardId(card.id)
+                      }}
                     >?</button>
-                    {ownershipCardId === card.id && <div className={styles.ownershipPopover} id={'ownership-info-' + card.id} role="status">
+                    {ownershipCardId === card.id && <div className={styles.ownershipPopover} style={ownershipPopoverPosition || undefined} id={'ownership-info-' + card.id} role="status">
                       <strong>Dans ma collection</strong>
                       {!user
                         ? <span className={styles.ownershipEmpty}>Connecte-toi pour voir tes exemplaires.</span>
