@@ -7,7 +7,7 @@ import styles from './page.module.css'
 
 const ALL_SERIES = '__all_series__'
 const MCDONALDS_SERIES = '__mcdonalds_series__'
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
 const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
 
 function normalizedCardName(name) {
@@ -281,7 +281,9 @@ export default function CardCataloguePage() {
           if (yearSearch) {
             const carriedVisualSetCodes = yearSearch === '2018' ? ['uen17'] : yearSearch === '2021' ? ['uen20'] : []
             const energyYearSetIds = sets.filter(set =>
-              String(set.release_date || '').startsWith(yearSearch) || carriedVisualSetCodes.includes(set.set_code)
+              String(set.release_date || '').startsWith(yearSearch)
+                || carriedVisualSetCodes.includes(set.set_code)
+                || (yearSearch === '2024' && set.set_code === 'sve')
             ).map(set => set.id)
             if (energyYearSetIds.length) {
               searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', energyYearSetIds)
@@ -292,6 +294,14 @@ export default function CardCataloguePage() {
           const failed = results.find(result => result.error)
           if (failed) throw failed.error
           cardRows = [...new Map(results.flatMap(result => result.data || []).map(card => [card.id, card])).values()]
+          if (yearSearch) {
+            cardRows = cardRows.filter(card => {
+              if (card.card_type !== 'Énergie') return false
+              const releaseYear = String(relatedSet(card)?.release_date || '').slice(0, 4)
+              const hasPrintYear = (card.card_print_variants || []).some(variant => Number(variant.copyright_year) === Number(yearSearch))
+              return releaseYear === yearSearch || hasPrintYear
+            })
+          }
           if (isEnergySearch(term) || yearSearch) {
             cardRows.sort((left, right) => {
               const leftSet = relatedSet(left)
@@ -311,6 +321,15 @@ export default function CardCataloguePage() {
         if (cancelled) return
         const mcDonaldCards = cardRows.filter(card => isMcDonaldsSet(relatedSet(card)))
         const imageCandidates = {}
+        const printYearSearch = normalizedSearchText(term).match(/^(20\d{2})$/)?.[1]
+        if (printYearSearch) {
+          for (const card of cardRows) {
+            const printImage = (card.card_print_variants || []).find(variant =>
+              Number(variant.copyright_year) === Number(printYearSearch) && variant.image_url
+            )?.image_url
+            if (printImage) imageCandidates[card.id] = [printImage, card.image_url].filter(Boolean)
+          }
+        }
         if (mcDonaldCards.length) {
           const searchNames = Array.from(new Set(mcDonaldCards.flatMap(card => {
             const name = card.card_name || ''
@@ -572,25 +591,34 @@ export default function CardCataloguePage() {
         <section className={styles.checklist} aria-label={selectedSet ? 'Liste des cartes de ' + seriesLabel(selectedSet) : 'Résultats de recherche'}>
           {!visibleCards.length && <p className={styles.hint}>Aucune carte ne correspond à ce filtre.</p>}
           {visibleCards.map((card, index) => {
-            const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
+            const yearSearch = normalizedSearchText(query).match(/^(20\d{2})$/)?.[1]
+            const yearVariants = yearSearch
+              ? (card.card_print_variants || []).filter(variant => variant.is_master_set_target && Number(variant.copyright_year) === Number(yearSearch))
+              : []
+            const copyrightYearVariant = yearVariants.find(variant => variant.image_url) || yearVariants[0] || null
+            const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target
+              && (!yearSearch || Number(variant.copyright_year) === Number(yearSearch) || String(relatedSet(card)?.release_date || '').startsWith(yearSearch)))
             const set = relatedSet(card)
             const previousSet = index ? relatedSet(visibleCards[index - 1]) : null
             const showEnergyGroup = setId === ALL_SERIES && (isEnergySearch(query) || /^20\d{2}$/.test(normalizedSearchText(query))) && set?.id !== previousSet?.id
-            const imageCandidates = cardImageCandidates[card.id] || (card.image_url ? [card.image_url] : [])
+            const storedImageCandidates = cardImageCandidates[card.id] || (card.image_url ? [card.image_url] : [])
+            const imageCandidates = copyrightYearVariant?.image_url
+              ? [copyrightYearVariant.image_url, ...storedImageCandidates].filter((url, index, values) => values.indexOf(url) === index)
+              : storedImageCandidates
             const imageUrl = imageCandidates[0] || ''
             const ownedVariants = variants.map(variant => ({
               variant,
               copies: owned[variant.id] || []
             })).filter(entry => entry.copies.length > 0)
             return <Fragment key={card.id}>
-              {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
+              {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{copyrightYearVariant ? ' · tirage ©' + copyrightYearVariant.copyright_year + (copyrightYearVariant.guide_marker === 'play-pokemon-prize-pack-series-6' ? ' · Pack Récompense Série 6 (2025)' : '') : set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
               <article className={`${styles.cardRow} ${ownershipCardId === card.id ? styles.cardRowWithOwnership : ''}`}>
               <button className={styles.thumbButton} type="button" onClick={() => setZoomedCard(card)} aria-label={'Voir l’image de ' + card.card_name}>
                 {imageUrl ? <img src={imageUrl} alt={card.card_name} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} onError={event => advanceCardImage(event, imageCandidates)} /> : <span>Image indisponible</span>}
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
-                <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}{isUnnumberedEnergyCard(card) ? 'Sans numéro' : 'N° ' + card.collector_number}{card.card_type === 'Énergie' && set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
+                <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}{isUnnumberedEnergyCard(card) ? 'Sans numéro' : 'N° ' + card.collector_number}{card.card_type === 'Énergie' && (copyrightYearVariant || set?.release_date) ? copyrightYearVariant ? ' · ©' + copyrightYearVariant.copyright_year : ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
                 <div className={styles.rarityRow}>
                   <span className={styles.rarity}>{isGoldEnergy(card) ? 'Gold · ' : ''}{card.rarity_label || 'Rareté non renseignée'}</span>
