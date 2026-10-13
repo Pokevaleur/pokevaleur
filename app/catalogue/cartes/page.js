@@ -93,6 +93,24 @@ function normalizedSearchText(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
+function energyElementSearchTerms(card) {
+  const aliases = {
+    plante: 'plante grass',
+    feu: 'feu fire',
+    eau: 'eau water',
+    electrique: 'electrique electric electrik lightning foudre',
+    psy: 'psy psychic',
+    combat: 'combat fighting',
+    obscurite: 'obscurite darkness',
+    metal: 'metal',
+    incolore: 'incolore colorless'
+  }
+  return (card?.element_types || []).flatMap(type => {
+    const normalizedType = normalizedSearchText(type)
+    return aliases[normalizedType] || [type]
+  }).join(' ')
+}
+
 function isMcDonaldsSet(set) {
   const family = String(set?.series_name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
   const name = String(set?.set_name || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
@@ -219,6 +237,9 @@ export default function CardCataloguePage() {
             fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).ilike('collector_number', pattern).order('guide_order', { ascending: true }).order('collector_number', { ascending: true }))
           ]
           const normalizedTerm = normalizedSearchText(term)
+          if (['energie', 'energy', 'plante', 'grass', 'feu', 'fire', 'eau', 'water', 'electri', 'lightning', 'foudre', 'psy', 'psychic', 'combat', 'fighting', 'obscurite', 'darkness', 'metal', 'incolore', 'colorless', 'gold', 'dore'].some(alias => normalizedTerm.includes(alias))) {
+            searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).eq('card_type', 'Énergie').order('guide_order', { ascending: true }).order('collector_number', { ascending: true })))
+          }
           if (normalizedTerm.includes('gold') || normalizedTerm.includes('dore')) {
             searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).eq('card_type', 'Énergie').ilike('rarity_label', '%Hyper rare%').order('guide_order', { ascending: true }).order('collector_number', { ascending: true })))
           }
@@ -300,14 +321,14 @@ export default function CardCataloguePage() {
     : sets.find(set => set.id === setId)
   const selectedMcDonaldsSet = setId === MCDONALDS_SERIES
   const visibleCards = cards.filter(card => {
-    const term = normalizedSearchText(filterQuery.trim())
+    const term = normalizedSearchText(filterQuery.trim() || (setId === ALL_SERIES ? query.trim() : ''))
     const set = relatedSet(card)
     const variantText = (card.card_print_variants || []).map(variant => variant.variant_label || variant.variant_key).join(' ')
     const searchText = normalizedSearchText([
       card.collector_number, card.card_name, card.card_type, card.rarity_label, variantText,
-      set?.set_name, isGoldEnergy(card) ? 'Gold dorée' : ''
+      energyElementSearchTerms(card), set?.set_name, isGoldEnergy(card) ? 'Gold dorée' : ''
     ].join(' '))
-    return !term || searchText.includes(term)
+    return !term || term.split(/\\s+/).every(token => searchText.includes(token))
   })
   const selectedRows = Object.entries(selection).filter(([, qty]) => Number(qty) > 0)
   const selectedCopies = selectedRows.reduce((sum, [, qty]) => sum + Number(qty || 0), 0)
