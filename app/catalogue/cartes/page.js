@@ -90,7 +90,7 @@ function isGoldEnergy(card) {
 }
 
 function normalizedSearchText(value) {
-  return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+  return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
 function isMcDonaldsSet(set) {
