@@ -142,6 +142,8 @@ export default function CardCataloguePage() {
   const [selection, setSelection] = useState({})
   const [saving, setSaving] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
+  const [ownershipCardId, setOwnershipCardId] = useState(null)
+  const ownershipInfoRef = useRef(null)
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const [seriesPickerQuery, setSeriesPickerQuery] = useState('')
   const seriesPickerRef = useRef(null)
@@ -184,16 +186,17 @@ export default function CardCataloguePage() {
   }, [supabase])
 
   useEffect(() => {
-    if (!zoomedCard && !seriesPickerOpen) return
+    if (!zoomedCard && !seriesPickerOpen && !ownershipCardId) return
     const closeOnEscape = event => {
       if (event.key === 'Escape') {
         setZoomedCard(null)
         setSeriesPickerOpen(false)
+        setOwnershipCardId(null)
       }
     }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [zoomedCard, seriesPickerOpen])
+  }, [zoomedCard, seriesPickerOpen, ownershipCardId])
 
   useEffect(() => {
     if (!seriesPickerOpen) return
@@ -203,6 +206,15 @@ export default function CardCataloguePage() {
     document.addEventListener('pointerdown', closeOnOutsideClick)
     return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
   }, [seriesPickerOpen])
+
+  useEffect(() => {
+    if (!ownershipCardId) return
+    const closeOnOutsideClick = event => {
+      if (!ownershipInfoRef.current?.contains(event.target)) setOwnershipCardId(null)
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    return () => document.removeEventListener('pointerdown', closeOnOutsideClick)
+  }, [ownershipCardId])
 
   useEffect(() => {
     if (!setId) {
@@ -356,6 +368,7 @@ export default function CardCataloguePage() {
     setProfileId(nextId)
     setSelection({})
     setNotice('')
+    setOwnershipCardId(null)
     if (user) window.localStorage.setItem('pokevaleur-collection:' + user.id, nextId)
   }
 
@@ -480,9 +493,13 @@ export default function CardCataloguePage() {
             const showEnergyGroup = setId === ALL_SERIES && isEnergySearch(query) && set?.id !== previousSet?.id
             const imageCandidates = cardImageCandidates[card.id] || (card.image_url ? [card.image_url] : [])
             const imageUrl = imageCandidates[0] || ''
+            const ownedVariants = variants.map(variant => ({
+              variant,
+              copies: owned[variant.id] || []
+            })).filter(entry => entry.copies.length > 0)
             return <Fragment key={card.id}>
               {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
-              <article className={styles.cardRow}>
+              <article className={`${styles.cardRow} ${ownershipCardId === card.id ? styles.cardRowWithOwnership : ''}`}>
               <button className={styles.thumbButton} type="button" onClick={() => setZoomedCard(card)} aria-label={'Voir l’image de ' + card.card_name}>
                 {imageUrl ? <img src={imageUrl} alt={card.card_name} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} onError={event => advanceCardImage(event, imageCandidates)} /> : <span>Image indisponible</span>}
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
@@ -490,7 +507,34 @@ export default function CardCataloguePage() {
               <div className={styles.cardIdentity}>
                 <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}N° {card.collector_number}{card.card_type === 'Énergie' && set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
-                <span className={styles.rarity}>{isGoldEnergy(card) ? 'Gold · ' : ''}{card.rarity_label || 'Rareté non renseignée'}</span>
+                <div className={styles.rarityRow}>
+                  <span className={styles.rarity}>{isGoldEnergy(card) ? 'Gold · ' : ''}{card.rarity_label || 'Rareté non renseignée'}</span>
+                  <span className={styles.ownershipInfo} ref={ownershipCardId === card.id ? ownershipInfoRef : null}>
+                    <button
+                      type="button"
+                      className={styles.ownershipInfoButton}
+                      aria-label={'Voir les exemplaires de ' + card.card_name + ' déjà dans ma collection'}
+                      aria-expanded={ownershipCardId === card.id}
+                      aria-controls={'ownership-info-' + card.id}
+                      title="Voir ma collection pour cette carte"
+                      onClick={() => setOwnershipCardId(current => current === card.id ? null : card.id)}
+                    >?</button>
+                    {ownershipCardId === card.id && <div className={styles.ownershipPopover} id={'ownership-info-' + card.id} role="status">
+                      <strong>Dans ma collection</strong>
+                      {!user
+                        ? <span className={styles.ownershipEmpty}>Connecte-toi pour voir tes exemplaires.</span>
+                        : !profileId
+                          ? <span className={styles.ownershipEmpty}>Aucune collection sélectionnée.</span>
+                          : ownedVariants.length
+                            ? <ul>{ownedVariants.map(({ variant, copies }) => {
+                              const label = variant.variant_label === 'Carte (suivi de base)' ? 'Carte' : variant.variant_label
+                              return <li key={variant.id}><span>{label}</span><b>{copies.length} exemplaire{copies.length > 1 ? 's' : ''}</b></li>
+                            })}</ul>
+                            : <span className={styles.ownershipEmpty}>Aucun exemplaire de cette carte.</span>}
+                      {profileId && <small>{profiles.find(profile => profile.id === profileId)?.display_name || 'Collection sélectionnée'}</small>}
+                    </div>}
+                  </span>
+                </div>
               </div>
               <div className={styles.printings} role="group" aria-label={'Impressions de ' + card.card_name}>
                 {!variants.length && <span className={styles.noVariants}>Impressions à préciser</span>}
