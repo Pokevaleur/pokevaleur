@@ -102,8 +102,26 @@ function colorFor(value) {
   return colors[hash % colors.length]
 }
 
+const SVE_ENERGY_IMAGE_HASHES = {
+  '001': '76', '002': '3c', '003': 'a2', '004': '2f', '005': 'fc', '006': '9b',
+  '007': '5a', '008': '85', '009': '1a', '010': '4e', '011': '5e', '012': '7b',
+  '013': 'cd', '014': '80', '015': '2d', '016': 'bc', '017': 'eb', '018': '1f',
+  '019': 'e9', '020': '74', '021': 'b7', '022': '90', '023': '23', '024': 'e7',
+}
+
+function sveEnergyImageUrl(card, set) {
+  const cardSet = set || (Array.isArray(card?.card_sets) ? card.card_sets[0] : card?.card_sets)
+  if (card?.card_type !== 'Énergie' || String(cardSet?.set_code || '').toLowerCase() !== 'sve') return ''
+  const number = String(card?.collector_number || '').match(/\d+/)?.[0]?.padStart(3, '0')
+  const hash = SVE_ENERGY_IMAGE_HASHES[number]
+  if (!hash) return ''
+  const filename = 'Carte_Écarlate_et_Violet_Énergie_de_base_' + number + '.png'
+  return 'https://www.pokepedia.fr/images/' + hash[0] + '/' + hash + '/' + encodeURIComponent(filename)
+}
+
 function imageFor(card) {
-  return card?.image_url || card?.image_source_url || ''
+  // The SVE energy set is missing image files on its TCGdex asset path; these scans are credited to The Pokémon Company.
+  return sveEnergyImageUrl(card) || card?.image_url || card?.image_source_url || ''
 }
 
 function imageCandidatesFor(source) {

@@ -220,7 +220,26 @@ function cardTypeSymbol(label) {
   return '◇'
 }
 
+const SVE_ENERGY_IMAGE_HASHES = {
+  '001': '76', '002': '3c', '003': 'a2', '004': '2f', '005': 'fc', '006': '9b',
+  '007': '5a', '008': '85', '009': '1a', '010': '4e', '011': '5e', '012': '7b',
+  '013': 'cd', '014': '80', '015': '2d', '016': 'bc', '017': 'eb', '018': '1f',
+  '019': 'e9', '020': '74', '021': 'b7', '022': '90', '023': '23', '024': 'e7',
+}
+
+function sveEnergyImageUrl(card, set) {
+  const cardSet = set || (Array.isArray(card?.card_sets) ? card.card_sets[0] : card?.card_sets)
+  if (card?.card_type !== 'Énergie' || String(cardSet?.set_code || '').toLowerCase() !== 'sve') return ''
+  const number = String(card?.collector_number || '').match(/\d+/)?.[0]?.padStart(3, '0')
+  const hash = SVE_ENERGY_IMAGE_HASHES[number]
+  if (!hash) return ''
+  const filename = 'Carte_Écarlate_et_Violet_Énergie_de_base_' + number + '.png'
+  return 'https://www.pokepedia.fr/images/' + hash[0] + '/' + hash + '/' + encodeURIComponent(filename)
+}
+
 function imageUrl(card, quality = 'low') {
+  const energyImage = sveEnergyImageUrl(card)
+  if (energyImage) return energyImage
   const directUrl = card.image_url?.trim()
   if (directUrl) {
     const queryIndex = directUrl.indexOf('?')
@@ -447,7 +466,7 @@ export default function CardChecklistPage() {
       setCards([])
       setOwned({})
       const { data: cardRows, error: cardError } = await supabase.from('cards')
-        .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
+        .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(set_name,set_code),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
         .eq('card_set_id', setId).order('guide_order', { ascending: true })
       if (cardError) throw cardError
       if (cancelled) return
