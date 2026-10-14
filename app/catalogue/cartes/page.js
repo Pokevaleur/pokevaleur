@@ -95,6 +95,39 @@ function isUnnumberedEnergyCard(card) {
   return card?.card_type === 'Énergie' && /^UEN-/i.test(String(card?.collector_number || ''))
 }
 
+function energyPrintYearGroups(cards) {
+  const groups = new Map()
+  for (const card of cards) {
+    const releaseYear = String(relatedSet(card)?.release_date || '').slice(0, 4)
+    const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
+    const byYear = new Map()
+    for (const variant of variants) {
+      const year = Number(variant.copyright_year) || Number(releaseYear)
+      if (!year) continue
+      if (!byYear.has(year)) byYear.set(year, [])
+      byYear.get(year).push(variant)
+    }
+    if (!byYear.size && releaseYear) byYear.set(Number(releaseYear), [])
+    for (const [year, yearVariants] of byYear) {
+      if (!groups.has(year)) groups.set(year, [])
+      groups.get(year).push({ card, variants: yearVariants })
+    }
+  }
+  return [...groups.entries()]
+    .sort(([left], [right]) => right - left)
+    .map(([year, entries]) => ({
+      year,
+      entries: entries.sort((left, right) => {
+        const leftSet = relatedSet(left.card)
+        const rightSet = relatedSet(right.card)
+        const dateOrder = String(rightSet?.release_date || '').localeCompare(String(leftSet?.release_date || ''))
+        if (dateOrder) return dateOrder
+        const setOrder = seriesLabel(leftSet).localeCompare(seriesLabel(rightSet), 'fr')
+        return setOrder || String(left.card.collector_number || '').localeCompare(String(right.card.collector_number || ''), 'fr', { numeric: true })
+      })
+    }))
+}
+
 function isEnergySearch(value) {
   return ['energie', 'energy', 'plante', 'grass', 'feu', 'fire', 'eau', 'water', 'electri', 'lightning', 'foudre', 'psy', 'psychic', 'combat', 'fighting', 'obscurite', 'darkness', 'metal', 'incolore', 'colorless', 'gold', 'dore']
     .some(alias => normalizedSearchText(value).includes(alias))
@@ -318,7 +351,7 @@ export default function CardCataloguePage() {
             cardRows.sort((left, right) => {
               const leftSet = relatedSet(left)
               const rightSet = relatedSet(right)
-              const dateOrder = String(leftSet?.release_date || '').localeCompare(String(rightSet?.release_date || ''))
+              const dateOrder = String(rightSet?.release_date || '').localeCompare(String(leftSet?.release_date || ''))
               if (dateOrder) return dateOrder
               const nameOrder = seriesLabel(leftSet).localeCompare(seriesLabel(rightSet), 'fr')
               return nameOrder || String(left.collector_number || '').localeCompare(String(right.collector_number || ''), 'fr', { numeric: true })
@@ -420,6 +453,11 @@ export default function CardCataloguePage() {
     ].join(' '))
     return !term || term.split(/\s+/).every(token => searchText.includes(token))
   })
+  const groupedEnergyView = setId === ALL_SERIES && isEnergySearch(query)
+  const energyGroups = groupedEnergyView ? energyPrintYearGroups(visibleCards) : []
+  const checklistGroups = groupedEnergyView
+    ? energyGroups
+    : [{ year: null, entries: visibleCards.map(card => ({ card, variants: null })) }]
   const selectedRows = Object.entries(selection).filter(([, qty]) => Number(qty) > 0)
   const selectedCopies = selectedRows.reduce((sum, [, qty]) => sum + Number(qty || 0), 0)
 
@@ -603,17 +641,18 @@ export default function CardCataloguePage() {
       {cards.length > 0 && !loadingCards && (
         <section className={styles.checklist} aria-label={selectedSet ? 'Liste des cartes de ' + seriesLabel(selectedSet) : 'Résultats de recherche'}>
           {!visibleCards.length && <p className={styles.hint}>Aucune carte ne correspond à ce filtre.</p>}
-          {visibleCards.map((card, index) => {
+          {checklistGroups.map((group, groupIndex) => {
+            const entries = group.entries.map(({ card, variants: yearGroupVariants }, index) => {
             const yearSearch = normalizedSearchText(query).match(/^(20\d{2})$/)?.[1]
-            const yearVariants = yearSearch
+            const yearVariants = yearGroupVariants || (yearSearch
               ? (card.card_print_variants || []).filter(variant => variant.is_master_set_target && Number(variant.copyright_year) === Number(yearSearch))
-              : []
+              : [])
             const copyrightYearVariant = yearVariants.find(variant => variant.image_url) || yearVariants[0] || null
-            const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target
+            const variants = yearGroupVariants || (card.card_print_variants || []).filter(variant => variant.is_master_set_target
               && (!yearSearch || Number(variant.copyright_year) === Number(yearSearch) || String(relatedSet(card)?.release_date || '').startsWith(yearSearch)))
             const set = relatedSet(card)
-            const previousSet = index ? relatedSet(visibleCards[index - 1]) : null
-            const showEnergyGroup = setId === ALL_SERIES && (isEnergySearch(query) || /^20\d{2}$/.test(normalizedSearchText(query))) && set?.id !== previousSet?.id
+            const previousEntry = index ? group.entries[index - 1] : null
+            const showEnergyGroup = !groupedEnergyView && setId === ALL_SERIES && /^20\d{2}$/.test(normalizedSearchText(query)) && set?.id !== relatedSet(previousEntry?.card)?.id
             const storedImageCandidates = cardImageCandidates[card.id] || (card.image_url ? [card.image_url] : [])
             const imageCandidates = copyrightYearVariant?.image_url
               ? [copyrightYearVariant.image_url, ...storedImageCandidates].filter((url, index, values) => values.indexOf(url) === index)
@@ -623,7 +662,7 @@ export default function CardCataloguePage() {
               variant,
               copies: owned[variant.id] || []
             })).filter(entry => entry.copies.length > 0)
-            return <Fragment key={card.id}>
+            return <Fragment key={card.id + (group.year ? '-' + group.year : '')}>
               {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{copyrightYearVariant ? ' · tirage ©' + copyrightYearVariant.copyright_year + (copyrightYearVariant.guide_marker === 'play-pokemon-prize-pack-series-6' ? ' · Pack Récompense Série 6 (2025)' : '') : set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
               <article className={`${styles.cardRow} ${ownershipCardId === card.id ? styles.cardRowWithOwnership : ''}`}>
               <button className={styles.thumbButton} type="button" onClick={() => setZoomedCard(card)} aria-label={'Voir l’image de ' + card.card_name}>
@@ -727,9 +766,25 @@ export default function CardCataloguePage() {
               </div>
             </article>
             </Fragment>
+            })
+            if (!groupedEnergyView) return <Fragment key="all-cards">{entries}</Fragment>
+            const hasPlayPokemonPrinting = group.entries.some(entry => entry.variants.some(variant => variant.guide_marker === 'play-pokemon-prize-pack-series-6'))
+            return <details className={styles.energyYearGroup} key={group.year} open={groupIndex === 0}>
+              <summary className={styles.energyYearSummary}>
+                <span>{group.year}{hasPlayPokemonPrinting ? ' · Play! Pokémon' : ''}</span>
+                <small>{group.entries.length} carte{group.entries.length > 1 ? 's' : ''}</small>
+              </summary>
+              <div className={styles.energyYearCards}>{entries}</div>
+            </details>
           })}
         </section>
       )}
+
+      {groupedEnergyView && cards.length > 0 && !loadingCards && <div className={styles.listEndActions}>
+        <button type="button" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })} aria-label="Remonter en haut de la liste">
+          <span aria-hidden="true">↑</span> Remonter en haut de la liste
+        </button>
+      </div>}
 
       {cards.length > 0 && !loadingCards && !seriesPickerOpen && <aside className={styles.addBar} aria-label="Valider l’ajout à la collection">
         <p aria-live="polite">{selectedRows.length} impression{selectedRows.length > 1 ? 's' : ''} sélectionnée{selectedRows.length > 1 ? 's' : ''} · {selectedCopies} exemplaire{selectedCopies > 1 ? 's' : ''}</p>
