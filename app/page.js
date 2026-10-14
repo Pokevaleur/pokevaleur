@@ -64,7 +64,7 @@ export default function Home() {
       <div className={styles.heroCopy}>
         <h1>Chaque collection<br/>a ses <span>trésors.</span></h1>
         <p>Scellés, cartes gradées et master sets : organise ta collection et partage ta passion.</p>
-        <a className={styles.join} href={member ? '/collection/accueil' : '/rejoindre'}>{member ? 'Voir ma collection' : 'Rejoins PokéValeur'}</a>
+        <a className={styles.join} href={member ? '/collection/accueil' : '/login?mode=signup&next=%2Fcollection%2Faccueil'}>{member ? 'Voir ma collection' : 'Rejoins PokéValeur'}</a>
       </div>
       <img className={styles.heroArt} src="/accueil/hero-crystals.webp" alt="Un album, un produit scellé et une carte gradée, illustrés comme des trésors de collection" fetchPriority="high"/>
       <div className={styles.phoneTeaser} aria-hidden="true">
