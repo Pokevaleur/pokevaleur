@@ -8,6 +8,8 @@ import styles from './page.module.css'
 
 const ALL_SERIES = '__all_series__'
 const MCDONALDS_SERIES = '__mcdonalds_series__'
+const ZENITH_MAIN_SET_CODE = 'swsh12.5'
+const ZENITH_GALLERY_SET_CODE = 'swsh12.5gg'
 const DEDICATED_ENERGY_SET_CODES = new Set(['sve', 'uen17', 'uen19', 'uen20', 'uen22', 'sme17', 'sme19', 'mee', 'mee30', 'sv10.5e'])
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
 const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
@@ -82,6 +84,10 @@ function seriesLabel(set) {
   const rawCode = set?.set_code || ''
   const displayCode = FRENCH_SET_CODES[code] || (/^sv\d/i.test(rawCode) ? 'EV' + rawCode.slice(2).toUpperCase() : rawCode.toUpperCase())
   return (displayCode ? displayCode + ' — ' : '') + (set?.set_name || 'Série')
+}
+
+function isZenithGallerySet(set) {
+  return String(set?.set_code || '').toLowerCase() === ZENITH_GALLERY_SET_CODE
 }
 
 function relatedSet(card) {
@@ -221,9 +227,14 @@ export default function CardCataloguePage() {
         const searchParams = new URLSearchParams(window.location.search)
         const requestedSetId = searchParams.get('set')
         const requestedSearch = searchParams.get('search')
+        const zenithMainSet = (setRows || []).find(set => String(set.set_code || '').toLowerCase() === ZENITH_MAIN_SET_CODE)
+        const zenithGallerySet = (setRows || []).find(isZenithGallerySet)
         if (requestedSearch) {
           setSetId(ALL_SERIES)
           setQuery(requestedSearch)
+        } else if (requestedSetId && requestedSetId === zenithGallerySet?.id && zenithMainSet) {
+          // Keep older direct links working, but open the combined Zénith Suprême view.
+          setSetId(zenithMainSet.id)
         } else if (requestedSetId === MCDONALDS_SERIES || (setRows || []).some(set => set.id === requestedSetId)) {
           setSetId(requestedSetId)
         }
@@ -315,7 +326,12 @@ export default function CardCataloguePage() {
       setSelection({})
       try {
         const mcDonaldSetIds = sets.filter(isMcDonaldsSet).map(set => set.id)
-        const setIds = setId === ALL_SERIES
+        const zenithMainSet = sets.find(set => String(set.set_code || '').toLowerCase() === ZENITH_MAIN_SET_CODE)
+        const zenithGallerySet = sets.find(isZenithGallerySet)
+        const isZenithSelection = Boolean(zenithMainSet && setId === zenithMainSet.id)
+        const setIds = isZenithSelection
+          ? [zenithMainSet.id, zenithGallerySet?.id].filter(Boolean)
+          : setId === ALL_SERIES
           ? sets.map(set => set.id)
           : setId === MCDONALDS_SERIES ? mcDonaldSetIds : [setId]
         if (!setIds.length) return
@@ -374,6 +390,15 @@ export default function CardCataloguePage() {
             .order('guide_order', { ascending: true }).order('collector_number', { ascending: true }))
           if (loadError) throw loadError
           cardRows = rows || []
+        }
+        if (isZenithSelection) {
+          // Present the 159-card main checklist first, followed by GG01–GG70.
+          cardRows.sort((left, right) => {
+            const leftIsGallery = isZenithGallerySet(relatedSet(left))
+            const rightIsGallery = isZenithGallerySet(relatedSet(right))
+            if (leftIsGallery !== rightIsGallery) return leftIsGallery ? 1 : -1
+            return String(left.collector_number || '').localeCompare(String(right.collector_number || ''), 'fr', { numeric: true })
+          })
         }
         if (cancelled) return
         const mcDonaldCards = cardRows.filter(card => isMcDonaldsSet(relatedSet(card)))
@@ -448,11 +473,14 @@ export default function CardCataloguePage() {
     return () => { cancelled = true; window.clearTimeout(timer) }
   }, [supabase, setId, query, profileId, sets])
 
-  const filteredSets = sets.filter(set => !isDedicatedEnergySet(set)
+  const filteredSets = sets.filter(set => !isDedicatedEnergySet(set) && !isZenithGallerySet(set)
     && normalizedSearchText([seriesLabel(set), set.series_name, set.set_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
+  const zenithMainSet = sets.find(set => String(set.set_code || '').toLowerCase() === ZENITH_MAIN_SET_CODE)
   const selectedSet = setId === MCDONALDS_SERIES
     ? { id: MCDONALDS_SERIES, set_code: 'MCD', set_name: 'McDonald’s · toutes les années', series_name: 'Collection McDonald’s' }
-    : sets.find(set => set.id === setId)
+    : setId === zenithMainSet?.id
+      ? { ...zenithMainSet, set_name: (zenithMainSet.set_name || 'Zénith Suprême') + ' + Galerie Galaroise' }
+      : sets.find(set => set.id === setId)
   const selectedMcDonaldsSet = setId === MCDONALDS_SERIES
   const visibleCards = cards.filter(card => {
     const term = normalizedSearchText(filterQuery.trim() || (setId === ALL_SERIES ? query.trim() : ''))
