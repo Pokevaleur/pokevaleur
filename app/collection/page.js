@@ -7,7 +7,7 @@ import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { filterCollectionItems } from '../../lib/collection-search.mjs'
 import { hasPurchasePrice } from '../../lib/collection-statistics.mjs'
-import { calculateSealedFormatCounts } from '../../lib/sealed-collection-counts.mjs'
+import { calculateSealedFormatCounts, getSealedFormat } from '../../lib/sealed-collection-counts.mjs'
 import { saveUploadedPhotoBatch, uploadUnlinkedPhotoBatch } from '../../lib/collection-photo-save.mjs'
 
 const emptyForm = {
@@ -64,6 +64,7 @@ export default function CollectionPage() {
   const [photoUploadState, setPhotoUploadState] = useState({})
   const [collectionVoiceListening, setCollectionVoiceListening] = useState(false)
   const [quickFormatFilter, setQuickFormatFilter] = useState('')
+  const [selectedSealedFormat, setSelectedSealedFormat] = useState(null)
   const activeCollectionProfile = collectionProfiles.find(profile => profile.id === activeProfileId)
 
   async function addCaseUnitTypes(productRows) {
@@ -767,6 +768,32 @@ export default function CollectionPage() {
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
   const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter, quickFormatFilter)
   const sealedCounts = calculateSealedFormatCounts(items, catalog)
+  const sealedProductDetails = useMemo(() => {
+    if (!selectedSealedFormat) return []
+    const productById = new Map(catalog.map(product => [product.id, product]))
+    const grouped = new Map()
+    for (const item of items) {
+      const product = productById.get(item.product_id)
+      if (normalizeSearch(product?.category) !== 'sealed') continue
+      const format = getSealedFormat(item, product)
+      if (selectedSealedFormat !== 'all' && format !== selectedSealedFormat) continue
+      const key = [product.id, item.custom_name || '', item.sealed_condition || '', item.booster_configuration || '', item.variant_note || ''].join('|')
+      const entry = grouped.get(key) || {
+        key,
+        name: item.custom_name || product.name || 'Produit sans nom',
+        productName: item.custom_name && item.custom_name !== product.name ? product.name : '',
+        type: product.product_type || '',
+        sealedCondition: item.sealed_condition || '',
+        quantity: 0
+      }
+      entry.quantity += Math.max(0, Number(item.quantity) || 1)
+      grouped.set(key, entry)
+    }
+    return [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+  }, [catalog, items, selectedSealedFormat])
+  const selectedSealedLabel = selectedSealedFormat === 'all'
+    ? 'Tous les produits scellés'
+    : sealedCounts.formats.find(format => format.key === selectedSealedFormat)?.label || ''
 
   useEffect(() => { if (hasCollectionSearch) setShowCollectionItems(true) }, [hasCollectionSearch])
 
@@ -798,14 +825,41 @@ export default function CollectionPage() {
           </div>
         </div>
         <div className="collectionTotalGrid sealedCollectionTotalGrid">
-          <div className="collectionTotalSealed"><strong>{sealedCounts.total}</strong><span>exemplaires scellés au total</span></div>
+          <button
+            type="button"
+            className={`collectionTotalAction collectionTotalSealed${selectedSealedFormat === 'all' ? ' isSelected' : ''}`}
+            aria-expanded={selectedSealedFormat === 'all'}
+            aria-controls="sealed-format-details"
+            onClick={() => setSelectedSealedFormat(current => current === 'all' ? null : 'all')}
+          ><strong>{sealedCounts.total}</strong><span>exemplaires scellés au total</span></button>
           {sealedCounts.formats.map(format => (
-            <div className="collectionTotalFormat" key={format.key}>
+            <button
+              type="button"
+              className={`collectionTotalAction collectionTotalFormat${selectedSealedFormat === format.key ? ' isSelected' : ''}`}
+              aria-expanded={selectedSealedFormat === format.key}
+              aria-controls="sealed-format-details"
+              onClick={() => setSelectedSealedFormat(current => current === format.key ? null : format.key)}
+              key={format.key}
+            >
               <strong>{format.count}</strong>
               <span>{format.label}</span>
-            </div>
+            </button>
           ))}
         </div>
+        {selectedSealedFormat && <section className="collectionSealedBreakdown" id="sealed-format-details" aria-live="polite" aria-label={`Détail : ${selectedSealedLabel}`}>
+          <div className="collectionSealedBreakdownHead">
+            <div><h3>{selectedSealedLabel}</h3><p>{sealedProductDetails.reduce((sum, item) => sum + item.quantity, 0)} exemplaire{sealedProductDetails.reduce((sum, item) => sum + item.quantity, 0) > 1 ? 's' : ''}</p></div>
+            <button className="miniBtn" type="button" onClick={() => setSelectedSealedFormat(null)}>Fermer</button>
+          </div>
+          {sealedProductDetails.length ? <ul className="collectionSealedBreakdownList">
+            {sealedProductDetails.map(item => <li key={item.key}>
+              <span><strong>{item.name}</strong>
+                {(item.productName || item.type || item.sealedCondition) && <small>{[item.productName, item.type, item.sealedCondition === 'zero_defect' ? 'Zéro défaut' : ''].filter(Boolean).join(' · ')}</small>}
+              </span>
+              <strong className="collectionSealedBreakdownQuantity">{item.quantity} exemplaire{item.quantity > 1 ? 's' : ''}</strong>
+            </li>)}
+          </ul> : <p className="collectionSealedBreakdownEmpty">Aucun produit enregistré dans ce format.</p>}
+        </section>}
       </section>
       <button type="button" className="collectionAddCta" onClick={() => { setShowAddForm(true); setTimeout(() => document.getElementById('ajouter-produit')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0) }}>Ajouter un trésor</button>
 
