@@ -269,6 +269,45 @@ function imageUrl(card, quality = 'low') {
   return 'https://assets.tcgdex.net/' + language + '/' + seriesCode + '/' + setCode + '/' + encodeURIComponent(localId) + '/' + quality + '.webp'
 }
 
+function loadPdfArtwork(url) {
+  if (!url || typeof window === 'undefined') return Promise.resolve(null)
+  return new Promise(resolve => {
+    const image = new Image()
+    let settled = false
+    const finish = value => {
+      if (settled) return
+      settled = true
+      window.clearTimeout(timeout)
+      resolve(value)
+    }
+    const timeout = window.setTimeout(() => finish(null), 5000)
+    image.crossOrigin = 'anonymous'
+    image.onload = () => {
+      try {
+        const maxSide = 520
+        const scale = Math.min(1, maxSide / Math.max(image.naturalWidth, image.naturalHeight))
+        const canvas = document.createElement('canvas')
+        canvas.width = Math.max(1, Math.round(image.naturalWidth * scale))
+        canvas.height = Math.max(1, Math.round(image.naturalHeight * scale))
+        const context = canvas.getContext('2d')
+        if (!context) return finish(null)
+        context.fillStyle = '#ffffff'
+        context.fillRect(0, 0, canvas.width, canvas.height)
+        context.drawImage(image, 0, 0, canvas.width, canvas.height)
+        finish({ data: canvas.toDataURL('image/jpeg', 0.84), width: canvas.width, height: canvas.height })
+      } catch { finish(null) }
+    }
+    image.onerror = () => finish(null)
+    try { image.src = url } catch { finish(null) }
+  })
+}
+
+function duplicateVariantsForCard(card, owned) {
+  return (card?.card_print_variants || [])
+    .map(variant => ({ variant, copies: owned[variant.id] || [] }))
+    .filter(entry => entry.copies.length > 1)
+}
+
 function formatMissingCardNumbers(numbers) {
   const parts = []
   let run = []
@@ -351,6 +390,7 @@ export default function CardChecklistPage() {
   const [busyVariant, setBusyVariant] = useState('')
   const [selectedVariantIds, setSelectedVariantIds] = useState([])
   const [savingBulk, setSavingBulk] = useState(false)
+  const [duplicatePdfBusy, setDuplicatePdfBusy] = useState(false)
   const [gradingVariant, setGradingVariant] = useState('')
   const [savingGrade, setSavingGrade] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
@@ -576,6 +616,7 @@ export default function CardChecklistPage() {
 
   const isAllSeriesSelected = setId === ALL_SERIES_FILTER
   const selectedSet = sets.find(row => row.id === setId)
+  const isGlobalSearchView = isAllSeriesSelected || !selectedSet
   const isIncludedVariant = variant => (
     checklistFilter === 'all' ||
     (checklistFilter === 'stamps' ? variant.checklist_group === 'stamp' :
@@ -617,11 +658,28 @@ export default function CardChecklistPage() {
   }
 
   function matchesCollectionFilter(card, filter) {
-    const targets = (card.card_print_variants || []).filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
+    const variants = (card.card_print_variants || []).filter(variant => !selectedVersions.length || selectedVersions.includes(variant.variant_key))
+    if (filter === 'duplicates' && isGlobalSearchView) {
+      return variants.some(variant => (owned[variant.id] || []).length > 1)
+    }
+    const targets = variants.filter(isProgressTarget)
     return targets.some(variant => matchesVariantCollectionFilter(variant, filter))
   }
 
   const visibleCards = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
+  const duplicateVariantRows = isGlobalSearchView && collectionFilter === 'duplicates'
+    ? visibleCards.flatMap(card => duplicateVariantsForCard(card, owned).map(({ variant, copies }) => ({ card, variant, copies, availableCopies: copies.length - 1 })))
+      .sort((a, b) => {
+        const aSet = Array.isArray(a.card.card_sets) ? a.card.card_sets[0] : a.card.card_sets
+        const bSet = Array.isArray(b.card.card_sets) ? b.card.card_sets[0] : b.card.card_sets
+        return String(aSet?.set_name || '').localeCompare(String(bSet?.set_name || ''), 'fr')
+          || String(a.card.card_name || '').localeCompare(String(b.card.card_name || ''), 'fr')
+          || String(a.card.collector_number || '').localeCompare(String(b.card.collector_number || ''), 'fr', { numeric: true })
+          || String(a.variant.variant_label || a.variant.variant_key || '').localeCompare(String(b.variant.variant_label || b.variant.variant_key || ''), 'fr')
+      })
+    : []
+  const availableDuplicateCopyCount = duplicateVariantRows.reduce((sum, row) => sum + row.availableCopies, 0)
+  const duplicateCardCount = new Set(duplicateVariantRows.map(row => row.card.id)).size
   const visibleOwnedCopyCount = visibleCards.reduce((total, card) => total +
     (card.card_print_variants || [])
       .filter(variant => variant.is_master_set_target)
@@ -704,6 +762,200 @@ export default function CardChecklistPage() {
     else url.searchParams.set('collection', nextFilter)
     url.searchParams.delete('owned')
     window.history.replaceState({}, '', url)
+  }
+
+  async function copyDuplicateCardNumbers() {
+    if (!duplicateVariantRows.length) {
+      setNotice('Aucun exemplaire en double dans les résultats.')
+      return
+    }
+    const lines = duplicateVariantRows.map(({ card, variant, availableCopies }) => {
+      const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+      const label = variant.variant_label || variant.variant_key || 'Variante'
+      return [set?.set_code || set?.set_name, card.collector_number, card.card_name + ' · ' + label, availableCopies + ' en double'].filter(Boolean).join(' · ')
+    })
+    const textToCopy = lines.join('\n')
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(textToCopy)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = textToCopy
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        const copied = document.execCommand('copy')
+        textarea.remove()
+        if (!copied) throw new Error('La copie n’est pas disponible dans ce navigateur.')
+      }
+      setNotice(duplicateVariantRows.length + ' variante' + (duplicateVariantRows.length === 1 ? '' : 's') + ' en double copiée' + (duplicateVariantRows.length === 1 ? '' : 's') + '.')
+    } catch (copyError) {
+      setNotice('Copie impossible : ' + (copyError.message || 'sélectionne les numéros manuellement.'))
+    }
+  }
+
+  async function createDuplicateBinderPdf() {
+    if (!duplicateVariantRows.length || duplicatePdfBusy) return
+    setDuplicatePdfBusy(true)
+    setNotice('')
+    try {
+      const { jsPDF } = await import('jspdf')
+      const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4', compress: true })
+      const pageWidth = pdf.internal.pageSize.getWidth()
+      const pageHeight = pdf.internal.pageSize.getHeight()
+      const imageUrls = [...new Set(duplicateVariantRows.map(row => imageUrl(row.card, 'high')).filter(Boolean))]
+      const artworkByUrl = new Map()
+      for (let offset = 0; offset < imageUrls.length; offset += 10) {
+        const batch = await Promise.all(imageUrls.slice(offset, offset + 10).map(async url => [url, await loadPdfArtwork(url)]))
+        for (const [url, artwork] of batch) artworkByUrl.set(url, artwork)
+      }
+
+      pdf.setProperties({
+        title: 'Mes doubles Pokémon · ' + query.trim(),
+        subject: 'Cartes Pokémon disponibles à l’échange',
+        author: profiles.find(profile => profile.id === profileId)?.display_name || 'PokéValeur',
+        creator: 'PokéValeur'
+      })
+      pdf.setFillColor(15, 31, 54)
+      pdf.rect(0, 0, pageWidth, pageHeight, 'F')
+      pdf.setFillColor(245, 184, 46)
+      pdf.rect(0, 0, pageWidth, 7, 'F')
+      pdf.setTextColor(245, 184, 46)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(12)
+      pdf.text('POKÉVALEUR · PARTAGE COLLECTION', pageWidth / 2, 36, { align: 'center' })
+      pdf.setTextColor(255, 255, 255)
+      pdf.setFontSize(30)
+      const coverTitle = pdf.splitTextToSize('Mes doubles · ' + query.trim(), pageWidth - 32)
+      pdf.text(coverTitle.slice(0, 2), pageWidth / 2, 74, { align: 'center' })
+      pdf.setDrawColor(245, 184, 46)
+      pdf.setLineWidth(0.8)
+      pdf.line(28, 103, pageWidth - 28, 103)
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(13)
+      pdf.setTextColor(224, 232, 241)
+      pdf.text('Cartes proposées à l’échange', pageWidth / 2, 119, { align: 'center' })
+      pdf.setFillColor(255, 255, 255)
+      pdf.roundedRect(28, 143, pageWidth - 56, 54, 5, 5, 'F')
+      pdf.setTextColor(23, 54, 84)
+      pdf.setFont('helvetica', 'bold')
+      pdf.setFontSize(16)
+      pdf.text(String(duplicateCardCount) + ' cartes différentes', pageWidth / 2, 163, { align: 'center' })
+      pdf.setFont('helvetica', 'normal')
+      pdf.setFontSize(11)
+      pdf.text(String(duplicateVariantRows.length) + ' variantes · ' + String(availableDuplicateCopyCount) + ' exemplaires en double', pageWidth / 2, 181, { align: 'center' })
+      pdf.setTextColor(224, 232, 241)
+      pdf.setFontSize(10)
+      pdf.text('Les quantités proposées correspondent aux exemplaires au-delà d’un exemplaire conservé par variante.', pageWidth / 2, 225, { align: 'center', maxWidth: pageWidth - 40 })
+      pdf.setFontSize(9)
+      pdf.text(new Date().toLocaleDateString('fr-FR'), pageWidth / 2, pageHeight - 18, { align: 'center' })
+
+      const margin = 12
+      const columnGap = 6
+      const cardWidth = (pageWidth - margin * 2 - columnGap) / 2
+      const cardHeight = 77
+      const rowGap = 7
+      const firstY = 31
+      for (let index = 0; index < duplicateVariantRows.length; index += 1) {
+        const position = index % 6
+        if (position === 0) {
+          pdf.addPage()
+          pdf.setFillColor(247, 249, 252)
+          pdf.rect(0, 0, pageWidth, pageHeight, 'F')
+          pdf.setFillColor(15, 31, 54)
+          pdf.rect(0, 0, pageWidth, 23, 'F')
+          pdf.setTextColor(255, 255, 255)
+          pdf.setFont('helvetica', 'bold')
+          pdf.setFontSize(12)
+          pdf.text('MES DOUBLES · ' + query.trim(), margin, 15)
+        }
+        const row = duplicateVariantRows[index]
+        const column = position % 2
+        const rowIndex = Math.floor(position / 2)
+        const x = margin + column * (cardWidth + columnGap)
+        const y = firstY + rowIndex * (cardHeight + rowGap)
+        const set = Array.isArray(row.card.card_sets) ? row.card.card_sets[0] : row.card.card_sets
+        pdf.setFillColor(255, 255, 255)
+        pdf.setDrawColor(218, 225, 234)
+        pdf.setLineWidth(0.35)
+        pdf.roundedRect(x, y, cardWidth, cardHeight, 3, 3, 'FD')
+        const url = imageUrl(row.card, 'high')
+        const artwork = url ? artworkByUrl.get(url) : null
+        const imageBox = { x: x + 5, y: y + 7, width: 27, height: 39 }
+        if (artwork) {
+          const scale = Math.min(imageBox.width / artwork.width, imageBox.height / artwork.height)
+          const imageWidth = artwork.width * scale
+          const imageHeight = artwork.height * scale
+          try { pdf.addImage(artwork.data, 'JPEG', imageBox.x + (imageBox.width - imageWidth) / 2, imageBox.y + (imageBox.height - imageHeight) / 2, imageWidth, imageHeight) } catch { /* Keep the card readable if a remote image cannot be embedded. */ }
+        } else {
+          pdf.setFillColor(240, 243, 247)
+          pdf.roundedRect(imageBox.x, imageBox.y, imageBox.width, imageBox.height, 2, 2, 'F')
+          pdf.setTextColor(128, 139, 153)
+          pdf.setFont('helvetica', 'normal')
+          pdf.setFontSize(7)
+          pdf.text('Image', imageBox.x + imageBox.width / 2, imageBox.y + imageBox.height / 2, { align: 'center' })
+        }
+        const textX = x + 36
+        const textWidth = cardWidth - 41
+        pdf.setTextColor(23, 39, 57)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(10)
+        const cardTitle = pdf.splitTextToSize(row.card.card_name || 'Carte Pokémon', textWidth)
+        pdf.text(cardTitle.slice(0, 2), textX, y + 12)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(7.5)
+        pdf.setTextColor(91, 105, 121)
+        const seriesLine = pdf.splitTextToSize((set?.set_code ? set.set_code + ' · ' : '') + (set?.set_name || 'Série') + ' · N° ' + (row.card.collector_number || '—'), textWidth)
+        pdf.text(seriesLine.slice(0, 2), textX, y + 24)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(8)
+        pdf.setTextColor(49, 68, 91)
+        const variantLines = pdf.splitTextToSize(row.variant.variant_label || row.variant.variant_key || 'Variante', textWidth)
+        pdf.text(variantLines.slice(0, 2), textX, y + 37)
+        pdf.setFillColor(239, 247, 241)
+        pdf.roundedRect(textX - 1, y + 53, textWidth + 2, 16, 2, 2, 'F')
+        pdf.setTextColor(37, 103, 69)
+        pdf.setFont('helvetica', 'bold')
+        pdf.setFontSize(8)
+        pdf.text(String(row.availableCopies) + ' exemplaire' + (row.availableCopies === 1 ? '' : 's') + ' en double', textX + 2, y + 63)
+      }
+      for (let pageIndex = 1; pageIndex < pdf.getNumberOfPages(); pageIndex += 1) {
+        pdf.setPage(pageIndex + 1)
+        pdf.setFont('helvetica', 'normal')
+        pdf.setFontSize(8)
+        pdf.setTextColor(115, 127, 143)
+        pdf.text('PokéValeur · ' + (pageIndex + 1) + '/' + pdf.getNumberOfPages(), pageWidth - 12, pageHeight - 8, { align: 'right' })
+      }
+      const slug = normalizeCardSearch(query).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'collection'
+      const file = new File([pdf.output('blob')], 'pokevaleur-doubles-' + slug + '.pdf', { type: 'application/pdf' })
+      let shared = false
+      try {
+        if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
+          await navigator.share({ files: [file], title: 'Mes doubles · ' + query.trim(), text: 'Mes cartes Pokémon en double, disponibles à l’échange.' })
+          shared = true
+        }
+      } catch (shareError) {
+        if (shareError?.name === 'AbortError') {
+          setNotice('Partage annulé.')
+          return
+        }
+      }
+      if (!shared) {
+        const objectUrl = URL.createObjectURL(file)
+        const link = document.createElement('a')
+        link.href = objectUrl
+        link.download = file.name
+        link.click()
+        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
+      }
+      setNotice(shared ? 'Ton classeur PDF a été partagé.' : 'Ton classeur PDF a été téléchargé.')
+    } catch (pdfError) {
+      setNotice('Impossible de créer le classeur PDF : ' + (pdfError.message || 'réessaie.'))
+    } finally {
+      setDuplicatePdfBusy(false)
+    }
   }
 
   async function copyMissingCardNumbers(variantKey = null) {
@@ -1003,8 +1255,25 @@ export default function CardChecklistPage() {
             Rechercher dans ma collection
             <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, numéro ou artiste…" />
           </label>
+          {isGlobalSearchView && query.trim() && <div className={styles.collectionCardFilters} role="group" aria-label="Filtrer les résultats de recherche">
+            {[
+              ['owned', 'Possédées'],
+              ['duplicates', 'En double']
+            ].map(([filter, label]) => (
+              <button
+                key={filter}
+                type="button"
+                className={collectionFilter === filter ? styles.collectionCardFilterActive : styles.collectionCardFilter}
+                aria-pressed={collectionFilter === filter}
+                onClick={() => selectCollectionFilter(filter)}
+              >{label}</button>
+            ))}
+          </div>}
           {!query.trim() && <p className={styles.scope}>Saisis un nom, un numéro ou un artiste pour retrouver tes cartes dans les séries françaises.</p>}
-          {!!query.trim() && <p className={styles.resultCount} aria-live="polite"><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's différentes' : ' différente'} pour « {query.trim()} » · <strong>{visibleOwnedCopyCount}</strong> exemplaire{visibleOwnedCopyCount > 1 ? 's possédés' : ' possédé'}</p>}
+          {!!query.trim() && <p className={styles.resultCount} aria-live="polite">{collectionFilter === 'duplicates' && isGlobalSearchView
+            ? <><strong>{duplicateCardCount}</strong> carte{duplicateCardCount === 1 ? '' : 's'} avec des doubles pour « {query.trim()} » · <strong>{availableDuplicateCopyCount}</strong> exemplaire{availableDuplicateCopyCount === 1 ? '' : 's'} en double</>
+            : <><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's différentes' : ' différente'} pour « {query.trim()} » · <strong>{visibleOwnedCopyCount}</strong> exemplaire{visibleOwnedCopyCount > 1 ? 's possédés' : ' possédé'}</>
+          }</p>}
           {cardsLoading ? <p className={styles.status}>Recherche dans toutes les séries…</p> : query.trim() && (
             <section className={styles.cardGrid} aria-label="Résultats toutes séries">
               {!visibleCards.length && !error && <p className={styles.empty}>Aucune carte ne correspond à « {query.trim()} ».</p>}
@@ -1026,10 +1295,30 @@ export default function CardChecklistPage() {
                       <small>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</small>
                     </div>
                   </div>
+                  {collectionFilter === 'duplicates' && isGlobalSearchView && duplicateVariantsForCard(card, owned).length > 0 && <div className={styles.duplicateVariantList} aria-label={'Variantes en double de ' + card.card_name}>
+                    {duplicateVariantsForCard(card, owned).map(({ variant, copies }) => <div className={styles.duplicateVariantRow} key={variant.id}>
+                      <span>{variant.variant_label || variant.variant_key || 'Variante'}</span>
+                      <strong>{copies.length - 1} en double</strong>
+                    </div>)}
+                  </div>}
                 </article>
               })}
             </section>
           )}
+          {isGlobalSearchView && query.trim() && collectionFilter === 'duplicates' && !cardsLoading && <section className={styles.duplicateSharePanel} aria-label="Partager les cartes en double">
+            <div>
+              <strong>Partager ces doubles</strong>
+              <p>Le PDF présente les cartes, leurs variantes et les exemplaires en plus d’un exemplaire conservé par variante.</p>
+            </div>
+            <div className={styles.duplicateShareActions}>
+              <button type="button" className={styles.copyMissingButton} onClick={copyDuplicateCardNumbers} disabled={!duplicateVariantRows.length}>
+                Copier les numéros ({duplicateVariantRows.length})
+              </button>
+              <button type="button" className={styles.duplicatePdfButton} onClick={createDuplicateBinderPdf} disabled={!duplicateVariantRows.length || duplicatePdfBusy}>
+                {duplicatePdfBusy ? 'Création du classeur…' : 'Générer le classeur PDF'}
+              </button>
+            </div>
+          </section>}
         </section>
       ) : selectedSet && (
         <>
