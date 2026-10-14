@@ -66,18 +66,19 @@ export default function CollectionMockup({ isMember = true }) {
 
       <div className={styles.mobileView}>
         <div className={styles.artboard}>
+          <header className={styles.mobileHeader}>
+            <BrandLogo className={styles.mobileBrand} href={isMember ? '/collection/accueil' : '/'} />
+            <span className={styles.legacyMenuMask} aria-hidden="true" />
+            <div className={styles.menu}>
+              <Navigation links={navLinks} mobileOnly overlayTrigger />
+            </div>
+          </header>
           <img
             className={styles.image}
             src="/collection-maquette.webp"
             alt="Ma collection : mes classeurs, mes cartes gradées et mes produits scellés"
             fetchPriority="high"
           />
-
-          <a className={styles.brandLink} href={isMember ? '/collection/accueil' : '/'} aria-label="PokéValeur, accueil" />
-          <span className={styles.legacyMenuMask} aria-hidden="true" />
-          <div className={styles.menu}>
-            <Navigation links={navLinks} mobileOnly overlayTrigger />
-          </div>
 
           {destinations.map(destination => (
             <a

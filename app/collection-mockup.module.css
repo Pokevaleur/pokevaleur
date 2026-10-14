@@ -2,16 +2,17 @@
 .desktopView{display:none}
 .mobileView{display:block}
 .artboard{position:relative;width:min(100%,941px);margin:0 auto;aspect-ratio:941/1672;overflow:hidden;background:#fff}
-.image{display:block;width:100%;height:100%;object-fit:contain}
-.brandLink,.binders,.graded,.sealed{position:absolute;z-index:2;display:block;background:transparent}
-.brandLink{left:31%;top:0;width:39%;height:6.3%}
-.legacyMenuMask{position:absolute;z-index:4;left:2.2%;top:1%;width:8%;height:4.8%;border-radius:12px;background:linear-gradient(125deg,#10203a,#071a31);pointer-events:none}
-.menu{position:absolute;z-index:5;right:1.8%;top:1%;width:8%;height:4.8%}
+.mobileHeader{position:absolute;z-index:4;top:0;left:0;width:100%;height:6.58%;border-bottom:3px solid #d5a83d;border-radius:0 0 1.4% 1.4%/0 0 12% 12%;background:radial-gradient(ellipse at 50% 25%,#10243e 0%,#081a31 62%,#06162a 100%)}
+.mobileBrand{position:absolute;left:29%;top:3%;width:42%;height:84%;display:flex;align-items:center;justify-content:center;background:transparent;color:#f3d06e;font-family:Georgia,serif;font-size:clamp(26px,6.2vw,58px);font-weight:900;line-height:1;letter-spacing:-.065em;white-space:nowrap}
+.image{position:absolute;inset:0;display:block;width:100%;height:100%;object-fit:fill;clip-path:inset(6.58% 0 0)}
+.binders,.graded,.sealed{position:absolute;z-index:3;display:block}
+.legacyMenuMask{position:absolute;z-index:4;left:2.2%;top:12%;width:8%;height:76%;border-radius:50%;background:linear-gradient(125deg,#10203a,#071a31);pointer-events:none}
+.menu{position:absolute;z-index:5;right:1.8%;top:12%;width:8%;height:76%}
 .menu :global(.mobileMenu){display:block!important;position:relative;width:100%;height:100%}
 .menu :global(.mobileMenu > summary){position:relative;width:100%;height:100%;padding:0;border:1px solid rgba(245,207,104,.55);border-radius:50%;color:transparent;font-size:0;background:linear-gradient(135deg,#10203a,#071a31);box-shadow:0 2px 7px #0004}
 .menu :global(.mobileMenu > summary::after){content:'';position:absolute;left:50%;top:50%;width:22px;height:2.5px;transform:translate(-50%,-50%);border-radius:999px;background:#f4d372;box-shadow:0 -6px 0 #f4d372,0 6px 0 #f4d372}
 .menu :global(.mobileMenuPanel){top:105%;right:0;left:auto;width:min(92vw,380px);max-width:calc(100vw - 24px);z-index:110}
-.brandLink:focus-visible,.menu :global(.mobileMenu summary:focus-visible),.binders:focus-visible,.graded:focus-visible,.sealed:focus-visible{outline:3px solid #f0b72f;outline-offset:-4px;border-radius:14px}
+.mobileBrand:focus-visible,.menu :global(.mobileMenu summary:focus-visible),.binders:focus-visible,.graded:focus-visible,.sealed:focus-visible{outline:3px solid #f0b72f;outline-offset:-4px;border-radius:14px}
 .accessibleText{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
 
 .desktopHeader{display:flex;flex-direction:column;align-items:center;gap:10px;padding:12px 24px 14px;background:#071a31;color:#fff;border-bottom:3px solid #d6a63a}
