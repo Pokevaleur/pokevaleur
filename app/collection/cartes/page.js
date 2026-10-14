@@ -391,6 +391,7 @@ export default function CardChecklistPage() {
   const [selectedVariantIds, setSelectedVariantIds] = useState([])
   const [savingBulk, setSavingBulk] = useState(false)
   const [duplicatePdfBusy, setDuplicatePdfBusy] = useState(false)
+  const [duplicatePdfPreview, setDuplicatePdfPreview] = useState(null)
   const [gradingVariant, setGradingVariant] = useState('')
   const [savingGrade, setSavingGrade] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
@@ -930,31 +931,46 @@ export default function CardChecklistPage() {
       }
       const slug = normalizeCardSearch(query).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'collection'
       const file = new File([pdf.output('blob')], 'pokevaleur-doubles-' + slug + '.pdf', { type: 'application/pdf' })
-      let shared = false
-      try {
-        if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [file] })) {
-          await navigator.share({ files: [file], title: 'Mes doubles · ' + query.trim(), text: 'Mes cartes Pokémon en double, disponibles à l’échange.' })
-          shared = true
-        }
-      } catch (shareError) {
-        if (shareError?.name === 'AbortError') {
-          setNotice('Partage annulé.')
-          return
-        }
-      }
-      if (!shared) {
-        const objectUrl = URL.createObjectURL(file)
-        const link = document.createElement('a')
-        link.href = objectUrl
-        link.download = file.name
-        link.click()
-        window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000)
-      }
-      setNotice(shared ? 'Ton classeur PDF a été partagé.' : 'Ton classeur PDF a été téléchargé.')
+      const previewUrl = URL.createObjectURL(file)
+      setDuplicatePdfPreview({ file, url: previewUrl })
+      setNotice('Aperçu prêt : vérifie le PDF avant de le partager ou de le télécharger.')
     } catch (pdfError) {
       setNotice('Impossible de créer le classeur PDF : ' + (pdfError.message || 'réessaie.'))
     } finally {
       setDuplicatePdfBusy(false)
+    }
+  }
+
+  function closeDuplicatePdfPreview() {
+    if (duplicatePdfPreview?.url) URL.revokeObjectURL(duplicatePdfPreview.url)
+    setDuplicatePdfPreview(null)
+  }
+
+  function downloadDuplicatePdf() {
+    if (!duplicatePdfPreview) return
+    const link = document.createElement('a')
+    link.href = duplicatePdfPreview.url
+    link.download = duplicatePdfPreview.file.name
+    link.click()
+    setNotice('Ton classeur PDF a été téléchargé.')
+  }
+
+  async function shareDuplicatePdf() {
+    if (!duplicatePdfPreview) return
+    try {
+      if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [duplicatePdfPreview.file] })) {
+        await navigator.share({ files: [duplicatePdfPreview.file], title: 'Mes doubles · ' + query.trim(), text: 'Mes cartes Pokémon en double, disponibles à l’échange.' })
+        setNotice('Ton classeur PDF a été partagé.')
+        return
+      }
+      downloadDuplicatePdf()
+      setNotice('Le partage de fichiers n’est pas disponible ici : le PDF a été téléchargé.')
+    } catch (shareError) {
+      if (shareError?.name === 'AbortError') {
+        setNotice('Partage annulé. L’aperçu reste ouvert.')
+        return
+      }
+      setNotice('Impossible de partager le PDF. Tu peux le télécharger depuis cet aperçu.')
     }
   }
 
@@ -1410,6 +1426,22 @@ export default function CardChecklistPage() {
           )}
         </>
       )}
+      {duplicatePdfPreview && <div className={styles.duplicatePdfBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) closeDuplicatePdfPreview() }}>
+        <section className={styles.duplicatePdfDialog} role="dialog" aria-modal="true" aria-labelledby="duplicate-pdf-title">
+          <header className={styles.duplicatePdfHeader}>
+            <div>
+              <h2 id="duplicate-pdf-title">Aperçu de ton classeur</h2>
+              <p>Vérifie les cartes et les quantités avant de l’envoyer.</p>
+            </div>
+            <button type="button" className={styles.duplicatePdfClose} aria-label="Fermer l’aperçu" onClick={closeDuplicatePdfPreview}>×</button>
+          </header>
+          <iframe className={styles.duplicatePdfFrame} src={duplicatePdfPreview.url} title="Aperçu du PDF des cartes en double" />
+          <div className={styles.duplicatePdfFooter}>
+            <button type="button" className={styles.duplicatePdfSecondary} onClick={downloadDuplicatePdf}>Télécharger le PDF</button>
+            <button type="button" className={styles.duplicatePdfButton} onClick={shareDuplicatePdf}>Partager le PDF</button>
+          </div>
+        </section>
+      </div>}
       {zoomedCard && <div className={styles.zoomBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setZoomedCard(null) }}>
         <section className={styles.zoomDialog} role="dialog" aria-modal="true" aria-label={'Image agrandie de ' + zoomedCard.card_name}>
           <button type="button" className={styles.zoomClose} aria-label="Fermer l’image agrandie" onClick={() => setZoomedCard(null)}>×</button>
