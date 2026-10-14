@@ -1143,8 +1143,7 @@ function BindersContent() {
           isMasterSetVariant(variant) && (!isEnergyBinder || (grouped[variant.id] || []).length > 0)
         ))
         const binderExtras = isEnergyBinder
-          ? allExtraItems.filter(item => (grouped[item.variant.id] || []).length > 0
-            || isPlayPokemon2024EnergyVariant(item.variant))
+          ? allExtraItems.filter(item => (grouped[item.variant.id] || []).length > 0)
             .sort(sortEnergyExtras)
           : isPromoStampBinder
             ? allExtraItems.filter(item => (grouped[item.variant.id] || []).length > 0)
@@ -1188,7 +1187,6 @@ function BindersContent() {
   const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(isMasterSetVariant).length, 0)
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => isMasterSetVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
-    + (isEnergyBinder ? extraVariants.filter(item => isPlayPokemon2024EnergyVariant(item.variant) && !(variantCopies[item.variant.id] || []).length).length : 0)
   const extraVariantCount = isEnergyBinder
     ? extraVariants.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
     : extraVariants.length
@@ -1678,9 +1676,7 @@ function BindersContent() {
                   const missingVariants = variants.filter(variant => !(variantCopies[variant.id] || []).length)
                   const isPromoOrStamp = ['promo', 'stamp'].includes(item?.category || item?.variant?.checklist_group)
                   const itemArt = item?.kind === 'extra' && isPromoOrStamp ? bonusCatalogImageFor(item) : cardArt
-                  const isMissingPlayEnergy = card && isEnergyBinder && item?.kind === 'extra'
-                    && isPlayPokemon2024EnergyVariant(item.variant) && copyCount === 0
-                  if (card && (isBonusCatalogView || isPromoCatalogView || isMissingPlayEnergy) && item?.kind === 'extra' && (isPromoCatalogView ? item?.category === 'promo' : isPromoOrStamp)) {
+                  if (card && (isBonusCatalogView || isPromoCatalogView) && item?.kind === 'extra' && (isPromoCatalogView ? item?.category === 'promo' : isPromoOrStamp)) {
                     const catalogArt = bonusCatalogImageFor(item)
                     const bonusLabel = binderExtraLabel(item)
                     return <button key={item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-')} type="button" className={styles.slotCatalog}
@@ -1692,7 +1688,7 @@ function BindersContent() {
                       <strong className={styles.cardName}>{card.card_name}</strong>
                       <span className={styles.cardNumber}>{isEnergyBinder ? energyCardNumber(card) + ' · ' + (item.kind === 'extra' ? energyPrintYear(item) : setYear(cardSetFor(card))) : isPromoStampBinder ? setYear(cardSetFor(card)) + ' · ' + (cardSetFor(card)?.series_name || cardSetFor(card)?.set_name || '') + ' · ' + card.collector_number : card.collector_number}</span>
                       <span className={styles.extraVariantLabel}>{bonusLabel}</span>
-                      {isMissingPlayEnergy && <span className={styles.extraVariantLabel}>À compléter</span>}
+
                     </button>
                   }
                   if (card && copyCount) {
