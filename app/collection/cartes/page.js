@@ -958,7 +958,7 @@ export default function CardChecklistPage() {
     }
   }
 
-  async function formatMissingCardNumbers(numbers) {
+  async function copyMissingCardNumbers(variantKey = null) {
     const rows = variantKey
       ? missingVariantRows.filter(row => row.variant.variant_key === variantKey)
       : missingVariantRows
