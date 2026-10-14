@@ -309,14 +309,6 @@ export default function LoginPage() {
             <button className="btn" type="submit" disabled={isSubmitting}>
               {isSubmitting ? 'Patiente…' : isSignUp ? 'Créer mon compte' : 'Se connecter'}
             </button>
-            <button
-              className="btn ghost"
-              type="button"
-              disabled={isSubmitting}
-              onClick={() => changeMode(isSignUp ? 'signin' : 'signup')}
-            >
-              {isSignUp ? 'J’ai déjà un compte' : 'Créer un compte gratuit'}
-            </button>
           </div>
         </form>
 
