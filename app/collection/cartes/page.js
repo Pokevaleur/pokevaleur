@@ -932,8 +932,31 @@ export default function CardChecklistPage() {
       const slug = normalizeCardSearch(query).replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'collection'
       const file = new File([pdf.output('blob')], 'pokevaleur-doubles-' + slug + '.pdf', { type: 'application/pdf' })
       const previewUrl = URL.createObjectURL(file)
-      setDuplicatePdfPreview({ file, url: previewUrl })
-      setNotice('Aperçu prêt : vérifie le PDF avant de le partager ou de le télécharger.')
+      const previewRows = duplicateVariantRows.map(row => {
+        const set = Array.isArray(row.card.card_sets) ? row.card.card_sets[0] : row.card.card_sets
+        const url = imageUrl(row.card, 'high')
+        const artwork = url ? artworkByUrl.get(url) : null
+        return {
+          name: row.card.card_name || 'Carte Pokémon',
+          number: row.card.collector_number || '—',
+          setCode: set?.set_code || '',
+          setName: set?.set_name || 'Série',
+          variant: row.variant.variant_label || row.variant.variant_key || 'Variante',
+          copies: row.availableCopies,
+          image: artwork?.data || url || ''
+        }
+      })
+      setDuplicatePdfPreview({
+        file,
+        url: previewUrl,
+        title: query.trim(),
+        date: new Date().toLocaleDateString('fr-FR'),
+        cardCount: duplicateCardCount,
+        variantCount: duplicateVariantRows.length,
+        copyCount: availableDuplicateCopyCount,
+        rows: previewRows
+      })
+      setNotice('Aperçu prêt : vérifie les cartes et quantités avant de partager ou télécharger le PDF.')
     } catch (pdfError) {
       setNotice('Impossible de créer le classeur PDF : ' + (pdfError.message || 'réessaie.'))
     } finally {
@@ -1435,7 +1458,27 @@ export default function CardChecklistPage() {
             </div>
             <button type="button" className={styles.duplicatePdfClose} aria-label="Fermer l’aperçu" onClick={closeDuplicatePdfPreview}>×</button>
           </header>
-          <iframe className={styles.duplicatePdfFrame} src={duplicatePdfPreview.url} title="Aperçu du PDF des cartes en double" />
+          <div className={styles.duplicatePdfPreviewContent} aria-label="Contenu du PDF des cartes en double">
+            <section className={styles.duplicatePdfPreviewCover}>
+              <span>POKÉVALEUR · PARTAGE COLLECTION</span>
+              <h3>Mes doubles · {duplicatePdfPreview.title}</h3>
+              <p>Cartes proposées à l’échange</p>
+              <strong>{duplicatePdfPreview.cardCount} cartes différentes</strong>
+              <small>{duplicatePdfPreview.variantCount} variantes · {duplicatePdfPreview.copyCount} exemplaires en double</small>
+              <time>{duplicatePdfPreview.date}</time>
+            </section>
+            <section className={styles.duplicatePdfPreviewCards} aria-label="Cartes incluses dans le PDF">
+              {duplicatePdfPreview.rows.map((row, index) => <article className={styles.duplicatePdfPreviewCard} key={index}>
+                {row.image ? <img src={row.image} alt={'Illustration de ' + row.name} /> : <div className={styles.duplicatePdfPreviewNoImage}>Image indisponible</div>}
+                <div className={styles.duplicatePdfPreviewCardInfo}>
+                  <strong>{row.name}</strong>
+                  <span>{row.setCode ? row.setCode + ' · ' : ''}{row.setName} · N° {row.number}</span>
+                  <b>{row.variant}</b>
+                  <em>{row.copies} exemplaire{row.copies === 1 ? '' : 's'} en double</em>
+                </div>
+              </article>)}
+            </section>
+          </div>
           <div className={styles.duplicatePdfFooter}>
             <button type="button" className={styles.duplicatePdfSecondary} onClick={downloadDuplicatePdf}>Télécharger le PDF</button>
             <button type="button" className={styles.duplicatePdfButton} onClick={shareDuplicatePdf}>Partager le PDF</button>
