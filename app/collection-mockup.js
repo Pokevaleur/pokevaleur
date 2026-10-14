@@ -24,7 +24,7 @@ export default function CollectionMockup({ isMember = true }) {
         <a className={styles.brandLink} href={isMember ? '/collection/accueil' : '/'} aria-label="PokéValeur, accueil" />
         <span className={styles.legacyMenuMask} aria-hidden="true" />
         <div className={styles.menu}>
-          <Navigation links={navLinks} mobileOnly overlayTrigger />
+          <Navigation links={navLinks} overlayTrigger />
         </div>
 
         {destinations.map(destination => (
