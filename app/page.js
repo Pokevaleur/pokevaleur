@@ -69,11 +69,13 @@ export default function Home() {
       <img className={styles.heroArt} src="/accueil/hero-crystals.webp" alt="Un album, un produit scellé et une carte gradée, illustrés comme des trésors de collection" fetchPriority="high"/>
       <div className={styles.phoneTeaser} aria-hidden="true">
         <div className={styles.phoneScreen}>
+          <div className={styles.phoneStatus}><span>14:59</span><span>● ▮</span></div>
           <span className={styles.phoneSpeaker}/>
           <div className={styles.phoneApp}>
             <img src="/icon.svg" alt=""/>
             <span>PokéValeur</span>
           </div>
+          <div className={styles.phoneDock}><i/><i/><i/></div>
           <span className={styles.phoneHomeBar}/>
         </div>
       </div>
