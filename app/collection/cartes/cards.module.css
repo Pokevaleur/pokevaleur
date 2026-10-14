@@ -326,3 +326,25 @@
   .duplicatePdfDialog { height:94dvh; padding:11px; border-radius:14px; }
   .duplicatePdfFooter { grid-template-columns:minmax(0,1fr); }
 }
+
+.duplicatePdfPreviewContent { min-height:0; overflow:auto; border:1px solid #d9e1ec; border-radius:10px; background:#f5f8fc; }
+.duplicatePdfPreviewCover { display:grid; justify-items:center; gap:12px; padding:32px 20px; background:#0f1f36; color:#fff; text-align:center; }
+.duplicatePdfPreviewCover > span { color:#f5b82e; font-size:.78rem; font-weight:800; letter-spacing:.08em; }
+.duplicatePdfPreviewCover h3 { margin:8px 0 0; font-size:clamp(1.2rem,4vw,2rem); overflow-wrap:anywhere; }
+.duplicatePdfPreviewCover p { margin:0; color:#e0e8f1; }
+.duplicatePdfPreviewCover > strong { margin-top:10px; padding:14px 20px; border-radius:10px; background:#fff; color:#173654; }
+.duplicatePdfPreviewCover small, .duplicatePdfPreviewCover time { color:#e0e8f1; }
+.duplicatePdfPreviewCards { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:12px; max-width:820px; margin:0 auto; padding:16px; }
+.duplicatePdfPreviewCard { display:flex; align-items:flex-start; gap:10px; min-width:0; padding:12px; border:1px solid #dae1e9; border-radius:12px; background:#fff; }
+.duplicatePdfPreviewCard > img, .duplicatePdfPreviewNoImage { flex:none; width:72px; height:104px; object-fit:contain; border-radius:6px; background:#f0f3f7; }
+.duplicatePdfPreviewNoImage { display:grid; place-items:center; padding:5px; color:#808b99; font-size:.68rem; text-align:center; }
+.duplicatePdfPreviewCardInfo { display:grid; min-width:0; gap:7px; color:#173654; }
+.duplicatePdfPreviewCardInfo strong { font-size:.92rem; overflow-wrap:anywhere; }
+.duplicatePdfPreviewCardInfo span { color:#5b6979; font-size:.75rem; line-height:1.35; overflow-wrap:anywhere; }
+.duplicatePdfPreviewCardInfo b { font-size:.8rem; }
+.duplicatePdfPreviewCardInfo em { align-self:end; margin-top:6px; padding:8px; border-radius:8px; background:#eff7f1; color:#256745; font-size:.76rem; font-style:normal; font-weight:800; }
+@media (max-width:600px) {
+  .duplicatePdfPreviewCover { padding:22px 14px; }
+  .duplicatePdfPreviewCards { grid-template-columns:minmax(0,1fr); gap:9px; padding:10px; }
+  .duplicatePdfPreviewCard > img, .duplicatePdfPreviewNoImage { width:64px; height:92px; }
+}
