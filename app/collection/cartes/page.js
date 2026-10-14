@@ -1216,11 +1216,12 @@ export default function CardChecklistPage() {
         {isAdmin && selectedSet && !selectedSet.is_public && <p className={styles.adminNote}>Série privée : visible ici pour la vérification administrateur uniquement.</p>}
       </section>
 
-      {(selectedSet || (isGlobalSearchView && query.trim())) && <div className={styles.collectionCardFilters} role="group" aria-label={selectedSet ? 'Filtrer les cartes de cette série' : 'Filtrer les résultats de recherche'}>
-        {(selectedSet
-          ? [['owned', 'Possédées'], ['duplicates', 'En double'], ['missing', 'Non possédées']]
-          : [['owned', 'Possédées'], ['duplicates', 'En double']]
-        ).map(([filter, label]) => (
+      {selectedSet && <div className={styles.collectionCardFilters} role="group" aria-label="Filtrer les cartes de cette série">
+        {[
+          ['owned', 'Possédées'],
+          ['duplicates', 'En double'],
+          ['missing', 'Non possédées']
+        ].map(([filter, label]) => (
           <button
             key={filter}
             type="button"
@@ -1254,6 +1255,20 @@ export default function CardChecklistPage() {
             Rechercher dans ma collection
             <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, numéro ou artiste…" />
           </label>
+          {isGlobalSearchView && query.trim() && <div className={styles.collectionCardFilters} role="group" aria-label="Filtrer les résultats de recherche">
+            {[
+              ['owned', 'Possédées'],
+              ['duplicates', 'En double']
+            ].map(([filter, label]) => (
+              <button
+                key={filter}
+                type="button"
+                className={collectionFilter === filter ? styles.collectionCardFilterActive : styles.collectionCardFilter}
+                aria-pressed={collectionFilter === filter}
+                onClick={() => selectCollectionFilter(filter)}
+              >{label}</button>
+            ))}
+          </div>}
           {!query.trim() && <p className={styles.scope}>Saisis un nom, un numéro ou un artiste pour retrouver tes cartes dans les séries françaises.</p>}
           {!!query.trim() && <p className={styles.resultCount} aria-live="polite">{collectionFilter === 'duplicates' && isGlobalSearchView
             ? <><strong>{duplicateCardCount}</strong> carte{duplicateCardCount === 1 ? '' : 's'} avec des doubles pour « {query.trim()} » · <strong>{availableDuplicateCopyCount}</strong> exemplaire{availableDuplicateCopyCount === 1 ? '' : 's'} en double</>
