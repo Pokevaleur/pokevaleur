@@ -675,6 +675,7 @@ export default function CardCataloguePage() {
               variant,
               copies: owned[variant.id] || []
             })).filter(entry => entry.copies.length > 0)
+            const selectedProfileName = profiles.find(profile => profile.id === profileId)?.display_name || ''
             return <Fragment key={card.id + (group.year ? '-' + group.year : '')}>
               {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{displayCopyrightYear ? ' · tirage ©' + displayCopyrightYear + (copyrightYearVariant?.guide_marker === 'play-pokemon-prize-pack-series-6' ? ' · Pack Récompense Série 6 (2025)' : '') : set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
               <article className={`${styles.cardRow} ${ownershipCardId === card.id ? styles.cardRowWithOwnership : ''}`}>
@@ -745,7 +746,7 @@ export default function CardCataloguePage() {
                               </li>
                             })}</ul>
                             : <span className={styles.ownershipEmpty}>Aucun exemplaire de cette carte.</span>}
-                      {profileId && <small>{profiles.find(profile => profile.id === profileId)?.display_name || 'Collection sélectionnée'}</small>}
+                      {selectedProfileName && selectedProfileName.trim().toLocaleLowerCase('fr') !== 'ma collection' && <small>{selectedProfileName}</small>}
                       {ownershipNotice && <span className={styles.ownershipActionNotice} role="alert">{ownershipNotice}</span>}
                       {removedCopies.length > 0 && removedCopies[removedCopies.length - 1].profileId === profileId && (
                         <div className={styles.ownershipUndo}>
