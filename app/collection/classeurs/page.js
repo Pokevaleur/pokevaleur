@@ -71,7 +71,7 @@ function energyBinderItemYear(item) {
 function sortEnergyBinderItems(a, b) {
   return energyBinderItemYear(a) - energyBinderItemYear(b)
     || sortEnergyCards(a.card, b.card)
-    || (a.kind === 'master' ? -1 : 1)
+    || (a.kind === b.kind ? 0 : a.kind === 'master' ? -1 : 1)
     || String(a.variant?.variant_label || '').localeCompare(String(b.variant?.variant_label || ''), 'fr')
 }
 
