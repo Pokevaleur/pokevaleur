@@ -293,3 +293,19 @@
 .scopeDetails summary { display:inline-block; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
 .scopeDetails summary::marker { color:#aab2bc; }
 .scopeDetails .scope { margin:8px 0 0; }
+
+.duplicateVariantList { display:grid; gap:6px; margin-top:10px; padding-top:9px; border-top:1px solid #e3e8ef; }
+.duplicateVariantRow { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:5px 10px; color:#43546a; font-size:.78rem; }
+.duplicateVariantRow strong { color:#236746; font-size:.76rem; }
+.duplicateSharePanel { display:grid; gap:12px; margin:14px 0 18px; padding:16px; border:1px solid #d9e1ec; border-radius:16px; background:linear-gradient(135deg,#fff 0%,#f4f7fc 100%); box-shadow:0 8px 24px rgba(23,54,84,.07); }
+.duplicateSharePanel > div:first-child strong { color:#173654; font-size:1rem; }
+.duplicateSharePanel p { margin:5px 0 0; color:#687587; font-size:.84rem; line-height:1.45; }
+.duplicateShareActions { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; }
+.duplicatePdfButton { min-height:42px; padding:8px 14px; border:1px solid #173654; border-radius:999px; background:#173654; color:#fff; font:inherit; font-size:.84rem; font-weight:800; cursor:pointer; }
+.duplicatePdfButton:hover:not(:disabled) { border-color:#24547f; background:#24547f; }
+.duplicatePdfButton:disabled { opacity:.5; cursor:not-allowed; }
+.duplicatePdfButton:focus-visible { outline:3px solid #e7b929; outline-offset:2px; }
+@media (max-width: 560px) {
+  .duplicateShareActions { grid-template-columns:minmax(0,1fr); }
+  .duplicateShareActions > button { width:100%; }
+}
