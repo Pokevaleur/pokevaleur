@@ -67,6 +67,16 @@ export default function Home() {
         <a className={styles.join} href={member ? '/collection/accueil' : '/rejoindre'}>{member ? 'Voir ma collection' : 'Rejoins PokéValeur'}</a>
       </div>
       <img className={styles.heroArt} src="/accueil/hero-crystals.webp" alt="Un album, un produit scellé et une carte gradée, illustrés comme des trésors de collection" fetchPriority="high"/>
+      <div className={styles.phoneTeaser} aria-hidden="true">
+        <div className={styles.phoneScreen}>
+          <span className={styles.phoneSpeaker}/>
+          <div className={styles.phoneApp}>
+            <img src="/icon.svg" alt=""/>
+            <span>PokéValeur</span>
+          </div>
+          <span className={styles.phoneHomeBar}/>
+        </div>
+      </div>
     </section>
     <section className={styles.dashboard} aria-label="Les services de PokéValeur, exemples de présentation">
       <ValueChart/>
