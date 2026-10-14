@@ -38,3 +38,13 @@
 .cardNumbersPreview p{margin:0 0 12px;padding:17px 18px;border:1px solid #ffffff3d;border-radius:12px;background:#ffffff0d;color:#fff;font-family:ui-monospace,SFMono-Regular,Consolas,monospace;font-size:clamp(16px,2vw,28px);font-weight:800;letter-spacing:.02em;line-height:1.45;text-align:center;overflow-wrap:anywhere}
 .cardNumbersPreview small{display:block;color:#d4e4f5;font-size:14px;line-height:1.4;text-align:center}
 @media(max-width:700px){.cardNumbersPromo{grid-template-columns:1fr;gap:20px;margin:16px 8px 24px;padding:20px;border-radius:20px}.cardNumbersCopy h2{font-size:27px}.cardNumbersCopy>p:not(.cardNumbersKicker){font-size:16px}.cardNumbersPreview{padding:18px}.cardNumbersPreview p{font-size:16px}}
+
+/* A small, decorative home-screen phone in the existing hero artwork. */
+.phoneTeaser{position:absolute;z-index:1;top:7%;left:46%;width:64px;aspect-ratio:0.52;padding:4px;border:1px solid #d4b65e;border-radius:18px;background:linear-gradient(145deg,#526b83,#091525 36%,#12243a 76%,#e0b94e);box-shadow:0 8px 20px #0b234a33,0 0 18px #fff9;transform:rotate(-6deg);pointer-events:none}
+.phoneScreen{position:relative;width:100%;height:100%;overflow:hidden;border:1px solid #ffffffa8;border-radius:14px;background:linear-gradient(155deg,#d8ecff 0%,#f8fbff 53%,#fff1c7 100%)}
+.phoneSpeaker{position:absolute;top:5px;left:50%;width:18px;height:3px;border-radius:4px;background:#15243a;transform:translateX(-50%)}
+.phoneApp{position:absolute;top:31%;left:0;display:flex;width:100%;align-items:center;flex-direction:column;gap:4px;color:#15243a;font-size:6px;font-weight:700;line-height:1.1;text-shadow:0 1px 5px #fff}
+.phoneApp img{display:block;width:29px;height:29px;border-radius:9px;box-shadow:0 2px 5px #11243a24}
+.phoneHomeBar{position:absolute;bottom:5px;left:50%;width:18px;height:2px;border-radius:3px;background:#15243a66;transform:translateX(-50%)}
+@media(max-width:900px) and (min-width:601px){.phoneTeaser{top:7%;left:50%;width:58px}}
+@media(max-width:600px){.phoneTeaser{top:auto;bottom:72px;left:11%;width:58px;transform:rotate(-5deg)}.phoneApp{top:31%;font-size:5.5px}.phoneApp img{width:26px;height:26px}}
