@@ -64,6 +64,17 @@ function sortEnergyExtras(a, b) {
     || String(a.variant?.variant_label || '').localeCompare(String(b.variant?.variant_label || ''), 'fr')
 }
 
+function energyBinderItemYear(item) {
+  return item?.kind === 'extra' ? energyPrintYear(item) : setYear(cardSetFor(item?.card))
+}
+
+function sortEnergyBinderItems(a, b) {
+  return energyBinderItemYear(a) - energyBinderItemYear(b)
+    || sortEnergyCards(a.card, b.card)
+    || (a.kind === b.kind ? 0 : a.kind === 'master' ? -1 : 1)
+    || String(a.variant?.variant_label || '').localeCompare(String(b.variant?.variant_label || ''), 'fr')
+}
+
 function isDedicatedPromoSet(set) {
   return normalize(set?.set_name).includes('promo')
 }
@@ -1236,24 +1247,40 @@ function BindersContent() {
     })
     return spreads
   }), [familySections, cardsPerSpread])
+  const energyBinderItems = useMemo(() => [
+    ...cards.map(card => ({ kind: 'master', card })),
+    ...extraVariants.map(item => ({ kind: 'extra', ...item })),
+  ].sort(sortEnergyBinderItems), [cards, extraVariants])
   const cardsPerBookPage = cardsPerSpread === 16 ? 16 : 12
   const masterSpreadCount = cards.length ? Math.ceil(cards.length / cardsPerSpread) : (extraVariants.length ? 0 : 1)
   const extraSpreadCount = Math.ceil(extraVariants.length / cardsPerSpread)
   const promoCatalogSpreadCount = Math.ceil(promoCatalogItems.length / cardsPerSpread)
   const totalSpreads = isPromoCatalogView
     ? Math.max(1, promoCatalogSpreadCount)
-    : isMcDonaldsBinder
+    : isEnergyBinder
+      ? Math.max(1, Math.ceil(energyBinderItems.length / cardsPerSpread))
+      : isMcDonaldsBinder
       ? Math.max(1, familySpreads.length)
       : Math.max(1, masterSpreadCount + extraSpreadCount)
   const totalBookPages = (cardsPerSpread === 16 ? 1 : 2) * totalSpreads
   const page = Math.max(0, Math.min(Number.isFinite(rawPage) ? rawPage : 0, totalSpreads - 1))
   const familyPage = isMcDonaldsBinder ? familySpreads[page] : null
-  const isExtraSpread = isPromoCatalogView ? false : familyPage ? familyPage.kind === 'extra' : extraSpreadCount > 0 && page >= masterSpreadCount
+  const isExtraSpread = isPromoCatalogView || isEnergyBinder ? false : familyPage ? familyPage.kind === 'extra' : extraSpreadCount > 0 && page >= masterSpreadCount
   const pageItems = isPromoCatalogView
     ? promoCatalogItems.slice(page * cardsPerSpread, (page + 1) * cardsPerSpread).map(item => ({ kind: 'extra', ...item }))
-    : familyPage ? familyPage.items : isExtraSpread
+    : isEnergyBinder
+      ? energyBinderItems.slice(page * cardsPerSpread, (page + 1) * cardsPerSpread)
+      : familyPage ? familyPage.items : isExtraSpread
       ? extraVariants.slice((page - masterSpreadCount) * cardsPerSpread, (page - masterSpreadCount + 1) * cardsPerSpread).map(item => ({ kind: 'extra', ...item }))
       : cards.slice(page * cardsPerSpread, page * cardsPerSpread + cardsPerSpread).map(card => ({ kind: 'master', card }))
+  const energyPageYears = isEnergyBinder
+    ? [...new Set(pageItems.map(energyBinderItemYear).filter(Boolean))].sort((a, b) => a - b)
+    : []
+  const energyPageYearLabel = energyPageYears.length
+    ? energyPageYears[0] === energyPageYears[energyPageYears.length - 1]
+      ? String(energyPageYears[0])
+      : energyPageYears[0] + '–' + energyPageYears[energyPageYears.length - 1]
+    : ''
   const spreadSlots = Array.from({ length: cardsPerSpread }, (_, index) => pageItems[index] || null)
   const pageSides = cardsPerSpread === 16 ? [0] : [0, 1]
 
@@ -1629,6 +1656,8 @@ function BindersContent() {
             <button type="button" onClick={() => navigate({ open: true, page: Math.max(page - 1, 0) })} disabled={page === 0} aria-label="Double page précédente">←</button>
             <span>{isPromoCatalogView
               ? 'Promos du catalogue ' + (page + 1) + '/' + Math.max(1, promoCatalogSpreadCount)
+              : isEnergyBinder
+              ? 'Énergies · ' + (energyPageYearLabel || 'classeur') + ' · ' + (page + 1) + '/' + totalSpreads
               : familyPage
               ? setYear(familyPage.section.set) + ' · ' + (isExtraSpread ? 'Hors Master ' : 'Master ') + (familyPage.index + 1) + '/' + familyPage.count
               : isExtraSpread
@@ -1638,7 +1667,7 @@ function BindersContent() {
           </nav>
           <section className={styles.spread} style={{ '--spread-accent': coverEnd }} aria-label={(familyPage ? familyPage.section.set.set_name + ', ' : '') + (isExtraSpread ? 'Hors Master Set, ' : 'Master Set, ') + (cardsPerSpread === 16 ? 'page ' : 'double page ') + (familyPage ? familyPage.index + 1 : isExtraSpread ? page - masterSpreadCount + 1 : page + 1)}>
             {pageSides.map(side => <section key={side} className={styles.bookPage} aria-label={cardsPerSpread === 16 ? 'Page du classeur' : side === 0 ? 'Page de gauche' : 'Page de droite'}>
-              <div className={styles.pageTop}><span>{isPromoCatalogView ? 'Catalogue · Promos' : isPromoStampBinder ? 'Promos & tampons · ' + (page + 1) + '/' + extraSpreadCount : isExtraSpread ? 'Hors Master Set · ' + (familyPage?.section.extras.length || extraVariants.length) : currentSectionLabel}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
+              <div className={styles.pageTop}><span>{isPromoCatalogView ? 'Catalogue · Promos' : isPromoStampBinder ? 'Promos & tampons · ' + (page + 1) + '/' + extraSpreadCount : isEnergyBinder ? 'Énergies · ' + (energyPageYearLabel || 'toutes les années') : isExtraSpread ? 'Hors Master Set · ' + (familyPage?.section.extras.length || extraVariants.length) : currentSectionLabel}</span><span>{cardsPerSpread === 16 ? page + 1 : page * 2 + side + 1}</span></div>
               <div className={styles.cardSlots}>
                 {spreadSlots.slice(side * cardsPerBookPage, side * cardsPerBookPage + cardsPerBookPage).map((item, slotIndex) => {
                   const card = item?.card
