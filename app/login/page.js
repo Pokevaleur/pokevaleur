@@ -198,6 +198,17 @@ export default function LoginPage() {
     <main className="narrow">
       <section className="panel authCard">
         <h1>{isSignUp ? 'Créer ton compte PokéValeur' : 'Connexion à PokéValeur'}</h1>
+        <p className="authModeSwitch">
+          {isSignUp ? 'Déjà un compte ? ' : 'Pas encore de compte ? '}
+          <button
+            className="authModeSwitchButton"
+            type="button"
+            disabled={isSubmitting}
+            onClick={() => changeMode(isSignUp ? 'signin' : 'signup')}
+          >
+            {isSignUp ? 'Se connecter' : 'Créer un compte gratuit'}
+          </button>
+        </p>
         <p>
           {isCatalogueProposal
             ? isSignUp ? 'Crée ton compte pour proposer une référence au catalogue.' : 'Connecte-toi pour proposer une référence au catalogue.'
