@@ -39,12 +39,18 @@
 .cardNumbersPreview small{display:block;color:#d4e4f5;font-size:14px;line-height:1.4;text-align:center}
 @media(max-width:700px){.cardNumbersPromo{grid-template-columns:1fr;gap:20px;margin:16px 8px 24px;padding:20px;border-radius:20px}.cardNumbersCopy h2{font-size:27px}.cardNumbersCopy>p:not(.cardNumbersKicker){font-size:16px}.cardNumbersPreview{padding:18px}.cardNumbersPreview p{font-size:16px}}
 
-/* A small, decorative home-screen phone in the existing hero artwork. */
-.phoneTeaser{position:absolute;z-index:1;top:7%;left:46%;width:64px;aspect-ratio:0.52;padding:4px;border:1px solid #d4b65e;border-radius:18px;background:linear-gradient(145deg,#526b83,#091525 36%,#12243a 76%,#e0b94e);box-shadow:0 8px 20px #0b234a33,0 0 18px #fff9;transform:rotate(-6deg);pointer-events:none}
-.phoneScreen{position:relative;width:100%;height:100%;overflow:hidden;border:1px solid #ffffffa8;border-radius:14px;background:linear-gradient(155deg,#d8ecff 0%,#f8fbff 53%,#fff1c7 100%)}
-.phoneSpeaker{position:absolute;top:5px;left:50%;width:18px;height:3px;border-radius:4px;background:#15243a;transform:translateX(-50%)}
-.phoneApp{position:absolute;top:31%;left:0;display:flex;width:100%;align-items:center;flex-direction:column;gap:4px;color:#15243a;font-size:6px;font-weight:700;line-height:1.1;text-shadow:0 1px 5px #fff}
-.phoneApp img{display:block;width:29px;height:29px;border-radius:9px;box-shadow:0 2px 5px #11243a24}
-.phoneHomeBar{position:absolute;bottom:5px;left:50%;width:18px;height:2px;border-radius:3px;background:#15243a66;transform:translateX(-50%)}
-@media(max-width:900px) and (min-width:601px){.phoneTeaser{top:7%;left:50%;width:58px}}
-@media(max-width:600px){.phoneTeaser{top:auto;bottom:72px;left:11%;width:58px;transform:rotate(-5deg)}.phoneApp{top:31%;font-size:5.5px}.phoneApp img{width:26px;height:26px}}
+/* A refined home-screen phone, kept within the existing hero composition. */
+.phoneTeaser{position:absolute;z-index:1;top:14%;left:46%;width:clamp(76px,6.4vw,92px);aspect-ratio:.49;padding:4px;border:1px solid #f5d77a;border-radius:27px;background:linear-gradient(112deg,#fff3bf 0%,#bc872c 4%,#23364a 10%,#0a1828 88%,#bd8a2d 95%,#fff2bb 100%);box-shadow:0 18px 30px #08182c50,0 3px 7px #04102055,0 0 22px #fff8;transform:rotate(-8deg) perspective(850px) rotateY(7deg);pointer-events:none}
+.phoneTeaser:before{content:'';position:absolute;left:-3px;top:62px;width:3px;height:34px;border-radius:3px 0 0 3px;background:linear-gradient(#d7b765,#6f572e 45%,#e6c56f);box-shadow:0 41px #a27d37}
+.phoneScreen{position:relative;width:100%;height:100%;overflow:hidden;border:1px solid #d9dee4;border-radius:22px;background:radial-gradient(ellipse at 15% 42%,#a4a947 0 20%,transparent 43%),radial-gradient(ellipse at 83% 7%,#42444c 0 29%,transparent 54%),linear-gradient(145deg,#41444d 0%,#6a6c70 48%,#353942 100%);box-shadow:inset 0 0 0 1px #ffffff35}
+.phoneScreen:after{content:'';position:absolute;inset:0;background:linear-gradient(116deg,#ffffff29 0%,transparent 28%,transparent 72%,#ffffff0d 100%);pointer-events:none}
+.phoneStatus{position:absolute;top:9%;left:11%;right:11%;display:flex;justify-content:space-between;color:#f9fafc;font-size:clamp(5px,.48vw,6px);font-weight:700;text-shadow:0 1px 3px #0008}
+.phoneSpeaker{position:absolute;top:4%;left:50%;width:23%;height:3px;border-radius:5px;background:#111821;box-shadow:0 0 0 1px #ffffff18;transform:translateX(-50%)}
+.phoneApp{position:absolute;top:39%;left:0;display:flex;width:100%;align-items:center;flex-direction:column;gap:5px;color:#fff;font-size:clamp(7px,.66vw,9px);font-weight:600;line-height:1.1;text-shadow:0 1px 4px #15202c;white-space:nowrap}
+.phoneApp img{display:block;width:40%;height:auto;aspect-ratio:1;object-fit:cover;border:1px solid #fff9;border-radius:31%;box-shadow:0 3px 10px #1118}
+.phoneDock{position:absolute;bottom:12%;left:22%;right:22%;display:flex;justify-content:space-between;align-items:center}
+.phoneDock i{display:block;width:7px;aspect-ratio:1;border:1px solid #ffffffaa;border-radius:50%;background:linear-gradient(145deg,#ffffffee,#d9e1eb88);box-shadow:0 1px 3px #1117}
+.phoneDock i:nth-child(2){background:linear-gradient(145deg,#f6d25d,#cf8b23)}
+.phoneHomeBar{position:absolute;bottom:4%;left:50%;width:23%;height:2px;border-radius:3px;background:#ffffffbd;transform:translateX(-50%)}
+@media(max-width:900px) and (min-width:601px){.phoneTeaser{top:12%;left:47%;width:clamp(66px,8vw,78px)}}
+@media(max-width:600px){.phoneTeaser{top:auto;bottom:70px;left:7%;width:68px;transform:rotate(-7deg) perspective(850px) rotateY(7deg)}.phoneStatus{font-size:5px}.phoneApp{gap:4px;font-size:7px}.phoneDock i{width:6px}}
