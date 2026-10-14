@@ -45,14 +45,6 @@ function isStandaloneEnergySet(set) {
   return normalize(set?.set_name).includes('energie')
 }
 
-function isPlayPokemon2024EnergyVariant(variant) {
-  const label = normalize(variant?.variant_label || '')
-  return variant?.checklist_group === 'stamp'
-    && label.includes('play')
-    && label.includes('pokemon')
-    && label.includes('2024')
-}
-
 function energyPrintYear(item) {
   const year = String(item?.variant?.variant_label || '').match(/20\d{2}/)?.[0]
   return Number(year) || setYear(cardSetFor(item?.card || item))
