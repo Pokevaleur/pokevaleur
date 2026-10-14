@@ -660,7 +660,7 @@ export default function CardChecklistPage() {
 
   function matchesCollectionFilter(card, filter) {
     const variants = (card.card_print_variants || []).filter(variant => !selectedVersions.length || selectedVersions.includes(variant.variant_key))
-    if (filter === 'duplicates' && isGlobalSearchView) {
+    if (filter === 'duplicates') {
       return variants.some(variant => (owned[variant.id] || []).length > 1)
     }
     const targets = variants.filter(isProgressTarget)
@@ -668,8 +668,10 @@ export default function CardChecklistPage() {
   }
 
   const visibleCards = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
-  const duplicateVariantRows = isGlobalSearchView && collectionFilter === 'duplicates'
-    ? visibleCards.flatMap(card => duplicateVariantsForCard(card, owned).map(({ variant, copies }) => ({ card, variant, copies, availableCopies: copies.length - 1 })))
+  const duplicateVariantRows = collectionFilter === 'duplicates'
+    ? visibleCards.flatMap(card => duplicateVariantsForCard(card, owned)
+      .filter(({ variant }) => !selectedVersions.length || selectedVersions.includes(variant.variant_key))
+      .map(({ variant, copies }) => ({ card, variant, copies, availableCopies: copies.length - 1 })))
       .sort((a, b) => {
         const aSet = Array.isArray(a.card.card_sets) ? a.card.card_sets[0] : a.card.card_sets
         const bSet = Array.isArray(b.card.card_sets) ? b.card.card_sets[0] : b.card.card_sets
@@ -681,6 +683,7 @@ export default function CardChecklistPage() {
     : []
   const availableDuplicateCopyCount = duplicateVariantRows.reduce((sum, row) => sum + row.availableCopies, 0)
   const duplicateCardCount = new Set(duplicateVariantRows.map(row => row.card.id)).size
+  const duplicateDocumentTitle = isGlobalSearchView ? query.trim() : (selectedSet?.set_name || query.trim())
   const visibleOwnedCopyCount = visibleCards.reduce((total, card) => total +
     (card.card_print_variants || [])
       .filter(variant => variant.is_master_set_target)
@@ -814,7 +817,7 @@ export default function CardChecklistPage() {
       }
 
       pdf.setProperties({
-        title: 'Mes doubles Pokémon · ' + query.trim(),
+        title: 'Mes doubles Pokémon · ' + duplicateDocumentTitle,
         subject: 'Cartes Pokémon disponibles à l’échange',
         author: profiles.find(profile => profile.id === profileId)?.display_name || 'PokéValeur',
         creator: 'PokéValeur'
@@ -829,7 +832,7 @@ export default function CardChecklistPage() {
       pdf.text('POKÉVALEUR · PARTAGE COLLECTION', pageWidth / 2, 36, { align: 'center' })
       pdf.setTextColor(255, 255, 255)
       pdf.setFontSize(30)
-      const coverTitle = pdf.splitTextToSize('Mes doubles · ' + query.trim(), pageWidth - 32)
+      const coverTitle = pdf.splitTextToSize('Mes doubles · ' + duplicateDocumentTitle, pageWidth - 32)
       pdf.text(coverTitle.slice(0, 2), pageWidth / 2, 74, { align: 'center' })
       pdf.setDrawColor(245, 184, 46)
       pdf.setLineWidth(0.8)
@@ -870,7 +873,7 @@ export default function CardChecklistPage() {
           pdf.setTextColor(255, 255, 255)
           pdf.setFont('helvetica', 'bold')
           pdf.setFontSize(12)
-          pdf.text('MES DOUBLES · ' + query.trim(), margin, 15)
+          pdf.text('MES DOUBLES · ' + duplicateDocumentTitle, margin, 15)
         }
         const row = duplicateVariantRows[index]
         const column = position % 2
@@ -949,7 +952,7 @@ export default function CardChecklistPage() {
       setDuplicatePdfPreview({
         file,
         url: previewUrl,
-        title: query.trim(),
+        title: duplicateDocumentTitle,
         date: new Date().toLocaleDateString('fr-FR'),
         cardCount: duplicateCardCount,
         variantCount: duplicateVariantRows.length,
@@ -982,7 +985,7 @@ export default function CardChecklistPage() {
     if (!duplicatePdfPreview) return
     try {
       if (typeof navigator.share === 'function' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [duplicatePdfPreview.file] })) {
-        await navigator.share({ files: [duplicatePdfPreview.file], title: 'Mes doubles · ' + query.trim(), text: 'Mes cartes Pokémon en double, disponibles à l’échange.' })
+        await navigator.share({ files: [duplicatePdfPreview.file], title: 'Mes doubles · ' + duplicateDocumentTitle, text: 'Mes cartes Pokémon en double, disponibles à l’échange.' })
         setNotice('Ton classeur PDF a été partagé.')
         return
       }
@@ -1271,7 +1274,22 @@ export default function CardChecklistPage() {
         ))}
       </div>}
 
-      {selectedSet && !isCatalogOnlySet && !cardsLoading && <section className={styles.copyMissingPanel} aria-label="Copier les variantes manquantes">
+      {selectedSet && collectionFilter === 'duplicates' && !cardsLoading && <section className={styles.duplicateSharePanel} aria-label="Partager les cartes en double de la série">
+        <div>
+          <strong>Partager les doubles de {selectedSet.set_name}</strong>
+          <p>Le PDF présentera toutes les variantes en double de cette série, avec les exemplaires disponibles au-delà d’un exemplaire conservé.</p>
+        </div>
+        <div className={styles.duplicateShareActions}>
+          <button type="button" className={styles.copyMissingButton} onClick={copyDuplicateCardNumbers} disabled={!duplicateVariantRows.length}>
+            Copier les numéros ({duplicateVariantRows.length})
+          </button>
+          <button type="button" className={styles.duplicatePdfButton} onClick={createDuplicateBinderPdf} disabled={!duplicateVariantRows.length || duplicatePdfBusy}>
+            {duplicatePdfBusy ? 'Création du classeur…' : 'Générer le classeur PDF'}
+          </button>
+        </div>
+      </section>}
+
+      {selectedSet && collectionFilter !== 'duplicates' && !isCatalogOnlySet && !cardsLoading && <section className={styles.copyMissingPanel} aria-label="Copier les variantes manquantes">
         <div>
           <strong>Copier les cartes manquantes</strong>
           <p>Choisis une action pour copier toutes les cartes manquantes ou seulement une variante.</p>
@@ -1409,7 +1427,9 @@ export default function CardChecklistPage() {
             <section className={styles.masterChecklist} aria-label="Liste complète des cartes du Master Set">
               {!visibleCards.length && <div className={styles.emptyCollection}><p>{query.trim() ? 'Aucune carte ne correspond à cette recherche.' : collectionFilter === 'owned' ? 'Aucune carte de cette série dans cette collection pour le moment.' : 'Aucune carte ne correspond à ce filtre.'}</p><a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Ajouter des cartes depuis le Catalogue →</a></div>}
               {visibleCards.map(card => {
-                const targetVariants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
+                const targetVariants = (card.card_print_variants || []).filter(variant => collectionFilter === 'duplicates'
+                  ? (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (owned[variant.id] || []).length > 1
+                  : variant.is_master_set_target)
                 const cardImage = imageUrl(card)
                 return <article className={styles.masterChecklistCard} key={card.id}>
                   <div className={styles.masterChecklistHead}>
