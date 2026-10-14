@@ -1,5 +1,6 @@
 'use client'
 
+import { useRouter } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
@@ -166,6 +167,7 @@ function isDedicatedEnergySet(set) {
 }
 
 export default function CardCataloguePage() {
+  const router = useRouter()
   const supabase = useMemo(() => createClient(), [])
   const [sets, setSets] = useState([])
   const [setId, setSetId] = useState('')
@@ -193,6 +195,16 @@ export default function CardCataloguePage() {
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const [seriesPickerQuery, setSeriesPickerQuery] = useState('')
   const seriesPickerRef = useRef(null)
+
+  useEffect(() => {
+    const returnHomeOnBack = event => {
+      event.stopImmediatePropagation()
+      router.replace('/')
+    }
+    window.history.pushState({ ...(window.history.state || {}), pokevaleurCatalogueBack: true }, '', window.location.href)
+    window.addEventListener('popstate', returnHomeOnBack, true)
+    return () => window.removeEventListener('popstate', returnHomeOnBack, true)
+  }, [router])
 
   useEffect(() => {
     let cancelled = false
