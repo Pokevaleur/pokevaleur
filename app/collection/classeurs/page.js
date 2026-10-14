@@ -1134,7 +1134,7 @@ function BindersContent() {
         const binderCardIds = new Set(binderCards.map(card => card.id))
         const binderExtras = isEnergyBinder
           ? allExtraItems.filter(item => (grouped[item.variant.id] || []).length > 0
-            || (isPlayPokemon2024EnergyVariant(item.variant) && binderCardIds.has(item.card.id)))
+            || isPlayPokemon2024EnergyVariant(item.variant))
             .sort(sortEnergyExtras)
           : isPromoStampBinder
             ? allExtraItems.filter(item => (grouped[item.variant.id] || []).length > 0)
@@ -1167,7 +1167,10 @@ function BindersContent() {
     return variantIds.reduce((sum, id) => sum + (variantCopies[id] || []).length, 0)
   }, [cards, extraVariants, isEnergyBinder, isPromoStampBinder, variantCopies])
   const ownedOnSet = isEnergyBinder || isPromoStampBinder
-    ? new Set([...cards.map(card => card.id), ...extraVariants.map(item => item.card.id)]).size
+    ? new Set([
+      ...cards.map(card => card.id),
+      ...extraVariants.filter(item => (variantCopies[item.variant.id] || []).length > 0).map(item => item.card.id),
+    ]).size
     : isMcDonaldsBinder
       ? mcDonaldSetIds.reduce((sum, setId) => sum + (ownedCardCounts[setId] || 0), 0)
       : cards.filter(card => (card.card_print_variants || []).some(variant => isMasterSetVariant(variant) && (variantCopies[variant.id] || []).length > 0)).length
@@ -1175,6 +1178,7 @@ function BindersContent() {
   const masterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(isMasterSetVariant).length, 0)
   const ownedMasterVariantTotal = cards.reduce((sum, card) => sum + (card.card_print_variants || []).filter(variant => isMasterSetVariant(variant) && (variantCopies[variant.id] || []).length).length, 0)
   const missingOnSet = Math.max(masterVariantTotal - ownedMasterVariantTotal, 0)
+    + (isEnergyBinder ? extraVariants.filter(item => isPlayPokemon2024EnergyVariant(item.variant) && !(variantCopies[item.variant.id] || []).length).length : 0)
   const promoStampItems = extraVariants.filter(item => isPromoStampCategory(item.category || item.variant?.checklist_group) && (!isEv9Binder || item.variant?.is_master_set_target))
   const promoStampTotal = promoStampItems.length
   const ownedPromoStampTotal = promoStampItems.filter(item => (variantCopies[item.variant.id] || []).length > 0).length
@@ -1610,7 +1614,7 @@ function BindersContent() {
           <div><h1>{selectedSet.set_name}</h1></div>
           <p>{isPromoCatalogView
             ? promoCatalogItems.length + ' promos du catalogue · visibles même si elles ne sont pas possédées'
-            : (isMcDonaldsBinder ? mcDonaldSets.length + ' éditions annuelles · ' : '') + ownedOnSet + ' possédée' + (ownedOnSet === 1 ? '' : 's') + ' · ' + missingOnSet + ' variante' + (missingOnSet === 1 ? '' : 's') + ' à compléter · ' + extraVariants.length + ' version' + (extraVariants.length === 1 ? '' : 's') + ' hors Master Set'}</p>
+            : (isMcDonaldsBinder ? mcDonaldSets.length + ' éditions annuelles · ' : '') + ownedOnSet + ' possédée' + (ownedOnSet === 1 ? '' : 's') + ' · ' + missingOnSet + ' variante' + (missingOnSet === 1 ? '' : 's') + ' à compléter · ' + (isEnergyBinder ? extraVariants.filter(item => (variantCopies[item.variant.id] || []).length > 0).length : extraVariants.length) + ' version' + ((isEnergyBinder ? extraVariants.filter(item => (variantCopies[item.variant.id] || []).length > 0).length : extraVariants.length) === 1 ? '' : 's') + ' hors Master Set}</p>
         </header>
         {!isPromoCatalogView && promoCatalogItems.length > 0 && <button type="button" className={styles.bonusCardsCatalogButton}
           onClick={() => navigate({ open: true, page: 0, promos: true })}
