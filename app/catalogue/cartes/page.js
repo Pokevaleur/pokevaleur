@@ -665,7 +665,7 @@ export default function CardCataloguePage() {
             return <Fragment key={card.id + (group.year ? '-' + group.year : '')}>
               {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{copyrightYearVariant ? ' · tirage ©' + copyrightYearVariant.copyright_year + (copyrightYearVariant.guide_marker === 'play-pokemon-prize-pack-series-6' ? ' · Pack Récompense Série 6 (2025)' : '') : set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
               <article className={`${styles.cardRow} ${ownershipCardId === card.id ? styles.cardRowWithOwnership : ''}`}>
-              <button className={styles.thumbButton} type="button" onClick={() => setZoomedCard(card)} aria-label={'Voir l’image de ' + card.card_name}>
+              <button className={styles.thumbButton} type="button" onClick={event => { const currentImage = event.currentTarget.querySelector('img')?.currentSrc || imageUrl; setZoomedCard({ ...card, zoomImageUrl: currentImage, zoomImageCandidates: [...new Set([currentImage, ...imageCandidates, ...(cardImageCandidates[card.id] || []), card.image_url].filter(Boolean))] }) }} aria-label={'Voir l’image de ' + card.card_name}>
                 {imageUrl ? <img src={imageUrl} alt={card.card_name} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} onError={event => advanceCardImage(event, imageCandidates)} /> : <span>Image indisponible</span>}
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
@@ -799,7 +799,7 @@ export default function CardCataloguePage() {
       {zoomedCard && <div className={styles.modal} role="presentation" onClick={() => setZoomedCard(null)}>
         <div className={styles.modalContent} role="dialog" aria-modal="true" aria-label={'Carte ' + zoomedCard.card_name} onClick={event => event.stopPropagation()}>
           <button type="button" className={styles.closeButton} onClick={() => setZoomedCard(null)} aria-label="Fermer">×</button>
-          <img src={cardImageCandidates[zoomedCard.id]?.[0] || zoomedCard.image_url} alt={zoomedCard.card_name} onError={event => advanceCardImage(event, cardImageCandidates[zoomedCard.id] || [zoomedCard.image_url].filter(Boolean))} />
+          <img src={zoomedCard.zoomImageUrl || cardImageCandidates[zoomedCard.id]?.[0] || zoomedCard.image_url} alt={zoomedCard.card_name} onError={event => advanceCardImage(event, zoomedCard.zoomImageCandidates || cardImageCandidates[zoomedCard.id] || [zoomedCard.image_url].filter(Boolean))} />
           <p>{zoomedCard.card_name} · {zoomedCard.collector_number}</p>
         </div>
       </div>}
