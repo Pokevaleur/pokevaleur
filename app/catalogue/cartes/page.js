@@ -660,6 +660,7 @@ export default function CardCataloguePage() {
               ? (card.card_print_variants || []).filter(variant => variant.is_master_set_target && Number(variant.copyright_year) === Number(yearSearch))
               : [])
             const copyrightYearVariant = yearVariants.find(variant => variant.image_url) || yearVariants[0] || null
+            const displayCopyrightYear = Number(copyrightYearVariant?.copyright_year) || null
             const variants = yearGroupVariants || (card.card_print_variants || []).filter(variant => variant.is_master_set_target
               && (!yearSearch || Number(variant.copyright_year) === Number(yearSearch) || String(relatedSet(card)?.release_date || '').startsWith(yearSearch)))
             const set = relatedSet(card)
@@ -675,14 +676,14 @@ export default function CardCataloguePage() {
               copies: owned[variant.id] || []
             })).filter(entry => entry.copies.length > 0)
             return <Fragment key={card.id + (group.year ? '-' + group.year : '')}>
-              {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{copyrightYearVariant ? ' · tirage ©' + copyrightYearVariant.copyright_year + (copyrightYearVariant.guide_marker === 'play-pokemon-prize-pack-series-6' ? ' · Pack Récompense Série 6 (2025)' : '') : set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
+              {showEnergyGroup && <h2 className={styles.energyGroupHeading}>{seriesLabel(set)}{displayCopyrightYear ? ' · tirage ©' + displayCopyrightYear + (copyrightYearVariant?.guide_marker === 'play-pokemon-prize-pack-series-6' ? ' · Pack Récompense Série 6 (2025)' : '') : set?.release_date ? ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</h2>}
               <article className={`${styles.cardRow} ${ownershipCardId === card.id ? styles.cardRowWithOwnership : ''}`}>
               <button className={styles.thumbButton} type="button" onClick={event => { const currentImage = event.currentTarget.querySelector('img')?.currentSrc || imageUrl; setZoomedCard({ ...card, zoomImageUrl: currentImage, zoomImageCandidates: [...new Set([currentImage, ...imageCandidates, ...(cardImageCandidates[card.id] || []), card.image_url].filter(Boolean))] }) }} aria-label={'Voir l’image de ' + card.card_name}>
                 {imageUrl ? <img src={imageUrl} alt={card.card_name} loading={index < 8 ? 'eager' : 'lazy'} decoding="async" fetchPriority={index < 4 ? 'high' : 'auto'} onError={event => advanceCardImage(event, imageCandidates)} /> : <span>Image indisponible</span>}
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
-                <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}{isUnnumberedEnergyCard(card) ? 'Sans numéro' : 'N° ' + card.collector_number}{card.card_type === 'Énergie' && (copyrightYearVariant || set?.release_date) ? copyrightYearVariant ? ' · ©' + copyrightYearVariant.copyright_year : ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
+                <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}{isUnnumberedEnergyCard(card) ? 'Sans numéro' : 'N° ' + card.collector_number}{card.card_type === 'Énergie' && (displayCopyrightYear || set?.release_date) ? displayCopyrightYear ? ' · ©' + displayCopyrightYear : ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
                 <div className={styles.rarityRow}>
                   <span className={styles.rarity}>{isGoldEnergy(card) ? 'Gold · ' : ''}{card.rarity_label || 'Rareté non renseignée'}</span>
