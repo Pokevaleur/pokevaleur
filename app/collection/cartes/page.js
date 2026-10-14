@@ -683,6 +683,9 @@ export default function CardChecklistPage() {
     : []
   const availableDuplicateCopyCount = duplicateVariantRows.reduce((sum, row) => sum + row.availableCopies, 0)
   const duplicateCardCount = new Set(duplicateVariantRows.map(row => row.card.id)).size
+  const duplicateCardCountForPill = baseFilteredCards.filter(card => (card.card_print_variants || []).some(variant =>
+    (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (owned[variant.id] || []).length > 1
+  )).length
   const duplicateDocumentTitle = isGlobalSearchView ? query.trim() : (selectedSet?.set_name || query.trim())
   const visibleOwnedCopyCount = visibleCards.reduce((total, card) => total +
     (card.card_print_variants || [])
@@ -1270,7 +1273,8 @@ export default function CardChecklistPage() {
             className={collectionFilter === filter ? styles.collectionCardFilterActive : styles.collectionCardFilter}
             aria-pressed={collectionFilter === filter}
             onClick={() => selectCollectionFilter(filter)}
-          >{label}</button>
+            aria-label={filter === 'duplicates' ? 'En double, ' + duplicateCardCountForPill + ' cartes' : label}
+          >{filter === 'duplicates' ? label + ' · ' + duplicateCardCountForPill : label}</button>
         ))}
       </div>}
 
