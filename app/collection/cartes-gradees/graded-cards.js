@@ -8,7 +8,7 @@ import styles from './graded-cards.module.css'
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,rarity_label,image_url,card_sets!cards_card_set_id_fkey(id,set_name,set_code,language),card_print_variants(id,variant_key,variant_label,finish_code)'
 const STORAGE_BUCKET = 'collection-images'
 const GRADE_OPTIONS = Array.from({ length: 19 }, (_, index) => {
-  const grade = 1 + index * 0.5
+  const grade = 10 - index * 0.5
   return Number.isInteger(grade) ? String(grade) : grade.toFixed(1)
 })
 
@@ -360,6 +360,13 @@ export default function GradedCardsPage({ mode }) {
       && (!filters.language || normalized(item.graded_language) === normalized(filters.language))
   })
 
+  const gradedCountsBySet = items.reduce((counts, item) => {
+    const setId = item.card_print_variants?.cards?.card_sets?.id
+    if (setId) counts[setId] = (counts[setId] || 0) + 1
+    return counts
+  }, {})
+  const gradedBinderSets = sets.filter(set => gradedCountsBySet[set.id] > 0)
+
   if (loading) return <main className={styles.page}><p className={styles.status}>Chargement des cartes gradées…</p></main>
 
   return <main className={styles.page}>
@@ -368,7 +375,6 @@ export default function GradedCardsPage({ mode }) {
       <span className={styles.privateBadge}>Espace membre</span>
     </div>
     <header className={styles.header}>
-      <p className={styles.kicker}>Ma collection · Mes cartes gradées</p>
       <h1>{mode === 'add' ? 'Ajouter une carte gradée' : 'Consulter mes cartes gradées'}</h1>
       <p>{mode === 'add' ? 'Choisis la carte du catalogue, puis renseigne les informations visibles sur son certificat. Les champs détaillés restent facultatifs.' : 'Retrouve chaque exemplaire et filtre ta collection par carte, série, société, note ou langue.'}</p>
     </header>
@@ -557,6 +563,40 @@ export default function GradedCardsPage({ mode }) {
       </section>
       <button className={styles.primaryButton} type="submit" disabled={busy || !profileId}>{busy ? 'Enregistrement…' : 'Ajouter à ma collection'}</button>
     </form> : <>
+      <section className={styles.gradedLibrarySection} aria-label="Classeurs de cartes gradées par série">
+        <div className={styles.gradedLibraryHeading}>
+          <h2>Classeurs de cartes gradées</h2>
+          <span>{gradedBinderSets.length} série{gradedBinderSets.length === 1 ? '' : 's'}</span>
+        </div>
+        <div className={styles.gradedLibrary}>
+          <button
+            type="button"
+            className={!filters.setId ? styles.gradedBinderActive : styles.gradedBinderAll}
+            aria-pressed={!filters.setId}
+            onClick={() => setFilters(current => ({ ...current, setId: '' }))}
+          >
+            <strong>Toutes</strong>
+            <span>{items.length}</span>
+          </button>
+          {gradedBinderSets.map(set => {
+            const hue = Array.from(set.set_code || set.id).reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360
+            const active = filters.setId === set.id
+            return <button
+              key={set.id}
+              type="button"
+              className={active ? styles.gradedBinderActive : styles.gradedBinder}
+              style={{ '--binder-hue': hue }}
+              aria-pressed={active}
+              aria-label={set.set_name + ', ' + gradedCountsBySet[set.id] + ' carte' + (gradedCountsBySet[set.id] === 1 ? '' : 's') + ' gradée' + (gradedCountsBySet[set.id] === 1 ? '' : 's')}
+              onClick={() => setFilters(current => ({ ...current, setId: set.id }))}
+            >
+              <span className={styles.gradedBinderCode}>{set.set_code || set.set_name}</span>
+              <span className={styles.gradedBinderName}>{set.set_name}</span>
+              <span className={styles.gradedBinderCount}>{gradedCountsBySet[set.id]}</span>
+            </button>
+          })}
+        </div>
+      </section>
       <section className={styles.filterPanel} aria-label="Filtres de cartes gradées">
         <label>Recherche<input value={filters.text} onChange={event => setFilters(current => ({ ...current, text: event.target.value }))} placeholder="Nom, numéro, certification…" /></label>
         <label>Série<select value={filters.setId} onChange={event => setFilters(current => ({ ...current, setId: event.target.value }))}><option value="">Toutes</option>{sets.map(set => <option key={set.id} value={set.id}>{setLabel(set)}</option>)}</select></label>
@@ -585,6 +625,8 @@ export default function GradedCardsPage({ mode }) {
           </div>
         </article>
       })}</div> : <div className={styles.emptyState}><p>Aucune carte gradée ne correspond à ces filtres.</p><a href="/collection/cartes-gradees/ajouter">Ajouter une carte gradée →</a></div>}
+
+
     </>}
     <footer className={styles.footerLinks}><a href="/collection/cartes">← Mes cartes</a>{memberProfile && <span>Collection : {memberProfile.display_name}</span>}</footer>
   </main>
