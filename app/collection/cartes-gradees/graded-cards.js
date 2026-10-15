@@ -285,13 +285,16 @@ export default function GradedCardsPage({ mode }) {
 
   useEffect(() => {
     if (mode !== 'consult' || !openedBinderId || openedBinderId !== selectedBinderId) return
-    const frame = window.requestAnimationFrame(() => {
-      const section = gradedBinderViewRef.current
-      if (!section) return
-      const top = section.getBoundingClientRect().top + window.scrollY - 88
-      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    let secondFrame = 0
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        gradedBinderViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+      })
     })
-    return () => window.cancelAnimationFrame(frame)
+    return () => {
+      window.cancelAnimationFrame(firstFrame)
+      window.cancelAnimationFrame(secondFrame)
+    }
   }, [mode, openedBinderId, selectedBinderId, binderPage])
 
   function openGradedDetails(item) {
@@ -523,26 +526,50 @@ export default function GradedCardsPage({ mode }) {
     return counts
   }, {})
   const gradedBinderSets = sets.filter(set => gradedCountsBySet[set.id] > 0)
-  const selectedBinderSet = gradedBinderSets.find(set => set.id === selectedBinderId) || null
-  const selectedBinderItems = selectedBinderId === 'all' ? filteredItems : filteredItems.filter(item => item.card_print_variants?.cards?.card_sets?.id === selectedBinderId)
+  const gradedCountsByCompany = items.reduce((counts, item) => {
+    const companyId = item.grading_company_id
+    if (companyId) counts[companyId] = (counts[companyId] || 0) + 1
+    return counts
+  }, {})
+  const gradedBinderCompanies = companies.filter(company => gradedCountsByCompany[company.id] > 0)
+  const selectedBinderSetId = selectedBinderId.startsWith('series:') ? selectedBinderId.slice(7) : ''
+  const selectedBinderCompanyId = selectedBinderId.startsWith('company:') ? selectedBinderId.slice(8) : ''
+  const selectedBinderSet = gradedBinderSets.find(set => set.id === selectedBinderSetId) || null
+  const selectedBinderCompany = gradedBinderCompanies.find(company => company.id === selectedBinderCompanyId) || null
+  const selectedBinderItems = selectedBinderId === 'all'
+    ? filteredItems
+    : selectedBinderSetId
+      ? filteredItems.filter(item => item.card_print_variants?.cards?.card_sets?.id === selectedBinderSetId)
+      : selectedBinderCompanyId
+        ? filteredItems.filter(item => item.grading_company_id === selectedBinderCompanyId)
+        : []
   const binderTotalPages = Math.ceil(selectedBinderItems.length / BINDER_PAGE_SIZE)
   const visibleBinderItems = openedBinderId && openedBinderId === selectedBinderId ? selectedBinderItems.slice(binderPage * BINDER_PAGE_SIZE, (binderPage + 1) * BINDER_PAGE_SIZE) : []
-  const binderCoverItem = selectedBinderId === 'all' ? (filteredItems[0] || items[0]) : items.find(item => item.card_print_variants?.cards?.card_sets?.id === selectedBinderId)
+  const binderCoverItem = selectedBinderItems[0] || items[0] || null
   const binderCoverArt = binderCoverItem ? signedPhotos[binderCoverItem.id] || binderCoverItem.card_print_variants?.image_url || binderCoverItem.card_print_variants?.cards?.image_url : ''
-  const selectedBinderName = selectedBinderId === 'all' ? 'Toutes les séries' : selectedBinderSet?.set_name
+  const selectedBinderName = selectedBinderId === 'all' ? 'Toutes les séries' : selectedBinderSet?.set_name || selectedBinderCompany?.company_name
+  const selectedBinderCount = selectedBinderItems.length
+  const selectedBinderHue = selectedBinderId === 'all'
+    ? 220
+    : Array.from(selectedBinderSet?.set_code || selectedBinderCompany?.abbreviation || selectedBinderSet?.id || selectedBinderCompany?.id || '').reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360
 
-  function selectGradedBinder(id) {
-    setSelectedBinderId(id)
+  function selectGradedBinder(id, type = 'all') {
+    const binderId = type === 'series' ? 'series:' + id : type === 'company' ? 'company:' + id : 'all'
+    setSelectedBinderId(binderId)
     setOpenedBinderId('')
     setBinderPage(0)
-    setFilters(current => ({ ...current, setId: id === 'all' ? '' : id }))
+    setFilters(current => ({
+      ...current,
+      setId: type === 'series' ? id : '',
+      companyId: type === 'company' ? id : ''
+    }))
   }
 
   function updateConsultFilter(key, value) {
     setFilters(current => ({ ...current, [key]: value }))
     setBinderPage(0)
-    if (key === 'setId') {
-      setSelectedBinderId(value || 'all')
+    if (key === 'setId' || key === 'companyId') {
+      setSelectedBinderId(value ? (key === 'setId' ? 'series:' : 'company:') + value : 'all')
       setOpenedBinderId('')
     }
   }
@@ -745,23 +772,24 @@ export default function GradedCardsPage({ mode }) {
     </form> : <>
       <section className={styles.gradedLibrarySection} aria-label="Classeurs de cartes gradées par série">
         <div className={styles.gradedLibraryHeading}>
-          <h2>Classeurs de cartes gradées</h2>
+          <h2>Classeurs par série</h2>
           <span>{gradedBinderSets.length} série{gradedBinderSets.length === 1 ? '' : 's'}</span>
         </div>
         <div className={styles.gradedLibrary}>
           <button type="button"
             className={selectedBinderId === 'all' ? styles.gradedBinderActive : styles.gradedBinderAll}
-            aria-pressed={selectedBinderId === 'all'} onClick={() => selectGradedBinder('all')}>
+            aria-pressed={selectedBinderId === 'all'} onClick={() => selectGradedBinder('', 'all')}>
             <strong>Toutes</strong><span>{items.length}</span>
           </button>
           {gradedBinderSets.map(set => {
             const hue = Array.from(set.set_code || set.id).reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360
-            const active = selectedBinderId === set.id
-            return <button key={set.id} type="button"
+            const binderId = 'series:' + set.id
+            const active = selectedBinderId === binderId
+            return <button key={binderId} type="button"
               className={active ? styles.gradedBinderActive : styles.gradedBinder}
               style={{ '--binder-hue': hue }} aria-pressed={active}
               aria-label={set.set_name + ', ' + gradedCountsBySet[set.id] + ' carte' + (gradedCountsBySet[set.id] === 1 ? '' : 's') + ' gradée' + (gradedCountsBySet[set.id] === 1 ? '' : 's')}
-              onClick={() => selectGradedBinder(set.id)}>
+              onClick={() => selectGradedBinder(set.id, 'series')}>
               <span className={styles.gradedBinderCode}>{set.set_code || set.set_name}</span>
               <span className={styles.gradedBinderName}>{set.set_name}</span>
               <span className={styles.gradedBinderCount}>{gradedCountsBySet[set.id]}</span>
@@ -769,20 +797,43 @@ export default function GradedCardsPage({ mode }) {
           })}
         </div>
       </section>
-      {selectedBinderId && !openedBinderId && (selectedBinderId === 'all' || selectedBinderSet) && <section className={styles.gradedCoverStage} aria-label="Couverture du classeur">
-        <div className={styles.gradedCoverBook} style={{ '--cover-hue': selectedBinderId === 'all' ? 220 : Array.from(selectedBinderSet?.set_code || selectedBinderSet?.id || '').reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360 }}>
+      <section className={styles.gradedLibrarySection} aria-label="Classeurs de cartes gradées par société">
+        <div className={styles.gradedLibraryHeading}>
+          <h2>Classeurs par société de gradation</h2>
+          <span>{gradedBinderCompanies.length} société{gradedBinderCompanies.length === 1 ? '' : 's'}</span>
+        </div>
+        <div className={styles.gradedLibrary}>
+          {gradedBinderCompanies.map(company => {
+            const binderId = 'company:' + company.id
+            const label = company.abbreviation || company.company_name
+            const hue = Array.from(label).reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360
+            const active = selectedBinderId === binderId
+            return <button key={binderId} type="button"
+              className={active ? styles.gradedBinderActive : styles.gradedBinder}
+              style={{ '--binder-hue': hue }} aria-pressed={active}
+              aria-label={company.company_name + ', ' + gradedCountsByCompany[company.id] + ' carte' + (gradedCountsByCompany[company.id] === 1 ? '' : 's') + ' gradée' + (gradedCountsByCompany[company.id] === 1 ? '' : 's')}
+              onClick={() => selectGradedBinder(company.id, 'company')}>
+              <span className={styles.gradedBinderCode}>{label}</span>
+              <span className={styles.gradedBinderName}>{company.company_name}</span>
+              <span className={styles.gradedBinderCount}>{gradedCountsByCompany[company.id]}</span>
+            </button>
+          })}
+        </div>
+      </section>
+      {selectedBinderId && !openedBinderId && (selectedBinderId === 'all' || selectedBinderSet || selectedBinderCompany) && <section className={styles.gradedCoverStage} aria-label="Couverture du classeur">
+        <div className={styles.gradedCoverBook} style={{ '--cover-hue': selectedBinderHue }}>
           {binderCoverArt && <img src={binderCoverArt} alt="" className={styles.gradedCoverArtwork} />}
-          <div className={styles.gradedCoverSpine}>{selectedBinderId === 'all' ? 'POKÉVALEUR' : (selectedBinderSet?.set_code || 'SÉRIE')}</div>
+          <div className={styles.gradedCoverSpine}>{selectedBinderId === 'all' ? 'POKÉVALEUR' : (selectedBinderSet?.set_code || selectedBinderCompany?.abbreviation || 'SÉRIE')}</div>
           <div className={styles.gradedCoverFace}>
             <span>POKÉVALEUR · CLASSEUR GRADÉ</span>
             <strong>{selectedBinderName}</strong>
-            <small>{selectedBinderId === 'all' ? items.length : gradedCountsBySet[selectedBinderId] || 0} exemplaire{(selectedBinderId === 'all' ? items.length : gradedCountsBySet[selectedBinderId] || 0) === 1 ? '' : 's'}</small>
+            <small>{selectedBinderCount} exemplaire{selectedBinderCount === 1 ? '' : 's'}</small>
           </div>
         </div>
         <div className={styles.gradedCoverDetails}>
           <p className={styles.gradedCoverKicker}>Ta collection, mise en classeur</p>
           <h2>{selectedBinderName}</h2>
-          <p>{selectedBinderId === 'all' ? 'Toutes les séries de tes cartes gradées sont réunies ici.' : 'Retrouve les cartes gradées de cette série, dans leur boîtier.'}</p>
+          <p>{selectedBinderId === 'all' ? 'Toutes les séries de tes cartes gradées sont réunies ici.' : selectedBinderCompany ? 'Retrouve tes cartes gradées par cette société.' : 'Retrouve les cartes gradées de cette série, dans leur boîtier.'}</p>
           <button className={styles.gradedOpenButton} type="button" onClick={() => { setOpenedBinderId(selectedBinderId); setBinderPage(0) }}>
             Ouvrir le classeur <span aria-hidden="true">→</span>
           </button>
@@ -797,7 +848,7 @@ export default function GradedCardsPage({ mode }) {
       </section>
       {openedBinderId && openedBinderId === selectedBinderId && <section className={styles.gradedBinderView} ref={gradedBinderViewRef}>
         <div className={styles.gradedOpenHeader}>
-          <div><h2>{selectedBinderName}</h2><p>{selectedBinderItems.length} exemplaire{selectedBinderItems.length === 1 ? '' : 's'} gradé{selectedBinderItems.length === 1 ? '' : 's'} · 12 emplacements par page</p></div>
+          <div><h2>{selectedBinderName}</h2><p>{selectedBinderItems.length} cartes gradées</p></div>
           <button className={styles.gradedBackToCover} type="button" onClick={() => setOpenedBinderId('')}>← Retour à la couverture</button>
         </div>
         {selectedBinderItems.length ? <>
@@ -809,7 +860,7 @@ export default function GradedCardsPage({ mode }) {
           <div className={styles.gradedBookSpread}>
             <section className={styles.gradedBookPage} aria-label={'Page ' + (binderPage + 1) + ' du classeur'}>
               <div className={styles.gradedPageTop}><span>{selectedBinderName}</span><span>{binderPage + 1}</span></div>
-              <p className={styles.resultCount}>{selectedBinderItems.length} exemplaire{selectedBinderItems.length === 1 ? '' : 's'} au total</p>
+              
               <div className={styles.gradedCardsGrid}>
                 {Array.from({ length: BINDER_PAGE_SIZE }, (_, slotIndex) => {
                   const item = visibleBinderItems[slotIndex]
