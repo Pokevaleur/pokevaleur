@@ -70,6 +70,7 @@ export default function GradedCardsPage({ mode }) {
   const [selectedBinderId, setSelectedBinderId] = useState('')
   const [openedBinderId, setOpenedBinderId] = useState('')
   const [binderPage, setBinderPage] = useState(0)
+  const [binderShelfType, setBinderShelfType] = useState('series')
   const gradedBinderViewRef = useRef(null)
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const [gradePickerOpen, setGradePickerOpen] = useState(false)
@@ -286,13 +287,17 @@ export default function GradedCardsPage({ mode }) {
   useEffect(() => {
     if (mode !== 'consult' || !openedBinderId || openedBinderId !== selectedBinderId) return
     let secondFrame = 0
-    const firstFrame = window.requestAnimationFrame(() => {
-      secondFrame = window.requestAnimationFrame(() => {
-        gradedBinderViewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    const timeout = window.setTimeout(() => {
+      const firstFrame = window.requestAnimationFrame(() => {
+        secondFrame = window.requestAnimationFrame(() => {
+          const section = gradedBinderViewRef.current
+          if (!section) return
+          section.scrollIntoView({ behavior: 'smooth', block: 'start' })
+        })
       })
-    })
+    }, 120)
     return () => {
-      window.cancelAnimationFrame(firstFrame)
+      window.clearTimeout(timeout)
       window.cancelAnimationFrame(secondFrame)
     }
   }, [mode, openedBinderId, selectedBinderId, binderPage])
@@ -555,6 +560,7 @@ export default function GradedCardsPage({ mode }) {
 
   function selectGradedBinder(id, type = 'all') {
     const binderId = type === 'series' ? 'series:' + id : type === 'company' ? 'company:' + id : 'all'
+    setBinderShelfType(type === 'company' ? 'company' : 'series')
     setSelectedBinderId(binderId)
     setOpenedBinderId('')
     setBinderPage(0)
@@ -565,10 +571,19 @@ export default function GradedCardsPage({ mode }) {
     }))
   }
 
+  function switchBinderShelf(type) {
+    setBinderShelfType(type)
+    setSelectedBinderId('')
+    setOpenedBinderId('')
+    setBinderPage(0)
+    setFilters(current => ({ ...current, setId: '', companyId: '' }))
+  }
+
   function updateConsultFilter(key, value) {
     setFilters(current => ({ ...current, [key]: value }))
     setBinderPage(0)
     if (key === 'setId' || key === 'companyId') {
+      setBinderShelfType(key === 'setId' ? 'series' : 'company')
       setSelectedBinderId(value ? (key === 'setId' ? 'series:' : 'company:') + value : 'all')
       setOpenedBinderId('')
     }
@@ -770,40 +785,37 @@ export default function GradedCardsPage({ mode }) {
       </section>
       <button className={styles.primaryButton} type="submit" disabled={busy || !profileId}>{busy ? 'Enregistrement…' : 'Ajouter à ma collection'}</button>
     </form> : <>
-      <section className={styles.gradedLibrarySection} aria-label="Classeurs de cartes gradées par série">
+      <section className={styles.gradedLibrarySection} aria-label="Classeurs de cartes gradées">
         <div className={styles.gradedLibraryHeading}>
-          <h2>Classeurs par série</h2>
-          <span>{gradedBinderSets.length} série{gradedBinderSets.length === 1 ? '' : 's'}</span>
+          <h2>Classeurs de cartes gradées</h2>
+          <span>{binderShelfType === 'series' ? gradedBinderSets.length + ' série' + (gradedBinderSets.length === 1 ? '' : 's') : gradedBinderCompanies.length + ' société' + (gradedBinderCompanies.length === 1 ? '' : 's')}</span>
         </div>
-        <div className={styles.gradedLibrary}>
-          <button type="button"
-            className={selectedBinderId === 'all' ? styles.gradedBinderActive : styles.gradedBinderAll}
-            aria-pressed={selectedBinderId === 'all'} onClick={() => selectGradedBinder('', 'all')}>
-            <strong>Toutes</strong><span>{items.length}</span>
-          </button>
-          {gradedBinderSets.map(set => {
-            const hue = Array.from(set.set_code || set.id).reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360
-            const binderId = 'series:' + set.id
-            const active = selectedBinderId === binderId
-            return <button key={binderId} type="button"
-              className={active ? styles.gradedBinderActive : styles.gradedBinder}
-              style={{ '--binder-hue': hue }} aria-pressed={active}
-              aria-label={set.set_name + ', ' + gradedCountsBySet[set.id] + ' carte' + (gradedCountsBySet[set.id] === 1 ? '' : 's') + ' gradée' + (gradedCountsBySet[set.id] === 1 ? '' : 's')}
-              onClick={() => selectGradedBinder(set.id, 'series')}>
-              <span className={styles.gradedBinderCode}>{set.set_code || set.set_name}</span>
-              <span className={styles.gradedBinderName}>{set.set_name}</span>
-              <span className={styles.gradedBinderCount}>{gradedCountsBySet[set.id]}</span>
+        <div className={styles.gradedShelfTabs} role="group" aria-label="Choisir les classeurs">
+          <button type="button" className={binderShelfType === 'series' ? styles.gradedShelfTabActive : styles.gradedShelfTab} aria-pressed={binderShelfType === 'series'} onClick={() => switchBinderShelf('series')}>Par série</button>
+          <button type="button" className={binderShelfType === 'company' ? styles.gradedShelfTabActive : styles.gradedShelfTab} aria-pressed={binderShelfType === 'company'} onClick={() => switchBinderShelf('company')}>Par société</button>
+        </div>
+        <div className={styles.gradedLibrary} aria-label={binderShelfType === 'series' ? 'Classeurs par série' : 'Classeurs par société de gradation'}>
+          {binderShelfType === 'series' ? <>
+            <button type="button"
+              className={selectedBinderId === 'all' ? styles.gradedBinderActive : styles.gradedBinderAll}
+              aria-pressed={selectedBinderId === 'all'} onClick={() => selectGradedBinder('', 'all')}>
+              <strong>Toutes</strong><span>{items.length}</span>
             </button>
-          })}
-        </div>
-      </section>
-      <section className={styles.gradedLibrarySection} aria-label="Classeurs de cartes gradées par société">
-        <div className={styles.gradedLibraryHeading}>
-          <h2>Classeurs par société de gradation</h2>
-          <span>{gradedBinderCompanies.length} société{gradedBinderCompanies.length === 1 ? '' : 's'}</span>
-        </div>
-        <div className={styles.gradedLibrary}>
-          {gradedBinderCompanies.map(company => {
+            {gradedBinderSets.map(set => {
+              const hue = Array.from(set.set_code || set.id).reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360
+              const binderId = 'series:' + set.id
+              const active = selectedBinderId === binderId
+              return <button key={binderId} type="button"
+                className={active ? styles.gradedBinderActive : styles.gradedBinder}
+                style={{ '--binder-hue': hue }} aria-pressed={active}
+                aria-label={set.set_name + ', ' + gradedCountsBySet[set.id] + ' carte' + (gradedCountsBySet[set.id] === 1 ? '' : 's') + ' gradée' + (gradedCountsBySet[set.id] === 1 ? '' : 's')}
+                onClick={() => selectGradedBinder(set.id, 'series')}>
+                <span className={styles.gradedBinderCode}>{set.set_code || set.set_name}</span>
+                <span className={styles.gradedBinderName}>{set.set_name}</span>
+                <span className={styles.gradedBinderCount}>{gradedCountsBySet[set.id]}</span>
+              </button>
+            })}
+          </> : gradedBinderCompanies.map(company => {
             const binderId = 'company:' + company.id
             const label = company.abbreviation || company.company_name
             const hue = Array.from(label).reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360
@@ -864,7 +876,7 @@ export default function GradedCardsPage({ mode }) {
               <div className={styles.gradedCardsGrid}>
                 {Array.from({ length: BINDER_PAGE_SIZE }, (_, slotIndex) => {
                   const item = visibleBinderItems[slotIndex]
-                  if (!item) return <div className={styles.gradedEmptySlot} key={'empty-' + binderPage + '-' + slotIndex} aria-label={'Emplacement libre ' + (slotIndex + 1)}><span>Emplacement libre</span></div>
+                  if (!item) return <div className={styles.gradedEmptySlot} key={'empty-' + binderPage + '-' + slotIndex} aria-label={'Emplacement libre ' + (slotIndex + 1)}><span>Libre</span></div>
                   const variant = item.card_print_variants
                   const card = variant?.cards
                   const company = item.card_grading_companies
