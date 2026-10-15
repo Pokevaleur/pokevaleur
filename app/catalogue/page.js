@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
+import { createSeriesReleaseDateMap, sortProductsByRelease } from '../../lib/catalogue-sort.mjs'
 
 function median(values) {
   if (!values.length) return null
@@ -17,6 +18,7 @@ function median(values) {
 export default function CataloguePage() {
   const supabase = useMemo(() => createClient(), [])
   const [products, setProducts] = useState([])
+  const [seriesReleaseDates, setSeriesReleaseDates] = useState(() => new Map())
   const [history, setHistory] = useState([])
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState('')
@@ -88,7 +90,11 @@ export default function CataloguePage() {
   async function loadProducts() {
     setLoading(true)
     setLoadError('')
-    const [{ data: productData, error: productError }, { data: historyData }] = await Promise.all([
+    const [
+      { data: productData, error: productError },
+      { data: historyData },
+      { data: releaseRows },
+    ] = await Promise.all([
       fetchAllRows(() => supabase
         .from('products')
         .select('id,name,series,category,product_type,release_date,release_period,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status,case_reference')
@@ -97,17 +103,26 @@ export default function CataloguePage() {
       supabase
         .from('product_price_history')
         .select('id,product_id,source,price,observed_at,condition_tier,observation_type')
-        .order('observed_at', { ascending: true })
+        .order('observed_at', { ascending: true }),
+      fetchAllRows(() => supabase
+        .from('card_sets')
+        .select('series_name,set_name,release_date')
+        .eq('is_public', true)
+        .eq('language', 'FR')
+        .order('release_date', { ascending: true }))
     ])
 
     if (productError) setLoadError('Le catalogue ne peut pas être chargé pour le moment.')
     setLoading(false)
     setProducts(productData || [])
     setHistory(historyData || [])
+    setSeriesReleaseDates(createSeriesReleaseDateMap(releaseRows || []))
   }
 
   const hasSearch = Boolean(normalizeSearch(query))
-  const filtered = useMemo(() => hasSearch ? products.filter(createProductMatcher(query)) : [], [products, query, hasSearch])
+  const filtered = useMemo(() => hasSearch
+    ? sortProductsByRelease(products.filter(createProductMatcher(query)), seriesReleaseDates)
+    : [], [products, query, hasSearch, seriesReleaseDates])
 
   function getStats(productId, tier = 'standard') {
     const sales = history.filter(item =>

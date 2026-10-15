@@ -26,10 +26,14 @@ export async function middleware(request) {
   const protectedPrefixes = ['/collection', '/communaute', '/opportunites', '/trades', '/admin', '/admin-partenaires']
   const needsAuth = protectedPrefixes.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
 
+  if (needsAuth) response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+
   if (needsAuth && !user) {
     const loginUrl = new URL('/login', request.url)
     loginUrl.searchParams.set('next', pathname + request.nextUrl.search)
-    return NextResponse.redirect(loginUrl)
+    const redirect = NextResponse.redirect(loginUrl)
+    redirect.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+    return redirect
   }
 
   if (pathname === '/admin' || pathname.startsWith('/admin/') || pathname === '/admin-partenaires') {
@@ -40,7 +44,9 @@ export async function middleware(request) {
       .maybeSingle()
 
     if (!profile?.is_admin) {
-      return NextResponse.redirect(new URL('/', request.url))
+      const redirect = NextResponse.redirect(new URL('/', request.url))
+      redirect.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+      return redirect
     }
   }
 

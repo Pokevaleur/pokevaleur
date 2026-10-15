@@ -361,11 +361,16 @@ export default function CollectionPage() {
       setForm(previous => ({ ...previous, product_id: enrichedProduct.id, custom_name: enrichedProduct.name, current_value_override: '' }))
       setCatalogQuery(enrichedProduct.name)
       setCatalog(previous => [...previous.filter(item => item.id !== enrichedProduct.id), enrichedProduct])
-      document.getElementById('ajouter-produit')?.scrollIntoView({ block: 'start' })
+      setShowAddForm(true)
     }
     preselect()
     return () => { active = false }
   }, [user, supabase])
+
+  useEffect(() => {
+    if (!showAddForm || !form.product_id) return
+    document.getElementById('ajouter-produit')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+  }, [showAddForm, form.product_id])
 
   function chooseCatalogProduct(product) {
     setForm({
