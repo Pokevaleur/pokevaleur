@@ -1,0 +1,22 @@
+
+.gradedAddButton {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  margin-inline-start: 6px;
+  border: 1px solid #b6c5da;
+  border-radius: 50%;
+  background: #fff;
+  color: #203a79;
+  font-weight: 800;
+  text-decoration: none;
+}
+.gradedAddButton:hover, .gradedAddButton:focus-visible {
+  border-color: #244fc5;
+  background: #eef3ff;
+  outline: 2px solid #90aaf3;
+  outline-offset: 2px;
+}

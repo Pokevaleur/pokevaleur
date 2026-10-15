@@ -799,6 +799,12 @@ export default function CardCataloguePage() {
                       <span>{label}</span>
                       {copies > 0 && <small>Déjà {copies} en collection</small>}
                     </label>
+                    <a
+                      className={styles.gradedAddButton}
+                      href={'/collection/cartes-gradees/ajouter?variant_id=' + encodeURIComponent(variant.id)}
+                      title="Ajouter cette carte en version gradée"
+                      aria-label={'Ajouter ' + card.card_name + ' ' + label + ' en version gradée'}
+                    >G</a>
                     {checked && <label className={styles.quantity}>
                       <span>Qté</span>
                       <input type="number" min="1" max="99" inputMode="numeric" value={quantity} onFocus={event => event.currentTarget.select()} onChange={event => setSelection(current => ({ ...current, [variant.id]: event.target.value }))} aria-label={'Quantité de ' + card.card_name + ' ' + label} />

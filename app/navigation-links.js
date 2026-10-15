@@ -14,6 +14,15 @@ const navLinks = [
       { href: '/collection', label: 'Produits scellés' },
       { href: '/collection?search=ETB', label: 'ETB' },
       { href: '/collection/cartes', label: 'Mes cartes' },
+      {
+        href: '/collection/cartes-gradees/consulter',
+        label: 'Mes cartes gradées',
+        memberOnly: true,
+        children: [
+          { href: '/collection/cartes-gradees/ajouter', label: 'Ajouter', memberOnly: true },
+          { href: '/collection/cartes-gradees/consulter', label: 'Consulter', memberOnly: true }
+        ]
+      },
       { href: '/collection/classeurs', label: 'Mes classeurs' },
       {
         href: '/collection/valeur',
@@ -29,7 +38,6 @@ const navLinks = [
             children: [
               { href: '/collection/valeur/cartes', label: 'Par série', memberOnly: true },
               { href: '/collection/valeur/cartes/individuelle', label: 'Carte individuelle', memberOnly: true },
-              { href: '/collection/stats?category=graded', label: 'Cartes gradées', memberOnly: true }
             ]
           }
         ]
