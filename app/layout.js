@@ -10,7 +10,7 @@ export const viewport = {
 }
 
 export const metadata = {
-  metadataBase: new URL('https://pokevaleur.fr'),
+  metadataBase: new URL('https://www.pokevaleur.fr'),
   title: {
     default: 'PokéValeur – collection Pokémon',
     template: '%s | PokéValeur'
@@ -47,18 +47,18 @@ export default function RootLayout({ children }) {
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: 'PokéValeur',
-            url: 'https://pokevaleur.fr',
-            logo: 'https://pokevaleur.fr/icon.svg'
+            url: 'https://www.pokevaleur.fr',
+            logo: 'https://www.pokevaleur.fr/icon.svg'
           },
           {
             '@context': 'https://schema.org',
             '@type': 'WebSite',
             name: 'PokéValeur',
-            url: 'https://pokevaleur.fr',
+            url: 'https://www.pokevaleur.fr',
             inLanguage: 'fr-FR',
             potentialAction: {
               '@type': 'SearchAction',
-              target: 'https://pokevaleur.fr/catalogue?search={search_term_string}',
+              target: 'https://www.pokevaleur.fr/catalogue?search={search_term_string}',
               'query-input': 'required name=search_term_string'
             }
           }

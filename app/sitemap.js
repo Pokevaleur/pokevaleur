@@ -3,7 +3,7 @@ import { createPublicServerClient } from '../lib/supabase-public-server'
 
 export const dynamic = 'force-dynamic'
 
-const siteUrl = 'https://pokevaleur.fr'
+const siteUrl = 'https://www.pokevaleur.fr'
 const staticPaths = ['/', '/catalogue', '/catalogue/cartes']
 
 export default async function sitemap() {
