@@ -563,34 +563,6 @@ export default function GradedCardsPage({ mode }) {
       </section>
       <button className={styles.primaryButton} type="submit" disabled={busy || !profileId}>{busy ? 'Enregistrement…' : 'Ajouter à ma collection'}</button>
     </form> : <>
-      <section className={styles.filterPanel} aria-label="Filtres de cartes gradées">
-        <label>Recherche<input value={filters.text} onChange={event => setFilters(current => ({ ...current, text: event.target.value }))} placeholder="Nom, numéro, certification…" /></label>
-        <label>Série<select value={filters.setId} onChange={event => setFilters(current => ({ ...current, setId: event.target.value }))}><option value="">Toutes</option>{sets.map(set => <option key={set.id} value={set.id}>{setLabel(set)}</option>)}</select></label>
-        <label>Société<select value={filters.companyId} onChange={event => setFilters(current => ({ ...current, companyId: event.target.value }))}><option value="">Toutes</option>{companies.map(company => <option key={company.id} value={company.id}>{company.company_name}</option>)}</select></label>
-        <label>Note<input type="number" min="1" max="10" step="0.5" value={filters.grade} onChange={event => setFilters(current => ({ ...current, grade: event.target.value }))} placeholder="Toutes" /></label>
-        <label>Langue<input value={filters.language} onChange={event => setFilters(current => ({ ...current, language: event.target.value }))} placeholder="Toutes" /></label>
-      </section>
-      <p className={styles.resultCount}>{filteredItems.length} exemplaire{filteredItems.length === 1 ? '' : 's'} affiché{filteredItems.length === 1 ? '' : 's'} sur {items.length}</p>
-      {filteredItems.length ? <div className={styles.cardsList}>{filteredItems.map(item => {
-        const variant = item.card_print_variants
-        const card = variant?.cards
-        const set = card?.card_sets
-        const company = item.card_grading_companies
-        const subs = item.subgrades || {}
-        return <article className={styles.cardItem} key={item.id}>
-          {signedPhotos[item.id] && <img className={styles.cardPhoto} src={signedPhotos[item.id]} alt={'Photo de ' + (card?.card_name || 'la carte gradée')} loading="lazy" />}
-          <div className={styles.cardInfo}>
-            <h2>{card?.card_name || 'Carte du catalogue indisponible'}</h2>
-            <p>{setLabel(set)} · n° {card?.collector_number || '—'} · {variantLabel(variant)} · {item.graded_language || set?.language || 'FR'}</p>
-            <p><strong>{company?.abbreviation || company?.company_name || 'Société inconnue'} {item.grade_label || item.grade}</strong>{item.certification_number ? ' · Certificat ' + item.certification_number : ''}</p>
-            <p className={styles.detailLine}>Centrage recto {subs.centering_front ?? '—'} · verso {subs.centering_back ?? '—'} · côtés {subs.edges ?? '—'} · coins {subs.corners ?? '—'} · surface {subs.surface ?? '—'}</p>
-            {(item.grading_front_notes || item.grading_back_notes) && <p className={styles.detailLine}>Recto : {item.grading_front_notes || '—'} · Verso : {item.grading_back_notes || '—'}</p>}
-            {item.grading_report_url && <p className={styles.detailLine}><a href={item.grading_report_url} target="_blank" rel="noreferrer">Ouvrir le certificat / QR code</a></p>}
-            <p className={styles.detailLine}>{item.grading_date ? 'Gradée le ' + new Date(item.grading_date + 'T00:00:00').toLocaleDateString('fr-FR') : 'Date de gradation non renseignée'}{item.purchase_date ? ' · achetée le ' + new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR') : ''}{item.purchase_price != null ? ' · achat ' + money(item.purchase_price, 'EUR') : ''}</p>
-            <p className={styles.detailLine}>{item.current_value_override != null ? 'Valeur déclarée : ' + money(item.current_value_override, 'EUR') : 'Valeur manuelle non renseignée'}</p>
-          </div>
-        </article>
-      })}</div> : <div className={styles.emptyState}><p>Aucune carte gradée ne correspond à ces filtres.</p><a href="/collection/cartes-gradees/ajouter">Ajouter une carte gradée →</a></div>}
       <section className={styles.gradedLibrarySection} aria-label="Classeurs de cartes gradées par série">
         <div className={styles.gradedLibraryHeading}>
           <h2>Classeurs de cartes gradées</h2>
@@ -626,6 +598,36 @@ export default function GradedCardsPage({ mode }) {
         </div>
       </section>
       <section className={styles.filterPanel} aria-label="Filtres de cartes gradées">
+        <label>Recherche<input value={filters.text} onChange={event => setFilters(current => ({ ...current, text: event.target.value }))} placeholder="Nom, numéro, certification…" /></label>
+        <label>Série<select value={filters.setId} onChange={event => setFilters(current => ({ ...current, setId: event.target.value }))}><option value="">Toutes</option>{sets.map(set => <option key={set.id} value={set.id}>{setLabel(set)}</option>)}</select></label>
+        <label>Société<select value={filters.companyId} onChange={event => setFilters(current => ({ ...current, companyId: event.target.value }))}><option value="">Toutes</option>{companies.map(company => <option key={company.id} value={company.id}>{company.company_name}</option>)}</select></label>
+        <label>Note<input type="number" min="1" max="10" step="0.5" value={filters.grade} onChange={event => setFilters(current => ({ ...current, grade: event.target.value }))} placeholder="Toutes" /></label>
+        <label>Langue<input value={filters.language} onChange={event => setFilters(current => ({ ...current, language: event.target.value }))} placeholder="Toutes" /></label>
+      </section>
+      <p className={styles.resultCount}>{filteredItems.length} exemplaire{filteredItems.length === 1 ? '' : 's'} affiché{filteredItems.length === 1 ? '' : 's'} sur {items.length}</p>
+      {filteredItems.length ? <div className={styles.cardsList}>{filteredItems.map(item => {
+        const variant = item.card_print_variants
+        const card = variant?.cards
+        const set = card?.card_sets
+        const company = item.card_grading_companies
+        const subs = item.subgrades || {}
+        return <article className={styles.cardItem} key={item.id}>
+          {signedPhotos[item.id] && <img className={styles.cardPhoto} src={signedPhotos[item.id]} alt={'Photo de ' + (card?.card_name || 'la carte gradée')} loading="lazy" />}
+          <div className={styles.cardInfo}>
+            <h2>{card?.card_name || 'Carte du catalogue indisponible'}</h2>
+            <p>{setLabel(set)} · n° {card?.collector_number || '—'} · {variantLabel(variant)} · {item.graded_language || set?.language || 'FR'}</p>
+            <p><strong>{company?.abbreviation || company?.company_name || 'Société inconnue'} {item.grade_label || item.grade}</strong>{item.certification_number ? ' · Certificat ' + item.certification_number : ''}</p>
+            <p className={styles.detailLine}>Centrage recto {subs.centering_front ?? '—'} · verso {subs.centering_back ?? '—'} · côtés {subs.edges ?? '—'} · coins {subs.corners ?? '—'} · surface {subs.surface ?? '—'}</p>
+            {(item.grading_front_notes || item.grading_back_notes) && <p className={styles.detailLine}>Recto : {item.grading_front_notes || '—'} · Verso : {item.grading_back_notes || '—'}</p>}
+            {item.grading_report_url && <p className={styles.detailLine}><a href={item.grading_report_url} target="_blank" rel="noreferrer">Ouvrir le certificat / QR code</a></p>}
+            <p className={styles.detailLine}>{item.grading_date ? 'Gradée le ' + new Date(item.grading_date + 'T00:00:00').toLocaleDateString('fr-FR') : 'Date de gradation non renseignée'}{item.purchase_date ? ' · achetée le ' + new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR') : ''}{item.purchase_price != null ? ' · achat ' + money(item.purchase_price, 'EUR') : ''}</p>
+            <p className={styles.detailLine}>{item.current_value_override != null ? 'Valeur déclarée : ' + money(item.current_value_override, 'EUR') : 'Valeur manuelle non renseignée'}</p>
+          </div>
+        </article>
+      })}</div> : <div className={styles.emptyState}><p>Aucune carte gradée ne correspond à ces filtres.</p><a href="/collection/cartes-gradees/ajouter">Ajouter une carte gradée →</a></div>}
+
+
+    </>}
     <footer className={styles.footerLinks}><a href="/collection/cartes">← Mes cartes</a>{memberProfile && <span>Collection : {memberProfile.display_name}</span>}</footer>
   </main>
 }
