@@ -1,4 +1,4 @@
-.page{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:28px 0 64px;color:#14263a}
+.page{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:28px 0 max(120px, calc(env(safe-area-inset-bottom) + 96px));color:#14263a}
 .topLine{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
 .backLink,.footerLinks a{color:#244caa;font-weight:700;text-decoration:none}
 .privateBadge{border-radius:999px;background:#fff1c2;color:#725914;padding:7px 12px;font-size:.82rem;font-weight:700}
@@ -42,6 +42,7 @@
 .primaryButton{min-height:48px;padding:12px 18px;border:0;border-radius:12px;background:#244caa;color:white;font:inherit;font-weight:800;cursor:pointer}
 .primaryButton:disabled{opacity:.6;cursor:wait}
 .gradedLibrarySection{margin:18px 0 20px}
+.gradedLibrarySection+.gradedLibrarySection{margin-top:10px}
 .gradedLibraryHeading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:9px}
 .gradedLibraryHeading h2{margin:0;font-size:1.1rem}
 .gradedLibraryHeading span{color:#657386;font-size:.84rem;font-weight:700}
@@ -69,7 +70,7 @@
 .gradedOpenButton{display:inline-flex;align-items:center;gap:12px;min-height:48px;padding:11px 18px;border:0;border-radius:12px;background:#244caa;color:#fff;font:inherit;font-weight:850;cursor:pointer}
 .gradedOpenButton:hover{background:#173d91}
 .gradedOpenHeader{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:20px 0 4px}
-.gradedBinderView{scroll-margin-top:88px}
+.gradedBinderView{scroll-margin-top:78px;margin-bottom:70px}
 .gradedPageNav{display:flex;width:max-content;align-items:center;justify-content:center;gap:14px;margin:12px auto 16px;padding:6px;border:1px solid #dce2e9;border-radius:999px;background:#fff;box-shadow:0 7px 20px #15263a12}
 .gradedPageNav button{display:grid;width:42px;height:42px;place-items:center;border:0;border-radius:50%;background:#244caa;color:#fff;font:inherit;font-size:1.25rem;font-weight:850;cursor:pointer}
 .gradedPageNav button:disabled{border:1px solid #d3dae3;background:#edf0f4;color:#9aa5b2;cursor:not-allowed}
@@ -81,11 +82,11 @@
 .gradedOpenHeader h2{margin:0;font-size:1.3rem}
 .gradedOpenHeader p{margin:5px 0 0;color:#657386}
 .gradedBackToCover{padding:9px 12px;border:1px solid #cbd4df;border-radius:10px;background:#fff;color:#244caa;font:inherit;font-weight:750;cursor:pointer}
-.gradedCardsGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.5vw,16px);margin:14px 0}
+.gradedCardsGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,auto);align-items:start;gap:clamp(6px,1.1vw,12px);margin:8px 0}
 .gradedSlabButton{display:flex;min-width:0;flex-direction:column;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:#14263a;font:inherit;text-align:center;cursor:pointer}
 .gradedSlabButton:focus-visible{outline:3px solid #80a2ff;outline-offset:4px;border-radius:12px}
-.gradedEmptySlot{display:grid;width:min(100%,210px);aspect-ratio:.66/1;place-items:center;padding:10px;border:1px dashed #cbd4df;border-radius:11px;background:linear-gradient(145deg,#f8fafc,#eef2f6);color:#8793a3;box-shadow:inset 0 0 0 4px #ffffffaa;font-size:.75rem;font-weight:700;text-align:center}
-.gradedSlab{display:flex;width:min(100%,210px);aspect-ratio:.66/1;flex-direction:column;gap:4px;padding:5px;overflow:hidden;border:1px solid #aeb8c5;border-radius:11px;background:linear-gradient(135deg,#edf2f7,#fff 35%,#dce3eb);box-shadow:0 7px 16px #122a4524}
+.gradedEmptySlot{display:grid;width:min(100%,210px);aspect-ratio:1/1;place-items:center;padding:10px;border:1px dashed #cbd4df;border-radius:11px;background:linear-gradient(145deg,#f8fafc,#eef2f6);color:#8793a3;box-shadow:inset 0 0 0 4px #ffffffaa;font-size:.75rem;font-weight:700;text-align:center}
+.gradedSlab{display:flex;width:min(100%,210px);aspect-ratio:.75/1;flex-direction:column;gap:4px;padding:5px;overflow:hidden;border:1px solid #aeb8c5;border-radius:11px;background:linear-gradient(135deg,#edf2f7,#fff 35%,#dce3eb);box-shadow:0 7px 16px #122a4524}
 .gradedSlabLabel{display:flex;flex:0 0 24px;align-items:center;justify-content:space-between;gap:3px;padding:3px 5px;border:1px solid #dce2e9;border-radius:5px;background:#fff;color:#34465c}
 .gradedSlabLabel>span{min-width:0;overflow:hidden;font-size:clamp(.44rem,1.2vw,.68rem);font-weight:850;text-overflow:ellipsis;white-space:nowrap}
 .gradedSlabLabel strong{display:grid;min-width:22px;height:18px;place-items:center;border-radius:4px;background:#183b79;color:#fff;font-size:.68rem;line-height:1}
