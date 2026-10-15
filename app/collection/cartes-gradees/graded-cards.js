@@ -58,6 +58,13 @@ export default function GradedCardsPage({ mode }) {
   const [photos, setPhotos] = useState([])
   const [items, setItems] = useState([])
   const [signedPhotos, setSignedPhotos] = useState({})
+  const [galleryPhotos, setGalleryPhotos] = useState({})
+  const [activeItemId, setActiveItemId] = useState('')
+  const [detailForm, setDetailForm] = useState({})
+  const [detailBusy, setDetailBusy] = useState(false)
+  const [detailError, setDetailError] = useState('')
+  const [detailNotice, setDetailNotice] = useState('')
+  const [confirmRemoval, setConfirmRemoval] = useState(false)
   const [filters, setFilters] = useState({ text: '', setId: '', companyId: '', grade: '', language: '' })
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const [gradePickerOpen, setGradePickerOpen] = useState(false)
@@ -67,6 +74,8 @@ export default function GradedCardsPage({ mode }) {
   const update = (key, value) => setForm(current => ({ ...current, [key]: value }))
   const memberProfile = profiles.find(profile => profile.id === profileId)
   const selectedSet = sets.find(set => set.id === setFilter)
+  const activeItem = items.find(item => item.id === activeItemId) || null
+  const activeItemPhotos = activeItem ? (galleryPhotos[activeItem.id] || []) : []
 
   useEffect(() => {
     let cancelled = false
@@ -235,21 +244,31 @@ export default function GradedCardsPage({ mode }) {
       const pageSize = 500
       for (let offset = 0; ; offset += pageSize) {
         const { data, error: listError } = await supabase.from('collection_cards')
-          .select('id,card_print_variant_id,grade,grade_label,certification_number,grading_company_id,subgrades,graded_language,grading_date,grading_report_url,grading_front_notes,grading_back_notes,purchase_date,purchase_price,current_value_override,photo_path,created_at,card_grading_companies(company_name,abbreviation),card_print_variants!inner(id,variant_label,variant_key,cards!card_print_variants_card_id_fkey!inner(id,card_name,collector_number,rarity_label,card_sets!cards_card_set_id_fkey(id,set_name,set_code,language)))')
+          .select('id,card_print_variant_id,grade,grade_label,certification_number,grading_company_id,subgrades,graded_language,grading_date,grading_report_url,grading_front_notes,grading_back_notes,purchase_date,purchase_price,current_value_override,photo_path,created_at,collection_card_photos(id,photo_path,caption,sort_order),card_grading_companies(company_name,abbreviation),card_print_variants!inner(id,variant_label,variant_key,cards!card_print_variants_card_id_fkey!inner(id,card_name,collector_number,rarity_label,card_sets!cards_card_set_id_fkey(id,set_name,set_code,language)))')
           .eq('collection_profile_id', profileId).eq('ownership_type', 'graded')
           .order('created_at', { ascending: false }).range(offset, offset + pageSize - 1)
         if (listError) throw listError
         rows.push(...(data || []))
         if (!data || data.length < pageSize) break
       }
-      const photoRows = await Promise.all(rows.map(async row => {
-        const path = row.photo_path
-        if (!path) return [row.id, '']
-        const { data } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(path, 3600)
-        return [row.id, data?.signedUrl || '']
+      const photosByItem = await Promise.all(rows.map(async row => {
+        const references = (row.collection_card_photos || [])
+          .slice()
+          .sort((a, b) => a.sort_order - b.sort_order)
+          .map(photo => ({ id: photo.id, path: photo.photo_path, caption: photo.caption || 'Photo de la carte' }))
+        if (row.photo_path && !references.some(photo => photo.path === row.photo_path)) {
+          references.unshift({ id: 'legacy-' + row.id, path: row.photo_path, caption: 'Photo de la carte' })
+        }
+        const photos = await Promise.all(references.map(async photo => {
+          const { data } = await supabase.storage.from(STORAGE_BUCKET).createSignedUrl(photo.path, 3600)
+          return data?.signedUrl ? { ...photo, url: data.signedUrl } : null
+        }))
+        return [row.id, photos.filter(Boolean)]
       }))
+      const photoMap = Object.fromEntries(photosByItem)
       setItems(rows)
-      setSignedPhotos(Object.fromEntries(photoRows))
+      setGalleryPhotos(photoMap)
+      setSignedPhotos(Object.fromEntries(Object.entries(photoMap).map(([id, photos]) => [id, photos[0]?.url || ''])))
     } catch (listError) {
       setError(listError.message || 'Impossible de charger les cartes gradées.')
     } finally {
@@ -258,6 +277,37 @@ export default function GradedCardsPage({ mode }) {
   }, [mode, profileId, supabase])
 
   useEffect(() => { loadCollection() }, [loadCollection])
+
+  function openGradedDetails(item) {
+    const subs = item.subgrades || {}
+    setDetailForm({
+      companyId: item.grading_company_id || '',
+      grade: item.grade == null ? '' : String(item.grade),
+      gradeLabel: item.grade_label || '',
+      certification: item.certification_number || '',
+      reportUrl: item.grading_report_url || '',
+      gradingDate: item.grading_date || '',
+      language: item.graded_language || '',
+      purchaseDate: item.purchase_date || '',
+      purchasePrice: item.purchase_price == null ? '' : String(item.purchase_price),
+      declaredValue: item.current_value_override == null ? '' : String(item.current_value_override),
+      centeringFront: subs.centering_front == null ? '' : String(subs.centering_front),
+      centeringBack: subs.centering_back == null ? '' : String(subs.centering_back),
+      edges: subs.edges == null ? '' : String(subs.edges),
+      corners: subs.corners == null ? '' : String(subs.corners),
+      surface: subs.surface == null ? '' : String(subs.surface),
+      frontNotes: item.grading_front_notes || '',
+      backNotes: item.grading_back_notes || ''
+    })
+    setDetailError('')
+    setDetailNotice('')
+    setConfirmRemoval(false)
+    setActiveItemId(item.id)
+  }
+
+  function updateDetail(key, value) {
+    setDetailForm(current => ({ ...current, [key]: value }))
+  }
 
   async function saveCard(event) {
     event.preventDefault()
@@ -345,6 +395,97 @@ export default function GradedCardsPage({ mode }) {
       setError('Enregistrement interrompu : ' + (saveError.message || 'réessaie. Si une carte a été créée avant une erreur photo, vérifie la page Consulter avant de recommencer.'))
     } finally {
       setBusy(false)
+    }
+  }
+
+  async function saveGradedDetails(event) {
+    event.preventDefault()
+    if (!activeItem) return
+    setDetailError('')
+    setDetailNotice('')
+    if (detailForm.grade && (Number(detailForm.grade) < 1 || Number(detailForm.grade) > 10)) {
+      setDetailError('La note doit être comprise entre 1 et 10.')
+      return
+    }
+    setDetailBusy(true)
+    const subgrades = {
+      centering_front: nullableNumber(detailForm.centeringFront),
+      centering_back: nullableNumber(detailForm.centeringBack),
+      edges: nullableNumber(detailForm.edges),
+      corners: nullableNumber(detailForm.corners),
+      surface: nullableNumber(detailForm.surface)
+    }
+    const updates = {
+      grading_company_id: detailForm.companyId || null,
+      grade: nullableNumber(detailForm.grade),
+      grade_label: detailForm.gradeLabel.trim() || null,
+      certification_number: detailForm.certification.trim() || null,
+      grading_report_url: detailForm.reportUrl.trim() || null,
+      grading_date: detailForm.gradingDate || null,
+      graded_language: detailForm.language.trim().toUpperCase() || null,
+      purchase_date: detailForm.purchaseDate || null,
+      purchase_price: nullableNumber(detailForm.purchasePrice),
+      current_value_override: nullableNumber(detailForm.declaredValue),
+      subgrades,
+      grading_front_notes: detailForm.frontNotes.trim() || null,
+      grading_back_notes: detailForm.backNotes.trim() || null
+    }
+    try {
+      const { data, error: updateError } = await supabase.from('collection_cards')
+        .update(updates)
+        .eq('id', activeItem.id)
+        .eq('collection_profile_id', profileId)
+        .eq('ownership_type', 'graded')
+        .select('id')
+      if (updateError) throw updateError
+      if (!data?.length) throw new Error('La fiche n’a pas pu être modifiée. Vérifie que tu as accès à cette collection.')
+      const company = companies.find(row => row.id === updates.grading_company_id) || null
+      setItems(current => current.map(item => item.id === activeItem.id
+        ? { ...item, ...updates, card_grading_companies: company }
+        : item))
+      setDetailNotice('Les informations de cette carte ont été enregistrées.')
+    } catch (saveError) {
+      setDetailError(saveError.message || 'Impossible d’enregistrer les modifications.')
+    } finally {
+      setDetailBusy(false)
+    }
+  }
+
+  async function removeGradedCard() {
+    if (!activeItem || !confirmRemoval) return
+    setDetailBusy(true)
+    setDetailError('')
+    setDetailNotice('')
+    try {
+      const paths = [...new Set([
+        activeItem.photo_path,
+        ...activeItemPhotos.map(photo => photo.path)
+      ].filter(Boolean))]
+      const { data, error: deleteError } = await supabase.from('collection_cards')
+        .delete()
+        .eq('id', activeItem.id)
+        .eq('collection_profile_id', profileId)
+        .eq('ownership_type', 'graded')
+        .select('id')
+      if (deleteError) throw deleteError
+      if (!data?.length) throw new Error('La carte n’a pas été retirée. Vérifie que tu as accès à cette collection.')
+      setItems(current => current.filter(item => item.id !== activeItem.id))
+      setGalleryPhotos(current => { const next = { ...current }; delete next[activeItem.id]; return next })
+      setSignedPhotos(current => { const next = { ...current }; delete next[activeItem.id]; return next })
+      setActiveItemId('')
+      setConfirmRemoval(false)
+      if (paths.length) {
+        const { error: storageError } = await supabase.storage.from(STORAGE_BUCKET).remove(paths)
+        if (storageError) {
+          setNotice('La carte a été retirée. Une photo associée n’a pas pu être supprimée du stockage.')
+          return
+        }
+      }
+      setNotice('La carte gradée a été retirée de ta collection.')
+    } catch (removeError) {
+      setDetailError(removeError.message || 'Impossible de retirer cette carte de la collection.')
+    } finally {
+      setDetailBusy(false)
     }
   }
 
@@ -612,22 +753,121 @@ export default function GradedCardsPage({ mode }) {
         const company = item.card_grading_companies
         const subs = item.subgrades || {}
         return <article className={styles.cardItem} key={item.id}>
-          {signedPhotos[item.id] && <img className={styles.cardPhoto} src={signedPhotos[item.id]} alt={'Photo de ' + (card?.card_name || 'la carte gradée')} loading="lazy" />}
-          <div className={styles.cardInfo}>
-            <h2>{card?.card_name || 'Carte du catalogue indisponible'}</h2>
-            <p>{setLabel(set)} · n° {card?.collector_number || '—'} · {variantLabel(variant)} · {item.graded_language || set?.language || 'FR'}</p>
-            <p><strong>{company?.abbreviation || company?.company_name || 'Société inconnue'} {item.grade_label || item.grade}</strong>{item.certification_number ? ' · Certificat ' + item.certification_number : ''}</p>
-            <p className={styles.detailLine}>Centrage recto {subs.centering_front ?? '—'} · verso {subs.centering_back ?? '—'} · côtés {subs.edges ?? '—'} · coins {subs.corners ?? '—'} · surface {subs.surface ?? '—'}</p>
-            {(item.grading_front_notes || item.grading_back_notes) && <p className={styles.detailLine}>Recto : {item.grading_front_notes || '—'} · Verso : {item.grading_back_notes || '—'}</p>}
-            {item.grading_report_url && <p className={styles.detailLine}><a href={item.grading_report_url} target="_blank" rel="noreferrer">Ouvrir le certificat / QR code</a></p>}
-            <p className={styles.detailLine}>{item.grading_date ? 'Gradée le ' + new Date(item.grading_date + 'T00:00:00').toLocaleDateString('fr-FR') : 'Date de gradation non renseignée'}{item.purchase_date ? ' · achetée le ' + new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR') : ''}{item.purchase_price != null ? ' · achat ' + money(item.purchase_price, 'EUR') : ''}</p>
-            <p className={styles.detailLine}>{item.current_value_override != null ? 'Valeur déclarée : ' + money(item.current_value_override, 'EUR') : 'Valeur manuelle non renseignée'}</p>
-          </div>
+          <button
+            type="button"
+            className={styles.cardOpenButton}
+            aria-label={'Ouvrir et compléter la fiche de ' + (card?.card_name || 'la carte gradée')}
+            onClick={() => openGradedDetails(item)}
+          >
+            {signedPhotos[item.id] && <img className={styles.cardPhoto} src={signedPhotos[item.id]} alt="" loading="lazy" />}
+            <div className={styles.cardInfo}>
+              <h2>{card?.card_name || 'Carte du catalogue indisponible'}</h2>
+              <p>{setLabel(set)} · n° {card?.collector_number || '—'} · {variantLabel(variant)} · {item.graded_language || set?.language || 'FR'}</p>
+              <p><strong>{company?.abbreviation || company?.company_name || 'Société inconnue'} {item.grade_label || item.grade || 'Note à compléter'}</strong>{item.certification_number ? ' · Certificat ' + item.certification_number : ''}</p>
+              <p className={styles.detailLine}>Centrage recto {subs.centering_front ?? '—'} · verso {subs.centering_back ?? '—'} · côtés {subs.edges ?? '—'} · coins {subs.corners ?? '—'} · surface {subs.surface ?? '—'}</p>
+              <p className={styles.detailLine}>{item.grading_date ? 'Gradée le ' + new Date(item.grading_date + 'T00:00:00').toLocaleDateString('fr-FR') : 'Date de gradation non renseignée'}{item.purchase_date ? ' · achetée le ' + new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR') : ''}{item.purchase_price != null ? ' · achat ' + money(item.purchase_price, 'EUR') : ''}</p>
+              <p className={styles.detailLine}>{item.current_value_override != null ? 'Valeur déclarée : ' + money(item.current_value_override, 'EUR') : 'Valeur manuelle non renseignée'}</p>
+              <span className={styles.openHint}>Ouvrir / compléter la fiche →</span>
+            </div>
+          </button>
         </article>
       })}</div> : <div className={styles.emptyState}><p>Aucune carte gradée ne correspond à ces filtres.</p><a href="/collection/cartes-gradees/ajouter">Ajouter une carte gradée →</a></div>}
 
 
     </>}
+    {mode === 'consult' && activeItem && <div className={styles.detailBackdrop} onClick={() => { if (!detailBusy) setActiveItemId('') }}>
+      <section
+        className={styles.detailDialog}
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="graded-detail-title"
+        onClick={event => event.stopPropagation()}
+      >
+        <div className={styles.detailHeader}>
+          <div>
+            <h2 id="graded-detail-title">{activeItem.card_print_variants?.cards?.card_name || 'Carte gradée'}</h2>
+            <p>{setLabel(activeItem.card_print_variants?.cards?.card_sets)} · n° {activeItem.card_print_variants?.cards?.collector_number || '—'}</p>
+          </div>
+          <button type="button" className={styles.detailClose} aria-label="Fermer la fiche" onClick={() => setActiveItemId('')} disabled={detailBusy}>×</button>
+        </div>
+        {activeItemPhotos.length ? <div className={styles.photoGallery} aria-label="Photos associées à cette carte">
+          {activeItemPhotos.map(photo => <a key={photo.id} href={photo.url} target="_blank" rel="noreferrer">
+            <img src={photo.url} alt={photo.caption || 'Photo de la carte gradée'} />
+            <span>{photo.caption || 'Voir la photo en grand'}</span>
+          </a>)}
+        </div> : <p className={styles.noPhotos}>Aucune photo n’est encore associée à cette carte.</p>}
+        {detailError && <p className={styles.error} role="alert">{detailError}</p>}
+        {detailNotice && <p className={styles.notice} role="status">{detailNotice}</p>}
+        <form className={styles.detailForm} onSubmit={saveGradedDetails}>
+          <section>
+            <h3>Informations de gradation</h3>
+            <div className={styles.formGrid}>
+              <label>Société de gradation
+                <select value={detailForm.companyId || ''} onChange={event => updateDetail('companyId', event.target.value)}>
+                  <option value="">Non renseignée</option>
+                  {companies.map(company => <option key={company.id} value={company.id}>{company.company_name}{company.abbreviation ? ' (' + company.abbreviation + ')' : ''}</option>)}
+                </select>
+              </label>
+              <label>Note finale sur 10
+                <select value={detailForm.grade || ''} onChange={event => updateDetail('grade', event.target.value)}>
+                  <option value="">Non renseignée</option>
+                  {GRADE_OPTIONS.map(grade => <option key={grade} value={grade}>{Number(grade).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}</option>)}
+                </select>
+              </label>
+              <label>Libellé de la note
+                <input value={detailForm.gradeLabel || ''} onChange={event => updateDetail('gradeLabel', event.target.value)} placeholder="Ex. PARFAIT, GEM MINT" />
+              </label>
+              <label>Numéro de certification
+                <input value={detailForm.certification || ''} onChange={event => updateDetail('certification', event.target.value)} />
+              </label>
+              <label>Lien du certificat ou QR code
+                <input type="url" value={detailForm.reportUrl || ''} onChange={event => updateDetail('reportUrl', event.target.value)} placeholder="https://…" />
+              </label>
+              <label>Date de gradation
+                <input type="date" value={detailForm.gradingDate || ''} onChange={event => updateDetail('gradingDate', event.target.value)} />
+              </label>
+              <label>Langue de la carte
+                <input value={detailForm.language || ''} onChange={event => updateDetail('language', event.target.value)} maxLength="8" placeholder="FR, EN, JP…" />
+              </label>
+              <label>Date d’achat
+                <input type="date" value={detailForm.purchaseDate || ''} onChange={event => updateDetail('purchaseDate', event.target.value)} />
+              </label>
+              <label>Prix d’achat (€)
+                <input type="number" min="0" step="0.01" value={detailForm.purchasePrice || ''} onChange={event => updateDetail('purchasePrice', event.target.value)} />
+              </label>
+              <label>Valeur donnée par le collectionneur (€)
+                <input type="number" min="0" step="0.01" value={detailForm.declaredValue || ''} onChange={event => updateDetail('declaredValue', event.target.value)} />
+              </label>
+            </div>
+            <fieldset className={styles.subgrades}>
+              <legend>Sous-notes</legend>
+              <div className={styles.formGrid}>
+                <label>Centrage recto<input type="number" min="1" max="10" step="0.5" value={detailForm.centeringFront || ''} onChange={event => updateDetail('centeringFront', event.target.value)} /></label>
+                <label>Centrage verso<input type="number" min="1" max="10" step="0.5" value={detailForm.centeringBack || ''} onChange={event => updateDetail('centeringBack', event.target.value)} /></label>
+                <label>Côtés<input type="number" min="1" max="10" step="0.5" value={detailForm.edges || ''} onChange={event => updateDetail('edges', event.target.value)} /></label>
+                <label>Coins<input type="number" min="1" max="10" step="0.5" value={detailForm.corners || ''} onChange={event => updateDetail('corners', event.target.value)} /></label>
+                <label>Surface<input type="number" min="1" max="10" step="0.5" value={detailForm.surface || ''} onChange={event => updateDetail('surface', event.target.value)} /></label>
+              </div>
+            </fieldset>
+            <div className={styles.formGrid}>
+              <label>Observations recto<textarea rows="3" value={detailForm.frontNotes || ''} onChange={event => updateDetail('frontNotes', event.target.value)} /></label>
+              <label>Observations verso<textarea rows="3" value={detailForm.backNotes || ''} onChange={event => updateDetail('backNotes', event.target.value)} /></label>
+            </div>
+          </section>
+          <div className={styles.detailActions}>
+            <button className={styles.primaryButton} type="submit" disabled={detailBusy}>{detailBusy ? 'Enregistrement…' : 'Enregistrer les modifications'}</button>
+            <button className={styles.removeButton} type="button" onClick={() => { setConfirmRemoval(true); setDetailError('') }} disabled={detailBusy}>Retirer de la collection</button>
+          </div>
+          {confirmRemoval && <div className={styles.removeConfirm} role="alertdialog" aria-label="Confirmer le retrait de la carte">
+            <p>Retirer cette carte gradée et ses photos associées de ta collection ? Cette action ne pourra pas être annulée.</p>
+            <div>
+              <button className={styles.removeButton} type="button" onClick={removeGradedCard} disabled={detailBusy}>{detailBusy ? 'Retrait…' : 'Confirmer le retrait'}</button>
+              <button className={styles.secondaryButton} type="button" onClick={() => setConfirmRemoval(false)} disabled={detailBusy}>Annuler</button>
+            </div>
+          </div>}
+        </form>
+      </section>
+    </div>}
     <footer className={styles.footerLinks}><a href="/collection/cartes">← Mes cartes</a>{memberProfile && <span>Collection : {memberProfile.display_name}</span>}</footer>
   </main>
 }
