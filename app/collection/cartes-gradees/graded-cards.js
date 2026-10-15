@@ -790,7 +790,7 @@ export default function GradedCardsPage({ mode }) {
         </div>
         <p className={styles.resultCount}>{selectedBinderItems.length} exemplaire{selectedBinderItems.length === 1 ? '' : 's'} affiché{selectedBinderItems.length === 1 ? '' : 's'} sur {selectedBinderId === 'all' ? items.length : gradedCountsBySet[selectedBinderId] || 0}</p>
         {selectedBinderItems.length ? <div className={styles.gradedCardsGrid}>
-          {visibleBinderItems.map(item => {
+          {Array.from({ length: BINDER_PAGE_SIZE }, (_, slotIndex) => { const item = visibleBinderItems[slotIndex]; if (!item) return <div className={styles.gradedEmptySlot} key={'empty-' + slotIndex} aria-label={'Emplacement libre ' + (slotIndex + 1)}><span>Emplacement libre</span></div>
             const variant = item.card_print_variants
             const card = variant?.cards
             const company = item.card_grading_companies
