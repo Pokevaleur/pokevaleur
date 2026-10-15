@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
+import { supabaseAnonKey, supabaseUrl } from '../../../lib/supabase-config'
 import styles from './graded-cards.module.css'
 
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,rarity_label,image_url,card_sets!cards_card_set_id_fkey(id,set_name,set_code,language),card_print_variants(id,variant_key,variant_label,finish_code)'
@@ -79,13 +80,26 @@ export default function GradedCardsPage({ mode }) {
       if (cancelled) return
       if (profileError) throw profileError
       if (setError) throw setError
-      if (companyError) throw companyError
+      let availableCompanies = companyRows || []
+      if (companyError || availableCompanies.length === 0) {
+        const companyUrl = new URL('/rest/v1/card_grading_companies', supabaseUrl)
+        companyUrl.searchParams.set('select', 'id,company_name,abbreviation')
+        companyUrl.searchParams.set('is_active', 'eq.true')
+        companyUrl.searchParams.set('order', 'company_name')
+        const companyResponse = await fetch(companyUrl.toString(), {
+          headers: { apikey: supabaseAnonKey, Authorization: 'Bearer ' + supabaseAnonKey },
+          cache: 'no-store'
+        })
+        if (!companyResponse.ok) throw new Error('Impossible de charger les sociétés de gradation.')
+        availableCompanies = await companyResponse.json()
+      }
+      if (!availableCompanies.length) throw new Error('Aucune société de gradation active n’est disponible pour le moment.')
       const availableProfiles = profileRows || []
       const saved = window.localStorage.getItem('pokevaleur-collection:' + signedInUser.id)
       const active = availableProfiles.find(row => row.id === saved) || availableProfiles.find(row => row.is_default) || availableProfiles[0]
       setProfiles(availableProfiles)
       setSets(setRows || [])
-      setCompanies(companyRows || [])
+      setCompanies(availableCompanies)
       if (active) {
         setProfileId(active.id)
         window.localStorage.setItem('pokevaleur-collection:' + signedInUser.id, active.id)
