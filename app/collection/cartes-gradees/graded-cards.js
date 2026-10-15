@@ -1,12 +1,16 @@
 'use client'
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { supabaseAnonKey, supabaseUrl } from '../../../lib/supabase-config'
 import styles from './graded-cards.module.css'
 
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,rarity_label,image_url,card_sets!cards_card_set_id_fkey(id,set_name,set_code,language),card_print_variants(id,variant_key,variant_label,finish_code)'
 const STORAGE_BUCKET = 'collection-images'
+const GRADE_OPTIONS = Array.from({ length: 19 }, (_, index) => {
+  const grade = 1 + index * 0.5
+  return Number.isInteger(grade) ? String(grade) : grade.toFixed(1)
+})
 
 function setLabel(set) {
   return (set?.set_code ? set.set_code + ' — ' : '') + (set?.set_name || 'Série inconnue')
@@ -55,9 +59,14 @@ export default function GradedCardsPage({ mode }) {
   const [items, setItems] = useState([])
   const [signedPhotos, setSignedPhotos] = useState({})
   const [filters, setFilters] = useState({ text: '', setId: '', companyId: '', grade: '', language: '' })
+  const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
+  const [gradePickerOpen, setGradePickerOpen] = useState(false)
+  const seriesPickerRef = useRef(null)
+  const gradePickerRef = useRef(null)
 
   const update = (key, value) => setForm(current => ({ ...current, [key]: value }))
   const memberProfile = profiles.find(profile => profile.id === profileId)
+  const selectedSet = sets.find(set => set.id === setFilter)
 
   useEffect(() => {
     let cancelled = false
@@ -128,6 +137,26 @@ export default function GradedCardsPage({ mode }) {
       .finally(() => { if (!cancelled) setLoading(false) })
     return () => { cancelled = true }
   }, [supabase, mode])
+
+  useEffect(() => {
+    if (!seriesPickerOpen && !gradePickerOpen) return
+    function closeOutside(event) {
+      if (!seriesPickerRef.current?.contains(event.target)) setSeriesPickerOpen(false)
+      if (!gradePickerRef.current?.contains(event.target)) setGradePickerOpen(false)
+    }
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') {
+        setSeriesPickerOpen(false)
+        setGradePickerOpen(false)
+      }
+    }
+    document.addEventListener('pointerdown', closeOutside)
+    document.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOutside)
+      document.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [seriesPickerOpen, gradePickerOpen])
 
   useEffect(() => {
     if (mode !== 'add' || !profileId) return
@@ -342,10 +371,6 @@ export default function GradedCardsPage({ mode }) {
       <p className={styles.kicker}>Ma collection · Mes cartes gradées</p>
       <h1>{mode === 'add' ? 'Ajouter une carte gradée' : 'Consulter mes cartes gradées'}</h1>
       <p>{mode === 'add' ? 'Choisis la carte du catalogue, puis renseigne les informations visibles sur son certificat. Les champs détaillés restent facultatifs.' : 'Retrouve chaque exemplaire et filtre ta collection par carte, série, société, note ou langue.'}</p>
-      <nav className={styles.tabs} aria-label="Cartes gradées">
-        <a className={mode === 'add' ? styles.activeTab : styles.tab} href="/collection/cartes-gradees/ajouter">Ajouter</a>
-        <a className={mode === 'consult' ? styles.activeTab : styles.tab} href="/collection/cartes-gradees/consulter">Consulter</a>
-      </nav>
     </header>
     {profiles.length > 1 && <label className={styles.profilePicker}>Collection
       <select value={profileId} onChange={event => setProfileId(event.target.value)}>
@@ -360,10 +385,42 @@ export default function GradedCardsPage({ mode }) {
         <h2>1. Choisir la carte</h2>
         <div className={styles.searchGrid}>
           <label>Série
-            <select value={setFilter} onChange={event => { setSetFilter(event.target.value); setSelectedCard(null); setVariantId('') }}>
-              <option value="">Toutes les séries</option>
-              {sets.map(set => <option key={set.id} value={set.id}>{setLabel(set)} · {set.language || 'FR'}</option>)}
-            </select>
+            <div className={styles.customPicker} ref={seriesPickerRef}>
+              <button
+                type="button"
+                className={styles.customPickerTrigger}
+                aria-haspopup="listbox"
+                aria-expanded={seriesPickerOpen}
+                aria-label="Choisir une série"
+                onClick={() => { setGradePickerOpen(false); setSeriesPickerOpen(open => !open) }}
+                disabled={!sets.length}
+              >
+                <span>{setFilter ? (selectedSet ? setLabel(selectedSet) + ' · ' + (selectedSet.language || 'FR') : 'Choisir une série') : 'Toutes les séries'}</span>
+                <span className={styles.customPickerChevron} aria-hidden="true">▾</span>
+              </button>
+              {seriesPickerOpen && (
+                <div className={styles.customPickerOptions} role="listbox" aria-label="Séries de cartes">
+                  <button
+                    type="button"
+                    role="option"
+                    aria-selected={!setFilter}
+                    className={!setFilter ? styles.customPickerOptionActive : styles.customPickerOption}
+                    onClick={() => { setSetFilter(''); setSelectedCard(null); setVariantId(''); setSeriesPickerOpen(false) }}
+                  >Toutes les séries</button>
+                  {sets.map(set => {
+                    const selected = set.id === setFilter
+                    return <button
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      className={selected ? styles.customPickerOptionActive : styles.customPickerOption}
+                      key={set.id}
+                      onClick={() => { setSetFilter(set.id); setSelectedCard(null); setVariantId(''); setSeriesPickerOpen(false) }}
+                    >{setLabel(set)} · {set.language || 'FR'}</button>
+                  })}
+                </div>
+              )}
+            </div>
           </label>
           <label>Nom ou numéro de la carte
             <input value={cardQuery} onChange={event => { setCardQuery(event.target.value); setSelectedCard(null); setVariantId('') }} minLength="2" placeholder="Ex. Dracaufeu ou 280" autoComplete="off" />
@@ -403,7 +460,35 @@ export default function GradedCardsPage({ mode }) {
             </select>
           </label>
           <label>Note finale sur 10 *
-            <input type="number" required min="1" max="10" step="0.5" value={form.grade} onChange={event => update('grade', event.target.value)} placeholder="10" />
+            <div className={styles.customPicker} ref={gradePickerRef}>
+              <button
+                type="button"
+                className={styles.customPickerTrigger}
+                aria-haspopup="listbox"
+                aria-expanded={gradePickerOpen}
+                aria-label="Choisir une note finale"
+                onClick={() => { setSeriesPickerOpen(false); setGradePickerOpen(open => !open) }}
+                aria-required="true"
+              >
+                <span>{form.grade ? Number(form.grade).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) : 'Choisir une note'}</span>
+                <span className={styles.customPickerChevron} aria-hidden="true">▾</span>
+              </button>
+              {gradePickerOpen && (
+                <div className={styles.customPickerOptions} role="listbox" aria-label="Notes de 1 à 10">
+                  {GRADE_OPTIONS.map(grade => {
+                    const selected = form.grade === grade
+                    return <button
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      className={selected ? styles.customPickerOptionActive : styles.customPickerOption}
+                      key={grade}
+                      onClick={() => { update('grade', grade); setGradePickerOpen(false) }}
+                    >{Number(grade).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}</button>
+                  })}
+                </div>
+              )}
+            </div>
           </label>
           <label>Libellé de la note (facultatif)
             <input value={form.gradeLabel} onChange={event => update('gradeLabel', event.target.value)} placeholder="Ex. NEUF+, PARFAIT" />
