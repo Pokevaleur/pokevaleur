@@ -10,9 +10,28 @@ export const viewport = {
 }
 
 export const metadata = {
-  title: 'PokéValeur',
+  metadataBase: new URL('https://pokevaleur.fr'),
+  title: {
+    default: 'PokéValeur – collection Pokémon',
+    template: '%s | PokéValeur'
+  },
   manifest: '/manifest.json',
-  description: 'Suivez, estimez et organisez votre collection de cartes et produits scellés.'
+  applicationName: 'PokéValeur',
+  description: 'Suivez, estimez et organisez votre collection de cartes Pokémon et de produits scellés.',
+  openGraph: {
+    type: 'website',
+    locale: 'fr_FR',
+    siteName: 'PokéValeur',
+    title: 'PokéValeur – collection Pokémon',
+    description: 'Suivez, estimez et organisez votre collection de cartes Pokémon et de produits scellés.',
+    images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'PokéValeur, organise ta collection Pokémon' }]
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'PokéValeur – collection Pokémon',
+    description: 'Suivez, estimez et organisez votre collection de cartes Pokémon et de produits scellés.',
+    images: ['/opengraph-image']
+  }
 }
 
 
@@ -22,6 +41,28 @@ export default function RootLayout({ children }) {
       <body>
         <SiteHeader links={navLinks} />
         <InstallPrompt />
+
+        <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify([
+          {
+            '@context': 'https://schema.org',
+            '@type': 'Organization',
+            name: 'PokéValeur',
+            url: 'https://pokevaleur.fr',
+            logo: 'https://pokevaleur.fr/icon.svg'
+          },
+          {
+            '@context': 'https://schema.org',
+            '@type': 'WebSite',
+            name: 'PokéValeur',
+            url: 'https://pokevaleur.fr',
+            inLanguage: 'fr-FR',
+            potentialAction: {
+              '@type': 'SearchAction',
+              target: 'https://pokevaleur.fr/catalogue?search={search_term_string}',
+              'query-input': 'required name=search_term_string'
+            }
+          }
+        ]).replace(/</g, '\\u003c') }} />
 
         {children}
 
