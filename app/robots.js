@@ -15,7 +15,7 @@ export default function robots() {
         '/api/'
       ]
     }],
-    sitemap: 'https://pokevaleur.fr/sitemap.xml',
-    host: 'https://pokevaleur.fr'
+    sitemap: 'https://www.pokevaleur.fr/sitemap.xml',
+    host: 'https://www.pokevaleur.fr'
   }
 }

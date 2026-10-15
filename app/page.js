@@ -7,7 +7,7 @@ export const metadata = {
   openGraph: {
     title: 'PokéValeur – organise ta collection Pokémon',
     description: 'Cartes, produits scellés et master sets : organise et estime ta collection Pokémon.',
-    url: 'https://pokevaleur.fr'
+    url: 'https://www.pokevaleur.fr'
   }
 }
 
