@@ -85,7 +85,6 @@ export default function Home() {
       <div className={styles.productTypes}>{categories.map(([kind,label]) => <article className={`${styles.card} ${styles.type}`} key={kind}><Art kind={kind} label={`Illustration : ${label}`}/><h2>{label}</h2></article>)}</div>
       <div className={styles.metrics}>
         <article className={`${styles.card} ${styles.master}`}><Art kind="cards" label="Quelques cartes de collection"/><div><h2>Master set</h2><div className={styles.progressNumber}><strong>186 / 210</strong><small>Exemple</small></div><div className={styles.progress} role="img" aria-label="Exemple : 186 cartes sur 210, soit environ 89 %"><span/></div></div></article>
-        <article className={`${styles.card} ${styles.duplicates}`}><Art kind="cards" label="Des exemplaires à comparer"/><div><h2>Doublons à vérifier</h2><p>Compare tes exemplaires.</p></div></article>
       </div>
       <div className={styles.services}>
         <article className={`${styles.card} ${styles.missing}`}><Art kind="missing" label="Un emplacement de carte à compléter"/><div><h2>Trouve la pièce manquante</h2><p>Complète tes séries grâce aux échanges entre passionnés.</p></div></article>

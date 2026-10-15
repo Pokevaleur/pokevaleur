@@ -1,6 +1,6 @@
 # Connected UI tests
 
-The `connected-ui` GitHub Actions job tests the collection search and duplicate review UI at 360, 390 and 1440 pixels. It uses a synthetic non-admin session and an in-memory loopback REST fixture. It tests confirmations, exclusions, reloads, invalidation after quantity changes, save failures and retries. It checks that review decisions do not change collection items.
+The `connected-ui` GitHub Actions job tests the collection search and watchlist page at 360, 390 and 1440 pixels. It uses a synthetic non-admin session and an in-memory loopback REST fixture. It checks that the duplicate review section is absent, the watchlist and alert preferences remain available after reload, and collection data stays unchanged.
 
 These tests do **not** test real Supabase authentication, RLS, database persistence or authorization. The existing visitor job tests unauthenticated redirects against the unchanged application.
 
