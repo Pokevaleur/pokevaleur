@@ -46,6 +46,9 @@
 .gradedLibraryHeading{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:9px}
 .gradedLibraryHeading h2{margin:0;font-size:1.1rem}
 .gradedLibraryHeading span{color:#657386;font-size:.84rem;font-weight:700}
+.gradedShelfTabs{display:flex;width:max-content;gap:4px;margin:0 0 9px;padding:4px;border:1px solid #dce3eb;border-radius:999px;background:#f1f4f8}
+.gradedShelfTab,.gradedShelfTabActive{min-height:34px;padding:6px 13px;border:0;border-radius:999px;background:transparent;color:#536477;font:inherit;font-size:.82rem;font-weight:750;cursor:pointer}
+.gradedShelfTabActive{background:#244caa;color:#fff;box-shadow:0 2px 5px #15263a20}
 .gradedLibrary{display:flex;align-items:flex-end;gap:8px;padding:14px 12px 13px;overflow-x:auto;overflow-y:hidden;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:thin;border:1px solid #dce3eb;border-radius:18px;background:linear-gradient(145deg,#fff,#f5f7fb);box-shadow:0 10px 26px #2036500d}
 .gradedBinder,.gradedBinderActive{position:relative;display:flex;flex:0 0 52px;min-width:52px;height:152px;flex-direction:column;align-items:center;justify-content:space-between;gap:5px;padding:9px 5px;overflow:hidden;scroll-snap-align:start;border:1px solid hsl(var(--binder-hue) 22% 78%);border-radius:7px 10px 10px 7px;background:linear-gradient(90deg,hsl(var(--binder-hue) 28% 85%),hsl(var(--binder-hue) 30% 96%) 18%,hsl(var(--binder-hue) 26% 88%) 88%,hsl(var(--binder-hue) 24% 79%));color:#46566b;box-shadow:2px 3px 5px #15263a16;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}
 .gradedBinderActive{border-color:hsl(var(--binder-hue) 58% 48%);background:linear-gradient(90deg,hsl(var(--binder-hue) 64% 35%),hsl(var(--binder-hue) 66% 51%) 18%,hsl(var(--binder-hue) 61% 43%) 88%,hsl(var(--binder-hue) 58% 34%));color:#fff}
@@ -85,7 +88,7 @@
 .gradedCardsGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));grid-template-rows:repeat(3,auto);align-items:start;gap:clamp(6px,1.1vw,12px);margin:8px 0}
 .gradedSlabButton{display:flex;min-width:0;flex-direction:column;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:#14263a;font:inherit;text-align:center;cursor:pointer}
 .gradedSlabButton:focus-visible{outline:3px solid #80a2ff;outline-offset:4px;border-radius:12px}
-.gradedEmptySlot{display:grid;width:min(100%,210px);aspect-ratio:1/1;place-items:center;padding:10px;border:1px dashed #cbd4df;border-radius:11px;background:linear-gradient(145deg,#f8fafc,#eef2f6);color:#8793a3;box-shadow:inset 0 0 0 4px #ffffffaa;font-size:.75rem;font-weight:700;text-align:center}
+.gradedEmptySlot{display:grid;width:min(100%,210px);aspect-ratio:.75/1;place-items:center;padding:10px;border:1px dashed #cbd4df;border-radius:11px;background:linear-gradient(145deg,#f8fafc,#eef2f6);color:#8793a3;box-shadow:inset 0 0 0 4px #ffffffaa;font-size:.9rem;font-weight:800;text-align:center}
 .gradedSlab{display:flex;width:min(100%,210px);aspect-ratio:.75/1;flex-direction:column;gap:4px;padding:5px;overflow:hidden;border:1px solid #aeb8c5;border-radius:11px;background:linear-gradient(135deg,#edf2f7,#fff 35%,#dce3eb);box-shadow:0 7px 16px #122a4524}
 .gradedSlabLabel{display:flex;flex:0 0 24px;align-items:center;justify-content:space-between;gap:3px;padding:3px 5px;border:1px solid #dce2e9;border-radius:5px;background:#fff;color:#34465c}
 .gradedSlabLabel>span{min-width:0;overflow:hidden;font-size:clamp(.44rem,1.2vw,.68rem);font-weight:850;text-overflow:ellipsis;white-space:nowrap}
