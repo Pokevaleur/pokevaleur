@@ -13,6 +13,7 @@ const products = [
   { name: 'Coffret 30e Anniversaire – Amphinobi-ex' },
   { name: 'Coffret Collection K.O.' },
   { name: 'Mini-boîte Évoli' },
+  { name: 'Display de 10 Kits AP Écarlate et Violet – Aventures Ensemble', product_type: 'Display de kits AP', case_reference: '0196214108141' },
 ]
 const found = query => products.filter(createProductMatcher(query)).map(product => product.name)
 
@@ -48,6 +49,8 @@ test('punctuation, accents and whole alias words are handled', () => {
   assert.deepEqual(found('mini tin evoli'), [products[9].name])
   assert.deepEqual(found('tin'), [products[9].name]) // Generic metal-box search includes mini-tins, never Destinées.
   assert.deepEqual(found('produit inexistant'), [])
+  assert.deepEqual(found('0196214108141'), [products[10].name])
+  assert.deepEqual(found('display kit ap aventures ensemble'), [products[10].name])
 })
 
 test('metal box formats stay distinct and tin includes the whole family', () => {

@@ -31,7 +31,7 @@ export default function ProductDetailPage() {
     const [{ data: productData }, { data: historyData }, { data: contentData }] = await Promise.all([
       supabase
         .from('products')
-        .select('id,name,series,category,product_type,release_date,release_period,official_source_url,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status')
+        .select('id,name,series,category,product_type,release_date,release_period,official_source_url,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status,case_reference,case_unit_count,case_packaging_note')
         .eq('id', params.id)
         .single(),
       supabase
@@ -120,6 +120,14 @@ export default function ProductDetailPage() {
                 : product.release_period || 'À renseigner'}
             </strong>
           </div>
+          {product.case_reference && <div className="detailReleaseDate">
+            <span>Référence / code-barres</span>
+            <strong>{product.case_reference}</strong>
+          </div>}
+          {product.case_packaging_note && <div className="detailReleaseDate">
+            <span>Composition de la display</span>
+            <strong>{product.case_packaging_note}</strong>
+          </div>}
           {product.image_url && product.image_credit && (
             <small className="imageCredit">Visuel : {product.image_credit}</small>
           )}
