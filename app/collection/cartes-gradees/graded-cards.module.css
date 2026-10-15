@@ -58,7 +58,29 @@
 .resultCount{color:#5f6d7e}
 .cardsList{display:grid;gap:12px}
 .cardItem{display:flex;gap:16px;padding:16px;border:1px solid #dce2e9;border-radius:16px;background:white}
-.cardPhoto{width:112px;height:156px;object-fit:contain;border-radius:8px;background:#f1f3f6}
+.cardOpenButton{display:flex;width:100%;align-items:flex-start;gap:16px;padding:0;border:0;background:transparent;color:inherit;font:inherit;text-align:left;cursor:pointer}
+.cardOpenButton:focus-visible{outline:3px solid #80a2ff;outline-offset:4px;border-radius:8px}
+.openHint{display:inline-block;margin-top:5px;color:#244caa;font-size:.88rem;font-weight:800}
+.cardPhoto{width:112px;height:156px;flex:none;object-fit:contain;border-radius:8px;background:#f1f3f6}
+.detailBackdrop{position:fixed;z-index:100;inset:0;display:flex;justify-content:center;align-items:flex-start;padding:24px 14px;overflow-y:auto;background:#09182b99}
+.detailDialog{width:min(900px,100%);max-height:calc(100dvh - 48px);padding:22px;overflow:auto;border:1px solid #dce2e9;border-radius:20px;background:#fff;box-shadow:0 24px 70px #09182b44}
+.detailHeader{display:flex;justify-content:space-between;align-items:flex-start;gap:14px;padding-bottom:15px;border-bottom:1px solid #e5e9ef}
+.detailHeader h2{margin:0 0 5px;font-size:1.35rem}
+.detailHeader p{margin:0;color:#5f6d7e}
+.detailClose{width:40px;height:40px;flex:none;border:1px solid #cbd4df;border-radius:50%;background:#fff;color:#14263a;font-size:1.7rem;line-height:1;cursor:pointer}
+.photoGallery{display:flex;gap:12px;margin:16px 0;overflow-x:auto}
+.photoGallery a{display:flex;flex:0 0 145px;flex-direction:column;gap:6px;color:#244caa;font-size:.82rem;font-weight:700;text-decoration:none}
+.photoGallery img{width:145px;height:190px;object-fit:contain;border-radius:10px;background:#f1f3f6}
+.noPhotos{margin:15px 0;padding:12px;border-radius:10px;background:#f3f6fa;color:#667487}
+.detailForm>section{margin-top:14px}
+.detailForm h3{margin:0 0 12px;font-size:1.08rem}
+.detailActions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
+.removeButton,.secondaryButton{min-height:46px;padding:10px 15px;border:1px solid #bd4545;border-radius:11px;background:#fff;color:#a12f2f;font:inherit;font-weight:800;cursor:pointer}
+.secondaryButton{border-color:#cbd4df;color:#253b5c}
+.removeButton:disabled,.secondaryButton:disabled{opacity:.6;cursor:wait}
+.removeConfirm{margin-top:14px;padding:14px;border:1px solid #e5a2a2;border-radius:12px;background:#fff4f3;color:#752727}
+.removeConfirm p{margin:0 0 12px;line-height:1.45}
+.removeConfirm>div{display:flex;flex-wrap:wrap;gap:9px}
 .cardInfo h2{margin:0 0 5px;font-size:1.15rem}
 .cardInfo p{margin:5px 0;line-height:1.45}
 .detailLine{color:#5f6d7e;font-size:.92rem}
@@ -69,5 +91,5 @@
 .status{padding:30px 0;color:#5f6d7e}
 .footerLinks{display:flex;justify-content:space-between;gap:14px;margin-top:24px;color:#657286}
 .profilePicker{max-width:420px;margin:0 0 16px}
-@media(max-width:760px){.gradedLibrary{padding:12px 9px 11px}.gradedBinder,.gradedBinderActive,.gradedBinderAll{height:138px}.formGrid,.searchGrid{grid-template-columns:1fr}.filterPanel{grid-template-columns:repeat(2,minmax(0,1fr))}.panel,.filterPanel{padding:15px}.cardItem{align-items:flex-start}.cardPhoto{width:82px;height:116px}}
-@media(max-width:440px){.filterPanel{grid-template-columns:1fr}.cardItem{gap:10px}.cardPhoto{width:64px;height:92px}}
+@media(max-width:760px){.gradedLibrary{padding:12px 9px 11px}.gradedBinder,.gradedBinderActive,.gradedBinderAll{height:138px}.formGrid,.searchGrid{grid-template-columns:1fr}.filterPanel{grid-template-columns:repeat(2,minmax(0,1fr))}.panel,.filterPanel{padding:15px}.cardItem{align-items:flex-start}.cardOpenButton{gap:10px}.cardPhoto{width:82px;height:116px}.detailBackdrop{padding:10px}.detailDialog{max-height:calc(100dvh - 20px);padding:16px;border-radius:16px}}
+@media(max-width:440px){.filterPanel{grid-template-columns:1fr}.cardItem{gap:10px}.cardOpenButton{gap:9px}.cardPhoto{width:64px;height:92px}.detailActions{flex-direction:column}.detailActions button,.removeConfirm button{width:100%}}
