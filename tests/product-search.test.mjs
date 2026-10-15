@@ -14,6 +14,8 @@ const products = [
   { name: 'Coffret Collection K.O.' },
   { name: 'Mini-boîte Évoli' },
   { name: 'Display de 10 Kits AP Écarlate et Violet – Aventures Ensemble', product_type: 'Display de kits AP', case_reference: '0196214108141' },
+  { name: 'Kit Avant-première – Écarlate et Violet – Évolutions à Paldea', product_type: 'Kit Avant-première' },
+  { name: 'Build & Battle Soleil et Lune – Éclipse Cosmique', product_type: 'Build & Battle' },
 ]
 const found = query => products.filter(createProductMatcher(query)).map(product => product.name)
 
@@ -51,6 +53,9 @@ test('punctuation, accents and whole alias words are handled', () => {
   assert.deepEqual(found('produit inexistant'), [])
   assert.deepEqual(found('0196214108141'), [products[10].name])
   assert.deepEqual(found('display kit ap aventures ensemble'), [products[10].name])
+  assert.deepEqual(found('kit ap evolutions paldea'), [products[11].name])
+  assert.deepEqual(found('kit ap eclipse cosmique'), [products[12].name])
+  assert.deepEqual(found('build battle eclipse cosmique'), [products[12].name])
 })
 
 test('metal box formats stay distinct and tin includes the whole family', () => {
