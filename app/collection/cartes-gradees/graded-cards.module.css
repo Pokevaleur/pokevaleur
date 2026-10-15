@@ -1,0 +1,54 @@
+.page{width:min(1120px,calc(100% - 32px));margin:0 auto;padding:28px 0 64px;color:#14263a}
+.topLine{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:18px}
+.backLink,.footerLinks a{color:#244caa;font-weight:700;text-decoration:none}
+.privateBadge{border-radius:999px;background:#fff1c2;color:#725914;padding:7px 12px;font-size:.82rem;font-weight:700}
+.header{max-width:780px;margin-bottom:22px}
+.kicker{margin:0 0 8px;color:#95711b;font-weight:800}
+.header h1{margin:0;font-size:clamp(1.8rem,4vw,2.7rem);line-height:1.08}
+.header>p:not(.kicker){color:#5f6d7e;line-height:1.55}
+.tabs{display:flex;gap:8px;margin-top:18px}
+.tab,.activeTab{padding:10px 16px;border:1px solid #ccd5e3;border-radius:999px;color:#203b76;text-decoration:none;font-weight:750}
+.activeTab{background:#244caa;border-color:#244caa;color:white}
+.panel,.filterPanel{padding:20px;margin:18px 0;border:1px solid #dce2e9;border-radius:18px;background:#fff;box-shadow:0 8px 24px #15253b0a}
+.panel section+section{margin-top:26px;padding-top:22px;border-top:1px solid #e5e9ef}
+.panel h2{margin:0 0 14px;font-size:1.2rem}
+.searchGrid,.formGrid,.filterPanel{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+.panel label,.filterPanel label,.profilePicker{display:flex;flex-direction:column;gap:7px;font-weight:700}
+.panel input:not([type=file]),.panel select,.panel textarea,.filterPanel input,.filterPanel select,.profilePicker select{width:100%;min-height:44px;padding:10px 12px;border:1px solid #cbd4df;border-radius:10px;background:white;color:#14263a;font:inherit}
+.panel textarea{resize:vertical}
+.results{display:grid;gap:6px;max-height:360px;overflow:auto;margin-top:10px}
+.result{display:flex;flex-direction:column;gap:4px;padding:12px;border:1px solid #e0e5ec;border-radius:10px;background:#fff;text-align:left;cursor:pointer}
+.result:hover,.result:focus-visible{border-color:#4267c8;background:#f4f7ff}
+.result span,.selectedCard span{color:#5f6d7e;font-size:.9rem}
+.selectedCard{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px;margin-top:12px;border:1px solid #cbd8f1;border-radius:12px;background:#f6f8ff}
+.selectedCard>div{display:grid;gap:4px}
+.textButton{border:0;background:none;color:#244caa;font:inherit;font-weight:700;cursor:pointer}
+.variantChoice{margin-top:12px}
+.subgrades{margin:16px 0;padding:16px;border:1px solid #dce2e9;border-radius:12px}
+.subgrades legend{padding:0 7px;font-weight:800}
+.estimateBox{display:flex;flex-direction:column;justify-content:center;gap:6px;min-height:78px;padding:12px;border-radius:10px;background:#f2f6ff;color:#354967}
+.estimateBox a{color:#244caa}
+.photoUpload{margin-top:15px;padding:14px;border:1px dashed #bac7d8;border-radius:12px}
+.photoUpload small,.muted{display:block;margin-top:8px;color:#697789}
+.photoList{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px}
+.photoList span{display:flex;align-items:center;gap:8px;padding:6px 10px;border-radius:999px;background:#edf1f8;font-size:.85rem}
+.photoList button{border:0;background:none;font-size:1.1rem;cursor:pointer}
+.primaryButton{min-height:48px;padding:12px 18px;border:0;border-radius:12px;background:#244caa;color:white;font:inherit;font-weight:800;cursor:pointer}
+.primaryButton:disabled{opacity:.6;cursor:wait}
+.filterPanel{grid-template-columns:repeat(5,minmax(0,1fr))}
+.resultCount{color:#5f6d7e}
+.cardsList{display:grid;gap:12px}
+.cardItem{display:flex;gap:16px;padding:16px;border:1px solid #dce2e9;border-radius:16px;background:white}
+.cardPhoto{width:112px;height:156px;object-fit:contain;border-radius:8px;background:#f1f3f6}
+.cardInfo h2{margin:0 0 5px;font-size:1.15rem}
+.cardInfo p{margin:5px 0;line-height:1.45}
+.detailLine{color:#5f6d7e;font-size:.92rem}
+.emptyState{padding:28px;border:1px dashed #cbd4df;border-radius:14px;text-align:center}
+.error,.notice{padding:12px 14px;border-radius:10px}
+.error{background:#fff0ef;color:#a42f28}
+.notice{background:#eef8f0;color:#287141}
+.status{padding:30px 0;color:#5f6d7e}
+.footerLinks{display:flex;justify-content:space-between;gap:14px;margin-top:24px;color:#657286}
+.profilePicker{max-width:420px;margin:0 0 16px}
+@media(max-width:760px){.formGrid,.searchGrid{grid-template-columns:1fr}.filterPanel{grid-template-columns:repeat(2,minmax(0,1fr))}.panel,.filterPanel{padding:15px}.cardItem{align-items:flex-start}.cardPhoto{width:82px;height:116px}}
+@media(max-width:440px){.filterPanel{grid-template-columns:1fr}.tabs a{flex:1;text-align:center}.cardItem{gap:10px}.cardPhoto{width:64px;height:92px}}
