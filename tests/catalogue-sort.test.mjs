@@ -55,3 +55,31 @@ test('series dates from the card catalogue order products that lack their own da
     'Écarlate et Violet – Aventures Ensemble',
   ])
 })
+
+test('combined block and expansion labels sort AP displays by actual expansion dates', () => {
+  const seriesReleaseDates = createSeriesReleaseDateMap([
+    { series_name: 'Écarlate et Violet', set_name: 'Écarlate et Violet', release_date: '2023-03-31' },
+    { series_name: 'Écarlate et Violet', set_name: 'Évolutions à Paldea', release_date: '2023-06-09' },
+    { series_name: 'Écarlate et Violet', set_name: 'Flammes Obsidiennes', release_date: '2023-08-11' },
+    { series_name: 'Écarlate et Violet', set_name: 'Couronne Stellaire', release_date: '2024-09-13' },
+    { series_name: 'Écarlate et Violet', set_name: 'Écarlate et Violet – Aventures Ensemble', release_date: '2025-03-28' },
+    { series_name: 'Écarlate et Violet', set_name: 'Rivalités Destinées', release_date: '2025-05-30' },
+  ])
+  const products = [
+    { name: 'Display AP Rivalités Destinées', series: 'Écarlate et Violet – Rivalités Destinées' },
+    { name: 'Display AP Couronne Stellaire', series: 'Écarlate et Violet – Couronne Stellaire' },
+    { name: 'Display AP Aventures Ensemble', series: 'Écarlate et Violet – Aventures Ensemble' },
+    { name: 'Display AP Évolutions à Paldea', series: 'Écarlate et Violet – Évolutions à Paldea' },
+    { name: 'Display AP Flammes Obsidiennes', series: 'Écarlate et Violet – Flammes Obsidiennes' },
+    { name: 'Display AP Écarlate et Violet', series: 'Écarlate et Violet' },
+  ]
+
+  assert.deepEqual(sortProductsByRelease(products, seriesReleaseDates).map(product => product.name), [
+    'Display AP Écarlate et Violet',
+    'Display AP Évolutions à Paldea',
+    'Display AP Flammes Obsidiennes',
+    'Display AP Couronne Stellaire',
+    'Display AP Aventures Ensemble',
+    'Display AP Rivalités Destinées',
+  ])
+})
