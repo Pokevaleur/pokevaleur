@@ -70,6 +70,7 @@ export default function GradedCardsPage({ mode }) {
   const [selectedBinderId, setSelectedBinderId] = useState('')
   const [openedBinderId, setOpenedBinderId] = useState('')
   const [binderPage, setBinderPage] = useState(0)
+  const gradedBinderViewRef = useRef(null)
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const [gradePickerOpen, setGradePickerOpen] = useState(false)
   const seriesPickerRef = useRef(null)
@@ -281,6 +282,17 @@ export default function GradedCardsPage({ mode }) {
   }, [mode, profileId, supabase])
 
   useEffect(() => { loadCollection() }, [loadCollection])
+
+  useEffect(() => {
+    if (mode !== 'consult' || !openedBinderId || openedBinderId !== selectedBinderId) return
+    const frame = window.requestAnimationFrame(() => {
+      const section = gradedBinderViewRef.current
+      if (!section) return
+      const top = section.getBoundingClientRect().top + window.scrollY - 88
+      window.scrollTo({ top: Math.max(0, top), behavior: 'smooth' })
+    })
+    return () => window.cancelAnimationFrame(frame)
+  }, [mode, openedBinderId, selectedBinderId, binderPage])
 
   function openGradedDetails(item) {
     const subs = item.subgrades || {}
@@ -783,37 +795,46 @@ export default function GradedCardsPage({ mode }) {
         <label>Note<input type="number" min="1" max="10" step="0.5" value={filters.grade} onChange={event => updateConsultFilter('grade', event.target.value)} placeholder="Toutes" /></label>
         <label>Langue<input value={filters.language} onChange={event => updateConsultFilter('language', event.target.value)} placeholder="Toutes" /></label>
       </section>
-      {openedBinderId && openedBinderId === selectedBinderId && <>
+      {openedBinderId && openedBinderId === selectedBinderId && <section className={styles.gradedBinderView} ref={gradedBinderViewRef}>
         <div className={styles.gradedOpenHeader}>
-          <div><h2>{selectedBinderName}</h2><p>{selectedBinderItems.length} exemplaire{selectedBinderItems.length === 1 ? '' : 's'} gradé{selectedBinderItems.length === 1 ? '' : 's'} · 12 cartes par page</p></div>
+          <div><h2>{selectedBinderName}</h2><p>{selectedBinderItems.length} exemplaire{selectedBinderItems.length === 1 ? '' : 's'} gradé{selectedBinderItems.length === 1 ? '' : 's'} · 12 emplacements par page</p></div>
           <button className={styles.gradedBackToCover} type="button" onClick={() => setOpenedBinderId('')}>← Retour à la couverture</button>
         </div>
-        <p className={styles.resultCount}>{selectedBinderItems.length} exemplaire{selectedBinderItems.length === 1 ? '' : 's'} affiché{selectedBinderItems.length === 1 ? '' : 's'} sur {selectedBinderId === 'all' ? items.length : gradedCountsBySet[selectedBinderId] || 0}</p>
-        {selectedBinderItems.length ? <div className={styles.gradedCardsGrid}>
-          {Array.from({ length: BINDER_PAGE_SIZE }, (_, slotIndex) => { const item = visibleBinderItems[slotIndex]; if (!item) return <div className={styles.gradedEmptySlot} key={'empty-' + slotIndex} aria-label={'Emplacement libre ' + (slotIndex + 1)}><span>Emplacement libre</span></div>
-            const variant = item.card_print_variants
-            const card = variant?.cards
-            const company = item.card_grading_companies
-            const artwork = signedPhotos[item.id] || variant?.image_url || card?.image_url
-            const companyLabel = company?.abbreviation || company?.company_name || 'GRADÉE'
-            return <button type="button" key={item.id} className={styles.gradedSlabButton}
-              onClick={() => openGradedDetails(item)}
-              aria-label={'Ouvrir la fiche de ' + (card?.card_name || 'la carte') + ', ' + companyLabel + ' note ' + (item.grade_label || item.grade || 'non renseignée')}>
-              <span className={styles.gradedSlab}>
-                <span className={styles.gradedSlabLabel}><span>{companyLabel}</span><strong>{item.grade == null ? '—' : Number(item.grade).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}</strong></span>
-                <span className={styles.gradedSlabWindow}>{artwork ? <img src={artwork} alt="" loading="lazy" /> : <span>{card?.card_name || 'Carte gradée'}</span>}</span>
-              </span>
-              <span className={styles.gradedSlabName}>{card?.card_name || 'Carte gradée'}</span>
-              <span className={styles.gradedSlabMeta}>{card?.collector_number ? 'n° ' + card.collector_number : setLabel(card?.card_sets)}</span>
-            </button>
-          })}
-        </div> : <div className={styles.emptyState}><p>Aucune carte gradée ne correspond à ces filtres.</p></div>}
-        {binderTotalPages > 1 && <nav className={styles.binderPagination} aria-label="Pages du classeur">
-          <button type="button" onClick={() => setBinderPage(page => Math.max(0, page - 1))} disabled={binderPage === 0}>← Précédent</button>
-          <span>Page {binderPage + 1} sur {binderTotalPages}</span>
-          <button type="button" onClick={() => setBinderPage(page => Math.min(binderTotalPages - 1, page + 1))} disabled={binderPage >= binderTotalPages - 1}>Suivant →</button>
-        </nav>}
-      </>}
+        {selectedBinderItems.length ? <>
+          <nav className={styles.gradedPageNav} aria-label="Pages du classeur">
+            <button type="button" onClick={() => setBinderPage(page => Math.max(0, page - 1))} disabled={binderPage === 0} aria-label="Page précédente">←</button>
+            <span>Page {binderPage + 1} / {binderTotalPages}</span>
+            <button type="button" onClick={() => setBinderPage(page => Math.min(binderTotalPages - 1, page + 1))} disabled={binderPage >= binderTotalPages - 1} aria-label="Page suivante">→</button>
+          </nav>
+          <div className={styles.gradedBookSpread}>
+            <section className={styles.gradedBookPage} aria-label={'Page ' + (binderPage + 1) + ' du classeur'}>
+              <div className={styles.gradedPageTop}><span>{selectedBinderName}</span><span>{binderPage + 1}</span></div>
+              <p className={styles.resultCount}>{selectedBinderItems.length} exemplaire{selectedBinderItems.length === 1 ? '' : 's'} au total</p>
+              <div className={styles.gradedCardsGrid}>
+                {Array.from({ length: BINDER_PAGE_SIZE }, (_, slotIndex) => {
+                  const item = visibleBinderItems[slotIndex]
+                  if (!item) return <div className={styles.gradedEmptySlot} key={'empty-' + binderPage + '-' + slotIndex} aria-label={'Emplacement libre ' + (slotIndex + 1)}><span>Emplacement libre</span></div>
+                  const variant = item.card_print_variants
+                  const card = variant?.cards
+                  const company = item.card_grading_companies
+                  const artwork = signedPhotos[item.id] || variant?.image_url || card?.image_url
+                  const companyLabel = company?.abbreviation || company?.company_name || 'GRADÉE'
+                  return <button type="button" key={item.id} className={styles.gradedSlabButton}
+                    onClick={() => openGradedDetails(item)}
+                    aria-label={'Ouvrir la fiche de ' + (card?.card_name || 'la carte') + ', ' + companyLabel + ' note ' + (item.grade_label || item.grade || 'non renseignée')}>
+                    <span className={styles.gradedSlab}>
+                      <span className={styles.gradedSlabLabel}><span>{companyLabel}</span><strong>{item.grade == null ? '—' : Number(item.grade).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}</strong></span>
+                      <span className={styles.gradedSlabWindow}>{artwork ? <img src={artwork} alt="" loading="lazy" /> : <span>{card?.card_name || 'Carte gradée'}</span>}</span>
+                    </span>
+                    <span className={styles.gradedSlabName}>{card?.card_name || 'Carte gradée'}</span>
+                    <span className={styles.gradedSlabMeta}>{card?.collector_number ? 'n° ' + card.collector_number : setLabel(card?.card_sets)}</span>
+                  </button>
+                })}
+              </div>
+            </section>
+          </div>
+        </> : <div className={styles.emptyState}><p>Aucune carte gradée ne correspond à ces filtres.</p></div>}
+      </section>}
       {!selectedBinderId && <p className={styles.emptyState}>Choisis un classeur pour afficher sa couverture et ouvrir les cartes gradées de la série.</p>}
 
 
