@@ -161,7 +161,7 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
             </section>
           )}
           {renderLinks()}
-          {!identity && authState === 'signed-out' && <a href="/login" className="btn small">Connexion</a>}
+          {!identity && authState === 'signed-out' && <a href="/login" className="btn small" onClick={closeMobileMenu}>Connexion</a>}
         </div>
       </details>
     </>
