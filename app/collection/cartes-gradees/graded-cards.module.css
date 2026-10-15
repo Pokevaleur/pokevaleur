@@ -75,6 +75,7 @@
 .gradedCardsGrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(8px,1.5vw,16px);margin:14px 0}
 .gradedSlabButton{display:flex;min-width:0;flex-direction:column;align-items:center;gap:5px;padding:0;border:0;background:transparent;color:#14263a;font:inherit;text-align:center;cursor:pointer}
 .gradedSlabButton:focus-visible{outline:3px solid #80a2ff;outline-offset:4px;border-radius:12px}
+.gradedEmptySlot{display:grid;width:min(100%,210px);aspect-ratio:.66/1;place-items:center;padding:10px;border:1px dashed #cbd4df;border-radius:11px;background:linear-gradient(145deg,#f8fafc,#eef2f6);color:#8793a3;box-shadow:inset 0 0 0 4px #ffffffaa;font-size:.75rem;font-weight:700;text-align:center}
 .gradedSlab{display:flex;width:min(100%,210px);aspect-ratio:.66/1;flex-direction:column;gap:4px;padding:5px;overflow:hidden;border:1px solid #aeb8c5;border-radius:11px;background:linear-gradient(135deg,#edf2f7,#fff 35%,#dce3eb);box-shadow:0 7px 16px #122a4524}
 .gradedSlabLabel{display:flex;flex:0 0 24px;align-items:center;justify-content:space-between;gap:3px;padding:3px 5px;border:1px solid #dce2e9;border-radius:5px;background:#fff;color:#34465c}
 .gradedSlabLabel>span{min-width:0;overflow:hidden;font-size:clamp(.44rem,1.2vw,.68rem);font-weight:850;text-overflow:ellipsis;white-space:nowrap}
