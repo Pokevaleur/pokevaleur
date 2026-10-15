@@ -78,6 +78,11 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
     window.location.href = '/'
   }
 
+  function closeMobileMenu(event) {
+    const menu = event.currentTarget.closest('.mobileMenu')
+    if (menu) menu.open = false
+  }
+
   function filterVisibleLinks(items) {
     return items
       .filter(link => !link.memberOnly || identity)
@@ -101,7 +106,7 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
           <div className="collectionNavSubpanel">{renderMenuItems(item.children)}</div>
         </details>
       )
-      : <a href={item.href} key={`${item.label}-${item.href}`}>{item.label}</a>)
+      : <a href={item.href} key={`${item.label}-${item.href}`} onClick={closeMobileMenu}>{item.label}</a>)
   }
 
   function renderLinks() {
@@ -117,7 +122,7 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
           </div>
         </details>
       )
-      : <a href={link.label === 'Accueil' && identity ? '/collection/accueil' : link.href} key={link.href}>{link.label}</a>)
+      : <a href={link.label === 'Accueil' && identity ? '/collection/accueil' : link.href} key={link.href} onClick={closeMobileMenu}>{link.label}</a>)
   }
   const accountMenu = identity && (
     <details className="accountMenu">
@@ -151,7 +156,7 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
                 <ProfileAvatar className="profileAvatar" avatarKey={identity.avatarKey} aria-hidden="true" />
                 <span><strong>{identity.displayName}</strong>{identity.email && <small>{identity.email}</small>}</span>
               </div>
-              <a className="mobileProfileLink" href="/profil">Mon profil</a>
+              <a className="mobileProfileLink" href="/profil" onClick={closeMobileMenu}>Mon profil</a>
               <button className="mobileAccountSignOut" type="button" onClick={signOut}>Se déconnecter</button>
             </section>
           )}
