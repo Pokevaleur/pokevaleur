@@ -489,7 +489,6 @@ export default function GradedCardsPage({ mode }) {
                 </div>
               )}
             </div>
-            <input type="text" required tabIndex={-1} autoComplete="off" value={form.grade} onChange={() => {}} className={styles.visuallyHidden} aria-hidden="true" />
           </label>
           <label>Libellé de la note (facultatif)
             <input value={form.gradeLabel} onChange={event => update('gradeLabel', event.target.value)} placeholder="Ex. NEUF+, PARFAIT" />
