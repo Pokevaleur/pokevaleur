@@ -72,14 +72,14 @@ export default function GradedCardsPage({ mode }) {
         return
       }
       setUser(signedInUser)
-      const [{ data: profileRows, error: profileError }, { data: setRows, error: setError }, { data: companyRows, error: companyError }] = await Promise.all([
+      const [{ data: profileRows, error: profileError }, { data: setRows, error: setRowsError }, { data: companyRows, error: companyError }] = await Promise.all([
         supabase.from('collection_profiles').select('id,display_name,is_default,profile_type').order('created_at'),
         supabase.from('card_sets').select('id,set_name,set_code,language,is_public,release_date').eq('is_public', true).order('release_date', { ascending: false }),
         supabase.from('card_grading_companies').select('id,company_name,abbreviation').eq('is_active', true).order('company_name')
       ])
       if (cancelled) return
       if (profileError) throw profileError
-      if (setError) throw setError
+      if (setRowsError) throw setRowsError
       let availableCompanies = companyRows || []
       if (companyError || availableCompanies.length === 0) {
         const companyUrl = new URL('/rest/v1/card_grading_companies', supabaseUrl)
