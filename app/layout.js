@@ -68,6 +68,7 @@ export default function RootLayout({ children }) {
 
         <footer>
           <p>PokéValeur est un service indépendant de suivi de collection. Non affilié à The Pokémon Company, Nintendo, Creatures ou GAME FREAK.</p>
+          <p>Une question ou un problème à signaler ? <a href="mailto:contact@pokevaleur.fr" style={{ color: "#1476cb", fontWeight: 700, textDecoration: "underline" }}>Contactez-nous à contact@pokevaleur.fr</a>.</p>
         </footer>
       </body>
     </html>
