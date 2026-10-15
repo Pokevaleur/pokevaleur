@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { sortProductsByRelease } from '../lib/catalogue-sort.mjs'
+import { createSeriesReleaseDateMap, sortProductsByRelease } from '../lib/catalogue-sort.mjs'
 
 test('catalogue results follow chronological product release dates', () => {
   const products = [
@@ -36,5 +36,22 @@ test('release periods provide a chronological fallback and undated items follow 
 
   assert.deepEqual(sortProductsByRelease(products).map(product => product.name), [
     'Série ancienne', 'Série tardive', 'Produit inconnu',
+  ])
+})
+
+
+test('series dates from the card catalogue order products that lack their own date', () => {
+  const seriesReleaseDates = createSeriesReleaseDateMap([
+    { set_name: 'Écarlate et Violet – Aventures Ensemble', release_date: '2025-03-28' },
+    { set_name: 'Écarlate et Violet – Évolutions à Paldea', release_date: '2023-06-09' },
+  ])
+  const products = [
+    { name: 'Display de 10 Kits AP', series: 'Écarlate et Violet – Aventures Ensemble' },
+    { name: 'Kit AP', series: 'Écarlate et Violet – Évolutions à Paldea' },
+  ]
+
+  assert.deepEqual(sortProductsByRelease(products, seriesReleaseDates).map(product => product.series), [
+    'Écarlate et Violet – Évolutions à Paldea',
+    'Écarlate et Violet – Aventures Ensemble',
   ])
 })
