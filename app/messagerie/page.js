@@ -145,10 +145,16 @@ export default function MessagingPage() {
   const selectedSuggestion = productSuggestions.find(item => item.id === selectedSuggestionId) || null
   useEffect(() => {
     if (!selectedSuggestion) { setSuggestionDraft(null); setVerifiedSuggestion(false); return }
+    const category = selectedSuggestion.category || 'sealed'
+    const seriesOptions = [...new Set(catalogueProducts
+      .filter(product => product.category === category)
+      .map(product => product.series?.trim())
+      .filter(Boolean))]
+    const proposedSeries = selectedSuggestion.series?.trim() || ''
     setSuggestionDraft({
       name: selectedSuggestion.name || '',
-      series: selectedSuggestion.series || '',
-      category: selectedSuggestion.category || 'sealed',
+      series: seriesOptions.includes(proposedSeries) ? proposedSeries : '',
+      category,
       product_type: '',
       release_date: '',
       release_period: '',
@@ -159,7 +165,7 @@ export default function MessagingPage() {
       image_credit: ''
     })
     setVerifiedSuggestion(false)
-  }, [selectedSuggestion?.id])
+  }, [selectedSuggestion?.id, catalogueProducts])
 
   useEffect(() => {
     if (!status?.active) return
@@ -261,6 +267,15 @@ export default function MessagingPage() {
   }
   const selectedThread = threads.find(t => t.id === selected)
   const composer = view === 'new' || view === 'team' || view === 'announce'
+  const categoryProducts = suggestionDraft
+    ? catalogueProducts.filter(product => product.category === suggestionDraft.category)
+    : []
+  const seriesOptions = [...new Set(categoryProducts.map(product => product.series?.trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'fr'))
+  const typeOptions = [...new Set(categoryProducts.map(product => product.product_type?.trim()).filter(Boolean))]
+    .sort((a, b) => a.localeCompare(b, 'fr'))
+  const proposedSeries = selectedSuggestion?.series?.trim() || ''
+  const proposedSeriesNeedsReview = Boolean(proposedSeries && !seriesOptions.includes(proposedSeries))
   const duplicateCandidates = suggestionDraft
     ? catalogueProducts.filter(item => {
       const requested = normalizedProductName(suggestionDraft.name)
@@ -318,9 +333,23 @@ export default function MessagingPage() {
             <h3>Fiche à publier : {selectedSuggestion.name}</h3>
             <p>Les champs sont préremplis avec la proposition. Corrige-les à partir d’une source fiable. Le code-barres est facultatif : ne le devine pas.</p>
             <label htmlFor="suggestion-name">Nom officiel</label><input id="suggestion-name" required value={suggestionDraft.name} onChange={e => setSuggestionDraft({ ...suggestionDraft, name: e.target.value })} />
-            <label htmlFor="suggestion-series">Série / extension</label><input id="suggestion-series" value={suggestionDraft.series} onChange={e => setSuggestionDraft({ ...suggestionDraft, series: e.target.value })} />
-            <label htmlFor="suggestion-category">Catégorie</label><select id="suggestion-category" value={suggestionDraft.category} onChange={e => setSuggestionDraft({ ...suggestionDraft, category: e.target.value })}><option value="sealed">Produit scellé</option><option value="card">Carte</option><option value="accessory">Accessoire</option><option value="other">Autre</option></select>
-            <label htmlFor="suggestion-type">Type précis</label><input id="suggestion-type" placeholder="Ex. Pokébox" value={suggestionDraft.product_type} onChange={e => setSuggestionDraft({ ...suggestionDraft, product_type: e.target.value })} />
+            <label htmlFor="suggestion-series">Série / extension</label>
+            <select id="suggestion-series" value={suggestionDraft.series} onChange={e => setSuggestionDraft({ ...suggestionDraft, series: e.target.value })}>
+              <option value="">Non renseignée / à confirmer</option>
+              {seriesOptions.map(series => <option value={series} key={series}>{series}</option>)}
+            </select>
+            {proposedSeriesNeedsReview && <p className={styles.error} role="status">La proposition indique « {proposedSeries} », qui ne correspond à aucune série existante pour cette catégorie. Choisis une valeur de la liste ou laisse « Non renseignée / à confirmer ».</p>}
+            <label htmlFor="suggestion-category">Catégorie</label>
+            <select id="suggestion-category" value={suggestionDraft.category} onChange={e => setSuggestionDraft({ ...suggestionDraft, category: e.target.value, series: '', product_type: '' })}>
+              <option value="sealed">Produit scellé</option><option value="card">Carte</option><option value="accessory">Accessoire</option><option value="other">Autre</option>
+            </select>
+            {suggestionDraft.category === 'other' && <p className={styles.muted}>Pour une Pokébox, choisis « Produit scellé », puis le type « Pokébox ».</p>}
+            <label htmlFor="suggestion-type">Type précis</label>
+            <select id="suggestion-type" required={typeOptions.length > 0} value={suggestionDraft.product_type} onChange={e => setSuggestionDraft({ ...suggestionDraft, product_type: e.target.value })}>
+              <option value="">Non renseigné / à confirmer</option>
+              {typeOptions.map(type => <option value={type} key={type}>{type}</option>)}
+            </select>
+            {!typeOptions.length && <p className={styles.muted}>Aucun type existant pour cette catégorie ; laisse ce champ à confirmer.</p>}
             <label htmlFor="suggestion-reference">Référence / code-barres vérifié</label><input id="suggestion-reference" value={suggestionDraft.reference_code} onChange={e => setSuggestionDraft({ ...suggestionDraft, reference_code: e.target.value })} />
             <label htmlFor="suggestion-source">Source consultée</label><input id="suggestion-source" type="url" required value={suggestionDraft.official_source_url} onChange={e => setSuggestionDraft({ ...suggestionDraft, official_source_url: e.target.value })} placeholder="Lien officiel ou source fiable" />
             <label htmlFor="suggestion-release-date">Date de sortie exacte</label><input id="suggestion-release-date" type="date" value={suggestionDraft.release_date} onChange={e => setSuggestionDraft({ ...suggestionDraft, release_date: e.target.value })} />
