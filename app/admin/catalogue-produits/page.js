@@ -23,6 +23,7 @@ const groups = [
 
 const valueFields = new Set(['current_value', 'zero_defect_value', 'release_year', 'case_unit_count'])
 const requiredFields = new Set(['name', 'category', 'currency', 'image_usage_status'])
+const searchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
 const asInput = (key, value) => {
   if (value == null) return ''
   if (key.endsWith('_at') && value) return String(value).slice(0, 16)
@@ -62,16 +63,28 @@ export default function AdminProductCatalogPage() {
   }, [supabase])
 
   const selected = products.find(product => product.id === selectedId)
-  const filtered = useMemo(() => {
-    const needle = query.trim().toLocaleLowerCase('fr')
-    return products.filter(product => !needle || [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => String(value || '').toLocaleLowerCase('fr').includes(needle))).slice(0, 100)
+  const searchResults = useMemo(() => {
+    const needle = searchText(query.trim())
+    if (needle.length < 2) return []
+    return products.filter(product => [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => searchText(value).includes(needle)))
   }, [products, query])
   const options = key => [...new Set(products.map(product => product[key]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'fr'))
 
   function selectProduct(id) {
+    if (selected && draft) {
+      const hasUnsavedChanges = Object.keys(draft).some(key => {
+        if (['id', 'created_at'].includes(key)) return false
+        let value = draft[key]
+        if (valueFields.has(key)) value = value === '' || value == null ? null : Number(value)
+        else if (typeof value === 'string') value = value.trim() || null
+        return value !== selected[key]
+      })
+      if (hasUnsavedChanges && !window.confirm('Cette fiche contient des modifications non enregistrées. Changer de fiche les abandonnera. Continuer ?')) return
+    }
     setSelectedId(id)
     const product = products.find(item => item.id === id)
     setDraft(product ? { ...product } : null)
+    setQuery('')
     setNotice('')
     setError('')
   }
@@ -129,8 +142,16 @@ export default function AdminProductCatalogPage() {
     <header className={styles.header}><p className={styles.kicker}>Admin · Catalogue de référence</p><h1>Modifier une fiche produit</h1><p>Les changements sont enregistrés sur la fiche sélectionnée. Les exemplaires de collection restent rattachés à son identifiant.</p></header>
     {notice && <p className={styles.notice} role="status">{notice}</p>}{error && <p className={styles.error} role="alert">{error}</p>}
     <section className={styles.panel}>
-      <label className={styles.search}>Rechercher un produit<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, série, type ou référence…" /></label>
-      <label className={styles.productPicker}>Fiche à modifier<select value={selectedId} onChange={event => selectProduct(event.target.value)}><option value="">— Choisir une fiche —</option>{filtered.map(product => <option key={product.id} value={product.id}>{product.name} · {product.product_type || product.category}</option>)}</select></label>
+      <label className={styles.search}>Rechercher un produit<input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, série, type ou référence…" autoComplete="off" enterKeyHint="search" /></label>
+      {query.trim().length < 2 && <p className={styles.searchHelp}>Saisis au moins 2 lettres pour afficher les fiches correspondantes.</p>}
+      {query.trim().length >= 2 && <div className={styles.searchResults} role="listbox" aria-label="Résultats de recherche">
+        <p className={styles.resultCount}>{searchResults.length} fiche{searchResults.length > 1 ? 's' : ''} trouvée{searchResults.length > 1 ? 's' : ''}{searchResults.length > 30 ? ' · 30 premières affichées' : ''}</p>
+        {searchResults.length === 0 ? <p className={styles.noResults}>Aucune fiche trouvée. Essaie un autre nom ou une série.</p> : searchResults.slice(0, 30).map(product => <button className={styles.result} type="button" role="option" aria-selected={product.id === selectedId} key={product.id} onClick={() => selectProduct(product.id)}>
+          <span className={styles.resultName}>{product.name}</span>
+          <span className={styles.resultMeta}>{[product.series, product.product_type || product.category].filter(Boolean).join(' · ')}</span>
+        </button>)}
+      </div>}
+      {selected && <div className={styles.selectedProduct}><span>Fiche sélectionnée</span><strong>{selected.name}</strong><small>{[selected.series, selected.product_type || selected.category].filter(Boolean).join(' · ')}</small></div>}
     </section>
     {selected && draft && <form className={styles.form} onSubmit={save}>
       <section className={styles.panel}><h2>Identifiants protégés</h2><div className={styles.readonly}><span>ID catalogue</span><code>{selected.id}</code><span>Créée le</span><code>{selected.created_at ? new Date(selected.created_at).toLocaleString('fr-FR') : '—'}</code></div><p className={styles.help}>L’identifiant ne change pas : les collections qui utilisent cette fiche restent liées au produit.</p></section>
