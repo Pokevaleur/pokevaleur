@@ -1,0 +1,28 @@
+.page{max-width:1050px;margin:0 auto;padding:28px 18px 60px;color:#19263a}
+.breadcrumb{display:flex;gap:14px;align-items:center;margin-bottom:22px;color:#657083;font-size:.92rem}
+.breadcrumb a{color:#34445e;text-decoration:none;font-weight:650}
+.header{margin:0 0 22px}
+.header h1{font-size:clamp(1.8rem,4vw,2.6rem);margin:4px 0 10px}
+.header p{max-width:760px;color:#596579;line-height:1.55}
+.kicker{text-transform:uppercase;letter-spacing:.09em;font-size:.75rem;font-weight:750;color:#916000;margin:0}
+.panel{background:#fff;border:1px solid #e5e8ed;border-radius:16px;padding:22px;margin:16px 0;box-shadow:0 6px 22px #12213c0a;min-width:0}
+.panel h2{font-size:1.2rem;margin:0 0 18px}
+.search,.productPicker,.grid label{display:flex;flex-direction:column;gap:7px;font-weight:650;color:#344258;min-width:0}
+.search{margin-bottom:16px}
+.search input,.productPicker select,.grid input,.grid select{width:100%;min-width:0;box-sizing:border-box;border:1px solid #cfd6e0;border-radius:9px;padding:11px 12px;background:#fff;color:#19263a;font:inherit;font-weight:450}
+.grid input:focus,.grid select:focus,.search input:focus,.productPicker select:focus{outline:3px solid #f0c85d66;border-color:#bd8700}
+.form{display:block}
+.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}
+.wide{grid-column:1/-1}
+.readonly{display:grid;grid-template-columns:140px 1fr;gap:10px 14px;align-items:center;color:#5b6677}
+.readonly code{overflow-wrap:anywhere;color:#26364f}
+.help{margin:16px 0 0;color:#657083;line-height:1.5}
+.checkbox{display:flex;gap:10px;align-items:center;color:#344258;font-weight:600}
+.checkbox input{width:18px;height:18px;accent-color:#b47b00}
+.footer{position:sticky;bottom:12px;display:flex;justify-content:flex-end;padding:12px 0;z-index:2}
+.footer button{border:0;border-radius:10px;background:#17243a;color:white;padding:13px 20px;font:inherit;font-weight:700;box-shadow:0 5px 18px #12213c33;cursor:pointer}
+.footer button:disabled{opacity:.6;cursor:wait}
+.notice,.error{padding:12px 15px;border-radius:10px;line-height:1.4}
+.notice{background:#eaf7ef;color:#17643a}
+.error{background:#fff0ee;color:#9a2e21}
+@media(max-width:650px){.page{padding:18px 12px 40px}.panel{padding:17px}.grid{grid-template-columns:1fr;gap:14px}.wide{grid-column:auto}.readonly{grid-template-columns:1fr;gap:5px}.readonly code{margin-bottom:8px}.footer button{width:100%}}
