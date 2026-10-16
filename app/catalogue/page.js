@@ -24,7 +24,7 @@ export default function CataloguePage() {
   const [loadError, setLoadError] = useState('')
   const [query, setQuery] = useState('')
   const [user, setUser] = useState(null)
-  const [suggestion, setSuggestion] = useState({ name:'', series:'', category:'sealed', notes:'' })
+  const [suggestion, setSuggestion] = useState({ name:'', series:'', category:'sealed', reference_code:'', source_url:'', notes:'' })
   const [suggestionMessage, setSuggestionMessage] = useState('')
   const [voiceListening, setVoiceListening] = useState(false)
 
@@ -75,6 +75,8 @@ export default function CataloguePage() {
       name: suggestion.name.trim(),
       series: suggestion.series.trim() || null,
       category: suggestion.category,
+      reference_code: suggestion.reference_code.trim() || null,
+      source_url: suggestion.source_url.trim() || null,
       notes: suggestion.notes.trim() || null
     })
 
@@ -83,7 +85,7 @@ export default function CataloguePage() {
       return
     }
 
-    setSuggestion({ name:'', series:'', category:'sealed', notes:'' })
+    setSuggestion({ name:'', series:'', category:'sealed', reference_code:'', source_url:'', notes:'' })
     setSuggestionMessage('Merci, ta proposition a bien été enregistrée.')
   }
 
@@ -382,7 +384,7 @@ export default function CataloguePage() {
           <span><strong>Produit absent du catalogue ?</strong><small>Proposer une référence</small></span>
         </summary>
         <div className="catalogDisclosureBody">
-          <p className="muted">Les membres connectés peuvent proposer une référence à ajouter.</p>
+          <p className="muted">Ta proposition sera vérifiée avant toute publication. Si tu peux, indique le code-barres et ajoute un lien vers une source fiable.</p>
           {user ? (
             <form className="suggestionForm" onSubmit={submitSuggestion}>
               <label>
@@ -415,11 +417,28 @@ export default function CataloguePage() {
                 </select>
               </label>
               <label>
+                Référence ou code-barres
+                <input
+                  value={suggestion.reference_code}
+                  onChange={e => setSuggestion({ ...suggestion, reference_code:e.target.value })}
+                  placeholder="Facultatif, recopié sur l’emballage"
+                />
+              </label>
+              <label>
+                Lien vers le produit ou sa source
+                <input
+                  type="url"
+                  value={suggestion.source_url}
+                  onChange={e => setSuggestion({ ...suggestion, source_url:e.target.value })}
+                  placeholder="https://… (facultatif)"
+                />
+              </label>
+              <label>
                 Précisions
                 <input
                   value={suggestion.notes}
                   onChange={e => setSuggestion({ ...suggestion, notes:e.target.value })}
-                  placeholder="Langue, édition, format..."
+                  placeholder="Édition, langue, contenu ou détail distinctif…"
                 />
               </label>
               <button className="btn" type="submit">Proposer ce produit</button>

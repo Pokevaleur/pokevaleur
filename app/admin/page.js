@@ -37,6 +37,19 @@ export default function AdminPage() {
     load()
   }, [])
 
+  useEffect(() => {
+    if (!products.length) return
+    const params = new URLSearchParams(window.location.search)
+    const productId = params.get('product')
+    if (!productId || !products.some(product => product.id === productId)) return
+
+    setObservation(current => ({ ...current, product_id: productId }))
+    window.history.replaceState({}, '', '/admin#donnee-marche')
+    window.requestAnimationFrame(() => {
+      document.getElementById('donnee-marche')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
+    })
+  }, [products])
+
   async function load() {
     setLoading(true)
 
@@ -98,44 +111,6 @@ export default function AdminPage() {
     }
 
     setLoading(false)
-  }
-
-  async function approve(suggestion) {
-    setMessage('Ajout au catalogue...')
-
-    const { error: productError } = await supabase
-      .from('products')
-      .insert({
-        name: suggestion.name,
-        series: suggestion.series || null,
-        category: suggestion.category,
-        currency: 'EUR',
-        is_public: true
-      })
-
-    if (productError) return setMessage(productError.message)
-
-    const { error: statusError } = await supabase
-      .from('product_suggestions')
-      .update({ status: 'approved' })
-      .eq('id', suggestion.id)
-
-    if (statusError) return setMessage(statusError.message)
-
-    setMessage('Produit ajouté au catalogue.')
-    await load()
-  }
-
-  async function reject(id) {
-    const { error } = await supabase
-      .from('product_suggestions')
-      .update({ status: 'rejected' })
-      .eq('id', id)
-
-    if (error) return setMessage(error.message)
-
-    setMessage('Proposition refusée.')
-    await load()
   }
 
   async function moderateMessage(messageId, hide) {
@@ -284,8 +259,9 @@ export default function AdminPage() {
         <div><span>Signalements</span><strong>{pendingReports.length}</strong></div>
       </section>
 
-      <section className="panel adminPricePanel">
+      <section className="panel adminPricePanel" id="donnee-marche">
         <h2>Ajouter une donnée de marché</h2>
+        <p className="muted adminHint">Ce formulaire sert à ajouter un prix à un produit déjà présent dans le catalogue. Produit absent ? <a href="/catalogue#proposer-produit">Propose sa fiche au catalogue</a> ; elle sera vérifiée avant publication.</p>
         <form className="adminPriceForm" onSubmit={addObservation}>
           <label>
             Produit
@@ -367,15 +343,18 @@ export default function AdminPage() {
 
       <section className="adminTwoColumns">
         <div className="panel">
-          <h2>Produits sans cote</h2>
-          <div className="adminSimpleList">
-            {noPrice.length === 0 ? <p>Aucun.</p> : noPrice.map(product => (
-              <a href={`/catalogue/${product.id}`} key={product.id}>
-                <span>{product.name}</span>
-                <b>À renseigner</b>
-              </a>
-            ))}
-          </div>
+          <details className="adminNoPriceDisclosure">
+            <summary><span>Produits sans cote</span><b>{noPrice.length}</b></summary>
+            <p className="muted">Cette liste regroupe les produits sans vente confirmée qui permette de calculer une cote. Ouvre une fiche, puis ajoute ici une vente vérifiée avec sa source, son prix et sa date. Un prix d’annonce reste indicatif et ne change pas la cote.</p>
+            <div className="adminSimpleList">
+              {noPrice.length === 0 ? <p>Aucun.</p> : noPrice.map(product => (
+                <a href={`/admin?product=${encodeURIComponent(product.id)}#donnee-marche`} key={product.id}>
+                  <span>{product.name}{product.series ? ` — ${product.series}` : ''}</span>
+                  <b>Saisir une cote →</b>
+                </a>
+              ))}
+            </div>
+          </details>
         </div>
 
         <div className="panel">
@@ -419,8 +398,7 @@ export default function AdminPage() {
               </div>
 
               <div className="adminActions">
-                <button className="miniBtn primaryMini" onClick={() => approve(item)}>Accepter</button>
-                <button className="miniBtn dangerMini" onClick={() => reject(item.id)}>Refuser</button>
+                <a className="miniBtn primaryMini" href={`/messagerie?view=catalogue&suggestion=${encodeURIComponent(item.id)}`}>Vérifier dans la messagerie</a>
               </div>
             </article>
           ))}
