@@ -18,7 +18,7 @@ const destinations = [
   {
     name: 'Mes cartes gradées',
     description: 'Retrouve et suis tes cartes gradées, avec leurs notes et certifications.',
-    href: '/collection/stats?category=graded',
+    href: '/collection/cartes-gradees/consulter',
     className: 'graded',
     image: '/collection-desktop-graded.webp',
     alt: 'Trois cartes de collection gradées et certifiées',
@@ -26,7 +26,7 @@ const destinations = [
   {
     name: 'Mes produits scellés',
     description: 'Stocke et suis tes boosters, ETB et autres produits scellés.',
-    href: '/collection/stats?category=sealed',
+    href: '/collection',
     className: 'sealed',
     image: '/collection-desktop-sealed.webp',
     alt: 'Des produits Pokémon scellés rangés dans une vitrine',
