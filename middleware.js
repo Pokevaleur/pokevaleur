@@ -23,7 +23,7 @@ export async function middleware(request) {
   const { data: { user } } = await supabase.auth.getUser()
   const pathname = request.nextUrl.pathname
 
-  const protectedPrefixes = ['/collection', '/communaute', '/opportunites', '/trades', '/admin', '/admin-partenaires']
+  const protectedPrefixes = ['/messagerie', '/collection', '/communaute', '/opportunites', '/trades', '/admin', '/admin-partenaires']
   const needsAuth = protectedPrefixes.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
 
   if (needsAuth) response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
@@ -55,6 +55,7 @@ export async function middleware(request) {
 
 export const config = {
   matcher: [
+    '/messagerie/:path*',
     '/collection/:path*',
     '/communaute/:path*',
     '/opportunites/:path*',

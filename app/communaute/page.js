@@ -3,8 +3,10 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { SocialAccessPrompt } from '../../lib/social-access-prompt'
+import { useInboxStatus } from '../../lib/messaging-status'
 
 export default function CommunautePage() {
+  const inboxStatus = useInboxStatus()
   const supabase = useMemo(() => createClient(), [])
   const [channel, setChannel] = useState(null)
   const [messages, setMessages] = useState([])
@@ -201,6 +203,7 @@ export default function CommunautePage() {
                     <button className="miniBtn dangerMini" type="button" onClick={() => deleteMessage(message)}>Supprimer</button>
                   ) : (
                     <>
+                      {inboxStatus?.eligible && <a className="miniBtn" href={`/messagerie?to=${encodeURIComponent(message.user_id)}`}>Écrire en privé</a>}
                       <button className="miniBtn" type="button" onClick={() => reportMessage(message)}>Signaler</button>
                       <button className="miniBtn" type="button" onClick={() => blockUser(message)}>Bloquer</button>
                     </>

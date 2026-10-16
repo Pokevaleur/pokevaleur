@@ -2,6 +2,7 @@
 
 import styles from './collection-mockup.module.css'
 import Navigation from './navigation'
+import InboxShortcut from './inbox-shortcut'
 import navLinks from './navigation-links'
 import BrandLogo from './brand-logo'
 
@@ -69,6 +70,7 @@ export default function CollectionMockup({ isMember = true }) {
           <header className={styles.mobileHeader}>
             <BrandLogo className={styles.mobileBrand} href={isMember ? '/collection/accueil' : '/'} />
             <span className={styles.legacyMenuMask} aria-hidden="true" />
+            <div className={styles.mobileInbox}><InboxShortcut /></div>
             <div className={styles.menu}>
               <Navigation links={navLinks} mobileOnly overlayTrigger />
             </div>

@@ -4,6 +4,7 @@ export default function robots() {
       userAgent: '*',
       allow: '/',
       disallow: [
+        '/messagerie',
         '/collection',
         '/admin',
         '/admin-partenaires',

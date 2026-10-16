@@ -1504,3 +1504,7 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .collectionQuickSearchLabel{margin:10px 0 0;color:var(--muted);font-size:13px;font-weight:700}.collectionQuickSearch{margin:8px 0 2px}
 
 @media(max-width:620px){.mobileMenuPanel .btn{background:#f2bd35;color:#081b34;font-weight:800}}
+
+/* Inbox shortcut: scoped to the existing navigation, without changing menus. */
+.inboxMobileShortcut{display:none}
+@media(max-width:700px){.inboxMobileShortcut{display:inline-flex;margin-left:auto;margin-right:12px;color:#f4d372}}
