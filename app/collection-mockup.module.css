@@ -46,3 +46,5 @@
   .menu :global(.mobileAccountCard),.menu :global(.mobileMenuPanel>a),.menu :global(.mobileMenuPanel>.collectionNavGroup){flex:0 0 auto}
   .menu :global(.mobileMenuPanel>.collectionNavGroup>summary){color:#fff}
 }
+
+.mobileInbox{position:absolute;z-index:5;left:2.2%;top:12%;height:76%;display:flex;align-items:center;color:#f4d372}.mobileInbox>a{min-width:32px;min-height:32px;width:clamp(32px,7vw,44px);height:clamp(32px,7vw,44px);padding:4px!important}

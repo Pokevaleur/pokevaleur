@@ -3,8 +3,11 @@
 import { useEffect, useState } from 'react'
 import { createClient } from '../lib/supabase-browser'
 import { AVATARS, ProfileAvatar } from '../lib/profile-avatars'
+import InboxShortcut from './inbox-shortcut'
+import { useInboxStatus } from '../lib/messaging-status'
 
 export default function Navigation({ links, mobileOnly = false, overlayTrigger = false }) {
+  const inbox = useInboxStatus()
   const [isAdmin, setIsAdmin] = useState(false)
   const [identity, setIdentity] = useState(null)
   const [authState, setAuthState] = useState('checking')
@@ -140,8 +143,10 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
     <>
       {!mobileOnly && <nav className="desktopNav">
         {renderLinks()}
+        <InboxShortcut />
         {accountMenu || (authState === 'signed-out' && <a href="/login" className="btn small">Connexion</a>)}
       </nav>}
+      {!overlayTrigger && inbox?.eligible && <span className="inboxMobileShortcut"><InboxShortcut /></span>}
       <details className="mobileMenu">
         <summary aria-label="Ouvrir le menu">{overlayTrigger ? null : '☰'}</summary>
         <div className="mobileMenuPanel">
@@ -156,6 +161,7 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
             </section>
           )}
           {renderLinks()}
+          {identity && inbox?.eligible && <a href="/messagerie">Messagerie</a>}
           {!identity && authState === 'signed-out' && <a href="/login" className="btn small">Connexion</a>}
         </div>
       </details>
