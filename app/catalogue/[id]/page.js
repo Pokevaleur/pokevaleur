@@ -75,19 +75,8 @@ export default async function ProductDetailPage({ params }) {
       { '@type': 'ListItem', position: 3, name: product.name, item: url }
     ]
   }
-  const productData = {
-    '@context': 'https://schema.org',
-    '@type': 'Product',
-    name: product.name,
-    description: [product.name, product.series, 'Produit du catalogue PokéValeur.'].filter(Boolean).join(' — '),
-    category: product.category,
-    image: product.image_url || undefined,
-    brand: { '@type': 'Brand', name: 'Pokémon' },
-    url
-  }
-
   return <>
-    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd([breadcrumbData, productData]) }} />
+    <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: safeJsonLd(breadcrumbData) }} />
     <ProductDetailClient product={product} />
   </>
 }
