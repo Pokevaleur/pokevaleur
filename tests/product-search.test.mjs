@@ -35,6 +35,10 @@ test('half displays do not expand to full displays', () => {
 test('UPCs and anniversary aliases retain the requested Pokémon', () => {
   assert.deepEqual(found('UPC Dracaufeu'), [products[4].name])
   assert.deepEqual(found('30 ans Nymphali'), [products[6].name])
+  const pokebox = { name: 'Pokebox Nymphali ex', series: '30e Anniversaire', category: 'sealed', product_type: 'Pokébox' }
+  for (const query of ['Pokébox Nymphali ex', 'Pokébox Nymphalli 30 ans', 'Pokébox 30 ans Neufali']) {
+    assert.equal(createProductMatcher(query)(pokebox), true, `Expected ${query} to find the Nymphali Pokébox`)
+  }
   assert.deepEqual(found('30ans Amphinobi'), [products[7].name])
 })
 test('short anniversary searches recognize 30e without matching unrelated numbers', () => {
