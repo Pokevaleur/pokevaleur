@@ -38,15 +38,24 @@ async function getAdminClient(request) {
   const user = authData?.user
   if (authError || !user?.id) return { error: jsonError('Ta session a expiré. Reconnecte-toi.', 401) }
 
+  // Check the role through the same authenticated user's session as the admin UI.
+  // The service key may belong to a different Supabase project in a deployment;
+  // it is reserved below for the privileged catalogue read/update only.
+  const userClient = createClient(supabaseUrl, supabaseAnonKey, {
+    global: { headers: { Authorization: `Bearer ${accessToken}` } },
+    auth: { persistSession: false, autoRefreshToken: false }
+  })
+  const { data: profile, error: profileError } = await userClient
+    .from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
+  if (profileError) return { error: jsonError('Impossible de vérifier tes droits administrateur. Réessaie.', 503) }
+  if (profile?.is_admin !== true) return { error: jsonError('Accès réservé à l’administration.', 403) }
+
   const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
   if (!serviceKey) return { error: jsonError('L’édition sécurisée du catalogue n’est pas configurée.', 503) }
 
   const adminClient = createClient(supabaseUrl, serviceKey, {
     auth: { persistSession: false, autoRefreshToken: false }
   })
-  const { data: profile, error: profileError } = await adminClient
-    .from('profiles').select('is_admin').eq('id', user.id).maybeSingle()
-  if (profileError || profile?.is_admin !== true) return { error: jsonError('Accès réservé à l’administration.', 403) }
   return { adminClient }
 }
 
