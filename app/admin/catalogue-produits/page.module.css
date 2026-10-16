@@ -9,8 +9,21 @@
 .panel h2{font-size:1.2rem;margin:0 0 18px}
 .search,.productPicker,.grid label{display:flex;flex-direction:column;gap:7px;font-weight:650;color:#344258;min-width:0}
 .search{margin-bottom:16px}
-.search input,.productPicker select,.grid input,.grid select{width:100%;min-width:0;box-sizing:border-box;border:1px solid #cfd6e0;border-radius:9px;padding:11px 12px;background:#fff;color:#19263a;font:inherit;font-weight:450}
-.grid input:focus,.grid select:focus,.search input:focus,.productPicker select:focus{outline:3px solid #f0c85d66;border-color:#bd8700}
+.search input,.grid input,.grid select{width:100%;min-width:0;box-sizing:border-box;border:1px solid #cfd6e0;border-radius:9px;padding:11px 12px;background:#fff;color:#19263a;font:inherit;font-weight:450}
+.grid input:focus,.grid select:focus,.search input:focus{outline:3px solid #f0c85d66;border-color:#bd8700}
+.searchHelp{margin:-6px 0 4px;color:#657083;font-size:.9rem;line-height:1.4}
+.searchResults{max-height:min(45vh,380px);overflow-y:auto;border:1px solid #d9dee6;border-radius:11px;background:#fff;overscroll-behavior:contain}
+.resultCount{position:sticky;top:0;margin:0;padding:9px 12px;background:#f4f6f9;color:#657083;font-size:.82rem;font-weight:650;border-bottom:1px solid #e5e8ed}
+.result{display:flex;width:100%;flex-direction:column;align-items:flex-start;gap:3px;padding:11px 12px;border:0;border-bottom:1px solid #edf0f3;background:#fff;color:#19263a;text-align:left;font:inherit;cursor:pointer}
+.result:last-child{border-bottom:0}
+.result:hover,.result:focus-visible{background:#fff8e5;outline:none}
+.result[aria-selected="true"]{box-shadow:inset 4px 0 #bc8500;background:#fff9e9}
+.resultName{font-weight:700;line-height:1.3}
+.resultMeta{color:#657083;font-size:.88rem;line-height:1.3}
+.noResults{margin:0;padding:14px 12px;color:#657083;line-height:1.4}
+.selectedProduct{display:flex;flex-direction:column;gap:3px;margin-top:14px;padding:12px 14px;border:1px solid #ead49b;border-radius:10px;background:#fffbef;color:#344258}
+.selectedProduct span,.selectedProduct small{color:#657083;font-size:.82rem}
+.selectedProduct strong{overflow-wrap:anywhere}
 .form{display:block}
 .grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px 20px}
 .wide{grid-column:1/-1}
