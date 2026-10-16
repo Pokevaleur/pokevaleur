@@ -7,7 +7,8 @@ import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { filterCollectionItems } from '../../lib/collection-search.mjs'
 import { hasPurchasePrice } from '../../lib/collection-statistics.mjs'
-import { calculateSealedFormatCounts, getSealedFormat } from '../../lib/sealed-collection-counts.mjs'
+import { calculateSealedFormatCounts } from '../../lib/sealed-collection-counts.mjs'
+import { buildSealedProductDetails } from '../../lib/sealed-collection-details.mjs'
 import { saveUploadedPhotoBatch, uploadUnlinkedPhotoBatch } from '../../lib/collection-photo-save.mjs'
 
 const emptyForm = {
@@ -774,27 +775,7 @@ export default function CollectionPage() {
   const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter, quickFormatFilter)
   const sealedCounts = calculateSealedFormatCounts(items, catalog)
   const sealedProductDetails = useMemo(() => {
-    if (!selectedSealedFormat) return []
-    const productById = new Map(catalog.map(product => [product.id, product]))
-    const grouped = new Map()
-    for (const item of items) {
-      const product = productById.get(item.product_id)
-      if (normalizeSearch(product?.category) !== 'sealed') continue
-      const format = getSealedFormat(item, product)
-      if (selectedSealedFormat !== 'all' && format !== selectedSealedFormat) continue
-      const key = [product.id, item.custom_name || '', item.sealed_condition || '', item.booster_configuration || '', item.variant_note || ''].join('|')
-      const entry = grouped.get(key) || {
-        key,
-        name: item.custom_name || product.name || 'Produit sans nom',
-        productName: item.custom_name && item.custom_name !== product.name ? product.name : '',
-        type: product.product_type || '',
-        sealedCondition: item.sealed_condition || '',
-        quantity: 0
-      }
-      entry.quantity += Math.max(0, Number(item.quantity) || 1)
-      grouped.set(key, entry)
-    }
-    return [...grouped.values()].sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+    return buildSealedProductDetails(items, catalog, selectedSealedFormat)
   }, [catalog, items, selectedSealedFormat])
   const selectedSealedLabel = selectedSealedFormat === 'all'
     ? 'Tous les produits scellés'
