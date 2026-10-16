@@ -59,6 +59,25 @@ test('a Kit AP display is separate from its individual Kit AP even when only the
   assert.equal(result.total, 3)
 })
 
+test('a Case stays a separate sealed item and a coffret typed Pokébox is counted as a coffret', () => {
+  const products = [
+    { id: 'case', category: 'sealed', product_type: 'Case', name: 'Case de Pokébox Dracaufeu X et Y', case_unit_count: 6 },
+    { id: 'coffret', category: 'sealed', product_type: 'Coffret Pokémon-V', name: 'Pokébox Destinées Radieuses – Fulgudog-V' },
+    { id: 'pokebox', category: 'sealed', product_type: 'Pokébox', name: 'Pokébox Amphinobi EX' },
+  ]
+  const result = calculateSealedFormatCounts([
+    { product_id: 'case', quantity: 1 },
+    { product_id: 'coffret', quantity: 2 },
+    { product_id: 'pokebox', quantity: 3 },
+  ], products)
+  const counts = Object.fromEntries(result.formats.map(format => [format.key, format.count]))
+
+  assert.equal(counts.case, 1)
+  assert.equal(counts.coffret, 2)
+  assert.equal(counts.pokebox, 3)
+  assert.equal(result.total, 6)
+})
+
 test('ignores products outside the sealed catalog category', () => {
   const result = calculateSealedFormatCounts([
     { product_id: 'card', quantity: 3 },
