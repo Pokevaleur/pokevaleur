@@ -1508,3 +1508,18 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 /* Inbox shortcut: scoped to the existing navigation, without changing menus. */
 .inboxMobileShortcut{display:none}
 @media(max-width:700px){.inboxMobileShortcut{display:inline-flex;margin-left:auto;margin-right:12px;color:#f4d372}}
+
+/* Admin market form: keep every grid child inside its column. */
+.adminPriceForm{grid-template-columns:repeat(2,minmax(0,1fr))}
+.adminPriceForm>label{min-width:0}
+.adminPriceForm input,.adminPriceForm select{width:100%;max-width:100%;min-width:0}
+.adminPricePanel{scroll-margin-top:24px}
+.adminPricePanel .adminHint a{color:var(--navy);font-weight:800;text-decoration:underline}
+.adminNoPriceDisclosure>summary{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;list-style:none;font-size:24px;font-weight:800}
+.adminNoPriceDisclosure>summary::-webkit-details-marker{display:none}
+.adminNoPriceDisclosure>summary:after{content:'＋';font-size:20px;color:var(--muted)}
+.adminNoPriceDisclosure[open]>summary:after{content:'−'}
+.adminNoPriceDisclosure>summary b{margin-left:auto;min-width:34px;padding:4px 9px;border-radius:999px;background:#fff3c7;text-align:center;font-size:14px}
+.adminSimpleList>a>span{min-width:0;overflow-wrap:anywhere}
+.adminSimpleList>a b{flex:none;text-align:right}
+@media(max-width:850px){.adminPriceForm{grid-template-columns:minmax(0,1fr)}}
