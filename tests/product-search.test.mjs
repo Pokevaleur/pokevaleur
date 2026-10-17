@@ -28,6 +28,16 @@ test('aliases preserve the series criterion and accept a different word order', 
     assert.deepEqual(found(query), [products[0].name])
   }
 })
+test('ETB searches exclude cases and other products containing ETBs', () => {
+  const catalog = [
+    { name: 'Coffret Dresseur d’élite 151', series: '151', product_type: 'ETB' },
+    { name: 'Case de 10 Coffret Dresseur d’élite 151', series: '151', product_type: 'Case', case_unit_product_type: 'ETB' },
+    { name: 'Display de 10 coffrets dresseur d’élite 151', series: '151', product_type: 'Display' },
+  ]
+  for (const query of ['ETB', 'ETB 151', 'coffret dresseur 151']) {
+    assert.deepEqual(catalog.filter(createProductMatcher(query, { strictFormats: true })).map(product => product.product_type), ['ETB'])
+  }
+})
 test('half displays do not expand to full displays', () => {
   assert.deepEqual(found('demie-display mega evolution'), [products[2].name])
   assert.deepEqual(found('half display'), [products[2].name])
