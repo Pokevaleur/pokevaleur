@@ -89,7 +89,7 @@ export default function GuideControls() {
         />
       </div>
       <p className={styles.searchStatus} aria-live="polite">
-        {query.trim() ? (resultCount ? `${resultCount} résultat(s) dans le guide et le lexique.` : 'Aucun résultat.') : ''}
+        {query.trim() ? (resultCount ? `${resultCount} résultat${resultCount > 1 ? 's' : ''} dans le guide et le lexique.` : 'Aucun résultat.') : ''}
       </p>
     </section>
 
