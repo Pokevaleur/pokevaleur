@@ -13,5 +13,8 @@ export default function SiteHeader({ links }) {
   if (!home) return <header className="topbar"><BrandLogo className="brand" />{pathname !== '/login' && <Navigation links={links} />}</header>
   return <header className={styles.header}>
     <BrandLogo className={styles.brand} />
+    <div className={styles.homeMenu}>
+      <Navigation links={links} mobileOnly overlayTrigger />
+    </div>
   </header>
 }

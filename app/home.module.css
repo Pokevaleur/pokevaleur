@@ -25,6 +25,31 @@
 @media(max-width:600px){.secretBubble{bottom:155px;left:0;right:0;padding:12px}.secretBubble p{font-size:14px}}
 @media(prefers-reduced-motion:reduce){.lukuluGreeting img{animation:none}}
 
+/* Keep the existing site navigation available from the public landing page. */
+.header{z-index:100;display:flex;align-items:center;justify-content:center}
+.homeMenu{position:absolute;top:50%;right:clamp(14px,4vw,56px);z-index:110;transform:translateY(-50%)}
+.homeMenu :global(.mobileMenu){display:block!important;position:relative}
+.homeMenu :global(.mobileMenu>summary){position:relative;display:flex;width:48px;height:48px;align-items:center;justify-content:center;padding:0;border:1px solid #d8c477;border-radius:14px;color:transparent;font-size:0;background:#082348;box-shadow:0 3px 10px #08234824;cursor:pointer}
+.homeMenu :global(.mobileMenu>summary::after){content:'';position:absolute;left:50%;top:50%;width:22px;height:2.5px;transform:translate(-50%,-50%);border-radius:999px;background:#f4d372;box-shadow:0 -6px 0 #f4d372,0 6px 0 #f4d372}
+.homeMenu :global(.mobileMenu>summary:focus-visible){outline:3px solid #1476cb;outline-offset:3px}
+.homeMenu :global(.mobileMenuPanel){position:absolute;top:calc(100% + 10px);right:0;left:auto;display:flex;flex-direction:column;gap:8px;width:min(88vw,380px);max-height:min(75vh,620px);padding:14px;overflow-y:auto;overscroll-behavior:contain;border:1px solid #ffffff24;border-radius:16px;background:#071a31;box-shadow:0 18px 44px #0004;z-index:120}
+.homeMenu :global(.mobileMenuPanel>a){display:flex;align-items:center;justify-content:flex-start;min-height:46px;padding:10px 13px;border:1px solid #ffffff1a;border-radius:10px;background:#ffffff0b;color:#fff;font-size:16px;text-align:left}
+.homeMenu :global(.mobileMenuPanel>a:hover){background:#203d5c}
+.homeMenu :global(.mobileMenuPanel>.collectionNavGroup){width:100%;min-width:0}
+.homeMenu :global(.mobileMenuPanel .collectionNavGroup>summary){display:flex;align-items:center;justify-content:space-between;min-height:48px;padding:10px 13px;border:1px solid #ffffff2b;border-radius:11px;background:#142b43;color:#fff;font-size:16px;font-weight:750;line-height:1.3;text-align:left;white-space:normal}
+.homeMenu :global(.mobileMenuPanel .collectionNavGroup[open]>summary){border-color:#ffbf1a8c;background:#1a3653}
+.homeMenu :global(.mobileMenuPanel .collectionNavPanel){position:static;display:flex;flex-direction:column;gap:6px;min-width:0;padding:8px 0 0 10px;border:0;border-left:1px solid #ffffff3d;border-radius:0;background:transparent;box-shadow:none}
+.homeMenu :global(.mobileMenuPanel .collectionNavPanel>a){display:flex;align-items:center;justify-content:flex-start;min-height:44px;padding:10px 12px;border:1px solid #ffffff14;border-radius:9px;background:#ffffff12;color:#fff;font-size:15px;text-align:left;white-space:normal}
+.homeMenu :global(.mobileMenuPanel .collectionNavSubgroup>summary){display:flex;align-items:center;justify-content:space-between;min-height:44px;padding:8px 12px;border:1px solid #ffffff1f;border-radius:9px;background:#ffffff12;color:#fff;font-size:15px;font-weight:700}
+.homeMenu :global(.mobileMenuPanel .collectionNavSubpanel){display:flex;flex-direction:column;gap:5px;margin:6px 0 0 9px;padding:5px 0 5px 9px;border:0;border-left:1px solid #ffffff33;background:transparent}
+.homeMenu :global(.mobileMenuPanel .collectionNavSubpanel>a){display:flex;align-items:center;min-height:42px;padding:9px 11px;border:1px solid #ffffff12;border-radius:8px;background:#ffffff0b;color:#fff;font-size:14px;white-space:normal}
+.homeMenu :global(.mobileMenuPanel .mobileAccountCard){display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:4px 2px 12px;margin-bottom:4px;border-bottom:1px solid #ffffff33}
+.homeMenu :global(.mobileMenuPanel .mobileAccountIdentity){grid-column:1/-1}
+.homeMenu :global(.mobileMenuPanel .mobileProfileLink),.homeMenu :global(.mobileMenuPanel .mobileAccountSignOut){display:flex;align-items:center;justify-content:center;min-height:40px;padding:8px;border:0;border-radius:10px;text-align:center}
+.homeMenu :global(.mobileMenuPanel .mobileProfileLink){background:#ffbf1a;color:#111;font-weight:800}
+.homeMenu :global(.mobileMenuPanel .mobileAccountSignOut){background:#ffffff1a;color:#fff;font:inherit;cursor:pointer}
+@media(max-width:600px){.homeMenu{right:14px}.homeMenu :global(.mobileMenu>summary){width:44px;height:44px}}
+
 
 /* Separate card checklist block appended below the approved homepage sections. */
 .cardNumbersPromo{display:grid;grid-template-columns:minmax(0,1.2fr) minmax(260px,.8fr);align-items:center;gap:clamp(22px,5vw,64px);margin:24px 16px 34px;padding:clamp(22px,4vw,42px);border:1px solid #dbe8f5;border-radius:24px;background:radial-gradient(circle at 90% 12%,#dceeff 0,transparent 34%),linear-gradient(125deg,#fffdf7 0%,#f2f8ff 58%,#fff 100%);box-shadow:0 8px 24px #102a4310}
