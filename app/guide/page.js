@@ -53,7 +53,7 @@ export default async function GuidePage() {
       <span className={styles.kicker}>Le guide du collectionneur</span>
       <h1>Comprendre ta collection Pokémon, à ton rythme</h1>
       <p>Des repères simples, des réponses aux questions fréquentes et un lexique pour mieux connaître les cartes, les boosters et les produits scellés.</p>
-      <a className={styles.primaryLink} href="#bien-debuter">Je débute, par où commencer ? <span aria-hidden="true">↓</span></a>
+      <a className={styles.primaryLink} href="#bien-debuter">Je débute, par où commencer ? <span aria-hidden="true">↓</span></a>
       <a className={styles.secondaryLink} href="#lexique">Voir le lexique</a>
     </header>
 
