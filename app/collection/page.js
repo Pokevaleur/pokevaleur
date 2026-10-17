@@ -325,7 +325,7 @@ export default function CollectionPage() {
       } else {
         const searchableProducts = await addCaseUnitTypes(data || [])
         if (!active) return
-        const matches = searchableProducts.filter(createProductMatcher(searchTerm))
+        const matches = searchableProducts.filter(createProductMatcher(searchTerm, { strictFormats: true }))
         setCatalogMatches(matches)
         setCatalog(previous => {
           const byId = new Map(previous.map(product => [product.id, product]))
