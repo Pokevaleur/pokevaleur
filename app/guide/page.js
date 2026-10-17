@@ -73,6 +73,7 @@ export default async function GuidePage() {
           <summary>{item.question}<span aria-hidden="true" /></summary>
           <div className={styles.answer} data-guide-answer><p>{item.answer}</p>
             <GuideImage path={item.image_path} alt={item.image_alt} />
+            {item.source_url && <p className={styles.source}>Source officielle : <a href={item.source_url} target="_blank" rel="noreferrer">{item.source_label || item.source_url}</a>.</p>}
             <p className={styles.answerSignature}><strong>PokéValeur.fr</strong><span>Le guide du collectionneur</span></p>
           </div>
         </details>)}</div>
