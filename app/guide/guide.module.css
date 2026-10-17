@@ -35,8 +35,9 @@
 .question summary>span:after{transform:rotate(90deg)}
 .question[open] summary>span:after{transform:rotate(0)}
 .answer{padding:0 16px 16px;color:#586a7f;line-height:1.68}
-.answer p{margin:0}
+.answer p{margin:0;white-space:pre-line}
 .answer .source{margin-top:10px;font-size:.9rem}
+.illustration{margin:14px 0 2px}.illustration img{display:block;width:auto;max-width:min(100%,560px);max-height:440px;object-fit:contain;border:1px solid #e0e6ed;border-radius:14px;background:#f8fafc}.illustration figcaption{margin-top:5px;color:#78869a;font-size:.84rem}
 .answer a,.glossary a,.note a{color:#245b87;font-weight:800;text-decoration:underline;text-underline-offset:3px}
 .backToTop{display:inline-flex;margin-top:14px;color:#65778d;font-size:.83rem;font-weight:750;text-decoration:underline;text-underline-offset:3px}
 .glossary{scroll-margin-top:100px}
