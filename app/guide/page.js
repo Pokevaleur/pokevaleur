@@ -3,6 +3,7 @@ import { createPublicServerClient } from '../../lib/supabase-public-server'
 import { supabaseUrl } from '../../lib/supabase-config'
 import { defaultGuideGlossary, defaultGuideTopics } from '../../lib/guide-content'
 import GuideControls from './guide-controls'
+import GuideIllustration from './guide-illustration'
 
 export const dynamic = 'force-dynamic'
 
@@ -43,8 +44,8 @@ async function loadGuide() {
 
 function GuideImage({ path, alt }) {
   if (!path) return null
-  const imageSrc = path.startsWith('site:') ? path.slice(5) : `${supabaseUrl}/storage/v1/object/public/guide-illustrations/${path.split('/').map(encodeURIComponent).join('/')}`
-  return <figure className={styles.illustration}><img src={imageSrc} alt={alt || ''} loading="lazy" />{alt && <figcaption>{alt}</figcaption>}</figure>
+  const imageSrc = path.startsWith('site:') || path.startsWith('http') ? path.replace(/^site:/, '') : `${supabaseUrl}/storage/v1/object/public/guide-illustrations/${path.split('/').map(encodeURIComponent).join('/')}`
+  return <GuideIllustration src={imageSrc} alt={alt || ''} />
 }
 
 export default async function GuidePage() {

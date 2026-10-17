@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import styles from './guide.module.css'
+import GuideIllustration from './guide-illustration'
 
 function normalize(value) {
   return (value || '')
@@ -37,13 +38,17 @@ function getSearchResults(term) {
     const text = entry.querySelector('dd > p')?.textContent?.trim() || ''
     if (normalize(title + ' ' + text).includes(term)) {
       const image = entry.querySelector('dd img')
+      const isReverse = normalize(title) === 'reverse'
       results.push({
         id: entry.id || title,
         kind: 'Lexique',
         title,
         text,
-        image: image?.currentSrc || image?.src || '',
-        imageAlt: image?.alt || ''
+        image: isReverse ? 'https://i.ebayimg.com/images/g/tSsAAOSwsEhmqHii/s-l1200.jpg' : (image?.currentSrc || image?.src || ''),
+        imageAlt: isReverse ? 'Vraie carte Reverse Ivysaur 002/165 de l’extension Écarlate et Violet—151, montrant le motif brillant du fond.' : (image?.alt || ''),
+        imageCaption: isReverse ? 'Exemple réel : Ivysaur 002/165, Écarlate et Violet—151.' : '',
+        imageSourceUrl: isReverse ? 'https://www.ebay.com/itm/226267876969' : '',
+        imageSourceLabel: isReverse ? 'Voir la source de la photo' : ''
       })
     }
   }
@@ -56,8 +61,11 @@ function getSearchResults(term) {
       kind: 'Lexique',
       title: 'Reverse',
       text: 'Une carte reverse (ou reverse holo) est une variante brillante. Le motif holographique couvre souvent le fond de la carte autour de l’illustration, qui reste visuellement distincte. Le motif exact varie selon les séries et les époques.',
-      image: '/images/guide/reverse-effet.svg',
-      imageAlt: 'Illustration de l’effet reverse : fond holographique autour de l’illustration de la carte.'
+      image: 'https://i.ebayimg.com/images/g/tSsAAOSwsEhmqHii/s-l1200.jpg',
+      imageAlt: 'Vraie carte Reverse Ivysaur 002/165 de l’extension Écarlate et Violet—151, montrant le motif brillant du fond.',
+      imageCaption: 'Exemple réel : Ivysaur 002/165, Écarlate et Violet—151.',
+      imageSourceUrl: 'https://www.ebay.com/itm/226267876969',
+      imageSourceLabel: 'Voir la source de la photo'
     })
   }
 
@@ -112,7 +120,14 @@ export default function GuideControls() {
           <span className={styles.resultKind}>{result.kind}</span>
           <h2>{result.title}</h2>
           {result.text && <p>{result.text}</p>}
-          {result.image && <img src={result.image} alt={result.imageAlt} loading="lazy" />}
+          {result.image && <GuideIllustration
+            src={result.image}
+            alt={result.imageAlt}
+            caption={result.imageCaption}
+            sourceUrl={result.imageSourceUrl}
+            sourceLabel={result.imageSourceLabel}
+            compact
+          />}
         </article>)}
       </div>}
     </section>
