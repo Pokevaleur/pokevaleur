@@ -6,65 +6,68 @@ import styles from './guide.module.css'
 function normalize(value) {
   return (value || '')
     .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[\\u0300-\\u036f]/g, '')
     .toLocaleLowerCase('fr')
     .trim()
 }
 
+function getSearchResults(term) {
+  const results = []
+
+  for (const question of document.querySelectorAll('[data-guide-question]')) {
+    const topic = question.closest('[data-guide-topic]')
+    const questionTitle = question.querySelector('summary')?.textContent?.trim() || ''
+    const answer = question.querySelector('.answer > p')?.textContent?.trim() || ''
+    const topicTitle = topic?.querySelector('[data-guide-topic-heading] h2')?.textContent?.trim() || ''
+    if (normalize(questionTitle + ' ' + answer + ' ' + topicTitle).includes(term)) {
+      const image = question.querySelector('.answer img')
+      results.push({
+        id: question.id || questionTitle,
+        kind: 'Question du guide',
+        title: questionTitle,
+        text: answer,
+        image: image?.currentSrc || image?.src || '',
+        imageAlt: image?.alt || ''
+      })
+    }
+  }
+
+  for (const entry of document.querySelectorAll('[data-guide-glossary-entry]')) {
+    const title = entry.querySelector('dt')?.textContent?.trim() || ''
+    const text = entry.querySelector('dd > p')?.textContent?.trim() || ''
+    if (normalize(title + ' ' + text).includes(term)) {
+      const image = entry.querySelector('dd img')
+      results.push({
+        id: entry.id || title,
+        kind: 'Lexique',
+        title,
+        text,
+        image: image?.currentSrc || image?.src || '',
+        imageAlt: image?.alt || ''
+      })
+    }
+  }
+
+  return results
+}
+
 export default function GuideControls() {
   const [query, setQuery] = useState('')
-  const [resultCount, setResultCount] = useState(0)
+  const [results, setResults] = useState([])
   const [showBackToTop, setShowBackToTop] = useState(false)
 
   useEffect(() => {
     const term = normalize(query)
-    const topicElements = Array.from(document.querySelectorAll('[data-guide-topic]'))
-    let visibleTopics = 0
-    let visibleQuestions = 0
+    const hasQuery = Boolean(term)
+    const nextResults = hasQuery ? getSearchResults(term) : []
+    setResults(nextResults)
 
-    for (const topic of topicElements) {
-      const heading = topic.querySelector('[data-guide-topic-heading]')
-      const topicMatches = !term || normalize(heading?.textContent).includes(term)
-      const questions = Array.from(topic.querySelectorAll('[data-guide-question]'))
-      let topicHasResults = topicMatches && Boolean(term)
-
-      for (const question of questions) {
-        const matches = !term || topicMatches || normalize(question.textContent).includes(term)
-        question.hidden = !matches
-        if (matches) {
-          visibleQuestions += 1
-          topicHasResults = true
-        }
-      }
-
-      topic.hidden = Boolean(term) && !topicHasResults
-      if (!topic.hidden) visibleTopics += 1
+    for (const element of document.querySelectorAll('[data-guide-hero], [data-guide-topic-index], [data-guide-topic-list], [data-guide-glossary], [data-guide-note]')) {
+      element.hidden = hasQuery
     }
-
-    for (const link of document.querySelectorAll('[data-guide-topic-link]')) {
-      const topic = document.getElementById(link.getAttribute('data-guide-topic-link'))
-      link.hidden = Boolean(term) && (!topic || topic.hidden)
-    }
-
-    const topicIndex = document.querySelector('[data-guide-topic-index]')
-    if (topicIndex) topicIndex.hidden = Boolean(term) && visibleTopics === 0
-
-    let visibleGlossary = 0
-    const glossaryEntries = Array.from(document.querySelectorAll('[data-guide-glossary-entry]'))
-    for (const entry of glossaryEntries) {
-      const matches = !term || normalize(entry.textContent).includes(term)
-      entry.hidden = !matches
-      if (matches) visibleGlossary += 1
-    }
-
-    const glossary = document.querySelector('[data-guide-glossary]')
-    if (glossary) glossary.hidden = Boolean(term) && visibleGlossary === 0
-
-    const count = visibleQuestions + visibleGlossary
-    setResultCount(count)
 
     const noResults = document.querySelector('[data-guide-no-results]')
-    if (noResults) noResults.hidden = !term || count > 0
+    if (noResults) noResults.hidden = !hasQuery || nextResults.length > 0
   }, [query])
 
   useEffect(() => {
@@ -89,8 +92,16 @@ export default function GuideControls() {
         />
       </div>
       <p className={styles.searchStatus} aria-live="polite">
-        {query.trim() ? (resultCount ? `${resultCount} résultat${resultCount > 1 ? 's' : ''} dans le guide et le lexique.` : 'Aucun résultat.') : ''}
+        {query.trim() ? (results.length ? `${results.length} résultat${results.length > 1 ? 's' : ''} dans le guide et le lexique — réponse${results.length > 1 ? 's' : ''} ci-dessous.` : 'Aucun résultat.') : ''}
       </p>
+      {query.trim() && results.length > 0 && <div className={styles.searchResults} aria-label="Résultats de recherche">
+        {results.map(result => <article className={styles.searchResult} key={result.id}>
+          <span className={styles.resultKind}>{result.kind}</span>
+          <h2>{result.title}</h2>
+          {result.text && <p>{result.text}</p>}
+          {result.image && <img src={result.image} alt={result.imageAlt} loading="lazy" />}
+        </article>)}
+      </div>}
     </section>
 
     {showBackToTop && <button
