@@ -70,7 +70,8 @@
 .scrollTopButton{position:fixed;z-index:40;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));display:grid;place-items:center;width:46px;height:46px;padding:0;border:1px solid #cbd7e2;border-radius:50%;background:#fff;color:#244a6d;box-shadow:0 5px 18px #132c4522;font-size:1.55rem;font-weight:800;line-height:1;cursor:pointer;transition:transform .15s ease,background .15s ease}
 .scrollTopButton:hover{transform:translateY(-2px);background:#f5f9fc}
 @media(max-width:480px){.guideControls{margin-bottom:15px;padding:11px 12px}.searchField{min-height:46px}.scrollTopButton{right:max(12px,env(safe-area-inset-right));bottom:max(12px,env(safe-area-inset-bottom));width:44px;height:44px}}
-@media(prefers-reduced-motion:reduce){.scrollTopButton{transition:none}}\n
+@media(prefers-reduced-motion:reduce){.scrollTopButton{transition:none}}
+
 .searchResults{display:grid;gap:10px;margin-top:5px}
 .searchResult{padding:15px 16px;border:1px solid #dfe6ee;border-radius:14px;background:linear-gradient(135deg,#fff,#f8fbff)}
 .resultKind{display:inline-block;margin-bottom:5px;color:#947016;font-size:.72rem;font-weight:900;letter-spacing:.08em;text-transform:uppercase}
