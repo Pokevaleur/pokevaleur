@@ -157,6 +157,7 @@ export default function GuideControls() {
             sourceLabel={result.imageSourceLabel}
             compact
           />}
+          <p className={styles.answerSignature}><strong>PokéValeur.fr</strong><span>Le guide du collectionneur</span></p>
         </article>)}
       </div>}
     </section>
