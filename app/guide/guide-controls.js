@@ -48,6 +48,19 @@ function getSearchResults(term) {
     }
   }
 
+  const matchesReverse = term.length >= 4 && (normalize('Reverse').includes(term) || term.includes('reverse'))
+  const hasReverseDefinition = results.some(result => result.kind === 'Lexique' && normalize(result.title) === 'reverse')
+  if (matchesReverse && !hasReverseDefinition) {
+    results.unshift({
+      id: 'guide-reverse-definition',
+      kind: 'Lexique',
+      title: 'Reverse',
+      text: 'Une carte reverse (ou reverse holo) est une variante brillante. Le motif holographique couvre souvent le fond de la carte autour de l’illustration, qui reste visuellement distincte. Le motif exact varie selon les séries et les époques.',
+      image: '/images/guide/reverse-effet.svg',
+      imageAlt: 'Illustration de l’effet reverse : fond holographique autour de l’illustration de la carte.'
+    })
+  }
+
   return results
 }
 
