@@ -31,6 +31,16 @@ function marketFromLanguage(language) {
 function setLabel(set) {
   return (set?.set_code ? set.set_code + ' — ' : '') + (set?.set_name || 'Série inconnue')
 }
+function foreignEditionSetLabel(foreignSet) {
+  const originalSeriesName = foreignSet?.series_name || ''
+  const frenchSeriesName = foreignSet?.series_name_fr || ''
+  const seriesLabel = frenchSeriesName
+    ? frenchSeriesName + (originalSeriesName && originalSeriesName !== frenchSeriesName ? ' (' + originalSeriesName + ')' : '')
+    : originalSeriesName
+  const setName = foreignSet?.set_name || 'Série inconnue'
+  const setLabel = setName + (foreignSet?.set_code ? ' (' + foreignSet.set_code + ')' : '')
+  return [seriesLabel, setLabel].filter(Boolean).join(' — ')
+}
 function money(value, currency) {
   if (value == null || value === '') return ''
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: currency || 'EUR' }).format(Number(value))
@@ -131,7 +141,7 @@ export default function GradedCardsPage({ mode }) {
     setMappedPrintingsError('')
     supabase
       .from('foreign_card_printings')
-      .select('id,collector_number,card_name,foreign_card_sets!inner(series_name,set_name,set_code,language_code,market_code)')
+      .select('id,collector_number,card_name,foreign_card_sets!inner(series_name,series_name_fr,set_name,set_code,language_code,market_code)')
       .eq('catalog_card_id', selectedCard.id)
       .eq('foreign_card_sets.language_code', form.language.trim().toUpperCase())
       .eq('foreign_card_sets.market_code', form.marketCode)
@@ -148,7 +158,7 @@ export default function GradedCardsPage({ mode }) {
         if (rows.length === 1) {
           const row = rows[0]
           const foreignSet = row.foreign_card_sets
-          const setLabel = [foreignSet.series_name, foreignSet.set_name + (foreignSet.set_code ? ' (' + foreignSet.set_code + ')' : '')].filter(Boolean).join(' — ')
+          const setLabel = foreignEditionSetLabel(foreignSet)
           setSelectedMappedPrintingId(row.id)
           setForm(current => ({
             ...current,
@@ -855,7 +865,7 @@ export default function GradedCardsPage({ mode }) {
                 setSelectedMappedPrintingId(row.id)
                 setForm(current => ({
                   ...current,
-                  editionSetName: [foreignSet.series_name, foreignSet.set_name + (foreignSet.set_code ? ' (' + foreignSet.set_code + ')' : '')].filter(Boolean).join(' — '),
+                  editionSetName: foreignEditionSetLabel(foreignSet),
                   editionCollectorNumber: row.collector_number,
                   editionCardName: row.card_name
                 }))
@@ -863,7 +873,7 @@ export default function GradedCardsPage({ mode }) {
                 <option value="">Choisir une édition…</option>
                 {mappedPrintings.map(row => {
                   const foreignSet = row.foreign_card_sets
-                  const setLabel = [foreignSet.series_name, foreignSet.set_name + (foreignSet.set_code ? ' (' + foreignSet.set_code + ')' : '')].filter(Boolean).join(' — ')
+                  const setLabel = foreignEditionSetLabel(foreignSet)
                   return <option key={row.id} value={row.id}>{setLabel} · {row.collector_number} · {row.card_name}</option>
                 })}
               </select>
