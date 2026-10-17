@@ -54,3 +54,7 @@
 .phoneHomeBar{position:absolute;bottom:4%;left:50%;width:23%;height:2px;border-radius:3px;background:#ffffffbd;transform:translateX(-50%)}
 @media(max-width:900px) and (min-width:601px){.phoneTeaser{top:12%;left:47%;width:clamp(66px,8vw,78px)}}
 @media(max-width:600px){.phoneTeaser{top:auto;bottom:70px;left:7%;width:68px;transform:rotate(-7deg) perspective(850px) rotateY(7deg)}.phoneStatus{font-size:5px}.phoneApp{gap:4px;font-size:7px}.phoneDock i{width:6px}}
+
+/* Entry point from the home page to the beginner guide. */
+.beginnerLink{display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:#173f67;font-size:13px;font-weight:850;text-decoration:underline;text-underline-offset:3px}
+.beginnerLink:focus-visible{outline:3px solid #1476cb;outline-offset:3px;border-radius:3px}
