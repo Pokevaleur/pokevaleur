@@ -2,6 +2,7 @@ import styles from './guide.module.css'
 import { createPublicServerClient } from '../../lib/supabase-public-server'
 import { supabaseUrl } from '../../lib/supabase-config'
 import { defaultGuideGlossary, defaultGuideTopics } from '../../lib/guide-content'
+import GuideControls from './guide-controls'
 
 export const dynamic = 'force-dynamic'
 
@@ -49,6 +50,7 @@ export default async function GuidePage() {
   const { topics, glossary } = await loadGuide()
   return <main className={styles.page}>
     <nav className={styles.breadcrumb} aria-label="Fil d’Ariane"><a href="/">Accueil</a><span aria-hidden="true">›</span><span>Guide PokéValeur</span></nav>
+    <GuideControls />
     <header className={styles.hero}>
       <span className={styles.kicker}>Le guide du collectionneur</span>
       <h1>Comprendre ta collection Pokémon, à ton rythme</h1>
@@ -57,15 +59,15 @@ export default async function GuidePage() {
       <a className={styles.secondaryLink} href="#lexique">Voir le lexique</a>
     </header>
 
-    <section className={styles.topicIndex} aria-labelledby="topic-index-title">
+    <section className={styles.topicIndex} data-guide-topic-index aria-labelledby="topic-index-title">
       <div className={styles.sectionHeading}><span className={styles.kicker}>Explorer le guide</span><h2 id="topic-index-title">Choisis un thème</h2><p>Chaque réponse s’ouvre au clic. Les sujets pourront être complétés au fil du temps.</p></div>
-      <div className={styles.topicGrid}>{topics.map(topic => <a key={topic.id} href={'#' + topic.id}><span>{topic.number}</span><strong>{topic.title}</strong><b aria-hidden="true">↗</b></a>)}</div>
+      <div className={styles.topicGrid}>{topics.map(topic => <a key={topic.id} href={'#' + topic.id} data-guide-topic-link={topic.id}><span>{topic.number}</span><strong>{topic.title}</strong><b aria-hidden="true">↗</b></a>)}</div>
     </section>
 
     <div className={styles.topicList}>
-      {topics.map(topic => <section key={topic.id} id={topic.id} className={styles.topic} aria-labelledby={topic.id + '-title'}>
-        <div className={styles.topicIntro}><span className={styles.topicNumber}>{topic.number}</span><div><h2 id={topic.id + '-title'}>{topic.title}</h2><p>{topic.intro}</p></div></div>
-        <div className={styles.questions}>{topic.questions.map((item, index) => <details id={item.id} className={styles.question} key={item.id || item.question} open={topic.id === 'bien-debuter' && index === 0}>
+      {topics.map(topic => <section key={topic.id} id={topic.id} className={styles.topic} data-guide-topic aria-labelledby={topic.id + '-title'}>
+        <div className={styles.topicIntro} data-guide-topic-heading><span className={styles.topicNumber}>{topic.number}</span><div><h2 id={topic.id + '-title'}>{topic.title}</h2><p>{topic.intro}</p></div></div>
+        <div className={styles.questions}>{topic.questions.map((item, index) => <details id={item.id} className={styles.question} data-guide-question key={item.id || item.question} open={topic.id === 'bien-debuter' && index === 0}>
           <summary>{item.question}<span aria-hidden="true" /></summary>
           <div className={styles.answer}><p>{item.answer}</p>
             <GuideImage path={item.image_path} alt={item.image_alt} />
@@ -76,9 +78,11 @@ export default async function GuidePage() {
       </section>)}
     </div>
 
-    <section className={styles.glossary} id="lexique" aria-labelledby="glossary-title">
+    <p className={styles.noResults} data-guide-no-results hidden>Aucun thème, question ou terme du lexique ne correspond à cette recherche.</p>
+
+    <section className={styles.glossary} data-guide-glossary id="lexique" aria-labelledby="glossary-title">
       <div className={styles.sectionHeading}><span className={styles.kicker}>Les mots de la collection</span><h2 id="glossary-title">Petit lexique</h2><p>Une définition rapide, avec un lien vers le thème pour approfondir.</p></div>
-      <dl>{glossary.map(item => <div id={`lexique-${item.id}`} key={item.id || item.term}><dt>{item.term}</dt><dd><p>{item.definition}</p><GuideImage path={item.image_path} alt={item.image_alt} />{item.topic_id && <a href={'#' + item.topic_id}>Voir le thème <span aria-hidden="true">→</span></a>}</dd></div>)}</dl>
+      <dl>{glossary.map(item => <div id={`lexique-${item.id}`} key={item.id || item.term} data-guide-glossary-entry><dt>{item.term}</dt><dd><p>{item.definition}</p><GuideImage path={item.image_path} alt={item.image_alt} />{item.topic_id && <a href={'#' + item.topic_id}>Voir le thème <span aria-hidden="true">→</span></a>}</dd></div>)}</dl>
     </section>
 
     <aside className={styles.note}><strong>Un guide qui grandit avec les collectionneurs</strong><p>Les contenus et appellations peuvent varier selon la série, la langue et l’époque. Pour un produit précis, vérifie toujours les informations imprimées sur l’emballage et la fiche officielle correspondante.</p><a href="mailto:contact@pokevaleur.fr?subject=Suggestion%20pour%20le%20Guide%20Pok%C3%A9Valeur">Proposer une question au guide →</a></aside>
