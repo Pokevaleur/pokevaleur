@@ -38,13 +38,17 @@ function getSearchResults(term) {
     const text = entry.querySelector('dd > p')?.textContent?.trim() || ''
     if (normalize(title + ' ' + text).includes(term)) {
       const image = entry.querySelector('dd img')
+      const isReverse = normalize(title) === 'reverse'
       results.push({
         id: entry.id || title,
         kind: 'Lexique',
         title,
         text,
-        image: image?.currentSrc || image?.src || '',
-        imageAlt: image?.alt || ''
+        image: isReverse ? 'https://i.ebayimg.com/images/g/tSsAAOSwsEhmqHii/s-l1200.jpg' : (image?.currentSrc || image?.src || ''),
+        imageAlt: isReverse ? 'Vraie carte Reverse Ivysaur 002/165 de l’extension Écarlate et Violet—151, montrant le motif brillant du fond.' : (image?.alt || ''),
+        imageCaption: isReverse ? 'Exemple réel : Ivysaur 002/165, Écarlate et Violet—151.' : '',
+        imageSourceUrl: isReverse ? 'https://www.ebay.com/itm/226267876969' : '',
+        imageSourceLabel: isReverse ? 'Voir la source de la photo' : ''
       })
     }
   }
