@@ -249,6 +249,8 @@ export default function AdminPage() {
 
       <section className="panel partnerAdminShortcut"><div><span className="eyebrow dark">CARTES</span><h2>Séries du catalogue</h2><p className="muted">Vérifie le nom affiché, le périmètre du Master Set et la publication des séries de cartes.</p></div><a className="btn" href="/admin/catalogue-cartes">Gérer le catalogue cartes</a></section>
 
+      <section className="panel partnerAdminShortcut"><div><span className="eyebrow dark">CONTENUS</span><h2>Guide PokéValeur et lexique</h2><p className="muted">Modifie les thèmes et les questions-réponses, enrichis le lexique et ajoute des illustrations.</p></div><a className="btn" href="/admin/guide">Gérer le guide</a></section>
+
       <section className="panel partnerAdminShortcut"><div><span className="eyebrow dark">PRODUITS SCELLÉS ET AUTRES</span><h2>Fiches du catalogue</h2><p className="muted">Corrige les informations des produits existants, dont leur type et le contenu des cases.</p></div><a className="btn" href="/admin/catalogue-produits">Modifier les fiches</a></section>
 
       <section className="panel partnerAdminShortcut"><div><span className="eyebrow dark">MEMBRES</span><h2>Utilisateurs et activité</h2><p className="muted">Consulte les inscriptions, les dernières connexions et les actions réalisées sur le site.</p></div><a className="btn" href="/admin/utilisateurs">Voir les utilisateurs</a></section>
