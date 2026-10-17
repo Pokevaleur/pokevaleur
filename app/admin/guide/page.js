@@ -13,7 +13,7 @@ function updateRow(setRows, id, key, value) {
 }
 
 function ImageFields({ row, setRows, onUpload }) {
-  const imageUrl = row.image_path ? `${supabaseUrl}/storage/v1/object/public/guide-illustrations/${row.image_path.split('/').map(encodeURIComponent).join('/')}` : ''
+  const imageUrl = row.image_path ? (row.image_path.startsWith('site:') ? row.image_path.slice(5) : `${supabaseUrl}/storage/v1/object/public/guide-illustrations/${row.image_path.split('/').map(encodeURIComponent).join('/')}`) : ''
   return <div className={styles.imageFields}>
     <label>Illustration<input type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={event => onUpload(event.target.files?.[0], row, setRows)} /></label>
     <label className={styles.wide}>Texte alternatif de l’image<input value={row.image_alt || ''} onChange={event => updateRow(setRows, row.id, 'image_alt', event.target.value)} placeholder="Décris brièvement l’image" /></label>
