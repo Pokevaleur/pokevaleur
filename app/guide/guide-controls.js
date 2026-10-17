@@ -78,7 +78,7 @@ export default function GuideControls() {
     <section className={styles.guideControls} aria-label="Recherche dans le guide">
       <label className={styles.searchLabel} htmlFor="guide-search">Rechercher dans le guide</label>
       <div className={styles.searchField}>
-        <span aria-hidden="true">⌕</span>
+        <svg aria-hidden="true" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8" /><path d="m16 16 5 5" /></svg>
         <input
           id="guide-search"
           type="search"
