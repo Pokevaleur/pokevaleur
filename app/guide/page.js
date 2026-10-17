@@ -71,7 +71,7 @@ export default async function GuidePage() {
         <div className={styles.topicIntro} data-guide-topic-heading><span className={styles.topicNumber}>{topic.number}</span><div><h2 id={topic.id + '-title'}>{topic.title}</h2><p>{topic.intro}</p></div></div>
         <div className={styles.questions}>{topic.questions.map((item, index) => <details id={item.id} className={styles.question} data-guide-question key={item.id || item.question} open={topic.id === 'bien-debuter' && index === 0}>
           <summary>{item.question}<span aria-hidden="true" /></summary>
-          <div className={styles.answer}><p>{item.answer}</p>
+          <div className={styles.answer} data-guide-answer><p>{item.answer}</p>
             <GuideImage path={item.image_path} alt={item.image_alt} />
             {item.source_url && <p className={styles.source}>Source officielle : <a href={item.source_url} target="_blank" rel="noreferrer">{item.source_label || item.source_url}</a>.</p>}
             <p className={styles.answerSignature}><strong>PokéValeur.fr</strong><span>Le guide du collectionneur</span></p>
