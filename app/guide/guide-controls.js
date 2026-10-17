@@ -18,10 +18,10 @@ function getSearchResults(term) {
   for (const question of document.querySelectorAll('[data-guide-question]')) {
     const topic = question.closest('[data-guide-topic]')
     const questionTitle = question.querySelector('summary')?.textContent?.trim() || ''
-    const answer = question.querySelector('.answer > p')?.textContent?.trim() || ''
+    const answer = question.querySelector('[data-guide-answer] > p')?.textContent?.trim() || ''
     const topicTitle = topic?.querySelector('[data-guide-topic-heading] h2')?.textContent?.trim() || ''
     if (normalize(questionTitle + ' ' + answer + ' ' + topicTitle).includes(term)) {
-      const image = question.querySelector('.answer img')
+      const image = question.querySelector('[data-guide-answer] img')
       results.push({
         id: question.id || questionTitle,
         kind: 'Question du guide',
