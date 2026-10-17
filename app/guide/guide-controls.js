@@ -6,7 +6,7 @@ import styles from './guide.module.css'
 function normalize(value) {
   return (value || '')
     .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLocaleLowerCase('fr')
     .trim()
 }
