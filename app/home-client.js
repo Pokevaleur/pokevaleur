@@ -89,7 +89,7 @@ export default function Home() {
       </div>
       <div className={styles.services}>
         <article className={`${styles.card} ${styles.missing}`}><Art kind="missing" label="Un emplacement de carte à compléter"/><div><h2>Trouve la pièce manquante</h2><p>Complète tes séries grâce aux échanges entre passionnés.</p></div></article>
-        <article className={`${styles.card} ${styles.audience}`}><Art kind="beginner" label="Des livres pour apprendre"/><div><h2>Tu débutes ?</h2><p>Des conseils pour constituer ta collection à ton rythme.</p></div></article>
+        <article className={`${styles.card} ${styles.audience}`}><Art kind="beginner" label="Des livres pour apprendre"/><div><h2>Tu débutes ?</h2><p>Des conseils pour constituer ta collection à ton rythme.</p><a className={styles.beginnerLink} href="/guide#bien-debuter">Découvrir le guide <span aria-hidden="true">→</span></a></div></article>
         <article className={`${styles.card} ${styles.audience}`}><Art kind="experienced" label="Des informations pour compléter ses connaissances"/><div><h2>Tu collectionnes déjà ?</h2><p>Complète tes séries et partage tes connaissances.</p></div></article>
       </div>
     </section>

@@ -44,6 +44,7 @@ const navLinks = [
       }
     ]
   },
+  { href: '/guide', label: 'Guide PokéValeur' },
   { href: '/opportunites', label: 'Watchlist' },
   { href: '/communaute', label: 'Communauté' },
   { href: '/trades', label: 'Trades' },
