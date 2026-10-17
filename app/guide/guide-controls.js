@@ -39,16 +39,29 @@ function getSearchResults(term) {
     if (normalize(title + ' ' + text).includes(term)) {
       const image = entry.querySelector('dd img')
       const isReverse = normalize(title) === 'reverse'
+      const isHolo = normalize(title) === 'holo'
       results.push({
         id: entry.id || title,
         kind: 'Lexique',
         title,
         text,
-        image: isReverse ? 'https://i.ebayimg.com/images/g/tSsAAOSwsEhmqHii/s-l1200.jpg' : (image?.currentSrc || image?.src || ''),
-        imageAlt: isReverse ? 'Vraie carte Reverse Ivysaur 002/165 de l’extension Écarlate et Violet—151, montrant le motif brillant du fond.' : (image?.alt || ''),
-        imageCaption: isReverse ? 'Exemple réel : Ivysaur 002/165, Écarlate et Violet—151.' : '',
-        imageSourceUrl: isReverse ? 'https://www.ebay.com/itm/226267876969' : '',
-        imageSourceLabel: isReverse ? 'Voir la source de la photo' : ''
+        image: isReverse
+          ? 'https://i.ebayimg.com/images/g/tSsAAOSwsEhmqHii/s-l1200.jpg'
+          : isHolo
+            ? 'https://i.ebayimg.com/images/g/-~oAAOSwDwZjJAni/s-l1200.jpg'
+            : (image?.currentSrc || image?.src || ''),
+        imageAlt: isReverse
+          ? 'Vraie carte Reverse Ivysaur 002/165 de l’extension Écarlate et Violet—151, montrant le motif brillant du fond.'
+          : isHolo
+            ? 'Vraie carte holographique Gyarados 022/078 de l’extension Pokémon GO, dont la zone de l’illustration est brillante.'
+            : (image?.alt || ''),
+        imageCaption: isReverse
+          ? 'Exemple réel : Ivysaur 002/165, Écarlate et Violet—151.'
+          : isHolo ? 'Exemple réel : Gyarados 022/078, Pokémon GO (Holo).' : '',
+        imageSourceUrl: isReverse
+          ? 'https://www.ebay.com/itm/226267876969'
+          : isHolo ? 'https://www.ebay.com/itm/275462799373' : '',
+        imageSourceLabel: isReverse || isHolo ? 'Voir la source de la photo' : ''
       })
     }
   }
@@ -65,6 +78,22 @@ function getSearchResults(term) {
       imageAlt: 'Vraie carte Reverse Ivysaur 002/165 de l’extension Écarlate et Violet—151, montrant le motif brillant du fond.',
       imageCaption: 'Exemple réel : Ivysaur 002/165, Écarlate et Violet—151.',
       imageSourceUrl: 'https://www.ebay.com/itm/226267876969',
+      imageSourceLabel: 'Voir la source de la photo'
+    })
+  }
+
+  const matchesHolo = term.length >= 4 && (normalize('Holo').includes(term) || term.includes('holo'))
+  const hasHoloDefinition = results.some(result => result.kind === 'Lexique' && normalize(result.title) === 'holo')
+  if (matchesHolo && !hasHoloDefinition) {
+    results.unshift({
+      id: 'guide-holo-definition',
+      kind: 'Lexique',
+      title: 'Holo',
+      text: 'Une carte Holo (ou holographique) présente généralement un effet brillant sur l’illustration du Pokémon. Sur une Reverse, l’effet brillant se trouve plutôt sur le fond de la carte, autour de l’illustration. Les motifs et finitions varient selon les séries.',
+      image: 'https://i.ebayimg.com/images/g/-~oAAOSwDwZjJAni/s-l1200.jpg',
+      imageAlt: 'Vraie carte holographique Gyarados 022/078 de l’extension Pokémon GO, dont la zone de l’illustration est brillante.',
+      imageCaption: 'Exemple réel : Gyarados 022/078, Pokémon GO (Holo).',
+      imageSourceUrl: 'https://www.ebay.com/itm/275462799373',
       imageSourceLabel: 'Voir la source de la photo'
     })
   }
