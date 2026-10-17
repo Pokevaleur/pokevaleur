@@ -74,6 +74,7 @@ export default async function GuidePage() {
           <div className={styles.answer}><p>{item.answer}</p>
             <GuideImage path={item.image_path} alt={item.image_alt} />
             {item.source_url && <p className={styles.source}>Source officielle : <a href={item.source_url} target="_blank" rel="noreferrer">{item.source_label || item.source_url}</a>.</p>}
+            <p className={styles.answerSignature}><strong>PokéValeur.fr</strong><span>Le guide du collectionneur</span></p>
           </div>
         </details>)}</div>
         <a className={styles.backToTop} href="#topic-index-title">Retour aux thèmes ↑</a>
@@ -84,7 +85,7 @@ export default async function GuidePage() {
 
     <section className={styles.glossary} data-guide-glossary id="lexique" aria-labelledby="glossary-title">
       <div className={styles.sectionHeading}><span className={styles.kicker}>Les mots de la collection</span><h2 id="glossary-title">Petit lexique</h2><p>Une définition rapide, avec un lien vers le thème pour approfondir.</p></div>
-      <dl>{glossary.map(item => <div id={`lexique-${item.id}`} key={item.id || item.term} data-guide-glossary-entry><dt>{item.term}</dt><dd><p>{item.definition}</p><GuideImage path={item.image_path} alt={item.image_alt} />{item.topic_id && <a href={'#' + item.topic_id}>Voir le thème <span aria-hidden="true">→</span></a>}</dd></div>)}</dl>
+      <dl>{glossary.map(item => <div id={`lexique-${item.id}`} key={item.id || item.term} data-guide-glossary-entry><dt>{item.term}</dt><dd><p>{item.definition}</p><GuideImage path={item.image_path} alt={item.image_alt} />{item.topic_id && <a href={'#' + item.topic_id}>Voir le thème <span aria-hidden="true">→</span></a>}<p className={styles.answerSignature}><strong>PokéValeur.fr</strong><span>Le guide du collectionneur</span></p></dd></div>)}</dl>
     </section>
 
     <aside className={styles.note} data-guide-note><strong>Un guide qui grandit avec les collectionneurs</strong><p>Les contenus et appellations peuvent varier selon la série, la langue et l’époque. Pour un produit précis, vérifie toujours les informations imprimées sur l’emballage et la fiche officielle correspondante.</p><a href="mailto:contact@pokevaleur.fr?subject=Suggestion%20pour%20le%20Guide%20Pok%C3%A9Valeur">Proposer une question au guide →</a></aside>
