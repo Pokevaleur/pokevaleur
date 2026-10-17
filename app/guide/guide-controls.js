@@ -48,19 +48,19 @@ function getSearchResults(term) {
         image: isReverse
           ? 'https://i.ebayimg.com/images/g/tSsAAOSwsEhmqHii/s-l1200.jpg'
           : isHolo
-            ? 'https://i.ebayimg.com/images/g/-~oAAOSwDwZjJAni/s-l1200.jpg'
+            ? 'https://i.ebayimg.com/images/g/kyMAAeSwp0Foc9ov/s-l1200.jpg'
             : (image?.currentSrc || image?.src || ''),
         imageAlt: isReverse
           ? 'Vraie carte Reverse Ivysaur 002/165 de l’extension Écarlate et Violet—151, montrant le motif brillant du fond.'
           : isHolo
-            ? 'Vraie carte holographique Gyarados 022/078 de l’extension Pokémon GO, dont la zone de l’illustration est brillante.'
+            ? 'Vraie carte holographique Gengar 057/198 de l’extension Épée et Bouclier—Règne de Glace, dont la zone de l’illustration est brillante.'
             : (image?.alt || ''),
         imageCaption: isReverse
           ? 'Exemple réel : Ivysaur 002/165, Écarlate et Violet—151.'
-          : isHolo ? 'Exemple réel : Gyarados 022/078, Pokémon GO (Holo).' : '',
+          : isHolo ? 'Exemple réel : Gengar 057/198, Épée et Bouclier—Règne de Glace (Holo).' : '',
         imageSourceUrl: isReverse
           ? 'https://www.ebay.com/itm/226267876969'
-          : isHolo ? 'https://www.ebay.com/itm/275462799373' : '',
+          : isHolo ? 'https://www.ebay.com/itm/116795491171' : '',
         imageSourceLabel: isReverse || isHolo ? 'Voir la source de la photo' : ''
       })
     }
@@ -90,10 +90,10 @@ function getSearchResults(term) {
       kind: 'Lexique',
       title: 'Holo',
       text: 'Une carte Holo (ou holographique) présente généralement un effet brillant sur l’illustration du Pokémon. Sur une Reverse, l’effet brillant se trouve plutôt sur le fond de la carte, autour de l’illustration. Les motifs et finitions varient selon les séries.',
-      image: 'https://i.ebayimg.com/images/g/-~oAAOSwDwZjJAni/s-l1200.jpg',
-      imageAlt: 'Vraie carte holographique Gyarados 022/078 de l’extension Pokémon GO, dont la zone de l’illustration est brillante.',
-      imageCaption: 'Exemple réel : Gyarados 022/078, Pokémon GO (Holo).',
-      imageSourceUrl: 'https://www.ebay.com/itm/275462799373',
+      image: 'https://i.ebayimg.com/images/g/kyMAAeSwp0Foc9ov/s-l1200.jpg',
+      imageAlt: 'Vraie carte holographique Gengar 057/198 de l’extension Épée et Bouclier—Règne de Glace, dont la zone de l’illustration est brillante.',
+      imageCaption: 'Exemple réel : Gengar 057/198, Épée et Bouclier—Règne de Glace (Holo).',
+      imageSourceUrl: 'https://www.ebay.com/itm/116795491171',
       imageSourceLabel: 'Voir la source de la photo'
     })
   }
