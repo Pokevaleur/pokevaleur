@@ -22,6 +22,8 @@ alter table public.guide_questions enable row level security;
 alter table public.guide_glossary enable row level security;
 
 grant select on public.guide_topics, public.guide_questions, public.guide_glossary to anon, authenticated;
+-- The admin lookup in public content policies needs table privilege; profiles RLS still denies anonymous rows.
+grant select on public.profiles to anon;
 grant insert, update, delete on public.guide_topics, public.guide_questions, public.guide_glossary to authenticated;
 
 drop policy if exists guide_topics_public_read on public.guide_topics;
