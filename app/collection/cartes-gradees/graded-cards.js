@@ -18,6 +18,7 @@ const EDITION_MARKETS = [
   { code: 'KR', label: 'Corée du Sud', language: 'KO' },
   { code: 'OTHER', label: 'Autre marché', language: 'OTHER' }
 ]
+const MARKET_FLAGS = { JP: '🇯🇵', CN: '🇨🇳', TW: '🇹🇼', KR: '🇰🇷', US: '🇺🇸', GB: '🇬🇧', AU: '🇦🇺' }
 const BINDER_PAGE_SIZE = 12
 const GRADE_OPTIONS = Array.from({ length: 19 }, (_, index) => {
   const grade = 10 - index * 0.5
@@ -648,6 +649,14 @@ export default function GradedCardsPage({ mode }) {
     return counts
   }, {})
   const gradedBinderSets = sets.filter(set => gradedCountsBySet[set.id] > 0)
+  const foreignMarketsBySet = items.reduce((markets, item) => {
+    const setId = item.card_print_variants?.cards?.card_sets?.id
+    const marketCode = item.edition_market_code || marketFromLanguage(item.graded_language)
+    if (!setId || !MARKET_FLAGS[marketCode]) return markets
+    if (!markets[setId]) markets[setId] = new Set()
+    markets[setId].add(marketCode)
+    return markets
+  }, {})
   const gradedCountsByCompany = items.reduce((counts, item) => {
     const companyId = item.grading_company_id
     if (companyId) counts[companyId] = (counts[companyId] || 0) + 1
@@ -958,11 +967,17 @@ export default function GradedCardsPage({ mode }) {
               const hue = Array.from(set.set_code || set.id).reduce((sum, character) => sum + character.charCodeAt(0), 0) % 360
               const binderId = 'series:' + set.id
               const active = selectedBinderId === binderId
+              const foreignMarkets = [...(foreignMarketsBySet[set.id] || [])]
+              const foreignMarketLabels = foreignMarkets.map(code => EDITION_MARKETS.find(market => market.code === code)?.label || code)
               return <button key={binderId} type="button"
                 className={active ? styles.gradedBinderActive : styles.gradedBinder}
                 style={{ '--binder-hue': hue }} aria-pressed={active}
-                aria-label={set.set_name + ', ' + gradedCountsBySet[set.id] + ' carte' + (gradedCountsBySet[set.id] === 1 ? '' : 's') + ' gradée' + (gradedCountsBySet[set.id] === 1 ? '' : 's')}
+                aria-label={set.set_name + ', ' + gradedCountsBySet[set.id] + ' carte' + (gradedCountsBySet[set.id] === 1 ? '' : 's') + ' gradée' + (gradedCountsBySet[set.id] === 1 ? '' : 's') + (foreignMarketLabels.length ? ', édition étrangère : ' + foreignMarketLabels.join(', ') : '')}
                 onClick={() => selectGradedBinder(set.id, 'series')}>
+                {foreignMarkets.length > 0 && <span className={styles.gradedBinderFlags} aria-hidden="true" title={'Éditions étrangères : ' + foreignMarketLabels.join(', ')}>
+                  {foreignMarkets.slice(0, 2).map(code => <span key={code}>{MARKET_FLAGS[code]}</span>)}
+                  {foreignMarkets.length > 2 && <small>+{foreignMarkets.length - 2}</small>}
+                </span>}
                 <span className={styles.gradedBinderCode}>{set.set_code || set.set_name}</span>
                 <span className={styles.gradedBinderName}>{set.set_name}</span>
                 <span className={styles.gradedBinderCount}>{gradedCountsBySet[set.id]}</span>
