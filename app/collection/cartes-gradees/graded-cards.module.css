@@ -54,7 +54,7 @@
 .gradedBinderActive{border-color:hsl(var(--binder-hue) 58% 48%);background:linear-gradient(90deg,hsl(var(--binder-hue) 64% 35%),hsl(var(--binder-hue) 66% 51%) 18%,hsl(var(--binder-hue) 61% 43%) 88%,hsl(var(--binder-hue) 58% 34%));color:#fff}
 .gradedBinderAll,.gradedBinderActive:not([style]){background:linear-gradient(145deg,#244caa,#153b91);color:#fff;border-color:#244caa}
 .gradedBinder:hover,.gradedBinderActive:hover,.gradedBinderAll:hover{transform:translateY(-4px);box-shadow:3px 8px 12px #15263a22}
-.gradedBinderFlags{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:1px;width:100%;min-height:13px;font-size:.76rem;line-height:1;white-space:nowrap}
+.gradedBinderFlags{position:relative;z-index:1;display:flex;align-items:center;justify-content:center;gap:1px;width:100%;min-height:16px;font-size:.92rem;line-height:1;white-space:nowrap}
 .gradedBinderFlags small{font-size:.52rem;font-weight:900}
 .gradedBinderCode{min-height:0;flex:1;display:flex;align-items:center;justify-content:center;writing-mode:vertical-rl;transform:rotate(180deg);font-size:.78rem;font-weight:900;letter-spacing:.06em;line-height:1.1}
 .gradedBinderName{display:none}
