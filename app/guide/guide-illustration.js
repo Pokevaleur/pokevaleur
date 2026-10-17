@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react'
 import styles from './guide.module.css'
 
-export default function GuideIllustration({ src, alt = '', caption = '', sourceUrl = '', sourceLabel = '', compact = false }) {
+export default function GuideIllustration({ src, alt = '', caption = '', sourceUrl = '', sourceLabel = '', compact = false, hideCaption = false }) {
   const [isOpen, setIsOpen] = useState(false)
   const dialogRef = useRef(null)
 
@@ -29,7 +29,7 @@ export default function GuideIllustration({ src, alt = '', caption = '', sourceU
     >
       <img src={src} alt={alt} loading="lazy" />
     </button>
-    {(caption || alt) && <figcaption>
+    {!hideCaption && (caption || alt) && <figcaption>
       {caption || alt}
       <span className={styles.zoomHint}> · Toucher pour agrandir</span>
       {sourceUrl && <> · <a href={sourceUrl} target="_blank" rel="noreferrer">{sourceLabel || 'Source de la photo'}</a></>}
@@ -45,7 +45,7 @@ export default function GuideIllustration({ src, alt = '', caption = '', sourceU
     >
       <button className={styles.imageViewerClose} type="button" onClick={closeViewer} aria-label="Fermer l’image agrandie">×</button>
       <img src={src} alt={alt} />
-      {(caption || alt) && <p>{caption || alt}</p>}
+      {!hideCaption && (caption || alt) && <p>{caption || alt}</p>}
     </dialog>
   </figure>
 }

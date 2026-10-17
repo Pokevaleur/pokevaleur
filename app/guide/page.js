@@ -45,7 +45,7 @@ async function loadGuide() {
 function GuideImage({ path, alt }) {
   if (!path) return null
   const imageSrc = path.startsWith('site:') || path.startsWith('http') ? path.replace(/^site:/, '') : `${supabaseUrl}/storage/v1/object/public/guide-illustrations/${path.split('/').map(encodeURIComponent).join('/')}`
-  return <GuideIllustration src={imageSrc} alt={alt || ''} />
+  return <GuideIllustration src={imageSrc} alt={alt || ''} hideCaption={path === 'site:/images/guide/raretes-symboles.png'} />
 }
 
 export default async function GuidePage() {
