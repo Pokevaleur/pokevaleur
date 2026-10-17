@@ -43,7 +43,8 @@ async function loadGuide() {
 
 function GuideImage({ path, alt }) {
   if (!path) return null
-  return <figure className={styles.illustration}><img src={`${supabaseUrl}/storage/v1/object/public/guide-illustrations/${path.split('/').map(encodeURIComponent).join('/')}`} alt={alt || ''} loading="lazy" />{alt && <figcaption>{alt}</figcaption>}</figure>
+  const imageSrc = path.startsWith('site:') ? path.slice(5) : `${supabaseUrl}/storage/v1/object/public/guide-illustrations/${path.split('/').map(encodeURIComponent).join('/')}`
+  return <figure className={styles.illustration}><img src={imageSrc} alt={alt || ''} loading="lazy" />{alt && <figcaption>{alt}</figcaption>}</figure>
 }
 
 export default async function GuidePage() {
