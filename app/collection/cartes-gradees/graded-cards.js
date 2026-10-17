@@ -7,14 +7,39 @@ import styles from './graded-cards.module.css'
 
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,rarity_label,image_url,card_sets!cards_card_set_id_fkey(id,set_name,set_code,language),card_print_variants(id,variant_key,variant_label,finish_code)'
 const STORAGE_BUCKET = 'collection-images'
+const EDITION_MARKETS = [
+  { code: 'FR', label: 'France', language: 'FR' },
+  { code: 'JP', label: 'Japon', language: 'JP' },
+  { code: 'US', label: 'États-Unis (anglais)', language: 'EN' },
+  { code: 'GB', label: 'Royaume-Uni (anglais)', language: 'EN' },
+  { code: 'AU', label: 'Australie (anglais)', language: 'EN' },
+  { code: 'CN', label: 'Chine (chinois simplifié)', language: 'ZH-CN' },
+  { code: 'TW', label: 'Taïwan (chinois traditionnel)', language: 'ZH-TW' },
+  { code: 'KR', label: 'Corée du Sud', language: 'KO' },
+  { code: 'OTHER', label: 'Autre marché', language: 'OTHER' }
+]
 const BINDER_PAGE_SIZE = 12
 const GRADE_OPTIONS = Array.from({ length: 19 }, (_, index) => {
   const grade = 10 - index * 0.5
   return Number.isInteger(grade) ? String(grade) : grade.toFixed(1)
 })
 
+function marketFromLanguage(language) {
+  const code = String(language || '').trim().toUpperCase()
+  return ({ FR: 'FR', JP: 'JP', EN: 'US', 'ZH-CN': 'CN', 'ZH-TW': 'TW', KO: 'KR' })[code] || 'OTHER'
+}
 function setLabel(set) {
   return (set?.set_code ? set.set_code + ' — ' : '') + (set?.set_name || 'Série inconnue')
+}
+function foreignEditionSetLabel(foreignSet) {
+  const originalSeriesName = foreignSet?.series_name || ''
+  const frenchSeriesName = foreignSet?.series_name_fr || ''
+  const seriesLabel = frenchSeriesName
+    ? frenchSeriesName + (originalSeriesName && originalSeriesName !== frenchSeriesName ? ' (' + originalSeriesName + ')' : '')
+    : originalSeriesName
+  const setName = foreignSet?.set_name || 'Série inconnue'
+  const setLabel = setName + (foreignSet?.set_code ? ' (' + foreignSet.set_code + ')' : '')
+  return [seriesLabel, setLabel].filter(Boolean).join(' — ')
 }
 function money(value, currency) {
   if (value == null || value === '') return ''
@@ -46,13 +71,17 @@ export default function GradedCardsPage({ mode }) {
   const [cardQuery, setCardQuery] = useState('')
   const [setFilter, setSetFilter] = useState('')
   const [matches, setMatches] = useState([])
+  const [mappedPrintings, setMappedPrintings] = useState([])
+  const [mappedPrintingsLoading, setMappedPrintingsLoading] = useState(false)
+  const [mappedPrintingsError, setMappedPrintingsError] = useState('')
+  const [selectedMappedPrintingId, setSelectedMappedPrintingId] = useState('')
   const [searching, setSearching] = useState(false)
   const [selectedCard, setSelectedCard] = useState(null)
   const [variantId, setVariantId] = useState('')
   const [estimate, setEstimate] = useState(null)
   const [form, setForm] = useState({
     companyId: '', grade: '', gradeLabel: '', certification: '', gradingDate: '', reportUrl: '',
-    language: 'FR', purchaseDate: '', purchasePrice: '', declaredValue: '', quantity: '1',
+    language: 'FR', marketCode: 'FR', editionSetName: '', editionCollectorNumber: '', editionCardName: '', purchaseDate: '', purchasePrice: '', declaredValue: '', quantity: '1',
     centeringFront: '', centeringBack: '', edges: '', corners: '', surface: '',
     frontNotes: '', backNotes: ''
   })
@@ -78,10 +107,70 @@ export default function GradedCardsPage({ mode }) {
   const gradePickerRef = useRef(null)
 
   const update = (key, value) => setForm(current => ({ ...current, [key]: value }))
+  const updateMarket = marketCode => {
+    const market = EDITION_MARKETS.find(item => item.code === marketCode)
+    setForm(current => ({
+      ...current,
+      marketCode,
+      language: market?.language || 'OTHER',
+      editionSetName: '',
+      editionCollectorNumber: '',
+      editionCardName: ''
+    }))
+    setMappedPrintings([])
+    setSelectedMappedPrintingId('')
+    setMappedPrintingsError('')
+  }
   const memberProfile = profiles.find(profile => profile.id === profileId)
   const selectedSet = sets.find(set => set.id === setFilter)
   const activeItem = items.find(item => item.id === activeItemId) || null
+  const selectedCardLanguage = (selectedCard?.card_sets?.language || 'FR').trim().toUpperCase()
+  const isForeignEdition = Boolean(selectedCard && (form.language.trim().toUpperCase() || selectedCardLanguage) !== selectedCardLanguage)
   const activeItemPhotos = activeItem ? (galleryPhotos[activeItem.id] || []) : []
+
+  useEffect(() => {
+    if (!selectedCard?.id || !isForeignEdition || form.marketCode === 'OTHER') {
+      setMappedPrintings([])
+      setSelectedMappedPrintingId('')
+      setMappedPrintingsError('')
+      setMappedPrintingsLoading(false)
+      return
+    }
+    let cancelled = false
+    setMappedPrintingsLoading(true)
+    setMappedPrintingsError('')
+    supabase
+      .from('foreign_card_printings')
+      .select('id,collector_number,card_name,foreign_card_sets!inner(series_name,series_name_fr,set_name,set_code,language_code,market_code)')
+      .eq('catalog_card_id', selectedCard.id)
+      .eq('foreign_card_sets.language_code', form.language.trim().toUpperCase())
+      .eq('foreign_card_sets.market_code', form.marketCode)
+      .eq('validation_status', 'verified')
+      .then(({ data, error: mappingError }) => {
+        if (cancelled) return
+        if (mappingError) {
+          setMappedPrintingsError('Le catalogue de correspondances est indisponible pour le moment. Tu peux saisir les références manuellement.')
+          setMappedPrintings([])
+          return
+        }
+        const rows = data || []
+        setMappedPrintings(rows)
+        if (rows.length === 1) {
+          const row = rows[0]
+          const foreignSet = row.foreign_card_sets
+          const setLabel = foreignEditionSetLabel(foreignSet)
+          setSelectedMappedPrintingId(row.id)
+          setForm(current => ({
+            ...current,
+            editionSetName: setLabel,
+            editionCollectorNumber: row.collector_number,
+            editionCardName: row.card_name
+          }))
+        }
+      })
+      .finally(() => { if (!cancelled) setMappedPrintingsLoading(false) })
+    return () => { cancelled = true }
+  }, [supabase, selectedCard?.id, isForeignEdition, form.language, form.marketCode])
 
   useEffect(() => {
     let cancelled = false
@@ -142,7 +231,7 @@ export default function GradedCardsPage({ mode }) {
               setSelectedCard(card)
               setVariantId(variant.id)
               setCardQuery(card.card_name + ' · ' + setLabel(card.card_sets) + ' · n° ' + card.collector_number)
-              setForm(current => ({ ...current, language: card.card_sets?.language || 'FR' }))
+              setForm(current => ({ ...current, language: card.card_sets?.language || 'FR', marketCode: marketFromLanguage(card.card_sets?.language), editionSetName: '', editionCollectorNumber: '', editionCardName: '' }))
             }
           }
         }
@@ -250,7 +339,7 @@ export default function GradedCardsPage({ mode }) {
       const pageSize = 500
       for (let offset = 0; ; offset += pageSize) {
         const { data, error: listError } = await supabase.from('collection_cards')
-          .select('id,card_print_variant_id,grade,grade_label,certification_number,grading_company_id,subgrades,graded_language,grading_date,grading_report_url,grading_front_notes,grading_back_notes,purchase_date,purchase_price,current_value_override,photo_path,created_at,collection_card_photos(id,photo_path,caption,sort_order),card_grading_companies(company_name,abbreviation),card_print_variants!inner(id,variant_label,variant_key,image_url,cards!card_print_variants_card_id_fkey!inner(id,card_name,collector_number,rarity_label,image_url,card_sets!cards_card_set_id_fkey(id,set_name,set_code,language)))')
+          .select('id,card_print_variant_id,grade,grade_label,certification_number,grading_company_id,subgrades,graded_language,edition_market_code,edition_set_name,edition_collector_number,edition_card_name,grading_date,grading_report_url,grading_front_notes,grading_back_notes,purchase_date,purchase_price,current_value_override,photo_path,created_at,collection_card_photos(id,photo_path,caption,sort_order),card_grading_companies(company_name,abbreviation),card_print_variants!inner(id,variant_label,variant_key,image_url,cards!card_print_variants_card_id_fkey!inner(id,card_name,collector_number,rarity_label,image_url,card_sets!cards_card_set_id_fkey(id,set_name,set_code,language)))')
           .eq('collection_profile_id', profileId).eq('ownership_type', 'graded')
           .order('created_at', { ascending: false }).range(offset, offset + pageSize - 1)
         if (listError) throw listError
@@ -312,6 +401,10 @@ export default function GradedCardsPage({ mode }) {
       reportUrl: item.grading_report_url || '',
       gradingDate: item.grading_date || '',
       language: item.graded_language || '',
+      marketCode: item.edition_market_code || marketFromLanguage(item.graded_language),
+      editionSetName: item.edition_set_name || '',
+      editionCollectorNumber: item.edition_collector_number || '',
+      editionCardName: item.edition_card_name || '',
       purchaseDate: item.purchase_date || '',
       purchasePrice: item.purchase_price == null ? '' : String(item.purchase_price),
       declaredValue: item.current_value_override == null ? '' : String(item.current_value_override),
@@ -345,6 +438,13 @@ export default function GradedCardsPage({ mode }) {
       setError('Choisis la société de gradation et une note entre 1 et 10.')
       return
     }
+    const catalogLanguage = (selectedCard.card_sets?.language || 'FR').trim().toUpperCase()
+    const editionLanguage = (form.language.trim() || catalogLanguage).toUpperCase()
+    const foreignEdition = editionLanguage !== catalogLanguage
+    if (foreignEdition && (!form.editionSetName.trim() || !form.editionCollectorNumber.trim() || !form.editionCardName.trim())) {
+      setError('Pour une édition étrangère, renseigne sa série, son numéro et le nom de la carte.')
+      return
+    }
     const quantity = Math.max(1, Math.min(99, Number.parseInt(form.quantity, 10) || 1))
     const certifications = form.certification.split(/\r?\n/).map(value => value.trim()).filter(Boolean)
     if (certifications.length > 1 && certifications.length !== quantity) {
@@ -370,7 +470,11 @@ export default function GradedCardsPage({ mode }) {
         grade: Number(form.grade),
         grade_label: form.gradeLabel.trim() || (String(form.grade) + '/10'),
         subgrades,
-        graded_language: form.language.trim().toUpperCase() || selectedCard.card_sets?.language || 'FR',
+        graded_language: editionLanguage,
+        edition_market_code: foreignEdition ? form.marketCode : null,
+        edition_set_name: foreignEdition ? form.editionSetName.trim() : null,
+        edition_collector_number: foreignEdition ? form.editionCollectorNumber.trim() : null,
+        edition_card_name: foreignEdition ? form.editionCardName.trim() : null,
         grading_date: form.gradingDate || null,
         grading_report_url: form.reportUrl.trim() || null,
         grading_front_notes: form.frontNotes.trim() || null,
@@ -431,6 +535,15 @@ export default function GradedCardsPage({ mode }) {
       setDetailError('La note doit être comprise entre 1 et 10.')
       return
     }
+    const catalogLanguage = (activeItem.card_print_variants?.cards?.card_sets?.language || 'FR').trim().toUpperCase()
+    const editionLanguage = (detailForm.language.trim() || catalogLanguage).toUpperCase()
+    const foreignEdition = editionLanguage !== catalogLanguage
+    const foreignDetailValues = [detailForm.editionSetName, detailForm.editionCollectorNumber, detailForm.editionCardName].map(value => (value || '').trim())
+    const hasAnyForeignDetail = foreignDetailValues.some(Boolean)
+    if (hasAnyForeignDetail && foreignDetailValues.some(value => !value)) {
+      setDetailError('Renseigne les trois informations de l’édition étrangère, ou laisse-les toutes vides.')
+      return
+    }
     setDetailBusy(true)
     const subgrades = {
       centering_front: nullableNumber(detailForm.centeringFront),
@@ -446,7 +559,11 @@ export default function GradedCardsPage({ mode }) {
       certification_number: detailForm.certification.trim() || null,
       grading_report_url: detailForm.reportUrl.trim() || null,
       grading_date: detailForm.gradingDate || null,
-      graded_language: detailForm.language.trim().toUpperCase() || null,
+      graded_language: editionLanguage,
+      edition_market_code: foreignEdition ? (detailForm.marketCode || null) : null,
+      edition_set_name: foreignEdition ? detailForm.editionSetName.trim() : null,
+      edition_collector_number: foreignEdition ? detailForm.editionCollectorNumber.trim() : null,
+      edition_card_name: foreignEdition ? detailForm.editionCardName.trim() : null,
       purchase_date: detailForm.purchaseDate || null,
       purchase_price: nullableNumber(detailForm.purchasePrice),
       current_value_override: nullableNumber(detailForm.declaredValue),
@@ -517,7 +634,7 @@ export default function GradedCardsPage({ mode }) {
     const variant = item.card_print_variants
     const card = variant?.cards
     const set = card?.card_sets
-    const text = normalized([card?.card_name, card?.collector_number, item.certification_number, item.grade_label, item.card_grading_companies?.company_name].join(' '))
+    const text = normalized([card?.card_name, card?.collector_number, item.edition_card_name, item.edition_set_name, item.edition_collector_number, item.certification_number, item.grade_label, item.card_grading_companies?.company_name].join(' '))
     return (!filters.text || text.includes(normalized(filters.text)))
       && (!filters.setId || set?.id === filters.setId)
       && (!filters.companyId || item.grading_company_id === filters.companyId)
@@ -598,7 +715,7 @@ export default function GradedCardsPage({ mode }) {
     </div>
     <header className={styles.header}>
       <h1>{mode === 'add' ? 'Ajouter une carte gradée' : 'Consulter mes cartes gradées'}</h1>
-      <p>{mode === 'add' ? 'Choisis la carte du catalogue, puis renseigne les informations visibles sur son certificat. Les champs détaillés restent facultatifs.' : 'Retrouve chaque exemplaire et filtre ta collection par carte, série, société, note ou langue.'}</p>
+      <p>{mode === 'add' ? 'Choisis la carte correspondante dans le catalogue. Pour une édition étrangère, indique aussi sa série, son numéro et son nom exacts.' : 'Retrouve chaque exemplaire et filtre ta collection par carte, série, société, note ou langue.'}</p>
     </header>
     {profiles.length > 1 && <label className={styles.profilePicker}>Collection
       <select value={profileId} onChange={event => setProfileId(event.target.value)}>
@@ -659,7 +776,7 @@ export default function GradedCardsPage({ mode }) {
           {matches.map(card => <button className={styles.result} type="button" key={card.id} onClick={() => {
             setSelectedCard(card)
             setVariantId(card.card_print_variants?.[0]?.id || '')
-            setForm(current => ({ ...current, language: card.card_sets?.language || 'FR' }))
+            setForm(current => ({ ...current, language: card.card_sets?.language || 'FR', marketCode: marketFromLanguage(card.card_sets?.language), editionSetName: '', editionCollectorNumber: '', editionCardName: '' }))
             setCardQuery(card.card_name + ' · ' + setLabel(card.card_sets) + ' · n° ' + card.collector_number)
             setMatches([])
           }}>
@@ -730,9 +847,45 @@ export default function GradedCardsPage({ mode }) {
           <label>Date de gradation
             <input type="date" value={form.gradingDate} onChange={event => update('gradingDate', event.target.value)} />
           </label>
-          <label>Langue de la carte
-            <input value={form.language} onChange={event => update('language', event.target.value)} maxLength="8" placeholder="FR, EN, JP…" />
+          <label>Pays ou marché de l’édition possédée
+            <select value={form.marketCode} onChange={event => updateMarket(event.target.value)}>
+              {EDITION_MARKETS.map(market => <option key={market.code} value={market.code}>{market.label}</option>)}
+            </select>
           </label>
+          {isForeignEdition && <div className={styles.foreignEditionBox}>
+            <strong>Références de l’édition étrangère</strong>
+            <p>Langue détectée : {form.language}. La carte restera reliée à son équivalent français du catalogue.</p>
+            {mappedPrintingsLoading && <p>Recherche d’une correspondance vérifiée…</p>}
+            {mappedPrintingsError && <p role="status">{mappedPrintingsError}</p>}
+            {mappedPrintings.length > 1 && <label>Édition correspondante trouvée
+              <select value={selectedMappedPrintingId} onChange={event => {
+                const row = mappedPrintings.find(item => item.id === event.target.value)
+                if (!row) { setSelectedMappedPrintingId(''); return }
+                const foreignSet = row.foreign_card_sets
+                setSelectedMappedPrintingId(row.id)
+                setForm(current => ({
+                  ...current,
+                  editionSetName: foreignEditionSetLabel(foreignSet),
+                  editionCollectorNumber: row.collector_number,
+                  editionCardName: row.card_name
+                }))
+              }}>
+                <option value="">Choisir une édition…</option>
+                {mappedPrintings.map(row => {
+                  const foreignSet = row.foreign_card_sets
+                  const setLabel = foreignEditionSetLabel(foreignSet)
+                  return <option key={row.id} value={row.id}>{setLabel} · {row.collector_number} · {row.card_name}</option>
+                })}
+              </select>
+            </label>}
+            {mappedPrintings.length === 1 && <p role="status">Une correspondance vérifiée a prérempli les références. Tu peux les corriger si nécessaire.</p>}
+            {mappedPrintings.length === 0 && !mappedPrintingsLoading && !mappedPrintingsError && <p>Aucune correspondance validée pour ce marché : tu peux saisir les références manuellement.</p>}
+            <div className={styles.formGrid}>
+              <label>Série et extension *<input required value={form.editionSetName} onChange={event => update('editionSetName', event.target.value)} placeholder="Ex. Épée et Bouclier — Pokémon GO (S10b)" /></label>
+              <label>Numéro dans la série *<input required value={form.editionCollectorNumber} onChange={event => update('editionCollectorNumber', event.target.value)} placeholder="Ex. 011/071" /></label>
+              <label>Nom dans cette édition *<input required value={form.editionCardName} onChange={event => update('editionCardName', event.target.value)} placeholder="Ex. かがやくリザードン" /></label>
+            </div>
+          </div>}
           <label>Quantité
             <input type="number" min="1" max="99" step="1" inputMode="numeric" required value={form.quantity} onChange={event => update('quantity', event.target.value)} />
           </label>
@@ -882,15 +1035,18 @@ export default function GradedCardsPage({ mode }) {
                   const company = item.card_grading_companies
                   const artwork = signedPhotos[item.id] || variant?.image_url || card?.image_url
                   const companyLabel = company?.abbreviation || company?.company_name || 'GRADÉE'
+                  const displayName = item.edition_card_name || card?.card_name || 'Carte gradée'
+                  const displayNumber = item.edition_collector_number || card?.collector_number
+                  const displaySetName = item.edition_set_name || card?.card_sets?.set_name
                   return <button type="button" key={item.id} className={styles.gradedSlabButton}
                     onClick={() => openGradedDetails(item)}
-                    aria-label={'Ouvrir la fiche de ' + (card?.card_name || 'la carte') + ', ' + companyLabel + ' note ' + (item.grade_label || item.grade || 'non renseignée')}>
+                    aria-label={'Ouvrir la fiche de ' + (displayName || 'la carte') + ', ' + companyLabel + ' note ' + (item.grade_label || item.grade || 'non renseignée')}>
                     <span className={styles.gradedSlab}>
                       <span className={styles.gradedSlabLabel}><span>{companyLabel}</span><strong>{item.grade == null ? '—' : Number(item.grade).toLocaleString('fr-FR', { maximumFractionDigits: 1 })}</strong></span>
                       <span className={styles.gradedSlabWindow}>{artwork ? <img src={artwork} alt="" loading="lazy" /> : <span>{card?.card_name || 'Carte gradée'}</span>}</span>
                     </span>
-                    <span className={styles.gradedSlabName}>{card?.card_name || 'Carte gradée'}</span>
-                    <span className={styles.gradedSlabMeta}>{card?.collector_number ? 'n° ' + card.collector_number : setLabel(card?.card_sets)}</span>
+                    <span className={styles.gradedSlabName}>{displayName}</span>
+                    <span className={styles.gradedSlabMeta}>{displaySetName ? displaySetName + ' · ' : ''}{displayNumber ? 'n° ' + displayNumber : setLabel(card?.card_sets)}</span>
                   </button>
                 })}
               </div>
@@ -912,8 +1068,11 @@ export default function GradedCardsPage({ mode }) {
       >
         <div className={styles.detailHeader}>
           <div>
-            <h2 id="graded-detail-title">{activeItem.card_print_variants?.cards?.card_name || 'Carte gradée'}</h2>
-            <p>{setLabel(activeItem.card_print_variants?.cards?.card_sets)} · n° {activeItem.card_print_variants?.cards?.collector_number || '—'}</p>
+            <h2 id="graded-detail-title">{activeItem.edition_card_name || activeItem.card_print_variants?.cards?.card_name || 'Carte gradée'}</h2>
+            {activeItem.edition_set_name ? <>
+              <p>{activeItem.edition_set_name} · n° {activeItem.edition_collector_number || '—'} · {activeItem.graded_language || 'Édition étrangère'}</p>
+              <p className={styles.catalogCounterpart}>Carte liée au catalogue : {activeItem.card_print_variants?.cards?.card_name || 'Carte'} · {setLabel(activeItem.card_print_variants?.cards?.card_sets)} · n° {activeItem.card_print_variants?.cards?.collector_number || '—'}</p>
+            </> : <p>{setLabel(activeItem.card_print_variants?.cards?.card_sets)} · n° {activeItem.card_print_variants?.cards?.collector_number || '—'}</p>}
           </div>
           <button type="button" className={styles.detailClose} aria-label="Fermer la fiche" onClick={() => setActiveItemId('')} disabled={detailBusy}>×</button>
         </div>
@@ -953,9 +1112,18 @@ export default function GradedCardsPage({ mode }) {
               <label>Date de gradation
                 <input type="date" value={detailForm.gradingDate || ''} onChange={event => updateDetail('gradingDate', event.target.value)} />
               </label>
-              <label>Langue de la carte
+              <label>Langue de l’édition possédée
                 <input value={detailForm.language || ''} onChange={event => updateDetail('language', event.target.value)} maxLength="8" placeholder="FR, EN, JP…" />
               </label>
+              {activeItem.edition_set_name || ((detailForm.language || '').trim().toUpperCase() && (detailForm.language || '').trim().toUpperCase() !== (activeItem.card_print_variants?.cards?.card_sets?.language || 'FR').trim().toUpperCase()) ? <div className={styles.foreignEditionBox}>
+                <strong>Références de l’édition étrangère</strong>
+                <p>La carte reste reliée à sa référence du catalogue.</p>
+                <div className={styles.formGrid}>
+                  <label>Série de l’édition *<input required value={detailForm.editionSetName || ''} onChange={event => updateDetail('editionSetName', event.target.value)} /></label>
+                  <label>Numéro dans la série *<input required value={detailForm.editionCollectorNumber || ''} onChange={event => updateDetail('editionCollectorNumber', event.target.value)} /></label>
+                  <label>Nom dans cette édition *<input required value={detailForm.editionCardName || ''} onChange={event => updateDetail('editionCardName', event.target.value)} /></label>
+                </div>
+              </div> : null}
               <label>Date d’achat
                 <input type="date" value={detailForm.purchaseDate || ''} onChange={event => updateDetail('purchaseDate', event.target.value)} />
               </label>
