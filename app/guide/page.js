@@ -52,7 +52,7 @@ export default async function GuidePage() {
   return <main className={styles.page}>
     <nav className={styles.breadcrumb} aria-label="Fil d’Ariane"><a href="/">Accueil</a><span aria-hidden="true">›</span><span>Guide PokéValeur</span></nav>
     <GuideControls />
-    <header className={styles.hero}>
+    <header className={styles.hero} data-guide-hero>
       <span className={styles.kicker}>Le guide du collectionneur</span>
       <h1>Comprendre ta collection Pokémon, à ton rythme</h1>
       <p>Des repères simples, des réponses aux questions fréquentes et un lexique pour mieux connaître les cartes, les boosters et les produits scellés.</p>
@@ -65,7 +65,7 @@ export default async function GuidePage() {
       <div className={styles.topicGrid}>{topics.map(topic => <a key={topic.id} href={'#' + topic.id} data-guide-topic-link={topic.id}><span>{topic.number}</span><strong>{topic.title}</strong><b aria-hidden="true">↗</b></a>)}</div>
     </section>
 
-    <div className={styles.topicList}>
+    <div className={styles.topicList} data-guide-topic-list>
       {topics.map(topic => <section key={topic.id} id={topic.id} className={styles.topic} data-guide-topic aria-labelledby={topic.id + '-title'}>
         <div className={styles.topicIntro} data-guide-topic-heading><span className={styles.topicNumber}>{topic.number}</span><div><h2 id={topic.id + '-title'}>{topic.title}</h2><p>{topic.intro}</p></div></div>
         <div className={styles.questions}>{topic.questions.map((item, index) => <details id={item.id} className={styles.question} data-guide-question key={item.id || item.question} open={topic.id === 'bien-debuter' && index === 0}>
@@ -86,6 +86,6 @@ export default async function GuidePage() {
       <dl>{glossary.map(item => <div id={`lexique-${item.id}`} key={item.id || item.term} data-guide-glossary-entry><dt>{item.term}</dt><dd><p>{item.definition}</p><GuideImage path={item.image_path} alt={item.image_alt} />{item.topic_id && <a href={'#' + item.topic_id}>Voir le thème <span aria-hidden="true">→</span></a>}</dd></div>)}</dl>
     </section>
 
-    <aside className={styles.note}><strong>Un guide qui grandit avec les collectionneurs</strong><p>Les contenus et appellations peuvent varier selon la série, la langue et l’époque. Pour un produit précis, vérifie toujours les informations imprimées sur l’emballage et la fiche officielle correspondante.</p><a href="mailto:contact@pokevaleur.fr?subject=Suggestion%20pour%20le%20Guide%20Pok%C3%A9Valeur">Proposer une question au guide →</a></aside>
+    <aside className={styles.note} data-guide-note><strong>Un guide qui grandit avec les collectionneurs</strong><p>Les contenus et appellations peuvent varier selon la série, la langue et l’époque. Pour un produit précis, vérifie toujours les informations imprimées sur l’emballage et la fiche officielle correspondante.</p><a href="mailto:contact@pokevaleur.fr?subject=Suggestion%20pour%20le%20Guide%20Pok%C3%A9Valeur">Proposer une question au guide →</a></aside>
   </main>
 }
