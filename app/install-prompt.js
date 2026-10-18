@@ -21,6 +21,7 @@ export default function InstallPrompt() {
   const [help, setHelp] = useState(false)
   const [deferredPrompt, setDeferredPrompt] = useState(null)
   const [appleMobile, setAppleMobile] = useState(false)
+  const [installedApp, setInstalledApp] = useState(false)
 
   useEffect(() => {
     if ('serviceWorker' in navigator) {
@@ -29,24 +30,26 @@ export default function InstallPrompt() {
 
     const apple = isAppleMobile()
     setAppleMobile(apple)
+    const onOpenHelp = () => {
+      setHelp(true)
+      setVisible(true)
+    }
+    // Help must remain available when the site is already installed as a PWA.
+    window.addEventListener('pokevaleur-open-install-help', onOpenHelp)
     const installed = window.matchMedia('(display-mode: standalone)').matches
       || window.navigator.standalone === true
     if (installed) {
+      setInstalledApp(true)
       localStorage.setItem('pokevaleur-install-choice', 'installed')
       localStorage.removeItem('pokevaleur-install-pending')
-      return
+      return () => window.removeEventListener('pokevaleur-open-install-help', onOpenHelp)
     }
 
     const onBeforeInstall = event => {
       event.preventDefault()
       setDeferredPrompt(event)
     }
-    const onOpenHelp = () => {
-      setHelp(true)
-      setVisible(true)
-    }
     window.addEventListener('beforeinstallprompt', onBeforeInstall)
-    window.addEventListener('pokevaleur-open-install-help', onOpenHelp)
 
     if (localStorage.getItem('pokevaleur-install-pending') === '1') {
       localStorage.removeItem('pokevaleur-install-pending')
@@ -86,11 +89,13 @@ export default function InstallPrompt() {
   return (
     <aside role="dialog" aria-labelledby="install-prompt-title" aria-modal="false" style={styles.panel}>
       <h2 id="install-prompt-title" style={styles.title}>
-        {help ? 'Ajouter PokéValeur à ton écran d’accueil' : 'Emporte ta collection avec toi'}
+        {help ? installedApp ? 'PokéValeur est déjà installée' : 'Ajouter PokéValeur à ton écran d’accueil' : 'Emporte ta collection avec toi'}
       </h2>
       {help ? (
         <p style={styles.copy}>
-          {appleMobile
+          {installedApp
+            ? 'Tu peux ouvrir PokéValeur directement depuis son icône sur ton téléphone.'
+            : appleMobile
             ? 'Dans Safari, touche Partager, puis « Ajouter à l’écran d’accueil ».'
             : deferredPrompt
               ? 'Tu peux installer PokéValeur depuis le bouton ci-dessous.'
