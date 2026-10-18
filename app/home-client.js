@@ -106,7 +106,6 @@ export default function Home() {
     <section className={styles.dashboard} aria-label="Les services de PokéValeur, exemples de présentation">
       <ValueChart/>
       <div className={styles.metrics}>
-        <article className={`${styles.card} ${styles.master}`}><Art kind="cards" label="Quelques cartes de collection"/><div><h2>Master set</h2><div className={styles.progressNumber}><strong>186 / 210</strong><small>Exemple</small></div><div className={styles.progress} role="img" aria-label="Exemple : 186 cartes sur 210, soit environ 89 %"><span/></div></div></article>
         <article className={`${styles.card} ${styles.shortcut}`}>
           <div className={styles.shortcutPhone} aria-hidden="true">
             <div className={styles.phoneScreen}>
