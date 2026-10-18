@@ -777,6 +777,14 @@ export default function CollectionPage() {
   const sealedProductDetails = useMemo(() => {
     return buildSealedProductDetails(items, catalog, selectedSealedFormat)
   }, [catalog, items, selectedSealedFormat])
+  const sealedSubtypeCounts = useMemo(() => {
+    if (!['display', 'premiumCollection'].includes(selectedSealedFormat)) return []
+    const counts = new Map()
+    for (const item of sealedProductDetails) {
+      if (item.subtype) counts.set(item.subtype, (counts.get(item.subtype) || 0) + item.quantity)
+    }
+    return [...counts].map(([label, count]) => ({ label, count }))
+  }, [sealedProductDetails, selectedSealedFormat])
   const selectedSealedLabel = selectedSealedFormat === 'all'
     ? 'Tous les produits scellés'
     : sealedCounts.formats.find(format => format.key === selectedSealedFormat)?.label || ''
@@ -837,6 +845,10 @@ export default function CollectionPage() {
             <div><h3>{selectedSealedLabel}</h3><p>{sealedProductDetails.reduce((sum, item) => sum + item.quantity, 0)} exemplaire{sealedProductDetails.reduce((sum, item) => sum + item.quantity, 0) > 1 ? 's' : ''}</p></div>
             <button className="miniBtn" type="button" onClick={() => setSelectedSealedFormat(null)}>Fermer</button>
           </div>
+          {sealedSubtypeCounts.length > 0 && <div className="collectionSealedSubtypeBreakdown" aria-label="Répartition par sous-type">
+            <strong>Répartition par sous-type</strong>
+            <ul>{sealedSubtypeCounts.map(({ label, count }) => <li key={label}><span>{label}</span><b>{count}</b></li>)}</ul>
+          </div>}
           {sealedProductDetails.length ? <ul className="collectionSealedBreakdownList">
             {sealedProductDetails.map(item => <li key={item.key}>
               <a className="collectionSealedBreakdownLink" href={`/collection/${item.collectionItemId}`} aria-label={`Voir la fiche de ${item.name} dans ma collection`}>
