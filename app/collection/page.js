@@ -325,7 +325,7 @@ export default function CollectionPage() {
       } else {
         const searchableProducts = await addCaseUnitTypes(data || [])
         if (!active) return
-        const matches = searchableProducts.filter(createProductMatcher(searchTerm, { strictFormats: true }))
+        const matches = searchableProducts.filter(createProductMatcher(searchTerm))
         setCatalogMatches(matches)
         setCatalog(previous => {
           const byId = new Map(previous.map(product => [product.id, product]))
@@ -839,10 +839,13 @@ export default function CollectionPage() {
           </div>
           {sealedProductDetails.length ? <ul className="collectionSealedBreakdownList">
             {sealedProductDetails.map(item => <li key={item.key}>
-              <span><strong>{item.name}</strong>
-                {(item.productName || item.type || item.sealedCondition) && <small>{[item.productName, item.type, item.sealedCondition === 'zero_defect' ? 'Zéro défaut' : ''].filter(Boolean).join(' · ')}</small>}
-              </span>
-              <strong className="collectionSealedBreakdownQuantity">{item.quantity} exemplaire{item.quantity > 1 ? 's' : ''}</strong>
+              <a className="collectionSealedBreakdownLink" href={`/collection/${item.collectionItemId}`} aria-label={`Voir la fiche de ${item.name} dans ma collection`}>
+                <span><strong>{item.name}</strong>
+                  {(item.productName || item.type || item.sealedCondition) && <small>{[item.productName, item.type, item.sealedCondition === 'zero_defect' ? 'Zéro défaut' : ''].filter(Boolean).join(' · ')}</small>}
+                </span>
+                <strong className="collectionSealedBreakdownQuantity">{item.quantity} exemplaire{item.quantity > 1 ? 's' : ''}</strong>
+                <span className="collectionSealedBreakdownArrow" aria-hidden="true">Voir la fiche&nbsp; →</span>
+              </a>
             </li>)}
           </ul> : <p className="collectionSealedBreakdownEmpty">Aucun produit enregistré dans ce format.</p>}
         </section>}
