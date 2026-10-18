@@ -86,7 +86,7 @@ export default function Home() {
       <div className={styles.heroCopy}>
         <h1>Chaque collection<br/>a ses <span>trésors.</span></h1>
         <p>Scellés, cartes gradées et master sets : organise ta collection et partage ta passion.</p>
-        <a className={styles.join} href={member ? '#rubriques-collection' : '/login?next=%2F%23rubriques-collection'}>{member ? 'Accéder à ma collection' : 'Rejoins PokéValeur'}</a>
+        <p className={styles.ideaPrompt}><span aria-hidden="true">✦</span> Tes idées font évoluer <strong>PokéValeur</strong></p>
       </div>
     </section>
     <section id="rubriques-collection" className={styles.collectionAccess} aria-label="Accéder aux rubriques de ta collection">
