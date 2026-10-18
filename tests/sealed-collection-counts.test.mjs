@@ -90,3 +90,22 @@ test('ignores products outside the sealed catalog category', () => {
   assert.equal(result.total, 2)
   assert.equal(result.formats.find(format => format.key === 'booster').count, 2)
 })
+
+test('counts UPC products separately from SPC products and allows a personal UPC type', () => {
+  const products = [
+    { id: 'upc', category: 'sealed', product_type: 'Ultra-Premium Collection', name: 'Collection Ultra-Premium Célébrations' },
+    { id: 'spc', category: 'sealed', product_type: 'Super-Premium Collection', name: 'Collection Super-Premium Évolutions Prismatiques' },
+    { id: 'manual', category: 'sealed', product_type: '', name: 'Produit scellé personnalisé' },
+  ]
+  const result = calculateSealedFormatCounts([
+    { product_id: 'upc', quantity: 2 },
+    { product_id: 'spc', quantity: 3 },
+    { product_id: 'manual', quantity: 1, product_type_override: 'UPC' },
+  ], products)
+  const counts = Object.fromEntries(result.formats.map(format => [format.key, format.count]))
+
+  assert.equal(counts.upc, 3)
+  assert.equal(counts.other, 3)
+  assert.equal(result.formats.find(format => format.key === 'upc').label, 'UPC')
+  assert.equal(result.total, 6)
+})
