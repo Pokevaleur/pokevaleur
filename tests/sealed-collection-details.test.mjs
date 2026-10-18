@@ -33,3 +33,26 @@ test('preserves quantity within each individual collection fiche', () => {
   assert.deepEqual(result.map(entry => entry.collectionItemId), ['ronflex-a', 'ronflex-b'])
   assert.deepEqual(result.map(entry => entry.quantity), [1, 1])
 })
+
+test('shows display subtypes and UPC/SPC subtypes without combining collection fiches', () => {
+  const products = [
+    { id: 'mini-display', name: 'Display de 10 Mini Tins', category: 'sealed', product_type: 'Display de mini-tins' },
+    { id: 'kit-display', name: 'Display de 10 Kits AP', category: 'sealed', product_type: 'Display de Kits AP' },
+    { id: 'booster-display', name: 'Display 36 boosters', category: 'sealed', product_type: 'Display' },
+    { id: 'upc', name: 'Collection Ultra-Premium Célébrations', category: 'sealed', product_type: 'Ultra-Premium Collection' },
+    { id: 'spc', name: 'Coffret SPC 8.5 Évolutions Prismatiques', category: 'sealed', product_type: 'Super-Premium Collection' },
+  ]
+  const items = products.map((product, i) => ({ id: `item-${i}`, product_id: product.id, quantity: i + 1 }))
+  const displays = buildSealedProductDetails(items, products, 'display')
+  const premium = buildSealedProductDetails(items, products, 'premiumCollection')
+
+  assert.deepEqual(displays.map(item => item.subtype), [
+    'Displays de boosters',
+    'Displays de Kits AP',
+    'Displays de mini-tins',
+  ])
+  assert.deepEqual(displays.map(item => item.collectionItemId), ['item-2', 'item-1', 'item-0'])
+  assert.deepEqual(premium.map(item => item.subtype), ['SPC', 'UPC'])
+  assert.deepEqual(premium.map(item => item.collectionItemId), ['item-4', 'item-3'])
+  assert.deepEqual(premium.map(item => item.quantity), [5, 4])
+})
