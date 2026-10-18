@@ -2,7 +2,7 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { calculateSealedFormatCounts } from '../lib/sealed-collection-counts.mjs'
 
-test('counts sealed product copies by format and keeps the total reconciled', () => {
+test('counts sealed copies by parent format and keeps totals reconciled', () => {
   const products = [
     { id: 'etb', category: 'sealed', product_type: 'etb', name: 'Coffret Dresseur Elite' },
     { id: 'half', category: 'sealed', product_type: 'display', name: 'Demi-display 18 boosters' },
@@ -18,23 +18,17 @@ test('counts sealed product copies by format and keeps the total reconciled', ()
     { id: 'unknown', category: 'sealed', product_type: '', name: 'Objet scellé spécial' },
     { id: 'card', category: 'card', product_type: '', name: 'Carte Pokémon' },
   ]
-  const items = products.map((product, index) => ({
-    product_id: product.id,
-    quantity: index + 1,
-  }))
-
+  const items = products.map((product, index) => ({ product_id: product.id, quantity: index + 1 }))
   const result = calculateSealedFormatCounts(items, products)
   const counts = Object.fromEntries(result.formats.map(format => [format.key, format.count]))
 
   assert.equal(result.total, 78)
   assert.equal(counts.etb, 1)
-  assert.equal(counts.halfDisplay, 2)
+  assert.equal(counts.display, 16)
   assert.equal(counts.miniTin, 3)
   assert.equal(counts.valisette, 4)
   assert.equal(counts.prereleaseKit, 5)
-  assert.equal(counts.prereleaseKitDisplay, 6)
   assert.equal(counts.bundle, 7)
-  assert.equal(counts.display, 8)
   assert.equal(counts.pokebox, 9)
   assert.equal(counts.booster, 10)
   assert.equal(counts.coffret, 11)
@@ -42,7 +36,7 @@ test('counts sealed product copies by format and keeps the total reconciled', ()
   assert.equal(Object.values(counts).reduce((sum, count) => sum + count, 0), result.total)
 })
 
-test('a Kit AP display is separate from its individual Kit AP even when only the collection name identifies the contents', () => {
+test('displays remain separate from their individual contents', () => {
   const products = [
     { id: 'kit', category: 'sealed', product_type: 'Kit Avant-première', name: 'Kit AP Écarlate et Violet – Aventures Ensemble' },
     { id: 'display-bundles', category: 'sealed', product_type: 'Display de bundles', name: 'Display de 10 booster bundles – Aventures Ensemble' },
@@ -54,12 +48,11 @@ test('a Kit AP display is separate from its individual Kit AP even when only the
   const counts = Object.fromEntries(result.formats.map(format => [format.key, format.count]))
 
   assert.equal(counts.prereleaseKit, 2)
-  assert.equal(counts.prereleaseKitDisplay, 1)
-  assert.equal(counts.display, 0)
+  assert.equal(counts.display, 1)
   assert.equal(result.total, 3)
 })
 
-test('a Case stays a separate sealed item and a coffret typed Pokébox is counted as a coffret', () => {
+test('a Case stays separate and a coffret-typed Pokébox remains a coffret', () => {
   const products = [
     { id: 'case', category: 'sealed', product_type: 'Case', name: 'Case de Pokébox Dracaufeu X et Y', case_unit_count: 6 },
     { id: 'coffret', category: 'sealed', product_type: 'Coffret Pokémon-V', name: 'Pokébox Destinées Radieuses – Fulgudog-V' },
@@ -91,7 +84,7 @@ test('ignores products outside the sealed catalog category', () => {
   assert.equal(result.formats.find(format => format.key === 'booster').count, 2)
 })
 
-test('counts UPC products separately from SPC products and allows a personal UPC type', () => {
+test('groups UPC and SPC together while allowing a personal UPC type', () => {
   const products = [
     { id: 'upc', category: 'sealed', product_type: 'Ultra-Premium Collection', name: 'Collection Ultra-Premium Célébrations' },
     { id: 'spc', category: 'sealed', product_type: 'Super-Premium Collection', name: 'Collection Super-Premium Évolutions Prismatiques' },
@@ -104,8 +97,8 @@ test('counts UPC products separately from SPC products and allows a personal UPC
   ], products)
   const counts = Object.fromEntries(result.formats.map(format => [format.key, format.count]))
 
-  assert.equal(counts.upc, 3)
-  assert.equal(counts.other, 3)
-  assert.equal(result.formats.find(format => format.key === 'upc').label, 'UPC')
+  assert.equal(counts.premiumCollection, 6)
+  assert.equal(counts.other, 0)
+  assert.equal(result.formats.find(format => format.key === 'premiumCollection').label, 'Collections Premium')
   assert.equal(result.total, 6)
 })
