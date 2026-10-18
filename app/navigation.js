@@ -120,7 +120,7 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
           </div>
         </details>
       )
-      : <a href={link.label === 'Accueil' && identity ? '/#rubriques-collection' : link.href} key={link.href}>{link.label}</a>)
+      : <a href={link.label === 'Accueil' && identity ? '/' : link.href} key={link.href}>{link.label}</a>)
   }
   const accountMenu = identity && (
     <details className="accountMenu">
