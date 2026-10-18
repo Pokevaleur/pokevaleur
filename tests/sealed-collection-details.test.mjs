@@ -47,11 +47,11 @@ test('shows display subtypes and UPC/SPC subtypes without combining collection f
   const premium = buildSealedProductDetails(items, products, 'premiumCollection')
 
   assert.deepEqual(displays.map(item => item.subtype), [
+    'Displays de boosters',
     'Displays de Kits AP',
     'Displays de mini-tins',
-    'Displays de boosters',
   ])
-  assert.deepEqual(displays.map(item => item.collectionItemId), ['item-1', 'item-0', 'item-2'])
+  assert.deepEqual(displays.map(item => item.collectionItemId), ['item-2', 'item-1', 'item-0'])
   assert.deepEqual(premium.map(item => item.subtype), ['UPC', 'SPC'])
   assert.deepEqual(premium.map(item => item.collectionItemId), ['item-3', 'item-4'])
   assert.deepEqual(premium.map(item => item.quantity), [4, 5])
