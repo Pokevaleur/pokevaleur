@@ -107,12 +107,26 @@ export default function Home() {
       <ValueChart/>
       <div className={styles.metrics}>
         <article className={`${styles.card} ${styles.master}`}><Art kind="cards" label="Quelques cartes de collection"/><div><h2>Master set</h2><div className={styles.progressNumber}><strong>186 / 210</strong><small>Exemple</small></div><div className={styles.progress} role="img" aria-label="Exemple : 186 cartes sur 210, soit environ 89 %"><span/></div></div></article>
-        <article className={`${styles.card} ${styles.duplicates}`}><Art kind="cards" label="Des exemplaires à comparer"/><div><h2>Doublons à vérifier</h2><p>Compare tes exemplaires.</p></div></article>
+        <article className={`${styles.card} ${styles.shortcut}`}>
+          <div className={styles.shortcutPhone} aria-hidden="true">
+            <div className={styles.phoneScreen}>
+              <span className={styles.phoneSpeaker}/>
+              <span className={styles.phoneStatus}>9:41 <span>● ●</span></span>
+              <span className={styles.phoneApp}><img src="/icon.svg" alt=""/><span>PokéValeur</span></span>
+              <span className={styles.phoneDock}><i/><i/><i/></span>
+              <span className={styles.phoneHomeBar}/>
+            </div>
+          </div>
+          <div className={styles.shortcutCopy}>
+            <h2>PokéValeur à portée de main</h2>
+            <p>Ajoute un raccourci sur ton écran d’accueil pour le retrouver en un geste.</p>
+            <button type="button" onClick={() => window.dispatchEvent(new Event('pokevaleur-open-install-help'))}>Comment faire ? <span aria-hidden="true">→</span></button>
+          </div>
+        </article>
       </div>
       <div className={styles.services}>
         <article className={`${styles.card} ${styles.missing}`}><Art kind="missing" label="Un emplacement de carte à compléter"/><div><h2>Trouve la pièce manquante</h2><p>Complète tes séries grâce aux échanges entre passionnés.</p></div></article>
-        <article className={`${styles.card} ${styles.audience}`}><Art kind="beginner" label="Des livres pour apprendre"/><div><h2>Tu débutes ?</h2><p>Des conseils pour constituer ta collection à ton rythme.</p><a className={styles.beginnerLink} href="/guide#bien-debuter">Découvrir le guide <span aria-hidden="true">→</span></a></div></article>
-        <article className={`${styles.card} ${styles.audience}`}><Art kind="experienced" label="Des informations pour compléter ses connaissances"/><div><h2>Tu collectionnes déjà ?</h2><p>Complète tes séries et partage tes connaissances.</p></div></article>
+        <article className={`${styles.card} ${styles.beginnerFeature}`}><Art kind="beginner" label="Des livres pour apprendre"/><div><h2>Tu débutes ?</h2><p>Des conseils pour constituer ta collection à ton rythme.</p><a className={styles.beginnerLink} href="/guide#bien-debuter">Découvrir le guide <span aria-hidden="true">→</span></a></div></article>
       </div>
     </section>
     <section className={styles.social} aria-label="Partager sa passion et apprendre avec Lukulu">
