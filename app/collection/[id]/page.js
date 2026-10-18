@@ -5,10 +5,17 @@ import { useParams } from 'next/navigation'
 import { createClient } from '../../../lib/supabase-browser'
 import { saveUploadedPhotoBatch, uploadUnlinkedPhotoBatch } from '../../../lib/collection-photo-save.mjs'
 
+import { sealedFormats } from '../../../lib/sealed-collection-counts.mjs'
+import { saveSealedCopyDetails } from '../../../lib/sealed-copy-edit.mjs'
+
 export default function CollectionItemDetailPage() {
   const params = useParams()
   const supabase = useMemo(() => createClient(), [])
   const [item, setItem] = useState(null)
+  const [copyDraft, setCopyDraft] = useState(null)
+  const [copySaving, setCopySaving] = useState(false)
+  const copySavePending = useRef(false)
+  const [copyMessage, setCopyMessage] = useState('')
   const [photos, setPhotos] = useState([])
   const [activePhoto, setActivePhoto] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -67,7 +74,7 @@ export default function CollectionItemDetailPage() {
         const references = await Promise.all([
           supabase.from('product_contents').select('item_name,quantity,confidence')
             .eq('product_id', itemData.product_id).eq('content_type', 'booster'),
-          supabase.from('products').select('id,name,series,product_type,release_date,current_value,zero_defect_value,currency,price_source,price_updated_at,image_url')
+          supabase.from('products').select('id,name,category,series,product_type,release_date,current_value,zero_defect_value,currency,price_source,price_updated_at,image_url')
             .eq('id', itemData.product_id).maybeSingle(),
           supabase.from('product_price_history').select('price,observed_at,source,condition_tier,observation_type')
             .eq('product_id', itemData.product_id).eq('observation_type', 'confirmed_sale')
@@ -99,6 +106,25 @@ export default function CollectionItemDetailPage() {
       if (isCurrent()) setLoadError('Impossible de charger cette fiche. Vérifie ta connexion puis réessaie.')
     } finally {
       if (isCurrent()) setLoading(false)
+    }
+  }
+
+  async function saveCopy(event) {
+    event.preventDefault()
+    if (copySavePending.current) return
+    copySavePending.current = true
+    setCopySaving(true)
+    setCopyMessage('')
+    try {
+      const saved = await saveSealedCopyDetails(supabase, item.id, copyDraft)
+      setItem(previous => ({ ...previous, ...saved }))
+      setCopyDraft(null)
+      setCopyMessage('Les informations de ton exemplaire sont enregistrées.')
+    } catch (error) {
+      setCopyMessage(error.message || 'Impossible d’enregistrer. Réessaie.')
+    } finally {
+      copySavePending.current = false
+      setCopySaving(false)
     }
   }
 
@@ -398,6 +424,30 @@ export default function CollectionItemDetailPage() {
             {item.purchase_place ? ` • ${item.purchase_place}` : ''}
           </p>
         </div>
+
+        {productInfo?.category === 'sealed' && <section aria-label="Informations personnelles de mon exemplaire">
+          {copyDraft ? <form onSubmit={saveCopy}>
+            <fieldset disabled={copySaving}>
+              <legend>Modifier mon exemplaire</legend>
+              <label>Repère personnel
+                <input required maxLength={200} value={copyDraft.custom_name} onChange={event => setCopyDraft({ ...copyDraft, custom_name: event.target.value })} />
+              </label>
+              <label>Affectation de type dans ma collection
+                <select value={copyDraft.sealed_format_override} onChange={event => setCopyDraft({ ...copyDraft, sealed_format_override: event.target.value })}>
+                  <option value="">Classement automatique</option>
+                  {sealedFormats.map(format => <option key={format.key} value={format.key}>{format.label}</option>)}
+                </select>
+              </label>
+              <p className="muted">Ces informations concernent uniquement ton exemplaire. Le nom et le type du produit de référence restent ceux du catalogue.</p>
+              <button className="btn" type="submit">{copySaving ? 'Enregistrement…' : 'Enregistrer'}</button>
+              <button className="btn ghost" type="button" onClick={() => { setCopyDraft(null); setCopyMessage('') }}>Annuler</button>
+            </fieldset>
+          </form> : <>
+            <p>Type dans ma collection : <strong>{sealedFormats.find(format => format.key === item.sealed_format_override)?.label || 'Classement automatique'}</strong></p>
+            <button className="btn ghost" type="button" onClick={() => { setCopyDraft({ custom_name: item.custom_name || '', sealed_format_override: item.sealed_format_override || '' }); setCopyMessage('') }}>Modifier mon exemplaire</button>
+          </>}
+          {copyMessage && <p role="status">{copyMessage}</p>}
+        </section>}
 
         <div className="itemValueDashboard">
           <div className="itemValueTop">
