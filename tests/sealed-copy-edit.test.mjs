@@ -51,9 +51,29 @@ test('personal assignment overrides conflicting catalog hints and keeps copies i
 test('existing personal type labels are preserved and all proposed types classify independently', async () => {
   const { sealedTypeOptions, sealedFormats } = await import('../lib/sealed-collection-counts.mjs')
   const catalog = { name: 'Case de displays ETB', product_type: 'Case' }
-  sealedTypeOptions.forEach((type, index) => {
-    assert.equal(getSealedFormat({ product_type_override: type, custom_name: 'Case ETB' }, catalog), sealedFormats[index].key, type)
+  const expectedFormatByType = {
+    'ETB': 'etb',
+    'Mini-tin': 'miniTin',
+    'Valisette': 'valisette',
+    'Kit AP': 'prereleaseKit',
+    'Bundle': 'bundle',
+    'Demi-display': 'display',
+    'Display': 'display',
+    'Display de Kits AP': 'display',
+    'Display de mini-tins': 'display',
+    'Display de bundles': 'display',
+    'Pokébox': 'pokebox',
+    'Case': 'case',
+    'Booster': 'booster',
+    'Coffret': 'coffret',
+    'Ultra-Premium Collection': 'premiumCollection',
+    'Super-Premium Collection': 'premiumCollection',
+    'Autre produit scellé': 'other',
+  }
+  sealedTypeOptions.forEach(type => {
+    assert.equal(getSealedFormat({ product_type_override: type, custom_name: 'Case ETB' }, catalog), expectedFormatByType[type], type)
   })
+  assert.equal(sealedFormats.length, 12)
   const db = client()
   await saveSealedCopyDetails(db, 'copy', { custom_name: 'Repère', product_type_override: ' Mon type existant ' })
   assert.equal(db.calls[1][1].product_type_override, 'Mon type existant')
