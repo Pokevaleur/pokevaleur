@@ -5,7 +5,29 @@ import { createClient } from '../lib/supabase-browser'
 import styles from './home.module.css'
 import BrandLogo from './brand-logo'
 
-const categories = [['sealed', 'Scellés'], ['graded', 'Cartes gradées'], ['binder', 'Master sets']]
+const collectionSections = [
+  {
+    name: 'Mes classeurs',
+    description: 'Organise tes cartes par extension, série ou thème.',
+    href: '/collection/classeurs',
+    image: '/collection-desktop-binders.webp',
+    alt: 'Un classeur ouvert avec des cartes Pokémon et plusieurs classeurs de collection',
+  },
+  {
+    name: 'Mes cartes gradées',
+    description: 'Retrouve tes cartes, leurs notes et leurs certifications.',
+    href: '/collection/cartes-gradees/consulter',
+    image: '/collection-desktop-graded.webp',
+    alt: 'Trois cartes de collection gradées et certifiées',
+  },
+  {
+    name: 'Mes produits scellés',
+    description: 'Suis tes boosters, ETB et autres produits scellés.',
+    href: '/collection',
+    image: '/collection-desktop-sealed.webp',
+    alt: 'Des produits Pokémon scellés rangés dans une vitrine',
+  },
+]
 const avatars = ['Loutre', 'Chouette', 'Petit papillon', 'Panda roux', 'Raton laveur', 'Hérisson', 'Phoque', 'Petit galet', 'Alpaga', 'Renard', 'Petit nuage', 'Chat', 'Blaireau', 'Fennec', 'Macareux', 'Petite feuille']
 
 function Art({ kind, label, className = '' }) {
@@ -64,25 +86,25 @@ export default function Home() {
       <div className={styles.heroCopy}>
         <h1>Chaque collection<br/>a ses <span>trésors.</span></h1>
         <p>Scellés, cartes gradées et master sets : organise ta collection et partage ta passion.</p>
-        <a className={styles.join} href={member ? '/collection/accueil' : '/login?next=%2Fcollection%2Faccueil'}>{member ? 'Voir ma collection' : 'Rejoins PokéValeur'}</a>
+        <a className={styles.join} href={member ? '#rubriques-collection' : '/login?next=%2F%23rubriques-collection'}>{member ? 'Accéder à ma collection' : 'Rejoins PokéValeur'}</a>
       </div>
-      <img className={styles.heroArt} src="/accueil/hero-crystals.webp" alt="Un album, un produit scellé et une carte gradée, illustrés comme des trésors de collection" fetchPriority="high"/>
-      <div className={styles.phoneTeaser} aria-hidden="true">
-        <div className={styles.phoneScreen}>
-          <div className={styles.phoneStatus}><span>14:59</span><span>● ▮</span></div>
-          <span className={styles.phoneSpeaker}/>
-          <div className={styles.phoneApp}>
-            <img src="/icon.svg" alt=""/>
-            <span>PokéValeur</span>
-          </div>
-          <div className={styles.phoneDock}><i/><i/><i/></div>
-          <span className={styles.phoneHomeBar}/>
-        </div>
-      </div>
+    </section>
+    <section id="rubriques-collection" className={styles.collectionAccess} aria-label="Accéder aux rubriques de ta collection">
+      {collectionSections.map(section => {
+        const href = member ? section.href : `/login?next=${encodeURIComponent(section.href)}`
+        return (
+          <a className={styles.collectionCard} href={href} key={section.href}>
+            <img src={section.image} alt={section.alt} loading="eager" />
+            <div className={styles.collectionCardCopy}>
+              <div><h2>{section.name}</h2><p>{section.description}</p></div>
+              <span aria-hidden="true">→</span>
+            </div>
+          </a>
+        )
+      })}
     </section>
     <section className={styles.dashboard} aria-label="Les services de PokéValeur, exemples de présentation">
       <ValueChart/>
-      <div className={styles.productTypes}>{categories.map(([kind,label]) => <article className={`${styles.card} ${styles.type}`} key={kind}><Art kind={kind} label={`Illustration : ${label}`}/><h2>{label}</h2></article>)}</div>
       <div className={styles.metrics}>
         <article className={`${styles.card} ${styles.master}`}><Art kind="cards" label="Quelques cartes de collection"/><div><h2>Master set</h2><div className={styles.progressNumber}><strong>186 / 210</strong><small>Exemple</small></div><div className={styles.progress} role="img" aria-label="Exemple : 186 cartes sur 210, soit environ 89 %"><span/></div></div></article>
         <article className={`${styles.card} ${styles.duplicates}`}><Art kind="cards" label="Des exemplaires à comparer"/><div><h2>Doublons à vérifier</h2><p>Compare tes exemplaires.</p></div></article>

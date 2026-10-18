@@ -1,33 +1,6 @@
-'use client'
+import { redirect } from 'next/navigation'
 
-import { useEffect, useMemo, useState } from 'react'
-import { createClient } from '../../../lib/supabase-browser'
-import CollectionMockup from '../../collection-mockup'
-
-export default function CollectionOverviewPage() {
-  const supabase = useMemo(() => createClient(), [])
-  const [ready, setReady] = useState(false)
-
-  useEffect(() => {
-    let active = true
-
-    async function verifySession() {
-      const { data: { user }, error } = await supabase.auth.getUser()
-      if (!active) return
-      if (error || !user) {
-        window.location.replace('/login?next=' + encodeURIComponent('/collection/accueil'))
-        return
-      }
-      setReady(true)
-    }
-
-    verifySession()
-    return () => { active = false }
-  }, [supabase])
-
-  if (!ready) {
-    return <main className="narrow" aria-live="polite"><p>Chargement de ta collection…</p></main>
-  }
-
-  return <CollectionMockup isMember />
+// Keep old bookmarks and links working after the collection overview is folded into home.
+export default function CollectionOverviewRedirect() {
+  redirect('/#rubriques-collection')
 }

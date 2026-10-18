@@ -83,3 +83,33 @@
 /* Entry point from the home page to the beginner guide. */
 .beginnerLink{display:inline-flex;align-items:center;gap:6px;margin-top:8px;color:#173f67;font-size:13px;font-weight:850;text-decoration:underline;text-underline-offset:3px}
 .beginnerLink:focus-visible{outline:3px solid #1476cb;outline-offset:3px;border-radius:3px}
+
+/* Final overrides keep the compact triptych ahead of the older hero artwork rules. */
+.hero{display:block;min-height:0;grid-template-columns:none;padding:clamp(28px,5vw,58px) 5% 24px;background:linear-gradient(118deg,#f3f9ff 0%,#fffaf0 52%,#e7f5ff 100%)}
+.hero:before{display:none}
+.heroCopy{position:relative;max-width:900px;margin:0 auto;text-align:center;text-shadow:none}
+.heroCopy p{max-width:720px;margin:0 auto 20px}
+.hero .join{position:static;left:auto;bottom:auto;width:auto;max-width:none;min-height:54px;margin:0 auto;padding:15px 30px;transform:none;font-size:20px}
+.collectionAccess{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;width:min(1240px,calc(100% - 32px));margin:0 auto 24px;scroll-margin-top:18px}
+.collectionCard{display:flex;min-width:0;flex-direction:column;overflow:hidden;border:1px solid #efdeb3;border-radius:18px;background:#fff;box-shadow:0 6px 20px #0c223b14;color:inherit;text-decoration:none;transition:transform .16s ease,box-shadow .16s ease}
+.collectionCard:hover{transform:translateY(-2px);box-shadow:0 10px 25px #0c223b21}
+.collectionCard:focus-visible{outline:3px solid #1976b9;outline-offset:3px}
+.collectionCard>img{display:block;width:100%;aspect-ratio:1.8;object-fit:cover;background:#f4f7fb}
+.collectionCardCopy{display:flex;flex:1;align-items:center;justify-content:space-between;gap:8px;padding:12px 14px}
+.collectionCardCopy h2{margin:0 0 4px;color:#10233d;font-family:Georgia,serif;font-size:clamp(16px,1.6vw,22px);line-height:1.15}
+.collectionCardCopy p{margin:0;color:#315e90;font-size:clamp(12px,1vw,14px);line-height:1.35}
+.collectionCardCopy>span{display:flex;width:34px;height:34px;flex:0 0 34px;align-items:center;justify-content:center;border-radius:50%;background:#d8a932;color:#fff;font-size:22px}
+.dashboard{margin-top:0}
+@media(max-width:900px){.hero{min-height:0;grid-template-columns:none}.heroCopy{max-width:900px}}
+@media(max-width:600px){
+  .hero{min-height:0;padding:24px 16px 17px}
+  .hero h1{font-size:32px;line-height:1.08;margin:5px 0 10px}
+  .hero p,.heroCopy p{max-width:720px;font-size:15px;line-height:1.35;margin:0 auto 13px}
+  .hero .join{position:static;left:auto;bottom:auto;width:auto;max-width:none;min-height:42px;margin:0 auto;padding:10px 18px;transform:none;font-size:15px}
+  .collectionAccess{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px;width:calc(100% - 16px);margin-bottom:14px}
+  .collectionCard{border-radius:12px;box-shadow:0 3px 10px #0c223b14}
+  .collectionCard>img{aspect-ratio:1.35}
+  .collectionCardCopy{justify-content:center;min-height:42px;padding:6px 4px;text-align:center}
+  .collectionCardCopy h2{margin:0;font-family:inherit;font-size:clamp(10px,3.2vw,13px);line-height:1.12;letter-spacing:-.2px}
+  .collectionCardCopy p,.collectionCardCopy>span{display:none}
+}
