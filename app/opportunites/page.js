@@ -6,28 +6,15 @@ import { fetchAllRows } from '../../lib/supabase-pagination'
 import { summarizeWatchlistHistory } from '../../lib/watchlist-history.mjs'
 import { selectWatchlistOffer } from '../../lib/watchlist-offers.mjs'
 import { findWatchlistProducts } from '../../lib/watchlist-search.mjs'
-import { duplicateFingerprint, duplicateDecision } from '../../lib/duplicate-review.mjs'
-import { summarizeDuplicatePurchasePrices, summarizeDuplicateValues, summarizeDuplicateGroups } from '../../lib/duplicate-purchase-prices.mjs'
 
 function euro(value) {
   if (value == null || Number.isNaN(Number(value))) return '—'
   return new Intl.NumberFormat('fr-FR', { style:'currency', currency:'EUR', maximumFractionDigits:2 }).format(Number(value))
 }
 
-function normalize(value) {
-  return String(value || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim()
-}
-
 export default function OpportunitiesPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState(null)
-  const [items, setItems] = useState([])
-  const [duplicateReviews, setDuplicateReviews] = useState([])
-  const [reviewAvailable, setReviewAvailable] = useState(false)
-  const [reviewSaving, setReviewSaving] = useState(false)
-  const reviewPending = useRef(false)
-  const [duplicateView, setDuplicateView] = useState('pending')
-  const [reviewMessage, setReviewMessage] = useState('')
   const [products, setProducts] = useState([])
   const [watchlist, setWatchlist] = useState([])
   const [history, setHistory] = useState([])
@@ -63,19 +50,13 @@ export default function OpportunitiesPage() {
       if (authError) throw authError
       setUser(user)
       if (!user) {
-        setItems([])
         setWatchlist([])
         setHistory([])
         setOffers([])
         return
       }
 
-      const [itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes] = await Promise.all([
-        fetchAllRows(() => supabase.from('collection_items')
-          .select('id,product_id,custom_name,quantity,purchase_price,current_value_override,sealed_condition,purchase_date,variant_note,booster_configuration,booster_artwork,collection_profiles!inner(profile_type)')
-          .eq('collection_profiles.profile_type', 'personal')
-          .order('created_at', { ascending: true })
-          .order('id', { ascending: true })),
+      const [productsRes, watchRes, historyRes, prefsRes, offersRes] = await Promise.all([
         fetchAllRows(() => supabase.from('products').select('id,name,series,product_type,current_value,zero_defect_value,price_updated_at').eq('is_public', true).order('name').order('id')),
         fetchAllRows(() => supabase.from('product_watchlist').select('id,product_id,target_price,max_price,notes,active,created_at').eq('user_id', user.id).eq('active', true).order('created_at', { ascending:false }).order('id')),
         fetchAllRows(() => supabase.from('product_price_history').select('product_id,price,observed_at,condition_tier,observation_type').eq('observation_type','confirmed_sale').order('observed_at', { ascending:true }).order('id')),
@@ -84,14 +65,9 @@ export default function OpportunitiesPage() {
       ])
 
       if (request !== loadRequestRef.current) return
-      if ([itemsRes, productsRes, watchRes, historyRes, prefsRes, offersRes].some(result => result.error)) {
+      if ([productsRes, watchRes, historyRes, prefsRes, offersRes].some(result => result.error)) {
         throw new Error('Le tableau de bord n’a pas pu être chargé.')
       }
-      const reviewResult = await supabase.from('collection_duplicate_reviews').select('group_key,fingerprint,decision').eq('user_id',user.id)
-      if (request !== loadRequestRef.current) return
-      setReviewAvailable(!reviewResult.error)
-      setDuplicateReviews(reviewResult.data || [])
-      setItems(itemsRes.data || [])
       setProducts(productsRes.data || [])
       setWatchlist(watchRes.data || [])
       setTargetDrafts({})
@@ -105,56 +81,13 @@ export default function OpportunitiesPage() {
         alert_watchlist_price:prefsRes.data?.alert_watchlist_price ?? true
       })
     } catch {
-      if (request === loadRequestRef.current) setLoadError('Impossible de charger tes doublons et ta watchlist. Réessaie dans un instant.')
+      if (request === loadRequestRef.current) setLoadError('Impossible de charger ta watchlist. Réessaie dans un instant.')
     } finally {
       if (request === loadRequestRef.current) setLoading(false)
     }
   }
 
   const productById = useMemo(() => Object.fromEntries(products.map(p => [p.id,p])), [products])
-
-  const duplicateGroups = useMemo(() => {
-    const groups = new Map()
-    items.forEach(item => {
-      const customName = normalize(item.custom_name)
-      const key = item.product_id ? `product:${item.product_id}`
-        : customName ? `custom:${customName}` : `item:${item.id}`
-      const product = item.product_id ? productById[item.product_id] : null
-      const currentValue = item.current_value_override != null
-        ? Number(item.current_value_override)
-        : item.sealed_condition === 'zero_defect' && product?.zero_defect_value != null
-          ? Number(product.zero_defect_value)
-          : product?.current_value != null
-            ? Number(product.current_value)
-            : null
-
-      if (!groups.has(key)) {
-        groups.set(key, {
-          key,
-          productId:item.product_id,
-          name:product?.name || item.custom_name,
-          series:product?.series || '',
-          quantity:0,
-          currentValue:currentValue,
-          rows:[]
-        })
-      }
-      const g = groups.get(key)
-      const q = Number(item.quantity || 1)
-      g.quantity += q
-      g.rows.push({ ...item, estimatedUnitValue: currentValue })
-    })
-
-    return [...groups.values()]
-      .filter(g => g.quantity > 1)
-      .map(g => {
-        const sellable = g.quantity - 1
-        const valueStats = summarizeDuplicateValues(g.rows)
-        const purchaseStats = summarizeDuplicatePurchasePrices(g.rows, valueStats.currentValue)
-        return { ...g, sellable, ...valueStats, ...purchaseStats }
-      })
-      .sort((a,b) => (b.estimatedSaleValue ?? -1) - (a.estimatedSaleValue ?? -1))
-  }, [items, productById])
 
   const watchRows = useMemo(() => watchlist.map(w => {
     const product = productById[w.product_id]
@@ -253,22 +186,6 @@ export default function OpportunitiesPage() {
     if (!confirmed) restore()
   }
 
-  async function reviewDuplicates(group, decision) {
-    if (!reviewAvailable || reviewPending.current) return
-    reviewPending.current = true
-    setReviewSaving(true)
-    setReviewMessage('Enregistrement…')
-    try {
-      const { data, error } = await supabase.from('collection_duplicate_reviews').upsert({
-        user_id:user.id, group_key:group.key, fingerprint:duplicateFingerprint(group.rows), decision, updated_at:new Date().toISOString()
-      }, { onConflict:'user_id,group_key' }).select('group_key,fingerprint,decision').single()
-      if (error || !data) throw error || new Error('Confirmation absente')
-      setDuplicateReviews(previous => [...previous.filter(r=>r.group_key!==group.key),data])
-      setReviewMessage(decision === 'confirmed' ? 'Identité des exemplaires confirmée. Aucune mise en vente effectuée.' : 'Groupe écarté : articles différents.')
-    } catch { setReviewMessage('Validation non enregistrée. Réessaie.') }
-    finally { reviewPending.current=false; setReviewSaving(false) }
-  }
-
   async function saveNotificationPreferences(e) {
     e.preventDefault()
     if (!user || notificationSavingRef.current) return
@@ -299,7 +216,7 @@ export default function OpportunitiesPage() {
 
   if (loadError) return (
     <main className="narrow"><section className="panel">
-      <h1>Doublons & Watchlist</h1>
+      <h1>Ma watchlist</h1>
       <p role="alert">{loadError}</p>
       <button className="btn" type="button" onClick={load}>Réessayer</button>
     </section></main>
@@ -308,14 +225,13 @@ export default function OpportunitiesPage() {
   if (!user) return (
     <main className="narrow">
       <section className="panel">
-        <h1>Doublons & Watchlist</h1>
-        <p>Connecte-toi pour accéder à tes doublons et à ta veille de prix.</p>
+        <h1>Ma watchlist</h1>
+        <p>Connecte-toi pour suivre les produits que tu recherches.</p>
         <a className="btn" href="/login?next=%2Fopportunites">Connexion / inscription</a>
       </section>
     </main>
   )
 
-  const { totalDuplicates, possibleDuplicates, incompleteValuation, salePotential } = summarizeDuplicateGroups(duplicateGroups.filter(g=>duplicateDecision(g,duplicateReviews)==='confirmed').map(g=>({...g,productId:g.productId || 'validated'})))
   const opportunities = watchRows.filter(w => w.opportunity).length
 
   return (
@@ -323,89 +239,20 @@ export default function OpportunitiesPage() {
       <div className="collectionHeader">
         <div>
           <span className="eyebrow dark">Assistant collectionneur</span>
-          <h1>Doublons & Watchlist</h1>
-          <p className="muted">Vérifie tes exemplaires et suis les produits que tu recherches.</p>
+          <h1>Ma watchlist</h1>
+          <p className="muted">Suis les produits que tu recherches et repère les prix sous ton objectif.</p>
         </div>
         <div className="collectionHeaderActions">
           <a className="backLink" href="/collection">← Ma collection</a>
         </div>
       </div>
 
-      <nav className="opportunitiesNav" aria-label="Rubriques"><a href="#mes-exemplaires">Mes exemplaires</a><a href="#ma-watchlist">Ma watchlist</a></nav>
       <section className="stats">
-        <div><span>Exemplaires en surplus validés</span><strong>{totalDuplicates}</strong></div>
-        <div><span>Estimation du surplus validé{incompleteValuation ? ' (partielle)' : ''}</span><strong>{euro(salePotential)}</strong></div>
         <div><span>Watchlist</span><strong>{watchRows.length}</strong></div>
         <div><span>Prix sous objectif</span><strong>{opportunities}</strong></div>
       </section>
 
-      <section style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(min(100%,320px),1fr))',gap:'18px'}}>
-        <section className="panel" id="mes-exemplaires">
-          <h2>Vérifier mes exemplaires</h2>
-          <p className="muted">Même référence, même variante ? Compare avant de confirmer. Ta collection reste inchangée.</p>
-          <div className="duplicateReviewTabs" aria-label="État de vérification">
-            {[['pending','À vérifier'],['confirmed','Doublons validés'],['different','Écartés']].map(([key,label])=><button type="button" key={key} className="miniBtn" aria-pressed={duplicateView===key} onClick={()=>setDuplicateView(key)}>{label} ({duplicateGroups.filter(g=>duplicateDecision(g,duplicateReviews)===key).length})</button>)}
-          </div>
-          {!reviewAvailable && <p className="message">La validation n’est pas encore disponible. Aucun groupe n’est considéré comme validé.</p>}
-          {reviewMessage && <p role="status" className="message">{reviewMessage}</p>}
-          {duplicateGroups.filter(g=>duplicateDecision(g,duplicateReviews)===duplicateView).length === 0 ? (
-            <p>Aucun groupe dans cette rubrique.</p>
-          ) : (
-            <div className="productList">
-              {duplicateGroups.filter(g=>duplicateDecision(g,duplicateReviews)===duplicateView).map((g,index) => (
-                <article className="productCard" key={g.key}>
-                  <div className="productMain">
-                    <div>
-                      <span className="catalogBadge">{duplicateView==='confirmed' ? 'Identité confirmée par toi' : duplicateView==='different' ? 'Articles différents' : 'Articles similaires · à vérifier'}</span>
-                      <h3>{g.name}</h3>
-                      <p>{g.series || 'Série non renseignée'} • {g.quantity} possédé{g.quantity > 1 ? 's' : ''}{duplicateView==='confirmed' ? ` • ${g.sellable} en surplus si tu en conserves un` : ''}</p>
-                    </div>
-                    <div className="productValues">
-                      <b>{g.currentValue == null ? 'Valeur non renseignée' : `${euro(g.currentValue)} / unité en moyenne`}</b>
-                      <span className={g.unitGain == null ? 'muted' : g.unitGain >= 0 ? 'gain' : 'loss'}>
-                        {g.unitGain == null ? 'Gain non calculable' : `${g.unitGain >= 0 ? '+' : ''}${euro(g.unitGain)} vs achat moyen`}
-                      </span>
-                    </div>
-                  </div>
-                  {duplicateView === 'confirmed' && <div className="marketStats">
-                    <div><span>Achat moyen{g.missingPurchaseCount > 0 ? ' (partiel)' : ''}</span><strong>{euro(g.avgBuy)}</strong></div>
-                    <div><span>À conserver</span><strong>1</strong></div>
-                    <div><span>Surplus potentiel</span><strong>{g.sellable}</strong></div>
-                    <div><span>Estimation du surplus</span><strong>{euro(g.estimatedSaleValue)}</strong></div>
-                  </div>
-                  }
-                  {duplicateView==='confirmed' && g.missingValueCount > 0 && <p className="muted">Valeur manquante pour {g.missingValueCount} exemplaire{g.missingValueCount > 1 ? 's' : ''}. Estimation de revente non calculable.</p>}
-                  {!g.productId && duplicateView==='pending' && <p className="muted">Ces fiches sont regroupées par leur nom, sans référence catalogue commune. Vérifie qu’il s’agit du même produit avant de considérer les exemplaires comme des doublons.</p>}
-                  {duplicateView==='confirmed' && <p className="muted">Estimation en conservant l’exemplaire de plus forte valeur. Les autres sont évalués selon leur état et leur valeur renseignée.</p>}
-                  {g.missingPurchaseCount > 0 && <p className="muted">Prix d’achat non renseigné pour {g.missingPurchaseCount} exemplaire{g.missingPurchaseCount > 1 ? 's' : ''}. La moyenne porte sur les achats connus ; le gain comparatif n’est pas calculé.</p>}
-                  <details open={duplicateView==='pending'} style={{ marginTop: 12 }}>
-                    <summary style={{ cursor: 'pointer', fontWeight: 700 }}>Voir mes exemplaires · {g.rows.length} fiche{g.rows.length > 1 ? 's' : ''}</summary>
-                    <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
-                      {g.rows.map(item => (
-                        <div key={item.id} style={{ padding: 12, border: '1px solid var(--border)', borderRadius: 10, minWidth: 0 }}>
-                          <strong>{item.custom_name || g.name}</strong>
-                          <p style={{ margin: '6px 0', overflowWrap: 'anywhere' }}>
-                            {item.quantity || 1} exemplaire{Number(item.quantity || 1) > 1 ? 's' : ''} · {item.sealed_condition === 'zero_defect' ? 'Zéro défaut' : 'État standard'}
-                            {' · Achat : '}{item.purchase_price == null ? 'Non renseigné' : euro(item.purchase_price)}
-                            {item.purchase_date && ` · ${new Date(item.purchase_date + 'T12:00:00').toLocaleDateString('fr-FR')}`}
-                          </p>
-                          {(item.variant_note || item.booster_configuration || item.booster_artwork) && <p className="muted">{[item.variant_note,item.booster_configuration,item.booster_artwork].filter(Boolean).join(' · ')}</p>}
-                          <a className="miniBtn" href={`/collection/${item.id}`}>Ouvrir cette fiche →</a>
-                        </div>
-                      ))}
-                    </div>
-                  </details>
-                  <div className="duplicateReviewActions">
-                    <button type="button" className="miniBtn" disabled={!reviewAvailable || reviewSaving} onClick={()=>reviewDuplicates(g,'confirmed')}>Même produit et même variante</button>
-                    <button type="button" className="miniBtn" disabled={!reviewAvailable || reviewSaving} onClick={()=>reviewDuplicates(g,'different')}>Ce sont des articles différents</button>
-                  </div>
-                </article>
-              ))}
-            </div>
-          )}
-        </section>
-
-        <section className="panel" id="ma-watchlist">
+      <section className="panel" id="ma-watchlist">        <section className="panel" id="ma-watchlist">
           <h2>Ma watchlist</h2>
           <p className="muted">Ajoute un produit et fixe, si tu le souhaites, un prix auquel tu veux être alerté.</p>
 
@@ -506,7 +353,6 @@ export default function OpportunitiesPage() {
             ))}
           </div>
         </section>
-      </section>
 
       <section className="panel" style={{marginTop:'18px'}}>
         <h2>🔔 Mes préférences d’alerte</h2>
