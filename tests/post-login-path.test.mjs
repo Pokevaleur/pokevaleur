@@ -9,13 +9,17 @@ test('the current product takes precedence over a saved invitation', () => {
 test('a saved invitation still works without a current destination', () => {
   assert.equal(resolvePostLoginPath(origin, null, '/collection/rejoindre?token=saved'), '/collection/rejoindre?token=saved')
 })
-test('a login without a requested or saved destination opens the collection home', () => {
-  assert.equal(resolvePostLoginPath(origin, null, null), '/collection/accueil')
+test('a login without a requested or saved destination opens the unified collection home', () => {
+  assert.equal(resolvePostLoginPath(origin, null, null), '/#rubriques-collection')
 })
 test('external destinations and lookalike paths are rejected', () => {
   for (const path of ['https://example.org/collection', '//example.org/collection', '/collection-fake', '/catalogue-fake', 'https://example.org/catalogue#proposer-produit', 'javascript:alert(1)']) {
-    assert.equal(resolvePostLoginPath(origin, path, null), '/collection/accueil')
+    assert.equal(resolvePostLoginPath(origin, path, null), '/#rubriques-collection')
   }
+})
+
+test('the public home collection section is an allowed post-login destination', () => {
+  assert.equal(resolvePostLoginPath(origin, '/#rubriques-collection', null), '/#rubriques-collection')
 })
 
 test('login returns to the catalogue proposal instead of a stale saved invitation', () => {
