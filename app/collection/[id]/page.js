@@ -5,7 +5,7 @@ import { useParams } from 'next/navigation'
 import { createClient } from '../../../lib/supabase-browser'
 import { saveUploadedPhotoBatch, uploadUnlinkedPhotoBatch } from '../../../lib/collection-photo-save.mjs'
 
-import { sealedFormats } from '../../../lib/sealed-collection-counts.mjs'
+import { sealedTypeOptions } from '../../../lib/sealed-collection-counts.mjs'
 import { saveSealedCopyDetails } from '../../../lib/sealed-copy-edit.mjs'
 
 export default function CollectionItemDetailPage() {
@@ -433,9 +433,10 @@ export default function CollectionItemDetailPage() {
                 <input required maxLength={200} value={copyDraft.custom_name} onChange={event => setCopyDraft({ ...copyDraft, custom_name: event.target.value })} />
               </label>
               <label>Affectation de type dans ma collection
-                <select value={copyDraft.sealed_format_override} onChange={event => setCopyDraft({ ...copyDraft, sealed_format_override: event.target.value })}>
+                <select value={copyDraft.product_type_override} onChange={event => setCopyDraft({ ...copyDraft, product_type_override: event.target.value })}>
                   <option value="">Classement automatique</option>
-                  {sealedFormats.map(format => <option key={format.key} value={format.key}>{format.label}</option>)}
+                  {copyDraft.product_type_override && !sealedTypeOptions.includes(copyDraft.product_type_override) && <option value={copyDraft.product_type_override}>{copyDraft.product_type_override}</option>}
+                  {sealedTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
                 </select>
               </label>
               <p className="muted">Ces informations concernent uniquement ton exemplaire. Le nom et le type du produit de référence restent ceux du catalogue.</p>
@@ -443,8 +444,8 @@ export default function CollectionItemDetailPage() {
               <button className="btn ghost" type="button" onClick={() => { setCopyDraft(null); setCopyMessage('') }}>Annuler</button>
             </fieldset>
           </form> : <>
-            <p>Type dans ma collection : <strong>{sealedFormats.find(format => format.key === item.sealed_format_override)?.label || 'Classement automatique'}</strong></p>
-            <button className="btn ghost" type="button" onClick={() => { setCopyDraft({ custom_name: item.custom_name || '', sealed_format_override: item.sealed_format_override || '' }); setCopyMessage('') }}>Modifier mon exemplaire</button>
+            <p>Type dans ma collection : <strong>{item.product_type_override?.trim() || 'Classement automatique'}</strong></p>
+            <button className="btn ghost" type="button" onClick={() => { setCopyDraft({ custom_name: item.custom_name || '', product_type_override: item.product_type_override || '' }); setCopyMessage('') }}>Modifier mon exemplaire</button>
           </>}
           {copyMessage && <p role="status">{copyMessage}</p>}
         </section>}
