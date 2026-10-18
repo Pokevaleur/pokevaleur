@@ -12,24 +12,24 @@ export const viewport = {
 export const metadata = {
   metadataBase: new URL('https://www.pokevaleur.fr'),
   title: {
-    default: 'PokéValeur – collection Pokémon',
+    default: 'PokéValeur – suivi de collection Pokémon',
     template: '%s | PokéValeur'
   },
   manifest: '/manifest.json',
   applicationName: 'PokéValeur',
-  description: 'Suivez, estimez et organisez votre collection de cartes Pokémon et de produits scellés.',
+  description: 'PokéValeur est un service français pour organiser et suivre sa collection Pokémon : cartes, classeurs, cartes gradées et produits scellés.',
   openGraph: {
     type: 'website',
     locale: 'fr_FR',
     siteName: 'PokéValeur',
-    title: 'PokéValeur – collection Pokémon',
-    description: 'Suivez, estimez et organisez votre collection de cartes Pokémon et de produits scellés.',
+    title: 'PokéValeur – suivi de collection Pokémon',
+    description: 'PokéValeur est un service français pour organiser et suivre sa collection Pokémon : cartes, classeurs, cartes gradées et produits scellés.',
     images: [{ url: '/opengraph-image', width: 1200, height: 630, alt: 'PokéValeur, organise ta collection Pokémon' }]
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'PokéValeur – collection Pokémon',
-    description: 'Suivez, estimez et organisez votre collection de cartes Pokémon et de produits scellés.',
+    title: 'PokéValeur – suivi de collection Pokémon',
+    description: 'PokéValeur est un service français pour organiser et suivre sa collection Pokémon : cartes, classeurs, cartes gradées et produits scellés.',
     images: ['/opengraph-image']
   }
 }
@@ -47,6 +47,8 @@ export default function RootLayout({ children }) {
             '@context': 'https://schema.org',
             '@type': 'Organization',
             name: 'PokéValeur',
+            alternateName: 'PokéValeur.fr',
+            description: 'Service français indépendant pour organiser et suivre une collection Pokémon.',
             url: 'https://www.pokevaleur.fr',
             logo: 'https://www.pokevaleur.fr/icon.svg'
           },
@@ -54,6 +56,7 @@ export default function RootLayout({ children }) {
             '@context': 'https://schema.org',
             '@type': 'WebSite',
             name: 'PokéValeur',
+            alternateName: 'PokéValeur.fr',
             url: 'https://www.pokevaleur.fr',
             inLanguage: 'fr-FR',
             potentialAction: {

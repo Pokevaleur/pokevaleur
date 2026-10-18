@@ -1,12 +1,12 @@
 import HomeClient from './home-client'
 
 export const metadata = {
-  title: 'Collection Pokémon : cartes, scellés et master sets',
-  description: 'Organise ta collection Pokémon : cartes, produits scellés et master sets. Suis les quantités et estime la valeur de tes articles.',
+  title: { absolute: 'PokéValeur – organiser et suivre sa collection Pokémon' },
+  description: 'Sur PokéValeur, organise et suis ta collection Pokémon : cartes, classeurs, cartes gradées et produits scellés. Garde un œil sur tes quantités et estimations.',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'PokéValeur – organise ta collection Pokémon',
-    description: 'Cartes, produits scellés et master sets : organise et estime ta collection Pokémon.',
+    description: 'Cartes, classeurs, cartes gradées et produits scellés : organise et suis ta collection sur PokéValeur.',
     url: 'https://www.pokevaleur.fr'
   }
 }
