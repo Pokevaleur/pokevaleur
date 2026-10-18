@@ -34,6 +34,27 @@ test('preserves quantity within each individual collection fiche', () => {
   assert.deepEqual(result.map(entry => entry.quantity), [1, 1])
 })
 
+
+test('keeps Artsets and loose boosters in their own parent format with subtypes', () => {
+  const products = [
+    { id: 'display', name: 'Display 36 boosters', category: 'sealed', product_type: 'Display' },
+    { id: 'artset', name: 'Artset 4 boosters Écarlate et Violet – Forces Temporelles', category: 'sealed', product_type: 'Artset' },
+    { id: 'loose', name: 'Booster loose – Soleil et Lune – Ultra-Prisme', category: 'sealed', product_type: 'Booster loose' },
+  ]
+  const items = [
+    { id: 'display-item', product_id: 'display', quantity: 1 },
+    { id: 'artset-item', product_id: 'artset', quantity: 1, custom_name: 'non pesés non triés sortis de display' },
+    { id: 'loose-item', product_id: 'loose', quantity: 1, custom_name: 'booster loose sorti display' },
+  ]
+
+  const displays = buildSealedProductDetails(items, products, 'display')
+  const boosters = buildSealedProductDetails(items, products, 'booster')
+
+  assert.deepEqual(displays.map(item => item.collectionItemId), ['display-item'])
+  assert.deepEqual(boosters.map(item => item.subtype), ['Artsets', 'Boosters à l’unité'])
+  assert.deepEqual(boosters.map(item => item.collectionItemId), ['artset-item', 'loose-item'])
+})
+
 test('shows display subtypes and UPC/SPC subtypes without combining collection fiches', () => {
   const products = [
     { id: 'mini-display', name: 'Display de 10 Mini Tins', category: 'sealed', product_type: 'Display de mini-tins' },

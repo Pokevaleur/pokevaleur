@@ -778,7 +778,7 @@ export default function CollectionPage() {
     return buildSealedProductDetails(items, catalog, selectedSealedFormat)
   }, [catalog, items, selectedSealedFormat])
   const sealedSubtypeCounts = useMemo(() => {
-    if (!['display', 'premiumCollection'].includes(selectedSealedFormat)) return []
+    if (!['display', 'booster', 'premiumCollection'].includes(selectedSealedFormat)) return []
     const counts = new Map()
     for (const item of sealedProductDetails) {
       if (item.subtype) counts.set(item.subtype, (counts.get(item.subtype) || 0) + item.quantity)

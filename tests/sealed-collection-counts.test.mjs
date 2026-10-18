@@ -97,6 +97,25 @@ test('ignores products outside the sealed catalog category', () => {
   assert.equal(result.formats.find(format => format.key === 'booster').count, 2)
 })
 
+
+test('Artsets and loose boosters stay out of Displays even when collection notes mention displays', () => {
+  const products = [
+    { id: 'artset', category: 'sealed', product_type: 'Artset', name: 'Artset 4 boosters Écarlate et Violet – Forces Temporelles' },
+    { id: 'loose', category: 'sealed', product_type: 'Booster loose', name: 'Booster loose – Soleil et Lune – Ultra-Prisme' },
+    { id: 'display', category: 'sealed', product_type: 'Display', name: 'Display 36 boosters' },
+  ]
+  const result = calculateSealedFormatCounts([
+    { product_id: 'artset', quantity: 1, custom_name: 'boosters non pesés non triés sortis de display' },
+    { product_id: 'loose', quantity: 1, custom_name: 'booster loose sorti display' },
+    { product_id: 'display', quantity: 1, custom_name: 'display opened' },
+  ], products)
+  const counts = Object.fromEntries(result.formats.map(format => [format.key, format.count]))
+
+  assert.equal(counts.booster, 2)
+  assert.equal(counts.display, 1)
+  assert.equal(result.total, 3)
+})
+
 test('groups UPC and SPC together while allowing a personal UPC type', () => {
   const products = [
     { id: 'upc', category: 'sealed', product_type: 'Ultra-Premium Collection', name: 'Collection Ultra-Premium Célébrations' },
