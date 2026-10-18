@@ -1532,3 +1532,12 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .adminSimpleList>a>span{min-width:0;overflow-wrap:anywhere}
 .adminSimpleList>a b{flex:none;text-align:right}
 @media(max-width:850px){.adminPriceForm{grid-template-columns:minmax(0,1fr)}}
+
+
+/* Compact counts for grouped sealed-product subtypes */
+.collectionSealedSubtypeBreakdown{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0 0 12px;padding:11px 12px;border:1px solid #e8e2d7;border-radius:12px;background:#fffaf0;color:#35445a}
+.collectionSealedSubtypeBreakdown>strong{flex:0 0 100%;color:#172b43;font-size:.9rem}
+.collectionSealedSubtypeBreakdown ul{display:flex;flex-wrap:wrap;gap:7px;margin:0;padding:0;list-style:none}
+.collectionSealedSubtypeBreakdown li{display:inline-flex;align-items:center;gap:8px;padding:6px 9px;border:1px solid #eee4cf;border-radius:999px;background:#fff;font-size:.84rem}
+.collectionSealedSubtypeBreakdown li b{color:#172b43}
+@media(max-width:700px){.collectionSealedSubtypeBreakdown{gap:7px;margin-bottom:9px;padding:9px}.collectionSealedSubtypeBreakdown ul{gap:6px}.collectionSealedSubtypeBreakdown li{padding:6px 8px;font-size:.8rem}}
