@@ -71,6 +71,19 @@ test('a Case stays separate and a coffret-typed Pokébox remains a coffret', () 
   assert.equal(result.total, 6)
 })
 
+
+test('a personal type override controls the parent format despite catalog wording', () => {
+  const result = calculateSealedFormatCounts([
+    { product_id: 'mixed-name', quantity: 1, product_type_override: 'Booster' },
+  ], [
+    { id: 'mixed-name', category: 'sealed', product_type: 'Display', name: 'Display de 36 boosters' },
+  ])
+  const counts = Object.fromEntries(result.formats.map(format => [format.key, format.count]))
+
+  assert.equal(counts.booster, 1)
+  assert.equal(counts.display, 0)
+})
+
 test('ignores products outside the sealed catalog category', () => {
   const result = calculateSealedFormatCounts([
     { product_id: 'card', quantity: 3 },
