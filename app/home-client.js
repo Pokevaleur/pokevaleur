@@ -118,14 +118,16 @@ export default function Home() {
           </div>
           <div className={styles.shortcutCopy}>
             <h2>PokéValeur à portée de main</h2>
-            <p>Ajoute un raccourci sur ton écran d’accueil pour le retrouver en un geste.</p>
-            <button type="button" onClick={() => window.dispatchEvent(new Event('pokevaleur-open-install-help'))}>Comment faire ? <span aria-hidden="true">→</span></button>
+            <div className={styles.featureDetails}>
+              <p>Ajoute un raccourci sur ton écran d’accueil pour le retrouver en un geste.</p>
+              <button className={styles.featureAction} type="button" aria-label="Comment ajouter PokéValeur à l’écran d’accueil ?" title="Comment faire ?" onClick={() => window.dispatchEvent(new Event('pokevaleur-open-install-help'))}><span aria-hidden="true">→</span></button>
+            </div>
           </div>
         </article>
       </div>
       <div className={styles.services}>
         <article className={`${styles.card} ${styles.missing}`}><Art kind="missing" label="Un emplacement de carte à compléter"/><div><h2>Trouve la pièce manquante</h2><p>Complète tes séries grâce aux échanges entre passionnés.</p></div></article>
-        <article className={`${styles.card} ${styles.beginnerFeature}`}><Art kind="beginner" label="Des livres pour apprendre"/><div><h2>Tu débutes ?</h2><p>Des conseils pour constituer ta collection à ton rythme.</p><a className={styles.beginnerLink} href="/guide#bien-debuter">Découvrir le guide <span aria-hidden="true">→</span></a></div></article>
+        <article className={`${styles.card} ${styles.beginnerFeature}`}><Art kind="beginner" label="Des livres pour apprendre"/><div><h2>Tu débutes ?</h2><div className={styles.featureDetails}><p>Des conseils pour constituer ta collection à ton rythme.</p><a className={styles.featureAction} href="/guide#bien-debuter" aria-label="Découvrir le guide pour débuter" title="Découvrir le guide"><span aria-hidden="true">→</span></a></div></div></article>
       </div>
     </section>
     <section className={styles.social} aria-label="Partager sa passion et apprendre avec Lukulu">
