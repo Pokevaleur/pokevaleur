@@ -252,7 +252,7 @@ export default function OpportunitiesPage() {
         <div><span>Prix sous objectif</span><strong>{opportunities}</strong></div>
       </section>
 
-      <section className="panel" id="ma-watchlist">        <section className="panel" id="ma-watchlist">
+      <section className="panel" id="ma-watchlist">
           <h2>Ma watchlist</h2>
           <p className="muted">Ajoute un produit et fixe, si tu le souhaites, un prix auquel tu veux être alerté.</p>
 
