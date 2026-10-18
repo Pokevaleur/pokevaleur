@@ -120,6 +120,7 @@
 
 /* Homepage onboarding cards: keep the guidance readable at every width. */
 .services{grid-template-columns:minmax(0,1fr)}
+.metrics{grid-template-columns:minmax(0,1fr)}
 .beginnerFeature{display:flex;align-items:center;grid-column:1/-1;width:100%;min-height:112px;padding:18px 22px;gap:16px}
 .beginnerFeature>.art{width:58px;height:64px;flex:0 0 58px}
 .beginnerFeature>div{min-width:0}
