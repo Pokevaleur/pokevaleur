@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { calculateSealedFormatCounts } from '../lib/sealed-collection-counts.mjs'
+import { calculateSealedFormatCounts, getSealedSubtype } from '../lib/sealed-collection-counts.mjs'
 
 test('counts sealed copies by parent format and keeps totals reconciled', () => {
   const products = [
@@ -82,6 +82,27 @@ test('a personal type override controls the parent format despite catalog wordin
 
   assert.equal(counts.booster, 1)
   assert.equal(counts.display, 0)
+})
+
+test('Duo Packs and Play! Pokémon prize packs belong to Boosters et blisters with clear subtypes', () => {
+  const products = [
+    { id: 'duo-space', category: 'sealed', product_type: 'Duo Pack', name: 'Duo Pack Ténèbres Embrasées' },
+    { id: 'duo-compact', category: 'sealed', product_type: 'DuoPack', name: 'Ténèbres Embrasées / Clash des Rebelles' },
+    { id: 'prize-fr', category: 'sealed', product_type: 'Pack Récompense', name: 'Pack Récompense Play! Pokémon – Série 4' },
+    { id: 'prize-en', category: 'sealed', product_type: 'Booster', name: 'Play! Pokémon Prize Pack Series 4' },
+    { id: 'other', category: 'sealed', product_type: '', name: 'Objet scellé spécial' },
+  ]
+  const items = products.map(product => ({ product_id: product.id }))
+  const result = calculateSealedFormatCounts(items, products)
+  const counts = Object.fromEntries(result.formats.map(format => [format.key, format.count]))
+
+  assert.equal(counts.booster, 4)
+  assert.equal(counts.other, 1)
+  assert.equal(result.total, 5)
+  assert.equal(getSealedSubtype(items[0], products[0]), 'Duo Packs')
+  assert.equal(getSealedSubtype(items[1], products[1]), 'Duo Packs')
+  assert.equal(getSealedSubtype(items[2], products[2]), 'Packs Récompense')
+  assert.equal(getSealedSubtype(items[3], products[3]), 'Packs Récompense')
 })
 
 test('ignores products outside the sealed catalog category', () => {
