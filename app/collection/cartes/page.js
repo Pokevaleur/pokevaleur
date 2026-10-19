@@ -714,6 +714,23 @@ export default function CardChecklistPage() {
   const missingVariantRows = cards.flatMap(card => (card.card_print_variants || [])
     .filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && !(owned[variant.id] || []).length)
     .map(variant => ({ card, variant, label: missingVariantLabel(variant) })))
+  const missingCardsForCopy = collectionFilter === 'missing' && isGlobalSearchView
+    ? visibleCards.map(card => {
+      const cardMissingVariants = (card.card_print_variants || [])
+        .filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && !(owned[variant.id] || []).length)
+      return { card, variants: cardMissingVariants }
+    }).filter(entry => entry.variants.length)
+      .sort((a, b) => {
+        const aSet = Array.isArray(a.card.card_sets) ? a.card.card_sets[0] : a.card.card_sets
+        const bSet = Array.isArray(b.card.card_sets) ? b.card.card_sets[0] : b.card.card_sets
+        const aReleaseDate = sets.find(set => set.id === a.card.card_set_id)?.release_date || ''
+        const bReleaseDate = sets.find(set => set.id === b.card.card_set_id)?.release_date || ''
+        return (aReleaseDate && bReleaseDate ? aReleaseDate.localeCompare(bReleaseDate) : aReleaseDate ? -1 : bReleaseDate ? 1 : 0)
+          || String(aSet?.set_name || '').localeCompare(String(bSet?.set_name || ''), 'fr')
+          || String(a.card.collector_number || '').localeCompare(String(b.card.collector_number || ''), 'fr', { numeric: true })
+          || String(a.card.card_name || '').localeCompare(String(b.card.card_name || ''), 'fr')
+      })
+    : []
   const missingVariantGroups = [...new Map(missingVariantRows.map(row => [row.variant.variant_key, {
     key: row.variant.variant_key,
     label: row.label,
@@ -1019,6 +1036,37 @@ export default function CardChecklistPage() {
         return
       }
       setNotice('Impossible de partager le PDF. Tu peux le télécharger depuis cet aperçu.')
+    }
+  }
+
+  async function copyGlobalMissingCards() {
+    if (!missingCardsForCopy.length) {
+      setNotice('Aucune carte manquante dans les résultats.')
+      return
+    }
+    const textToCopy = missingCardsForCopy.map(({ card, variants }) => {
+      const cardSet = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+      const missingLabels = [...new Set(variants.map(missingVariantLabel))]
+      return 'N° ' + card.collector_number + ' — ' + card.card_name + ' — ' + (cardSet?.set_name || 'Série inconnue') + ' — Manque : ' + missingLabels.join(', ')
+    }).join('\n')
+    try {
+      if (navigator.clipboard?.writeText) {
+        await navigator.clipboard.writeText(textToCopy)
+      } else {
+        const textarea = document.createElement('textarea')
+        textarea.value = textToCopy
+        textarea.setAttribute('readonly', '')
+        textarea.style.position = 'fixed'
+        textarea.style.opacity = '0'
+        document.body.appendChild(textarea)
+        textarea.select()
+        const copied = document.execCommand('copy')
+        textarea.remove()
+        if (!copied) throw new Error('La copie n’est pas disponible dans ce navigateur.')
+      }
+      setNotice(missingCardsForCopy.length + ' carte' + (missingCardsForCopy.length > 1 ? 's' : '') + ' manquante' + (missingCardsForCopy.length > 1 ? 's' : '') + ' copiée' + (missingCardsForCopy.length > 1 ? 's' : '') + ', avec les variantes.')
+    } catch (copyError) {
+      setNotice('Copie impossible : ' + (copyError.message || 'sélectionne les cartes manuellement.'))
     }
   }
 
@@ -1362,6 +1410,17 @@ export default function CardChecklistPage() {
             ? <><strong>{duplicateCardCount}</strong> carte{duplicateCardCount === 1 ? '' : 's'} avec des doubles pour « {query.trim()} » · <strong>{availableDuplicateCopyCount}</strong> exemplaire{availableDuplicateCopyCount === 1 ? '' : 's'} en double</>
             : <><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's différentes' : ' différente'} pour « {query.trim()} » · <strong>{visibleOwnedCopyCount}</strong> exemplaire{visibleOwnedCopyCount > 1 ? 's possédés' : ' possédé'}</>
           }</p>}
+          {isGlobalSearchView && query.trim() && collectionFilter === 'missing' && !cardsLoading && <section className={styles.copyMissingPanel} aria-label="Copier les cartes manquantes">
+            <div>
+              <strong>Copier les cartes manquantes</strong>
+              <p>Une ligne par carte, avec ses variantes manquantes, triées par série de la plus ancienne à la plus récente.</p>
+            </div>
+            <div className={styles.copyMissingActions}>
+              <button type="button" className={styles.copyMissingButton} onClick={copyGlobalMissingCards} disabled={!missingCardsForCopy.length}>
+                Copier numéro, nom, série et variantes ({missingCardsForCopy.length})
+              </button>
+            </div>
+          </section>}
           {cardsLoading ? <p className={styles.status}>Recherche dans toutes les séries…</p> : query.trim() && (
             <section className={styles.cardGrid} aria-label="Résultats toutes séries">
               {!visibleCards.length && !error && <p className={styles.empty}>Aucune carte ne correspond à « {query.trim()} ».</p>}
