@@ -10,6 +10,8 @@
 .profileField{flex:.8!important}
 .hint,.message,.notice{margin:14px 0;padding:12px 14px;border-radius:12px;line-height:1.45}
 .hint{background:#f0f5fb;color:#52677e}
+.searchResultCount{margin:10px 0;padding:11px 14px;border:1px solid #dce3eb;border-radius:12px;background:#f0f5fb;color:#52677e;font-size:.92rem;line-height:1.4}
+.searchResultCount strong{color:#14263a}
 .message{background:#fff1ef;color:#923a2d}
 .notice{background:#edf8f2;color:#236746}
 .setSummary{display:flex;align-items:center;justify-content:space-between;gap:15px;margin:15px 0 10px;padding:13px 16px;border:1px solid #e0e6ee;border-radius:13px;background:#f8fafc}

@@ -688,6 +688,10 @@ export default function CardCataloguePage() {
       {setId === ALL_SERIES && !query.trim() && <p className={styles.hint}>Saisis un nom pour rechercher dans toutes les séries.</p>}
       {loadingCards && <p className={styles.hint} role="status">Chargement de la liste complète…</p>}
 
+      {setId === ALL_SERIES && query.trim() && !loadingCards && !error && <p className={styles.searchResultCount} role="status">
+        <strong>{visibleCards.length}</strong> carte{visibleCards.length === 1 ? '' : 's'} trouvée{visibleCards.length === 1 ? '' : 's'}
+      </p>}
+
       {selectedSet && !loadingCards && !error && <div className={styles.setSummary}>
         <div><strong>{seriesLabel(selectedSet)}</strong><span>{visibleCards.length}{filterQuery ? ' résultat(s)' : ' cartes dans la liste du catalogue'}</span></div>
         <a href={selectedMcDonaldsSet
