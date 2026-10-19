@@ -357,6 +357,19 @@ function normalizeCardSearch(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
+function accentInsensitiveCardNamePattern(value) {
+  const normalized = normalizeCardSearch(value)
+  if (!normalized || !/[aeiouyc]/.test(normalized)) return null
+
+  const pattern = [...normalized].map(character => {
+    if (/[aeiouyc]/.test(character)) return '_'
+    if (character === '%' || character === '_' || character === '\\') return '\\' + character
+    return character
+  }).join('')
+
+  return '%' + pattern + '%'
+}
+
 function cardSearchText(card) {
   const artistNames = (card.card_illustrators || []).flatMap(link => {
     const illustrators = link.illustrators
@@ -557,14 +570,20 @@ export default function CardChecklistPage() {
         const escapedTerm = term.replace(/[%_]/g, '\\$&')
         const pattern = '%' + escapedTerm + '%'
         const fields = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,image_source_url,card_sets!cards_card_set_id_fkey(set_name,set_code),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
-        const [nameResult, numberResult] = await Promise.all([
+        const accentNamePattern = accentInsensitiveCardNamePattern(term)
+        const [nameResult, numberResult, accentNameResult] = await Promise.all([
           supabase.from('cards').select(fields).in('card_set_id', searchableSetIds)
             .ilike('card_name', pattern).order('card_name', { ascending: true }).limit(500),
           supabase.from('cards').select(fields).in('card_set_id', searchableSetIds)
-            .ilike('collector_number', pattern).order('card_name', { ascending: true }).limit(500)
+            .ilike('collector_number', pattern).order('card_name', { ascending: true }).limit(500),
+          accentNamePattern
+            ? supabase.from('cards').select(fields).in('card_set_id', searchableSetIds)
+              .ilike('card_name', accentNamePattern).order('card_name', { ascending: true }).limit(500)
+            : Promise.resolve({ data: [], error: null })
         ])
         if (nameResult.error) throw nameResult.error
         if (numberResult.error) throw numberResult.error
+        if (accentNameResult.error) throw accentNameResult.error
         if (cancelled) return
         const artistCardIds = new Set()
         for (let offset = 0; artistCardIds.size < 500; offset += 1000) {
@@ -587,7 +606,7 @@ export default function CardChecklistPage() {
           artistRows = artistRows.concat(data || [])
         }
         const cardsById = new Map()
-        for (const card of [...(nameResult.data || []), ...(numberResult.data || []), ...artistRows]) cardsById.set(card.id, card)
+        for (const card of [...(nameResult.data || []), ...(numberResult.data || []), ...(accentNameResult.data || []), ...artistRows]) cardsById.set(card.id, card)
         const cardRows = [...cardsById.values()].sort((a, b) => a.card_name.localeCompare(b.card_name, 'fr')).slice(0, 500)
         const variantIds = cardRows.flatMap(card => (card.card_print_variants || []).map(variant => variant.id))
         let copyRows = []
