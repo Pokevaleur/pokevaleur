@@ -1261,12 +1261,20 @@ export default function CardChecklistPage() {
         {isAdmin && selectedSet && !selectedSet.is_public && <p className={styles.adminNote}>Série privée : visible ici pour la vérification administrateur uniquement.</p>}
       </section>
 
-      {selectedSet && <div className={styles.collectionCardFilters} role="group" aria-label="Filtrer les cartes de cette série">
-        {[
-          ['owned', 'Possédées'],
-          ['duplicates', 'En double'],
-          ['missing', 'Non possédées']
-        ].map(([filter, label]) => (
+      {(selectedSet || (isGlobalSearchView && query.trim())) && <div className={styles.collectionCardFilters} role="group" aria-label={isGlobalSearchView ? 'Filtrer les cartes recherchées dans le catalogue' : 'Filtrer les cartes de cette série'}>
+        {(isGlobalSearchView
+          ? [
+            ['all', 'Toutes'],
+            ['owned', 'Possédées'],
+            ['missing', 'Manquantes'],
+            ['duplicates', 'En double']
+          ]
+          : [
+            ['owned', 'Possédées'],
+            ['duplicates', 'En double'],
+            ['missing', 'Non possédées']
+          ]
+        ).map(([filter, label]) => (
           <button
             key={filter}
             type="button"
