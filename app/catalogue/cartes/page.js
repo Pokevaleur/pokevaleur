@@ -144,6 +144,19 @@ function normalizedSearchText(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
 }
 
+function accentInsensitiveNamePattern(value) {
+  const normalized = normalizedSearchText(value)
+  if (!normalized || !/[aeiouyc]/.test(normalized)) return null
+
+  const pattern = [...normalized].map(character => {
+    if (/[aeiouyc]/.test(character)) return '_'
+    if (character === '%' || character === '_' || character === '\\\\') return '\\\\' + character
+    return character
+  }).join('')
+
+  return '%' + pattern + '%'
+}
+
 function energyElementSearchTerms(card) {
   const aliases = {
     plante: 'plante grass',
@@ -343,6 +356,10 @@ export default function CardCataloguePage() {
             fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).ilike('card_name', pattern).order('guide_order', { ascending: true }).order('collector_number', { ascending: true })),
             fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).ilike('collector_number', pattern).order('guide_order', { ascending: true }).order('collector_number', { ascending: true }))
           ]
+          const accentNamePattern = accentInsensitiveNamePattern(term)
+          if (accentNamePattern) {
+            searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).ilike('card_name', accentNamePattern).order('guide_order', { ascending: true }).order('collector_number', { ascending: true })))
+          }
           const normalizedTerm = normalizedSearchText(term)
           if (['energie', 'energy', 'plante', 'grass', 'feu', 'fire', 'eau', 'water', 'electri', 'lightning', 'foudre', 'psy', 'psychic', 'combat', 'fighting', 'obscurite', 'darkness', 'metal', 'incolore', 'colorless', 'gold', 'dore'].some(alias => normalizedTerm.includes(alias))) {
             searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).eq('card_type', 'Énergie').order('guide_order', { ascending: true }).order('collector_number', { ascending: true })))
