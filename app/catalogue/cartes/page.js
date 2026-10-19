@@ -150,7 +150,7 @@ function accentInsensitiveNamePattern(value) {
 
   const pattern = [...normalized].map(character => {
     if (/[aeiouyc]/.test(character)) return '_'
-    if (character === '%' || character === '_' || character === '\\\\') return '\\\\' + character
+    if (character === '%' || character === '_' || character === '\\') return '\\' + character
     return character
   }).join('')
 
