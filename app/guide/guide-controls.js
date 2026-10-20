@@ -26,7 +26,7 @@ function getSearchResults(term) {
         const caption = figure.querySelector('figcaption')
         const source = caption?.querySelector('a')
         return image ? {
-          src: image.currentSrc || image.src || '',
+          src: image.dataset.originalSrc || image.currentSrc || image.src || '',
           alt: image.alt || '',
           caption: caption?.childNodes?.[0]?.textContent?.trim() || '',
           sourceUrl: source?.href || '',
