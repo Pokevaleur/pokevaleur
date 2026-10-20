@@ -16,6 +16,9 @@ const products = [
   { name: 'Display de 10 Kits AP Écarlate et Violet – Aventures Ensemble', product_type: 'Display de kits AP', case_reference: '0196214108141' },
   { name: 'Kit Avant-première – Écarlate et Violet – Évolutions à Paldea', product_type: 'Kit Avant-première' },
   { name: 'Build & Battle Soleil et Lune – Éclipse Cosmique', product_type: 'Build & Battle' },
+  { name: 'Booster loose – Écarlate et Violet', series: 'Écarlate et Violet', product_type: 'Booster loose' },
+  { name: 'Booster loose – Évolutions à Paldea', series: 'Écarlate et Violet – Évolutions à Paldea', product_type: 'Booster loose' },
+  { name: 'Booster loose – Pokémon 151', series: 'Pokémon 151', product_type: 'Booster loose' },
 ]
 const found = query => products.filter(createProductMatcher(query)).map(product => product.name)
 
@@ -60,6 +63,14 @@ test('short anniversary searches recognize 30e without matching unrelated number
   assert.deepEqual(found('3 0 Amphinobi'), [products[7].name])
   assert.deepEqual(found('collection ko'), [products[8].name])
 })
+
+test('French EV expansion abbreviations find only their matching series', () => {
+  assert.deepEqual(found('Booster EV1'), [products[13].name])
+  assert.deepEqual(found('EV2'), [products[14].name])
+  assert.deepEqual(found('EV3.5'), [products[15].name])
+  assert.deepEqual(found('EV 2'), [products[14].name])
+})
+
 test('punctuation, accents and whole alias words are handled', () => {
   assert.deepEqual(found('collection ko'), [products[8].name])
   assert.deepEqual(found('mini tin evoli'), [products[9].name])
