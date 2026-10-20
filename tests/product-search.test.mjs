@@ -19,6 +19,9 @@ const products = [
   { name: 'Booster loose – Écarlate et Violet', series: 'Écarlate et Violet', product_type: 'Booster loose' },
   { name: 'Booster loose – Évolutions à Paldea', series: 'Écarlate et Violet – Évolutions à Paldea', product_type: 'Booster loose' },
   { name: 'Booster loose – Pokémon 151', series: 'Pokémon 151', product_type: 'Booster loose' },
+  { name: 'Booster loose – Soleil et Lune', series: 'Soleil et Lune', product_type: 'Booster loose' },
+  { name: 'Booster loose – Gardiens Ascendants', series: 'Soleil et Lune – Gardiens Ascendants', product_type: 'Booster loose' },
+  { name: 'Booster loose – Éclipse Cosmique', series: 'Soleil et Lune – Éclipse Cosmique', product_type: 'Booster loose' },
 ]
 const found = query => products.filter(createProductMatcher(query)).map(product => product.name)
 
@@ -69,6 +72,13 @@ test('French EV expansion abbreviations find only their matching series', () => 
   assert.deepEqual(found('EV2'), [products[14].name])
   assert.deepEqual(found('EV3.5'), [products[15].name])
   assert.deepEqual(found('EV 2'), [products[14].name])
+})
+
+test('French SL expansion abbreviations find their exact Soleil et Lune series', () => {
+  assert.deepEqual(found('Booster SL1'), [products[16].name])
+  assert.deepEqual(found('SL2'), [products[17].name])
+  assert.deepEqual(found('SL12'), [products[18].name])
+  assert.deepEqual(found('SL 2'), [products[17].name])
 })
 
 test('punctuation, accents and whole alias words are handled', () => {
