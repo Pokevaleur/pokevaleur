@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
+import { getOptimizedImageUrl } from '../../lib/optimized-image-url.js'
 import styles from './guide.module.css'
 
 export default function GuideIllustration({ src, alt = '', caption = '', sourceUrl = '', sourceLabel = '', compact = false, hideCaption = false }) {
@@ -27,7 +28,7 @@ export default function GuideIllustration({ src, alt = '', caption = '', sourceU
       aria-label={`Agrandir l’image${alt ? ` : ${alt}` : ''}`}
       aria-haspopup="dialog"
     >
-      <img src={src} alt={alt} loading="lazy" />
+      <img src={getOptimizedImageUrl(src, 384)} alt={alt} loading="lazy" decoding="async" onError={event => { event.currentTarget.src = src }} />
     </button>
     {!hideCaption && (caption || alt) && <figcaption>
       {caption || alt}
@@ -44,7 +45,7 @@ export default function GuideIllustration({ src, alt = '', caption = '', sourceU
       }}
     >
       <button className={styles.imageViewerClose} type="button" onClick={closeViewer} aria-label="Fermer l’image agrandie">×</button>
-      <img src={src} alt={alt} />
+      {isOpen && <img src={src} alt={alt} decoding="async" /> }
       {!hideCaption && (caption || alt) && <p>{caption || alt}</p>}
     </dialog>
   </figure>
