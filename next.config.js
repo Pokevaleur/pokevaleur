@@ -28,6 +28,33 @@ const securityHeaders = [
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   poweredByHeader: false,
+  images: {
+    remotePatterns: [
+      { protocol: 'https', hostname: '*.supabase.co', pathname: '/**' },
+      { protocol: 'https', hostname: '*.supabase.in', pathname: '/**' },
+      { protocol: 'https', hostname: 'assets.tcgdex.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'images-cartes.pokevalue.fr', pathname: '/**' },
+      { protocol: 'https', hostname: 'www.dexocard.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'cdn.beebs.app', pathname: '/**' },
+      { protocol: 'https', hostname: 'cdn.svc.asmodee.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'de.fantasysphere.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'images.king-jouet.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'pokemagic.fr', pathname: '/**' },
+      { protocol: 'https', hostname: 'pokemon.com', pathname: '/**' },
+      { protocol: 'https', hostname: '*.pokemon.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'pokepedia.fr', pathname: '/**' },
+      { protocol: 'https', hostname: 'www.pokepedia.fr', pathname: '/**' },
+      { protocol: 'https', hostname: 'archives.bulbagarden.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'cdn.assets.prezly.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'facetofacegames.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'threestarssportscards.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'slabstat-production.s3.amazonaws.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'bogcollectibles.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'totalcards.net', pathname: '/**' },
+      { protocol: 'https', hostname: 'i.ebayimg.com', pathname: '/**' },
+      { protocol: 'https', hostname: 'cdn.gradedcardcenter.com', pathname: '/**' }
+    ]
+  },
   async headers() {
     return [
       {
