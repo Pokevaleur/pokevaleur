@@ -81,6 +81,35 @@ test('French SL expansion abbreviations find their exact Soleil et Lune series',
   assert.deepEqual(found('SL 2'), [products[17].name])
 })
 
+test('French EB expansion abbreviations find their exact Épée et Bouclier series', () => {
+  const expansions = [
+    ['EB1', 'Épée et Bouclier'],
+    ['EB2', 'Épée et Bouclier – Clash des Rebelles'],
+    ['EB3', 'Épée et Bouclier – Ténèbres Embrasées'],
+    ['EB3.5', 'La Voie du Maître'],
+    ['EB4', 'Épée et Bouclier – Voltage Éclatant'],
+    ['EB4.5', 'Épée et Bouclier – Destinées Radieuses'],
+    ['EB5', 'Épée et Bouclier – Styles de Combat'],
+    ['EB6', 'Épée et Bouclier – Règne de Glace'],
+    ['EB7', 'Épée et Bouclier – Évolution Céleste'],
+    ['EB7.5', 'Célébrations'],
+    ['EB8', 'Épée et Bouclier – Poing de Fusion'],
+    ['EB9', 'Épée et Bouclier – Stars Étincelantes'],
+    ['EB10', 'Épée et Bouclier – Astres Radieux'],
+    ['EB10.5', 'Pokémon GO'],
+    ['EB11', 'Épée et Bouclier – Origine Perdue'],
+    ['EB12', 'Épée et Bouclier – Tempête Argentée'],
+    ['EB12.5', 'Épée et Bouclier – Zénith Suprême'],
+  ]
+
+  for (const [code, series] of expansions) {
+    const product = { name: `Booster loose – ${series}`, series, product_type: 'Booster loose' }
+    assert.equal(createProductMatcher(`Booster ${code}`)(product), true, code)
+    assert.equal(createProductMatcher(code.replace(/^(EB)(\\d)/, '$1 $2'))(product), true, code)
+    assert.equal(createProductMatcher(`Booster ${code}`)({ ...product, series: 'Épée et Bouclier – Évolution Céleste' }), code === 'EB7')
+  }
+})
+
 test('punctuation, accents and whole alias words are handled', () => {
   assert.deepEqual(found('collection ko'), [products[8].name])
   assert.deepEqual(found('mini tin evoli'), [products[9].name])
