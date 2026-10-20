@@ -34,7 +34,7 @@ function CatalogueImagePreview({ src, alt }) {
 
   return <>
     <button
-      className={styles.previewButton}
+      className={styles.catalogueImagePreviewButton}
       type="button"
       onClick={() => setIsOpen(true)}
       aria-label={`Agrandir l’image : ${alt}`}
@@ -49,7 +49,7 @@ function CatalogueImagePreview({ src, alt }) {
       />
     </button>
     {isOpen && <dialog
-      className={styles.previewDialog}
+      className={styles.catalogueImagePreviewDialog}
       ref={dialogRef}
       aria-label={alt || 'Image agrandie'}
       onClose={() => setIsOpen(false)}
