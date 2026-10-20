@@ -57,6 +57,7 @@
 .printing{display:flex;align-items:center;gap:9px;min-height:40px;padding:5px 9px;border:1px solid #d9e0e8;border-radius:10px;background:#fff}
 .printingCheck{display:flex;align-items:center;gap:7px;color:#33445a;font-size:.82rem;font-weight:750;cursor:pointer}
 .printingCheck input{width:18px;height:18px;margin:0;accent-color:#174c79}
+.variantThumb{width:34px;height:46px;object-fit:contain;border:1px solid #e2e7ed;border-radius:4px;background:#fff}
 .printingCheck small{color:#728197;font-size:.69rem;font-weight:600}
 .quantity{display:flex;align-items:center;gap:5px;color:#728197;font-size:.7rem}
 .quantity input{width:46px;height:29px;padding:2px 4px;border:1px solid #cbd4df;border-radius:6px;font:inherit;font-size:.78rem;text-align:center}

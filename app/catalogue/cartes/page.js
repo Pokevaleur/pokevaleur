@@ -817,6 +817,7 @@ export default function CardCataloguePage() {
                   return <div className={styles.printing} key={variant.id}>
                     <label className={styles.printingCheck}>
                       <input type="checkbox" checked={checked} onChange={event => setVariantSelected(variant.id, event.target.checked)} />
+                      {variant.image_url && <img className={styles.variantThumb} src={variant.image_url} alt="" loading="lazy" decoding="async" />}
                       <span>{label}</span>
                       {copies > 0 && <small>Déjà {copies} en collection</small>}
                     </label>
