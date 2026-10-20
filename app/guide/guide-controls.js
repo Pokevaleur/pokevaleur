@@ -21,14 +21,24 @@ function getSearchResults(term) {
     const answer = question.querySelector('[data-guide-answer] > p')?.textContent?.trim() || ''
     const topicTitle = topic?.querySelector('[data-guide-topic-heading] h2')?.textContent?.trim() || ''
     if (normalize(questionTitle + ' ' + answer + ' ' + topicTitle).includes(term)) {
-      const image = question.querySelector('[data-guide-answer] img')
+      const images = Array.from(question.querySelectorAll('[data-guide-answer] figure')).map(figure => {
+        const image = figure.querySelector('img')
+        const caption = figure.querySelector('figcaption')
+        const source = caption?.querySelector('a')
+        return image ? {
+          src: image.currentSrc || image.src || '',
+          alt: image.alt || '',
+          caption: caption?.childNodes?.[0]?.textContent?.trim() || '',
+          sourceUrl: source?.href || '',
+          sourceLabel: source?.textContent?.trim() || ''
+        } : null
+      }).filter(image => image?.src)
       results.push({
         id: question.id || questionTitle,
         kind: 'Question du guide',
         title: questionTitle,
         text: answer,
-        image: image?.currentSrc || image?.src || '',
-        imageAlt: image?.alt || ''
+        images
       })
     }
   }
@@ -149,7 +159,15 @@ export default function GuideControls() {
           <span className={styles.resultKind}>{result.kind}</span>
           <h2>{result.title}</h2>
           {result.text && <p>{result.text}</p>}
-          {result.image && <GuideIllustration
+          {result.images?.length ? result.images.map((image, index) => <GuideIllustration
+            key={`${result.id}-image-${index}`}
+            src={image.src}
+            alt={image.alt}
+            caption={image.caption}
+            sourceUrl={image.sourceUrl}
+            sourceLabel={image.sourceLabel}
+            compact
+          />) : result.image && <GuideIllustration
             src={result.image}
             alt={result.imageAlt}
             caption={result.imageCaption}
