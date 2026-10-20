@@ -83,3 +83,20 @@ test('combined block and expansion labels sort AP displays by actual expansion d
     'Display AP Rivalités Destinées',
   ])
 })
+
+
+test('loose boosters inherit their expansion date, including shortened series labels', () => {
+  const seriesReleaseDates = createSeriesReleaseDateMap([
+    { series_name: 'Écarlate et Violet', set_name: 'Évolutions à Paldea', release_date: '2023-06-09' },
+    { series_name: 'Écarlate et Violet', set_name: '151', release_date: '2023-09-22' },
+  ])
+  const products = [
+    { name: 'Booster loose – Pokémon 151', series: 'Pokémon 151', product_type: 'Booster loose' },
+    { name: 'Booster loose – Évolutions à Paldea', series: 'Écarlate et Violet – Évolutions à Paldea', product_type: 'Booster loose' },
+  ]
+
+  assert.deepEqual(sortProductsByRelease(products, seriesReleaseDates).map(product => product.series), [
+    'Écarlate et Violet – Évolutions à Paldea',
+    'Pokémon 151',
+  ])
+})
