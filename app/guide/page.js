@@ -42,10 +42,10 @@ async function loadGuide() {
   }
 }
 
-function GuideImage({ path, alt }) {
+function GuideImage({ path, alt, sourceUrl = '', sourceLabel = '' }) {
   if (!path) return null
   const imageSrc = path.startsWith('site:') || path.startsWith('http') ? path.replace(/^site:/, '') : `${supabaseUrl}/storage/v1/object/public/guide-illustrations/${path.split('/').map(encodeURIComponent).join('/')}`
-  return <GuideIllustration src={imageSrc} alt={alt || ''} hideCaption={path === 'site:/images/guide/raretes-symboles.png'} />
+  return <GuideIllustration src={imageSrc} alt={alt || ''} sourceUrl={sourceUrl} sourceLabel={sourceLabel} hideCaption={path === 'site:/images/guide/raretes-symboles.png'} />
 }
 
 export default async function GuidePage() {
@@ -73,6 +73,7 @@ export default async function GuidePage() {
           <summary>{item.question}<span aria-hidden="true" /></summary>
           <div className={styles.answer} data-guide-answer><p>{item.answer}</p>
             <GuideImage path={item.image_path} alt={item.image_alt} />
+            {(item.image_gallery || []).map((image, imageIndex) => <GuideImage key={`${item.id}-image-${imageIndex}`} path={image.path} alt={image.alt} sourceUrl={image.source_url} sourceLabel={image.source_label} />)}
             {item.source_url && <p className={styles.source}>Source officielle : <a href={item.source_url} target="_blank" rel="noreferrer">{item.source_label || item.source_url}</a>.</p>}
             <p className={styles.answerSignature}><strong>PokéValeur.fr</strong><span>Le guide du collectionneur</span></p>
           </div>
