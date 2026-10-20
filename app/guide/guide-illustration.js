@@ -28,7 +28,7 @@ export default function GuideIllustration({ src, alt = '', caption = '', sourceU
       aria-label={`Agrandir l’image${alt ? ` : ${alt}` : ''}`}
       aria-haspopup="dialog"
     >
-      <img src={getOptimizedImageUrl(src, 384)} alt={alt} loading="lazy" decoding="async" onError={event => { event.currentTarget.src = src }} />
+      <img src={getOptimizedImageUrl(src, 384)} data-original-src={src} alt={alt} loading="lazy" decoding="async" onError={event => { event.currentTarget.src = src }} />
     </button>
     {!hideCaption && (caption || alt) && <figcaption>
       {caption || alt}
