@@ -5,6 +5,8 @@ import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { createSeriesReleaseDateMap, sortProductsByRelease } from '../../lib/catalogue-sort.mjs'
+import { getOptimizedImageUrl } from '../../lib/optimized-image-url.js'
+import styles from './catalogue-image-preview.module.css'
 
 function median(values) {
   if (!values.length) return null
