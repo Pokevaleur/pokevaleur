@@ -105,7 +105,7 @@ test('French EB expansion abbreviations find their exact Épée et Bouclier seri
   for (const [code, series] of expansions) {
     const product = { name: `Booster loose – ${series}`, series, product_type: 'Booster loose' }
     assert.equal(createProductMatcher(`Booster ${code}`)(product), true, code)
-    assert.equal(createProductMatcher(code.replace(/^(EB)(\\d)/, '$1 $2'))(product), true, code)
+    assert.equal(createProductMatcher(code.replace(/^EB/, 'EB '))(product), true, code)
     assert.equal(createProductMatcher(`Booster ${code}`)({ ...product, series: 'Épée et Bouclier – Évolution Céleste' }), code === 'EB7')
   }
 })
