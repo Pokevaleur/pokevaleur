@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
+import styles from './product-detail-client.module.css'
 
 function median(values) {
   if (!values.length) return null
@@ -16,6 +17,7 @@ export default function ProductDetailClient({ product }) {
   const supabase = useMemo(() => createClient(), [])
   const [history, setHistory] = useState([])
   const [contents, setContents] = useState([])
+  const [boosterArtworks, setBoosterArtworks] = useState([])
 
   useEffect(() => {
     let active = true
@@ -36,6 +38,22 @@ export default function ProductDetailClient({ product }) {
       if (!active) return
       setHistory(historyData || [])
       setContents(contentData || [])
+
+      if (product.product_type === 'Artset' && product.series) {
+        const { data: artworkData } = await supabase
+          .from('products')
+          .select('id,name,booster_artwork,image_url,image_credit')
+          .eq('is_public', true)
+          .eq('series', product.series)
+          .eq('product_type', 'Booster loose')
+          .not('booster_artwork', 'is', null)
+          .not('image_url', 'is', null)
+          .order('booster_artwork', { ascending: true })
+        if (!active) return
+        setBoosterArtworks(artworkData || [])
+      } else {
+        setBoosterArtworks([])
+      }
     }
     loadMarketData()
     return () => { active = false }
@@ -128,6 +146,22 @@ export default function ProductDetailClient({ product }) {
           </div>
         </div>
       </section>
+
+      {product.product_type === 'Artset' && boosterArtworks.length > 0 && (
+        <section className={`panel ${styles.boosterArtworkPanel}`}>
+          <h2>Illustrations des boosters loose de cette série</h2>
+          <p className="muted">Chaque visuel ouvre la fiche individuelle du booster correspondant.</p>
+          <div className={styles.boosterArtworkGrid}>
+            {boosterArtworks.map(artwork => (
+              <a className={styles.boosterArtworkCard} href={`/catalogue/${encodeURIComponent(artwork.id)}`} key={artwork.id}>
+                <img src={artwork.image_url} alt={artwork.name} loading="lazy" decoding="async" />
+                <strong>{artwork.booster_artwork}</strong>
+                {artwork.image_credit && <small>Visuel : {artwork.image_credit}</small>}
+              </a>
+            ))}
+          </div>
+        </section>
+      )}
 
       {guaranteedContents.length > 0 && (
         <section className="panel productContentsPanel">

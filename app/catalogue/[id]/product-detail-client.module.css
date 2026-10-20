@@ -1,0 +1,63 @@
+.boosterArtworkPanel {
+  margin-top: 20px;
+}
+
+.boosterArtworkGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(145px, 1fr));
+  gap: 14px;
+  margin-top: 18px;
+}
+
+.boosterArtworkCard {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: #fff;
+  text-align: center;
+  transition: transform .16s ease, box-shadow .16s ease;
+}
+
+.boosterArtworkCard:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 22px rgba(10, 39, 72, .12);
+}
+
+.boosterArtworkCard img {
+  display: block;
+  width: 100%;
+  height: 220px;
+  object-fit: contain;
+  border-radius: 9px;
+  background: #f5f7fb;
+}
+
+.boosterArtworkCard strong {
+  font-size: .92rem;
+  line-height: 1.35;
+}
+
+.boosterArtworkCard small {
+  color: var(--muted);
+  font-size: .74rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 600px) {
+  .boosterArtworkGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .boosterArtworkCard {
+    padding: 8px;
+  }
+
+  .boosterArtworkCard img {
+    height: 190px;
+  }
+}
