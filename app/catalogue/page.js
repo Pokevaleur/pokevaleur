@@ -1,10 +1,12 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { createSeriesReleaseDateMap, sortProductsByRelease } from '../../lib/catalogue-sort.mjs'
+import { getOptimizedImageUrl } from '../../lib/optimized-image-url.js'
+import styles from './catalogue-image-preview.module.css'
 
 function median(values) {
   if (!values.length) return null
@@ -13,6 +15,52 @@ function median(values) {
   return sorted.length % 2
     ? sorted[middle]
     : (sorted[middle - 1] + sorted[middle]) / 2
+}
+
+function CatalogueImagePreview({ src, alt }) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [thumbnailFailed, setThumbnailFailed] = useState(false)
+  const dialogRef = useRef(null)
+
+  useEffect(() => {
+    const dialog = dialogRef.current
+    if (isOpen && dialog && !dialog.open) dialog.showModal()
+  }, [isOpen])
+
+  function closeViewer() {
+    if (dialogRef.current?.open) dialogRef.current.close()
+    setIsOpen(false)
+  }
+
+  return <>
+    <button
+      className={styles.previewButton}
+      type="button"
+      onClick={() => setIsOpen(true)}
+      aria-label={`Agrandir l’image : ${alt}`}
+      aria-haspopup="dialog"
+    >
+      <img
+        src={thumbnailFailed ? src : getOptimizedImageUrl(src, 384)}
+        alt={alt}
+        loading="lazy"
+        decoding="async"
+        onError={() => setThumbnailFailed(true)}
+      />
+    </button>
+    {isOpen && <dialog
+      className={styles.previewDialog}
+      ref={dialogRef}
+      aria-label={alt || 'Image agrandie'}
+      onClose={() => setIsOpen(false)}
+      onClick={event => {
+        if (event.target === dialogRef.current) closeViewer()
+      }}
+    >
+      <button type="button" onClick={closeViewer} aria-label="Fermer l’image agrandie">×</button>
+      <img src={src} alt={alt} decoding="async" />
+    </dialog>}
+  </>
 }
 
 export default function CataloguePage() {
@@ -263,7 +311,7 @@ export default function CataloguePage() {
               <article className="catalogCard catalogResultCard" key={product.id}>
                 <div className="productVisual">
                   {product.image_url ? (
-                    <img src={product.image_url} alt={product.name} loading="lazy" />
+                    <CatalogueImagePreview src={product.image_url} alt={product.name} />
                   ) : (
                     <div className="productVisualPlaceholder">
                       <span>PokéValeur</span>
