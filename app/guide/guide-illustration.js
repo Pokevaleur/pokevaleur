@@ -20,15 +20,23 @@ export default function GuideIllustration({ src, alt = '', caption = '', sourceU
 
   if (!src) return null
 
+  const isSvg = /\.svg(?:$|[?#])/i.test(src)
+  const imageSrc = isSvg ? src : getOptimizedImageUrl(src, 384)
+
   return <figure className={compact ? `${styles.illustration} ${styles.illustrationCompact}` : styles.illustration}>
     <button
       className={styles.illustrationButton}
       type="button"
       onClick={() => setIsOpen(true)}
-      aria-label={`Agrandir l’image${alt ? ` : ${alt}` : ''}`}
+      aria-label={`Agrandir l’image${alt ? `: ${alt}` : ''}`}
       aria-haspopup="dialog"
     >
-      <img src={getOptimizedImageUrl(src, 384)} data-original-src={src} alt={alt} loading="lazy" decoding="async" onError={event => { event.currentTarget.src = src }} />
+      <img src={imageSrc} data-original-src={src} alt={alt} loading="lazy" decoding="async" onError={event => {
+        if (!event.currentTarget.dataset.fallback && imageSrc !== src) {
+          event.currentTarget.dataset.fallback = 'true'
+          event.currentTarget.src = src
+        }
+      }} />
     </button>
     {!hideCaption && (caption || alt) && <figcaption>
       {caption || alt}
