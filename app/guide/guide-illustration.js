@@ -55,6 +55,7 @@ export default function GuideIllustration({ src, alt = '', caption = '', sourceU
       <button className={styles.imageViewerClose} type="button" onClick={closeViewer} aria-label="Fermer l’image agrandie">×</button>
       {isOpen && <img src={src} alt={alt} decoding="async" /> }
       {!hideCaption && (caption || alt) && <p>{caption || alt}</p>}
+      <div className={styles.answerSignature}><strong>PokéValeur.fr</strong><span>Le guide du collectionneur</span></div>
     </dialog>
   </figure>
 }
