@@ -1,0 +1,18 @@
+.root{width:100%;margin-top:10px}
+.button{display:inline-flex;align-items:center;justify-content:center;gap:8px;min-height:39px;padding:8px 16px;border:1px solid #b9c9d9;border-radius:999px;background:#f6f9fc;color:#234866;font:inherit;font-size:.87rem;font-weight:800;cursor:pointer}
+.button:hover,.button:focus-visible,.button[aria-expanded="true"]{border-color:#7391ad;background:#eaf1f7;outline:none}
+.chevron{color:#67819a;font-size:.84rem}
+.panel{width:100%;box-sizing:border-box;margin-top:10px;padding:12px;border:1px solid #d9e3ed;border-radius:13px;background:#f8fafc;color:#1e334a;text-align:left}
+.panel h3{margin:0 0 8px;font-size:.86rem;font-weight:850}
+.muted,.error{margin:0;color:#617187;font-size:.78rem;line-height:1.45}
+.error{color:#983d36}
+.list{display:grid;gap:8px;margin:0;padding:0;list-style:none}
+.entry{padding:9px 10px;border:1px solid #e0e7ee;border-radius:10px;background:#fff}
+.entryHeading{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.entryHeading strong{font-size:.82rem;line-height:1.35}
+.productLink,.source a{color:#15517f;font-size:.74rem;font-weight:750;text-decoration:none}
+.productLink{flex:0 0 auto}
+.productLink:hover,.source a:hover{text-decoration:underline}
+.itemName,.meta,.source{margin:5px 0 0;color:#617187;font-size:.72rem;line-height:1.35}
+.source a{font-size:inherit}
+@media(max-width:480px){.button{min-height:38px;padding:7px 14px;font-size:.82rem}.panel{padding:10px}.entryHeading{flex-direction:column;gap:3px}.productLink{font-size:.72rem}}
