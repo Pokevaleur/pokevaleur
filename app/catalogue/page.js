@@ -76,6 +76,14 @@ export default function CataloguePage() {
   const [suggestionMessage, setSuggestionMessage] = useState('')
   const [voiceListening, setVoiceListening] = useState(false)
 
+  function updateSearchQuery(nextQuery) {
+    setQuery(nextQuery)
+    const url = new URL(window.location.href)
+    if (nextQuery.trim()) url.searchParams.set('search', nextQuery)
+    else url.searchParams.delete('search')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+  }
+
   function startVoiceSearch(onResult, setListening) {
     const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition
     if (!Recognition) {
@@ -230,7 +238,7 @@ export default function CataloguePage() {
               aria-label="Rechercher un produit ou une série"
               aria-describedby={!hasSearch ? "catalog-search-help" : undefined}
               value={query}
-              onChange={e => setQuery(e.target.value)}
+              onChange={e => updateSearchQuery(e.target.value)}
               placeholder="Rechercher un produit"
             />
             <button
@@ -238,7 +246,7 @@ export default function CataloguePage() {
               className={voiceListening ? 'voiceSearchButton listening' : 'voiceSearchButton'}
               aria-label="Rechercher à la voix"
               title="Recherche vocale"
-              onClick={() => startVoiceSearch(setQuery, setVoiceListening)}
+              onClick={() => startVoiceSearch(updateSearchQuery, setVoiceListening)}
             >
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                 <rect x="9" y="2.5" width="6" height="12" rx="3" />
@@ -258,7 +266,7 @@ export default function CataloguePage() {
                     type="button"
                     key={example}
                     className="catalogExample"
-                    onClick={() => setQuery(example)}
+                    onClick={() => updateSearchQuery(example)}
                   >
                     {example}
                   </button>
@@ -337,7 +345,7 @@ export default function CataloguePage() {
                     <a className="btn small" href={'/collection?product=' + encodeURIComponent(product.id)}>
                       Ajouter à ma collection
                     </a>
-                    <a className="detailLink" href={'/catalogue/' + product.id}>
+                    <a className="detailLink" href={'/catalogue/' + product.id + '?returnTo=' + encodeURIComponent(query.trim() ? '/catalogue?search=' + encodeURIComponent(query.trim()) : '/catalogue')}>
                       Voir la fiche
                     </a>
                   </div>
@@ -423,7 +431,7 @@ export default function CataloguePage() {
         <section className="catalogNoResults" role="status">
           <h2>Aucun produit trouvé pour « {query} ».</h2>
           <p>Essaie un autre nom, une série ou un format.</p>
-          <button className="miniBtn" type="button" onClick={() => setQuery('')}>Effacer la recherche</button>
+          <button className="miniBtn" type="button" onClick={() => updateSearchQuery('')}>Effacer la recherche</button>
         </section>
       )}
 
