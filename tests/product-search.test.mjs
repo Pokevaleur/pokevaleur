@@ -129,6 +129,8 @@ test('metal box formats stay distinct and tin includes the whole family', () => 
     {name:'Pokébox Mew', product_type:'Pokébox'},
     {name:'Boîte Lucario', product_type:'Tin'},
     {name:'Valisette Arceus', product_type:'Valisette'},
+    {name:'Coffre de collection – Automne 2018', product_type:'Coffre de collection'},
+    {name:'Valise Pokémon Évoli 2021', product_type:'Valisette'},
     {name:'Boîte Poké Ball', product_type:'Poké Ball tin'},
     {name:'Coffret Destinées Radieuses'},
     {name:'Boîte Énergies de base', product_type:'Boîte Énergies'},
@@ -138,7 +140,9 @@ test('metal box formats stay distinct and tin includes the whole family', () => 
   assert.deepEqual(search('mini boîte'),search('mini-tin'))
   assert.deepEqual(search('pokebox'),boxes.slice(2,4).map(p=>p.name))
   assert.deepEqual(search('valizette'),[boxes[4].name])
-  assert.deepEqual(search('valisette'),[boxes[4].name])
+  assert.deepEqual(search('valisette'),[boxes[4].name, boxes[5].name, boxes[6].name])
+  assert.deepEqual(search('valise'), search('valisette'))
+  assert.deepEqual(search('coffre de collection'), search('valisette'))
   assert.deepEqual(search('tin'),boxes.slice(0,6).map(p=>p.name))
   assert.deepEqual(search('mini tin 151'),[boxes[0].name])
 })
