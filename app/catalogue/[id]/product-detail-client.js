@@ -19,6 +19,34 @@ export default function ProductDetailClient({ product }) {
   const [contents, setContents] = useState([])
   const [boosterArtworks, setBoosterArtworks] = useState([])
 
+  function handleCatalogBack(event) {
+    event.preventDefault()
+    const returnTo = new URLSearchParams(window.location.search).get('returnTo')
+    let safeReturnTo = '/catalogue'
+    if (returnTo) {
+      try {
+        const candidate = new URL(returnTo, window.location.origin)
+        if (candidate.origin === window.location.origin && candidate.pathname === '/catalogue') {
+          safeReturnTo = candidate.pathname + candidate.search + candidate.hash
+        }
+      } catch {
+        // Keep the catalogue fallback for malformed return paths.
+      }
+    }
+
+    try {
+      const referrer = document.referrer ? new URL(document.referrer) : null
+      if (referrer?.origin === window.location.origin && window.history.length > 1) {
+        window.history.back()
+        return
+      }
+    } catch {
+      // If the referrer cannot be parsed, use the safe catalogue destination.
+    }
+
+    window.location.assign(safeReturnTo)
+  }
+
   useEffect(() => {
     let active = true
     async function loadMarketData() {
@@ -88,7 +116,7 @@ export default function ProductDetailClient({ product }) {
 
   return (
     <main>
-      <a href="/catalogue" className="backLink">← Retour au catalogue</a>
+      <a href="/catalogue" className="backLink" onClick={handleCatalogBack}>← Retour au catalogue</a>
 
       <section className="productDetailHero">
         <div className="detailProductVisual">
