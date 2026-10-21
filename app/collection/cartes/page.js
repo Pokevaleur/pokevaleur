@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
+import CardProvenanceButton from '../../components/card-provenance'
 import styles from './cards.module.css'
 
 const ALL_SERIES_FILTER = '__all_series__'
@@ -1600,6 +1601,7 @@ export default function CardChecklistPage() {
           <button type="button" className={styles.zoomClose} aria-label="Fermer l’image agrandie" onClick={() => setZoomedCard(null)}>×</button>
           <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => { const fallback = imageUrl(zoomedCard, 'low'); if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback }} />
           <p><strong>{zoomedCard.card_name}</strong> · N° {zoomedCard.collector_number}{zoomedCard.seriesName ? ' · ' + zoomedCard.seriesName : ''}</p>
+          <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} />
         </section>
       </div>}
     </main>
