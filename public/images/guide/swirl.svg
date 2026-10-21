@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 520" role="img" aria-labelledby="title desc">
+<title id="title">Exemple de motif swirl sur une carte holographique</title>
+<desc id="desc">Deux cartes schématiques identiques montrent une zone holographique sans tourbillon visible et avec un motif circulaire swirl.</desc>
+<defs>
+  <linearGradient id="holo" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#c8e8ef"/>
+    <stop offset=".48" stop-color="#e9def5"/>
+    <stop offset="1" stop-color="#d4f0e2"/>
+  </linearGradient>
+  <linearGradient id="swirl" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#fff"/>
+    <stop offset=".5" stop-color="#6ab7b4"/>
+    <stop offset="1" stop-color="#fff"/>
+  </linearGradient>
+</defs>
+<rect width="900" height="520" rx="30" fill="#f4f7fb"/>
+<text x="48" y="62" fill="#17324d" font-family="Arial,sans-serif" font-size="30" font-weight="700">Repérer un motif « swirl »</text>
+<g font-family="Arial,sans-serif" text-anchor="middle">
+  <g transform="translate(190 95)">
+    <rect width="220" height="300" rx="20" fill="#fff" stroke="#c7d8e8" stroke-width="4"/>
+    <rect x="17" y="17" width="186" height="145" rx="13" fill="url(#holo)"/>
+    <circle cx="110" cy="82" r="35" fill="#f4d56f"/>
+    <path d="M78 135l32-57 32 57z" fill="#ed8969"/>
+    <path d="M34 44q28 14 0 28M179 115q-24 13 0 27" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="4" stroke-linecap="round"/>
+    <rect x="17" y="181" width="186" height="17" rx="8" fill="#244c78"/>
+    <rect x="17" y="211" width="138" height="12" rx="6" fill="#d6e1ec"/>
+    <rect x="17" y="234" width="164" height="12" rx="6" fill="#d6e1ec"/>
+    <text x="110" y="283" fill="#17324d" font-size="18" font-weight="700">Swirl non visible</text>
+  </g>
+  <g transform="translate(490 95)">
+    <rect width="220" height="300" rx="20" fill="#fff" stroke="#e4b454" stroke-width="4"/>
+    <rect x="17" y="17" width="186" height="145" rx="13" fill="url(#holo)"/>
+    <circle cx="110" cy="82" r="35" fill="#f4d56f"/>
+    <path d="M78 135l32-57 32 57z" fill="#ed8969"/>
+    <path d="M48 72c13-32 70-34 89-8 18 25-7 51-35 43-22-7-22-29-6-38 14-8 32-2 34 12" fill="none" stroke="url(#swirl)" stroke-width="8" stroke-linecap="round"/>
+    <path d="M34 44q28 14 0 28M179 115q-24 13 0 27" fill="none" stroke="#fff" stroke-opacity=".75" stroke-width="4" stroke-linecap="round"/>
+    <rect x="17" y="181" width="186" height="17" rx="8" fill="#244c78"/>
+    <rect x="17" y="211" width="138" height="12" rx="6" fill="#d6e1ec"/>
+    <rect x="17" y="234" width="164" height="12" rx="6" fill="#d6e1ec"/>
+    <text x="110" y="283" fill="#17324d" font-size="18" font-weight="700">Swirl visible</text>
+  </g>
+</g>
+<text x="450" y="465" fill="#526579" font-family="Arial,sans-serif" font-size="17" text-anchor="middle">Schéma indicatif : le motif et sa visibilité dépendent de la carte et de l’éclairage.</text>
+</svg>
