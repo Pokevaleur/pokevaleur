@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import { Fragment, useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../lib/supabase-pagination'
+import CardProvenanceButton from '../../components/card-provenance'
 import styles from './page.module.css'
 
 const ALL_SERIES = '__all_series__'
@@ -871,6 +872,7 @@ export default function CardCataloguePage() {
           <button type="button" className={styles.closeButton} onClick={() => setZoomedCard(null)} aria-label="Fermer">×</button>
           <img src={zoomedCard.zoomImageUrl || cardImageCandidates[zoomedCard.id]?.[0] || zoomedCard.image_url} alt={zoomedCard.card_name} onError={event => advanceCardImage(event, zoomedCard.zoomImageCandidates || cardImageCandidates[zoomedCard.id] || [zoomedCard.image_url].filter(Boolean))} />
           <p>{zoomedCard.card_name} · {zoomedCard.collector_number}</p>
+          <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} />
         </div>
       </div>}
     </main>
