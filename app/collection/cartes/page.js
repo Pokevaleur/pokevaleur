@@ -529,8 +529,9 @@ export default function CardChecklistPage() {
       const copyPageSize = 500
       for (let offset = 0; ; offset += copyPageSize) {
         const { data, error: copyError } = await supabase.from('collection_cards')
-          .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)')
+          .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,edition_language_code,card_grading_companies(company_name,abbreviation)')
           .eq('collection_profile_id', profileId)
+          .or('edition_language_code.is.null,edition_language_code.eq.FR')
           .order('created_at', { ascending: true })
           .order('id', { ascending: true })
           .range(offset, offset + copyPageSize - 1)
@@ -613,8 +614,9 @@ export default function CardChecklistPage() {
         let copyRows = []
         for (let offset = 0; offset < variantIds.length; offset += 100) {
           const { data, error: copyError } = await supabase.from('collection_cards')
-            .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,card_grading_companies(company_name,abbreviation)')
+            .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,edition_language_code,card_grading_companies(company_name,abbreviation)')
             .eq('collection_profile_id', profileId).in('card_print_variant_id', variantIds.slice(offset, offset + 100))
+            .or('edition_language_code.is.null,edition_language_code.eq.FR')
           if (copyError) throw copyError
           copyRows = copyRows.concat(data || [])
         }

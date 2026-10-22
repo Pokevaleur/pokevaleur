@@ -6,8 +6,11 @@
 .selectionPanel{position:sticky;top:8px;z-index:5;display:flex;align-items:flex-end;gap:12px;margin:18px 0 14px;padding:14px;border:1px solid #dce3eb;border-radius:16px;background:rgba(255,255,255,.97);box-shadow:0 8px 24px #162d4510;backdrop-filter:blur(10px)}
 .selectionPanel label{display:grid;flex:1;gap:6px;min-width:0;color:#42536a;font-size:.82rem;font-weight:750}
 .selectionPanel select,.selectionPanel input{width:100%;min-height:44px;padding:9px 12px;border:1px solid #cbd4df;border-radius:10px;background:#fff;color:#14263a;font:inherit;font-size:.92rem}
+.languageField{flex:.85!important}
 .seriesField{flex:1.35!important}
 .profileField{flex:.8!important}
+.foreignCounterpart{display:block;color:#657487;font-size:.78rem;line-height:1.35}
+.foreignEditionBadge{display:inline-flex;width:max-content;margin:4px 0 2px;padding:3px 8px;border:1px solid #cbd8f1;border-radius:999px;background:#f2f6ff;color:#244caa;font-size:.7rem;font-weight:850;letter-spacing:.02em}
 .hint,.message,.notice{margin:14px 0;padding:12px 14px;border-radius:12px;line-height:1.45}
 .hint{background:#f0f5fb;color:#52677e}
 .searchResultCount{margin:10px 0;padding:11px 14px;border:1px solid #dce3eb;border-radius:12px;background:#f0f5fb;color:#52677e;font-size:.92rem;line-height:1.4}
