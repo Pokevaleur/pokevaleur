@@ -48,14 +48,15 @@ export default function CardTradesPage() {
 
       const [{ data: sets, error: setsError }, { data: foreignSets, error: foreignError }] = await Promise.all([
         supabase.from('card_sets')
-          .select('id,series_name,set_name,set_code')
+          .select('id,series_name,set_name,set_code,release_date')
           .eq('language', 'FR')
           .eq('is_public', true)
           .order('series_name')
           .order('release_date', { ascending: false }),
         supabase.from('foreign_card_sets')
-          .select('id,catalog_set_id,language_code,market_code,series_name_fr,set_name,set_code')
+          .select('id,catalog_set_id,language_code,market_code,series_name_fr,set_name,set_code,foreign_card_printings!inner(id)')
           .eq('validation_status', 'verified')
+          .eq('foreign_card_printings.validation_status', 'verified')
           .not('catalog_set_id', 'is', null)
           .order('set_name')
       ])
