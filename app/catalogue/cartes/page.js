@@ -83,7 +83,9 @@ const FRENCH_SET_CODES = {
 function seriesLabel(set) {
   const code = (set?.set_code || '').toLowerCase()
   const rawCode = set?.set_code || ''
-  const displayCode = FRENCH_SET_CODES[code] || (/^sv\d/i.test(rawCode) ? 'EV' + rawCode.slice(2).toUpperCase() : rawCode.toUpperCase())
+  const displayCode = set?.language && set.language !== 'FR'
+    ? rawCode.toUpperCase()
+    : FRENCH_SET_CODES[code] || (/^sv\d/i.test(rawCode) ? 'EV' + rawCode.slice(2).toUpperCase() : rawCode.toUpperCase())
   return (displayCode ? displayCode + ' — ' : '') + (set?.set_name || 'Série')
 }
 
@@ -391,6 +393,7 @@ export default function CardCataloguePage() {
                 card_print_variants: variants,
                 card_sets: {
                   ...foreignSet,
+                  language: foreignSet.language_code,
                   release_date: foreignSet.release_date || relatedSet(counterpart)?.release_date
                 }
               }]
