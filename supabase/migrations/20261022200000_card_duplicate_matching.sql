@@ -1,6 +1,10 @@
 -- Automatic, consent-based matching of surplus raw card copies.
 -- This stores consent only; collection_cards remains the source of truth.
 
+create schema if not exists pokevaleur_private;
+revoke all on schema pokevaleur_private from public, anon;
+grant usage on schema pokevaleur_private to authenticated;
+
 create table if not exists public.card_exchange_consents (
   user_id uuid primary key references auth.users(id) on delete cascade,
   enabled boolean not null default false,
@@ -12,7 +16,7 @@ alter table public.card_exchange_consents enable row level security;
 revoke all on public.card_exchange_consents from public, anon, authenticated;
 grant all on public.card_exchange_consents to service_role;
 
-create or replace function public.get_card_exchange_status()
+create or replace function pokevaleur_private.get_card_exchange_status()
 returns table (enabled boolean, active boolean, surplus_copies integer)
 language sql
 stable
@@ -53,10 +57,20 @@ as $$
   left join public.card_exchange_consents consent on consent.user_id = a.user_id
   where a.user_id is not null;
 $$;
+revoke all on function pokevaleur_private.get_card_exchange_status() from public, anon;
+grant execute on function pokevaleur_private.get_card_exchange_status() to authenticated;
+
+create or replace function public.get_card_exchange_status()
+returns table (enabled boolean, active boolean, surplus_copies integer)
+language sql
+stable
+security invoker
+set search_path = ''
+as $ select * from pokevaleur_private.get_card_exchange_status(); $;
 revoke all on function public.get_card_exchange_status() from public, anon;
 grant execute on function public.get_card_exchange_status() to authenticated;
 
-create or replace function public.set_card_exchange_consent(p_enabled boolean)
+create or replace function pokevaleur_private.set_card_exchange_consent(p_enabled boolean)
 returns boolean
 language plpgsql
 security definer
@@ -84,10 +98,19 @@ begin
   return p_enabled;
 end;
 $$;
+revoke all on function pokevaleur_private.set_card_exchange_consent(boolean) from public, anon;
+grant execute on function pokevaleur_private.set_card_exchange_consent(boolean) to authenticated;
+
+create or replace function public.set_card_exchange_consent(p_enabled boolean)
+returns boolean
+language sql
+security invoker
+set search_path = ''
+as $ select pokevaleur_private.set_card_exchange_consent(p_enabled); $;
 revoke all on function public.set_card_exchange_consent(boolean) from public, anon;
 grant execute on function public.set_card_exchange_consent(boolean) to authenticated;
 
-create or replace function public.find_card_exchange_matches(
+create or replace function pokevaleur_private.find_card_exchange_matches(
   p_catalog_set_id uuid,
   p_language_code text,
   p_market_code text,
@@ -249,5 +272,34 @@ begin
   limit 250;
 end;
 $$;
+revoke all on function pokevaleur_private.find_card_exchange_matches(uuid, text, text, uuid) from public, anon;
+grant execute on function pokevaleur_private.find_card_exchange_matches(uuid, text, text, uuid) to authenticated;
+
+create or replace function public.find_card_exchange_matches(
+  p_catalog_set_id uuid,
+  p_language_code text,
+  p_market_code text,
+  p_foreign_set_id uuid default null
+)
+returns table (
+  card_print_variant_id uuid,
+  card_name text,
+  collector_number text,
+  variant_label text,
+  image_url text,
+  language_code text,
+  set_name text,
+  offered_by text,
+  available_copies integer
+)
+language sql
+stable
+security invoker
+set search_path = ''
+as $
+  select * from pokevaleur_private.find_card_exchange_matches(
+    p_catalog_set_id, p_language_code, p_market_code, p_foreign_set_id
+  );
+$;
 revoke all on function public.find_card_exchange_matches(uuid, text, text, uuid) from public, anon;
 grant execute on function public.find_card_exchange_matches(uuid, text, text, uuid) to authenticated;
