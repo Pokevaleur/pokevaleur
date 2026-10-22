@@ -25,6 +25,7 @@ export default function AdminPage() {
   const [isAdmin, setIsAdmin] = useState(false)
   const [suggestions, setSuggestions] = useState([])
   const [products, setProducts] = useState([])
+  const [productKind, setProductKind] = useState('sealed')
   const [history, setHistory] = useState([])
   const [observation, setObservation] = useState(emptyObservation)
   const [message, setMessage] = useState('')
@@ -43,6 +44,8 @@ export default function AdminPage() {
     const productId = params.get('product')
     if (!productId || !products.some(product => product.id === productId)) return
 
+    const selectedProduct = products.find(product => product.id === productId)
+    setProductKind(selectedProduct?.category === 'sealed' ? 'sealed' : 'card')
     setObservation(current => ({ ...current, product_id: productId }))
     window.history.replaceState({}, '', '/admin#donnee-marche')
     window.requestAnimationFrame(() => {
@@ -232,6 +235,15 @@ export default function AdminPage() {
     product.current_value !== null &&
     (!product.price_updated_at || new Date(product.price_updated_at).getTime() < staleLimit)
   )
+  const marketProducts = products.filter(product =>
+    productKind === 'sealed' ? product.category === 'sealed' : product.category !== 'sealed'
+  )
+
+  function changeProductKind(kind) {
+    if (kind === productKind) return
+    setProductKind(kind)
+    setObservation(current => ({ ...current, product_id: '' }))
+  }
 
   return (
     <main>
@@ -267,15 +279,36 @@ export default function AdminPage() {
         <h2>Ajouter une donnée de marché</h2>
         <p className="muted adminHint">Ce formulaire sert à ajouter un prix à un produit déjà présent dans le catalogue. Produit absent ? <a href="/catalogue#proposer-produit">Propose sa fiche au catalogue</a> ; elle sera vérifiée avant publication.</p>
         <form className="adminPriceForm" onSubmit={addObservation}>
+          <fieldset className="adminProductKindPicker">
+            <legend>Type de catalogue</legend>
+            <button
+              type="button"
+              className={productKind === 'sealed' ? 'selected' : ''}
+              aria-pressed={productKind === 'sealed'}
+              onClick={() => changeProductKind('sealed')}
+            >
+              Produits scellés <span>{products.filter(product => product.category === 'sealed').length}</span>
+            </button>
+            <button
+              type="button"
+              className={productKind === 'card' ? 'selected' : ''}
+              aria-pressed={productKind === 'card'}
+              onClick={() => changeProductKind('card')}
+            >
+              Cartes <span>{products.filter(product => product.category !== 'sealed').length}</span>
+            </button>
+          </fieldset>
+
           <label>
-            Produit
+            {productKind === 'sealed' ? 'Produit scellé' : 'Carte'}
             <select
+              className="adminMarketProductSelect"
               required
               value={observation.product_id}
               onChange={e => setObservation({ ...observation, product_id:e.target.value })}
             >
-              <option value="">Choisir un produit...</option>
-              {products.map(product => (
+              <option value="">Choisir {productKind === 'sealed' ? 'un produit scellé' : 'une carte'}...</option>
+              {marketProducts.map(product => (
                 <option value={product.id} key={product.id}>
                   {product.name}{product.series ? ` — ${product.series}` : ''}
                 </option>
