@@ -31,9 +31,9 @@ export default function CardTradesPage() {
   const [seriesPickerQuery, setSeriesPickerQuery] = useState('')
   const seriesPickerRef = useRef(null)
   const selectedOption = options.find(option => option.id === selectedId)
-  const normalizedSeriesQuery = seriesPickerQuery.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '')
+  const normalizedSeriesQuery = seriesPickerQuery.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
   const filteredOptions = normalizedSeriesQuery
-    ? options.filter(option => optionLabel(option).toLocaleLowerCase('fr').normalize('NFD').replace(/[\\u0300-\\u036f]/g, '').includes(normalizedSeriesQuery))
+    ? options.filter(option => optionLabel(option).toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(normalizedSeriesQuery))
     : options
 
   useEffect(() => {
