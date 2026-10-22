@@ -47,7 +47,14 @@ const navLinks = [
   },
   { href: '/opportunites', label: 'Watchlist' },
   { href: '/communaute', label: 'Communauté' },
-  { href: '/trades', label: 'Trades' },
+  {
+    href: '/trades',
+    label: 'Trades',
+    children: [
+      { href: '/trades', label: 'Produits scellés' },
+      { href: '/trades/cartes', label: 'Doubles de cartes' }
+    ]
+  },
   { href: '/progression', label: 'Mon grade' },
   { href: '/coffre', label: 'Coffre de Lukulu' }
 ]
