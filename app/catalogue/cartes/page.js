@@ -352,9 +352,7 @@ export default function CardCataloguePage() {
           ? sets.map(set => set.id)
           : setId === MCDONALDS_SERIES ? mcDonaldSetIds : [setId]
         if (!setIds.length) return
-        const term = query.trim().replace(/[%_]/g, '\\        const term = query.trim().replace(/[%_]/g, '\\$&')
-        let cardRows = []
-        if (setId === ALL_SERIES && term) {')
+        const term = query.trim().replace(/[%_]/g, '\\$&')
         let cardRows = []
         if (languageCode !== 'FR' && term) {
           const { data: mappings, error: mappingError } = await fetchAllRows(() => supabase.from('foreign_card_printings')
@@ -369,7 +367,7 @@ export default function CardCataloguePage() {
               .select(CARD_FIELDS).in('id', mappedCardIds))
             if (counterpartError) throw counterpartError
             const counterpartById = new Map((counterpartRows || []).map(card => [card.id, card]))
-            const searchTerms = normalizedSearchText(term).split(/\\s+/).filter(Boolean)
+            const searchTerms = normalizedSearchText(term).split(/\s+/).filter(Boolean)
             cardRows = (mappings || []).flatMap(mapping => {
               const counterpart = counterpartById.get(mapping.catalog_card_id)
               const foreignSet = Array.isArray(mapping.foreign_card_sets) ? mapping.foreign_card_sets[0] : mapping.foreign_card_sets
