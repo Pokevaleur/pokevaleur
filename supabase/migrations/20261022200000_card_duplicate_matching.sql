@@ -66,7 +66,7 @@ language sql
 stable
 security invoker
 set search_path = ''
-as $ select * from pokevaleur_private.get_card_exchange_status(); $;
+as $wrapper$ select * from pokevaleur_private.get_card_exchange_status(); $wrapper$;
 revoke all on function public.get_card_exchange_status() from public, anon;
 grant execute on function public.get_card_exchange_status() to authenticated;
 
@@ -106,7 +106,7 @@ returns boolean
 language sql
 security invoker
 set search_path = ''
-as $ select pokevaleur_private.set_card_exchange_consent(p_enabled); $;
+as $wrapper$ select pokevaleur_private.set_card_exchange_consent(p_enabled); $wrapper$;
 revoke all on function public.set_card_exchange_consent(boolean) from public, anon;
 grant execute on function public.set_card_exchange_consent(boolean) to authenticated;
 
@@ -296,10 +296,10 @@ language sql
 stable
 security invoker
 set search_path = ''
-as $
+as $wrapper$
   select * from pokevaleur_private.find_card_exchange_matches(
     p_catalog_set_id, p_language_code, p_market_code, p_foreign_set_id
   );
-$;
+$wrapper$;
 revoke all on function public.find_card_exchange_matches(uuid, text, text, uuid) from public, anon;
 grant execute on function public.find_card_exchange_matches(uuid, text, text, uuid) to authenticated;
