@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import styles from './cards.module.css'
 
@@ -27,6 +27,30 @@ export default function CardTradesPage() {
   const [matches, setMatches] = useState([])
   const [searching, setSearching] = useState(false)
   const [message, setMessage] = useState('')
+  const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
+  const [seriesPickerQuery, setSeriesPickerQuery] = useState('')
+  const seriesPickerRef = useRef(null)
+  const selectedOption = options.find(option => option.id === selectedId)
+  const normalizedSeriesQuery = seriesPickerQuery.trim().toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  const filteredOptions = normalizedSeriesQuery
+    ? options.filter(option => optionLabel(option).toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').includes(normalizedSeriesQuery))
+    : options
+
+  useEffect(() => {
+    if (!seriesPickerOpen) return
+    const closeOnOutsideClick = event => {
+      if (!seriesPickerRef.current?.contains(event.target)) setSeriesPickerOpen(false)
+    }
+    const closeOnEscape = event => {
+      if (event.key === 'Escape') setSeriesPickerOpen(false)
+    }
+    document.addEventListener('pointerdown', closeOnOutsideClick)
+    window.addEventListener('keydown', closeOnEscape)
+    return () => {
+      document.removeEventListener('pointerdown', closeOnOutsideClick)
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [seriesPickerOpen])
 
   useEffect(() => {
     let active = true
@@ -160,18 +184,54 @@ export default function CardTradesPage() {
             <p>Aucune série avec impressions étrangères vérifiées n’est encore disponible.</p>
           ) : (
             <form onSubmit={search} style={{ display: 'grid', gap: 14, minWidth: 0 }}>
-              <label htmlFor="card-trade-series" style={{ display: 'grid', gap: 8, minWidth: 0, fontWeight: 700 }}>
-                Série et langue de l’impression recherchée
-                <select
-                  id="card-trade-series"
-                  className={styles.seriesSelect}
-                  value={selectedId}
-                  onChange={event => setSelectedId(event.target.value)}
-                  style={{ display: 'block', width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', padding: '12px 38px 12px 12px', border: '1px solid #cbd5e1', borderRadius: 12, backgroundColor: '#fff' }}
-                >
-                  {options.map(option => <option key={option.id} value={option.id}>{optionLabel(option)}</option>)}
-                </select>
-              </label>
+              <div className={styles.seriesField}>
+                <span id="card-trade-series-label">Série et langue de l’impression recherchée</span>
+                <div className={styles.seriesPicker} ref={seriesPickerRef}>
+                  <button
+                    type="button"
+                    className={styles.seriesPickerTrigger}
+                    aria-haspopup="dialog"
+                    aria-expanded={seriesPickerOpen}
+                    aria-labelledby="card-trade-series-label"
+                    onClick={() => setSeriesPickerOpen(open => !open)}
+                  >
+                    <span>{selectedOption ? optionLabel(selectedOption) : 'Choisir une série…'}</span>
+                    <span className={styles.seriesPickerChevron} aria-hidden="true">▾</span>
+                  </button>
+                  {seriesPickerOpen && (
+                    <div className={styles.seriesPickerOptions} role="dialog" aria-label="Séries et langues du catalogue">
+                      <label className={styles.seriesPickerSearch}>
+                        <span>Rechercher une série</span>
+                        <input
+                          type="search"
+                          value={seriesPickerQuery}
+                          onChange={event => setSeriesPickerQuery(event.target.value)}
+                          placeholder="Nom, code ou langue…"
+                          autoFocus
+                        />
+                      </label>
+                      {filteredOptions.map(option => {
+                        const selected = option.id === selectedId
+                        return (
+                          <button
+                            type="button"
+                            role="option"
+                            aria-selected={selected}
+                            className={selected ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
+                            key={option.id}
+                            onClick={() => {
+                              setSelectedId(option.id)
+                              setSeriesPickerQuery('')
+                              setSeriesPickerOpen(false)
+                            }}
+                          >{optionLabel(option)}</button>
+                        )
+                      })}
+                      {!filteredOptions.length && <p className={styles.seriesPickerEmpty}>{seriesPickerQuery ? 'Aucune série ne correspond.' : 'Aucune série disponible.'}</p>}
+                    </div>
+                  )}
+                </div>
+              </div>
               <button className="btn" type="submit" disabled={searching || !selectedId}>
                 {searching ? 'Recherche…' : 'Rechercher les doubles'}
               </button>
