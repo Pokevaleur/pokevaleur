@@ -556,7 +556,7 @@ export default function CardCataloguePage() {
     const searchText = normalizedSearchText([
       card.collector_number, card.card_name, card.frenchCardName, card.card_type, card.rarity_label, variantText,
       energyElementSearchTerms(card), card.card_type === 'Énergie' ? 'energy energie' : '',
-      set?.set_name, isGoldEnergy(card) ? 'Gold dorée' : ''
+      set?.set_name, set?.series_name, set?.set_code, isGoldEnergy(card) ? 'Gold dorée' : ''
     ].join(' '))
     return !term || term.split(/\s+/).every(token => searchText.includes(token))
   })
@@ -764,7 +764,7 @@ export default function CardCataloguePage() {
       {error && <p className={styles.message} role="alert">{error}</p>}
       {notice && <p className={styles.notice} role="status">{notice}</p>}
       {!setId && !loadingSets && <p className={styles.hint}>La liste apparaîtra dès que tu auras choisi une série.</p>}
-      {setId === ALL_SERIES && !query.trim() && <p className={styles.hint}>Saisis un nom pour rechercher dans toutes les séries.</p>}
+      {setId === ALL_SERIES && !query.trim() && <p className={styles.hint}>{languageCode === 'FR' ? 'Saisis un nom pour rechercher dans toutes les séries.' : 'Saisis un nom ou un numéro pour rechercher dans les impressions ' + languageCode + ' vérifiées.'}</p>}
       {loadingCards && <p className={styles.hint} role="status">Chargement de la liste complète…</p>}
 
       {setId === ALL_SERIES && query.trim() && !loadingCards && !error && <p className={styles.searchResultCount} role="status">
