@@ -251,6 +251,8 @@ export default function CardCataloguePage() {
           setSetId(zenithMainSet.id)
         } else if (requestedSetId === MCDONALDS_SERIES || (setRows || []).some(set => set.id === requestedSetId)) {
           setSetId(requestedSetId)
+        } else {
+          setSetId(ALL_SERIES)
         }
       }
       setUser(signedInUser || null)
