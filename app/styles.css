@@ -1539,6 +1539,25 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .adminSimpleList>a b{flex:none;text-align:right}
 @media(max-width:850px){.adminPriceForm{grid-template-columns:minmax(0,1fr)}.adminProductKindPicker{flex-wrap:wrap}}
 
+/* Admin market search: keep the product picker compact on desktop and mobile. */
+.adminMarketPicker{grid-column:1/-1;min-width:0}
+.adminMarketPicker>label{max-width:100%}
+.adminMarketSearchHint{margin:6px 0 0;font-size:13px}
+.adminMarketResults{display:grid;gap:6px;max-height:min(38vh,360px);margin-top:8px;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
+.adminMarketResults>button{display:grid;gap:4px;width:100%;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:#fff;text-align:left;cursor:pointer}
+.adminMarketResults>button:hover{border-color:#d0aa37;background:#fffaf0}
+.adminMarketResults>button strong{font-size:15px}
+.adminMarketResults>button small{color:var(--muted);font-size:13px}
+.adminMarketSelected{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:8px;padding:10px 12px;border:1px solid #cfe9da;border-radius:10px;background:#f3fbf6}
+.adminMarketSelected span{min-width:0;overflow-wrap:anywhere;font-weight:700}
+.adminMarketSelected button{flex:none;border:0;background:transparent;color:var(--navy);font-weight:800;text-decoration:underline;cursor:pointer}
+.adminCardVariants{display:flex;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px}
+.adminCardVariants>span{flex-basis:100%;font-weight:800}
+.adminCardVariants>button{padding:8px 11px;border:1px solid var(--border);border-radius:999px;background:#fff;color:var(--text);font-weight:700;cursor:pointer}
+.adminCardVariants>button.selected{border-color:var(--navy);background:var(--navy);color:#fff}
+.adminCardVariants p{flex-basis:100%;margin:0}
+@media(max-width:850px){.adminMarketPicker{grid-column:auto}}
+
 
 /* Compact counts for grouped sealed-product subtypes */
 .collectionSealedSubtypeBreakdown{display:flex;align-items:center;flex-wrap:wrap;gap:8px 12px;margin:0 0 12px;padding:11px 12px;border:1px solid #e8e2d7;border-radius:12px;background:#fffaf0;color:#35445a}
