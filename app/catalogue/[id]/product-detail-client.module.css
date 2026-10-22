@@ -89,14 +89,14 @@
   border-bottom: 1px solid var(--border);
 }
 
-.marketHistory > .panel {
+.marketHistory > :global(.panel) {
   margin-top: 12px;
   padding: 14px 0 0;
   border-radius: 0;
   box-shadow: none;
 }
 
-.marketHistory > .detailStats {
+.marketHistory > :global(.detailStats) {
   margin-top: 12px;
 }
 
