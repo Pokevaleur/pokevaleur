@@ -118,13 +118,6 @@ begin
   if not public.social_access_allowed() then
     raise exception 'Les fonctions sociales ne sont pas activées.' using errcode = '42501';
   end if;
-  if not exists (
-    select 1 from public.card_exchange_consents own_consent
-    where own_consent.user_id = actor and own_consent.enabled
-  ) then
-    raise exception 'Active le consentement au partage des doubles dans ton profil.' using errcode = '42501';
-  end if;
-
   return query
   with target_printings as (
     select
