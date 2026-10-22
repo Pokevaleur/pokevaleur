@@ -110,6 +110,51 @@ export default function ProductDetailClient({ product }) {
     median: median(zeroDefectPrices)
   } : null
 
+  const latestStandardSale = standardHistory[standardHistory.length - 1] || null
+  const hasReferenceValue = product.current_value !== null && product.current_value !== undefined
+  const observedMedian = stats?.count >= 2 ? stats.median : null
+  const showZeroDefectValue = product.category === 'sealed' &&
+    product.zero_defect_value !== null && product.zero_defect_value !== undefined
+
+  let priceSummary
+  if (observedMedian !== null) {
+    priceSummary = {
+      label: 'Prix observé PokéValeur',
+      value: `${observedMedian.toFixed(2)} €`,
+      detail: `Médiane de ${stats.count} ventes confirmées enregistrées.`,
+      source: latestStandardSale
+        ? `Dernière vente : ${new Date(latestStandardSale.observed_at).toLocaleDateString('fr-FR')} • ${latestStandardSale.source}`
+        : ''
+    }
+  } else if (latestStandardSale) {
+    priceSummary = {
+      label: 'Dernière vente observée',
+      value: `${Number(latestStandardSale.price).toFixed(2)} €`,
+      detail: `Une seule vente confirmée enregistrée, le ${new Date(latestStandardSale.observed_at).toLocaleDateString('fr-FR')} : ce montant reste indicatif.`,
+      source: latestStandardSale.source
+    }
+  } else if (hasReferenceValue) {
+    priceSummary = {
+      label: 'Valeur de référence',
+      value: `${Number(product.current_value).toFixed(2)} €`,
+      detail: product.price_source
+        ? `Source : ${product.price_source}`
+        : 'Source de prix non renseignée.',
+      source: product.price_updated_at
+        ? `Mise à jour le ${new Date(product.price_updated_at).toLocaleDateString('fr-FR')}`
+        : ''
+    }
+  } else {
+    priceSummary = {
+      label: 'Prix observé PokéValeur',
+      value: 'Aucun prix disponible',
+      detail: observedListings.length
+        ? `Aucune vente confirmée enregistrée. ${observedListings.length} prix d’annonce observé(s) sont consultables plus bas.`
+        : 'Aucune vente confirmée ni valeur de référence enregistrée pour le moment.',
+      source: ''
+    }
+  }
+
   const minPrice = prices.length ? Math.min(...prices) : 0
   const maxPrice = prices.length ? Math.max(...prices) : 0
   const spread = Math.max(maxPrice - minPrice, 1)
@@ -135,6 +180,23 @@ export default function ProductDetailClient({ product }) {
             {product.category === 'sealed' ? 'Scellé' : product.category}
           </span>
           <h1>{product.name}</h1>
+          <div className={styles.priceSummary}>
+            <div className={styles.priceSummaryHeading}>
+              <span>{priceSummary.label}</span>
+              {stats?.count > 1 && <small>{stats.count} ventes</small>}
+            </div>
+            <strong className={priceSummary.value === 'Aucun prix disponible' ? styles.noPriceValue : ''}>
+              {priceSummary.value}
+            </strong>
+            <p>{priceSummary.detail}</p>
+            {priceSummary.source && <small>{priceSummary.source}</small>}
+            {showZeroDefectValue && (
+              <div className={styles.zeroDefectPrice}>
+                <span>Scellé zéro défaut</span>
+                <strong>{Number(product.zero_defect_value).toFixed(2)} €</strong>
+              </div>
+            )}
+          </div>
           <a className="btn" href={`/collection?product=${encodeURIComponent(product.id)}`}>Ajouter à Ma Collection</a>
           <a className="detailLink catalogueCollectionLink" href="/collection">Voir mes exemplaires →</a>
           <p className="muted">{product.series || 'Série non renseignée'}</p>
@@ -159,20 +221,6 @@ export default function ProductDetailClient({ product }) {
           )}
         </div>
 
-        <div className="referenceValue">
-          <span>Marché standard</span>
-          <strong>
-            {product.current_value !== null && product.current_value !== undefined
-              ? Number(product.current_value).toFixed(2) + ' €'
-              : 'À renseigner'}
-          </strong>
-          <div className="zeroDefectHeroValue">
-            <span>Zéro défaut</span>
-            <b>{product.zero_defect_value !== null && product.zero_defect_value !== undefined
-              ? Number(product.zero_defect_value).toFixed(2) + ' €'
-              : 'Pas assez de données'}</b>
-          </div>
-        </div>
       </section>
 
       {product.product_type === 'Artset' && boosterArtworks.length > 0 && (
@@ -227,38 +275,43 @@ export default function ProductDetailClient({ product }) {
         </section>
       )}
 
-      {stats ? (
-        <>
-          <section className="detailStats">
-            <div><span>Ventes observées</span><strong>{stats.count}</strong></div>
-            <div><span>Minimum</span><strong>{stats.min.toFixed(2)} €</strong></div>
-            <div><span>Médiane</span><strong>{stats.median.toFixed(2)} €</strong></div>
-            <div><span>Maximum</span><strong>{stats.max.toFixed(2)} €</strong></div>
-          </section>
+      {confirmedSales.length > 0 ? (
+        <details className={styles.marketHistory}>
+          <summary>Voir l’historique des prix ({history.length})</summary>
+          {stats && stats.count > 1 && (
+            <>
+              <section className="detailStats">
+                <div><span>Ventes observées</span><strong>{stats.count}</strong></div>
+                <div><span>Minimum</span><strong>{stats.min.toFixed(2)} €</strong></div>
+                <div><span>Médiane</span><strong>{stats.median.toFixed(2)} €</strong></div>
+                <div><span>Maximum</span><strong>{stats.max.toFixed(2)} €</strong></div>
+              </section>
 
-          <section className="panel chartPanel">
-            <div className="chartHeader">
-              <div>
-                <h2>Évolution des ventes</h2>
-                <p className="muted">Chaque point représente une vente enregistrée.</p>
-              </div>
-            </div>
-
-            <div className="priceChart">
-              {standardHistory.map((sale, index) => {
-                const price = Number(sale.price)
-                const height = 22 + ((price - minPrice) / spread) * 78
-                return (
-                  <div className="chartColumn" key={sale.id} title={price.toFixed(2) + ' €'}>
-                    <div className="chartBar" style={{ height: height + '%' }}>
-                      <span>{price.toFixed(0)} €</span>
-                    </div>
-                    <small>{new Date(sale.observed_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' })}</small>
+              <section className="panel chartPanel">
+                <div className="chartHeader">
+                  <div>
+                    <h2>Évolution des ventes</h2>
+                    <p className="muted">Chaque point représente une vente enregistrée.</p>
                   </div>
-                )
-              })}
-            </div>
-          </section>
+                </div>
+
+                <div className="priceChart">
+                  {standardHistory.map(sale => {
+                    const price = Number(sale.price)
+                    const height = 22 + ((price - minPrice) / spread) * 78
+                    return (
+                      <div className="chartColumn" key={sale.id} title={price.toFixed(2) + ' €'}>
+                        <div className="chartBar" style={{ height: height + '%' }}>
+                          <span>{price.toFixed(0)} €</span>
+                        </div>
+                        <small>{new Date(sale.observed_at).toLocaleDateString('fr-FR', { day:'2-digit', month:'2-digit' })}</small>
+                      </div>
+                    )
+                  })}
+                </div>
+              </section>
+            </>
+          )}
 
           <section className="panel">
             <h2>Historique complet</h2>
@@ -281,10 +334,10 @@ export default function ProductDetailClient({ product }) {
               ))}
             </div>
           </section>
-        </>
+        </details>
       ) : (
         <section className="panel">
-          <p>Pas encore de ventes enregistrées pour ce produit.</p>
+          <p>Aucune vente confirmée n’a encore été enregistrée pour ce produit.</p>
         </section>
       )}
 
@@ -305,18 +358,18 @@ export default function ProductDetailClient({ product }) {
         </section>
       )}
 
-      <section className="panel conditionInfo">
-        <h2>Cote “zéro défaut”</h2>
-        <p>
-          Cette cote concerne uniquement les produits scellés dont l’état est explicitement documenté comme impeccable :
-          film propre, boîte non enfoncée, angles et arêtes nets, sans déchirure ni défaut notable.
-        </p>
-        <p className="muted">
-          {zeroDefectStats
-            ? `${zeroDefectStats.count} vente(s) qualifiée(s), médiane ${zeroDefectStats.median.toFixed(2)} €.`
-            : 'Aucune vente suffisamment documentée n’est encore classée zéro défaut pour ce produit.'}
-        </p>
-      </section>
+      {product.category === 'sealed' && zeroDefectStats && (
+        <section className="panel conditionInfo">
+          <h2>Cote “zéro défaut”</h2>
+          <p>
+            Cette cote concerne uniquement les produits scellés dont l’état est explicitement documenté comme impeccable :
+            film propre, boîte non enfoncée, angles et arêtes nets, sans déchirure ni défaut notable.
+          </p>
+          <p className="muted">
+            {`${zeroDefectStats.count} vente(s) qualifiée(s), médiane ${zeroDefectStats.median.toFixed(2)} €.`}
+          </p>
+        </section>
+      )}
 
       <section className="panel sourcePanel">
         <h2>Sources</h2>
