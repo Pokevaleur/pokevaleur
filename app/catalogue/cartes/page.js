@@ -192,6 +192,7 @@ export default function CardCataloguePage() {
   const [sets, setSets] = useState([])
   const [setId, setSetId] = useState('')
   const [query, setQuery] = useState('')
+  const [languageCode, setLanguageCode] = useState('FR')
   const [filterQuery, setFilterQuery] = useState('')
   const [cards, setCards] = useState([])
   const [cardImageCandidates, setCardImageCandidates] = useState({})
@@ -351,9 +352,53 @@ export default function CardCataloguePage() {
           ? sets.map(set => set.id)
           : setId === MCDONALDS_SERIES ? mcDonaldSetIds : [setId]
         if (!setIds.length) return
-        const term = query.trim().replace(/[%_]/g, '\\$&')
+        const term = query.trim().replace(/[%_]/g, '\\        const term = query.trim().replace(/[%_]/g, '\\$&')
         let cardRows = []
-        if (setId === ALL_SERIES && term) {
+        if (setId === ALL_SERIES && term) {')
+        let cardRows = []
+        if (languageCode !== 'FR' && term) {
+          const { data: mappings, error: mappingError } = await fetchAllRows(() => supabase.from('foreign_card_printings')
+            .select('id,catalog_card_id,collector_number,card_name,variant_keys,image_url,foreign_card_sets!inner(id,catalog_set_id,language_code,market_code,series_name,series_name_fr,set_name,set_code,release_date,validation_status)')
+            .eq('foreign_card_sets.language_code', languageCode)
+            .eq('foreign_card_sets.validation_status', 'verified')
+            .eq('validation_status', 'verified'))
+          if (mappingError) throw mappingError
+          const mappedCardIds = [...new Set((mappings || []).map(row => row.catalog_card_id).filter(Boolean))]
+          if (mappedCardIds.length) {
+            const { data: counterpartRows, error: counterpartError } = await fetchAllRows(() => supabase.from('cards')
+              .select(CARD_FIELDS).in('id', mappedCardIds))
+            if (counterpartError) throw counterpartError
+            const counterpartById = new Map((counterpartRows || []).map(card => [card.id, card]))
+            const searchTerms = normalizedSearchText(term).split(/\\s+/).filter(Boolean)
+            cardRows = (mappings || []).flatMap(mapping => {
+              const counterpart = counterpartById.get(mapping.catalog_card_id)
+              const foreignSet = Array.isArray(mapping.foreign_card_sets) ? mapping.foreign_card_sets[0] : mapping.foreign_card_sets
+              if (!counterpart || !foreignSet) return []
+              const searchable = normalizedSearchText([
+                mapping.card_name, mapping.collector_number, foreignSet.series_name,
+                foreignSet.series_name_fr, foreignSet.set_name, foreignSet.set_code,
+                counterpart.card_name, counterpart.collector_number
+              ].join(' '))
+              if (!searchTerms.every(token => searchable.includes(token))) return []
+              const allowedVariants = Array.isArray(mapping.variant_keys) ? mapping.variant_keys : []
+              const variants = (counterpart.card_print_variants || []).filter(variant =>
+                !allowedVariants.length || allowedVariants.includes(variant.variant_key))
+              return [{
+                ...counterpart,
+                frenchCardName: counterpart.card_name,
+                card_name: mapping.card_name,
+                collector_number: mapping.collector_number,
+                image_url: mapping.image_url || counterpart.image_url,
+                foreignPrinting: { ...mapping, foreign_card_sets: foreignSet },
+                card_print_variants: variants,
+                card_sets: {
+                  ...foreignSet,
+                  release_date: foreignSet.release_date || relatedSet(counterpart)?.release_date
+                }
+              }]
+            })
+          }
+        } else if (setId === ALL_SERIES && term) {
           const pattern = '%' + term + '%'
           const searches = [
             fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds).ilike('card_name', pattern).order('guide_order', { ascending: true }).order('collector_number', { ascending: true })),
@@ -411,7 +456,7 @@ export default function CardCataloguePage() {
           if (loadError) throw loadError
           cardRows = rows || []
         }
-        if (isZenithSelection) {
+        if (isZenithSelection && languageCode === 'FR') {
           // Present the 159-card main checklist first, followed by GG01–GG70.
           cardRows.sort((left, right) => {
             const leftIsGallery = isZenithGallerySet(relatedSet(left))
@@ -470,10 +515,14 @@ export default function CardCataloguePage() {
           // Keep the URL for each PostgREST .in() request short enough for mobile networks and proxies.
           for (let offset = 0; offset < variantIds.length; offset += 100) {
             const variantBatch = variantIds.slice(offset, offset + 100)
-            const { data, error: copyError } = await fetchAllRows(() => supabase.from('collection_cards')
-              .select('id,card_print_variant_id,ownership_type,grade,grade_label,created_at')
+            let copyQuery = supabase.from('collection_cards')
+              .select('id,card_print_variant_id,ownership_type,grade,grade_label,created_at,edition_language_code,edition_market_code,edition_set_name,edition_collector_number,edition_card_name')
               .eq('collection_profile_id', profileId).in('card_print_variant_id', variantBatch)
-              .order('created_at', { ascending: false }))
+              .order('created_at', { ascending: false })
+            copyQuery = languageCode === 'FR'
+              ? copyQuery.or('edition_language_code.is.null,edition_language_code.eq.FR')
+              : copyQuery.eq('edition_language_code', languageCode)
+            const { data, error: copyError } = await fetchAllRows(() => copyQuery)
             if (copyError) throw copyError
             copyRows.push(...(data || []))
           }
@@ -491,7 +540,7 @@ export default function CardCataloguePage() {
       }
     }, setId === ALL_SERIES ? 250 : 0)
     return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [supabase, setId, query, profileId, sets])
+  }, [supabase, setId, query, profileId, sets, languageCode])
 
   const filteredSets = sets.filter(set => !isDedicatedEnergySet(set) && !isZenithGallerySet(set)
     && normalizedSearchText([seriesLabel(set), set.series_name, set.set_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
@@ -507,7 +556,7 @@ export default function CardCataloguePage() {
     const set = relatedSet(card)
     const variantText = (card.card_print_variants || []).map(variant => variant.variant_label || variant.variant_key).join(' ')
     const searchText = normalizedSearchText([
-      card.collector_number, card.card_name, card.card_type, card.rarity_label, variantText,
+      card.collector_number, card.card_name, card.frenchCardName, card.card_type, card.rarity_label, variantText,
       energyElementSearchTerms(card), card.card_type === 'Énergie' ? 'energy energie' : '',
       set?.set_name, isGoldEnergy(card) ? 'Gold dorée' : ''
     ].join(' '))
@@ -603,16 +652,27 @@ export default function CardCataloguePage() {
     }
     if (!profileId || !selectedRows.length || saving) return
     const variantById = new Map(cards.flatMap(card => card.card_print_variants || []).map(variant => [variant.id, variant]))
+    const cardByVariantId = new Map(cards.flatMap(card => (card.card_print_variants || []).map(variant => [variant.id, card])))
     const rows = []
     for (const [variantId, rawQuantity] of selectedRows) {
       const variant = variantById.get(variantId)
+      const selectedCard = cardByVariantId.get(variantId)
+      const foreignPrinting = selectedCard?.foreignPrinting
+      const foreignSet = foreignPrinting?.foreign_card_sets
       const quantity = Math.max(1, Math.min(99, Math.floor(Number(rawQuantity) || 1)))
       if (!variant?.is_master_set_target) continue
       for (let index = 0; index < quantity; index++) rows.push({
         user_id: user.id,
         collection_profile_id: profileId,
         card_print_variant_id: variantId,
-        ownership_type: 'raw'
+        ownership_type: 'raw',
+        ...(foreignPrinting && foreignSet ? {
+          edition_language_code: foreignSet.language_code,
+          edition_market_code: foreignSet.market_code,
+          edition_set_name: [foreignSet.series_name_fr || foreignSet.series_name, foreignSet.set_name, foreignSet.set_code].filter(Boolean).join(' — '),
+          edition_collector_number: foreignPrinting.collector_number,
+          edition_card_name: foreignPrinting.card_name
+        } : {})
       })
     }
     if (!rows.length) return
@@ -651,12 +711,30 @@ export default function CardCataloguePage() {
         <p>Choisis une série pour afficher sa liste complète. Coche chaque impression que tu possèdes, indique les doublons, puis ajoute la sélection à la collection choisie.</p>
       </header>
 
-      <section className={styles.selectionPanel} aria-label="Choix de la série et de la collection">
+      <section className={styles.selectionPanel} aria-label="Choix de la langue, de la série et de la collection">
+        <label className={styles.languageField}>
+          <span>Langue de l’impression possédée</span>
+          <select value={languageCode} onChange={event => {
+            const nextLanguage = event.target.value
+            setLanguageCode(nextLanguage)
+            setSetId(ALL_SERIES)
+            setFilterQuery('')
+            setSelection({})
+            setSeriesPickerOpen(false)
+          }}>
+            <option value="FR">Français</option>
+            <option value="JP">Japonais</option>
+            <option value="ZH-CN">Chinois simplifié</option>
+            <option value="ZH-TW">Chinois traditionnel</option>
+            <option value="EN">Anglais</option>
+            <option value="KO">Coréen</option>
+          </select>
+        </label>
         <div className={styles.seriesField}>
           <span>Série</span>
           <div className={styles.seriesPicker} ref={seriesPickerRef}>
-            <button type="button" className={styles.seriesPickerTrigger} aria-haspopup="dialog" aria-expanded={seriesPickerOpen} disabled={loadingSets} onClick={() => setSeriesPickerOpen(open => !open)}>
-              <span>{selectedSet ? seriesLabel(selectedSet) : setId === ALL_SERIES ? isEnergySearch(query) ? 'Énergies · toutes les séries' : 'Toutes les séries · rechercher' : 'Choisir une série…'}</span>
+            <button type="button" className={styles.seriesPickerTrigger} aria-haspopup="dialog" aria-expanded={seriesPickerOpen} disabled={loadingSets || languageCode !== 'FR'} onClick={() => setSeriesPickerOpen(open => !open)}>
+              <span>{languageCode !== 'FR' ? 'Toutes les séries · versions étrangères vérifiées' : selectedSet ? seriesLabel(selectedSet) : setId === ALL_SERIES ? isEnergySearch(query) ? 'Énergies · toutes les séries' : 'Toutes les séries · rechercher' : 'Choisir une série…'}</span>
               <span className={styles.seriesPickerChevron} aria-hidden="true">▾</span>
             </button>
             {seriesPickerOpen && <div className={styles.seriesPickerOptions} role="dialog" aria-label="Séries du catalogue">
@@ -670,7 +748,7 @@ export default function CardCataloguePage() {
           </div>
         </div>
         {setId === ALL_SERIES && <label className={styles.searchField}>
-          <span>Nom, numéro ou finition</span>
+          <span>{languageCode === 'FR' ? 'Nom, numéro ou finition' : 'Nom, numéro ou série dans cette langue (ou nom français)'}</span>
           <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu, 257, Gold" />
         </label>}
         {selectedSet && <label className={styles.searchField}>
@@ -738,6 +816,8 @@ export default function CardCataloguePage() {
               <div className={styles.cardIdentity}>
                 <span className={styles.cardNumber}>{setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}{isUnnumberedEnergyCard(card) ? 'Sans numéro' : 'N° ' + card.collector_number}{card.card_type === 'Énergie' && (displayCopyrightYear || set?.release_date) ? displayCopyrightYear ? ' · ©' + displayCopyrightYear : ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
+                {card.frenchCardName && <small className={styles.foreignCounterpart}>Correspondance française : {card.frenchCardName}</small>}
+                {card.foreignPrinting && <small className={styles.foreignEditionBadge}>{languageCode} · impression vérifiée</small>}
                 <div className={styles.rarityRow}>
                   <span className={styles.rarity}>{isGoldEnergy(card) ? 'Gold · ' : ''}{card.rarity_label || 'Rareté non renseignée'}</span>
                   <span className={styles.ownershipInfo} ref={ownershipCardId === card.id ? ownershipInfoRef : null}>
@@ -867,7 +947,7 @@ export default function CardCataloguePage() {
         {!!selectedRows.length && <button className={styles.clearButton} type="button" disabled={saving} onClick={() => setSelection({})}>Effacer</button>}
       </aside>}
 
-      {setId && !loadingCards && !error && !cards.length && (setId !== ALL_SERIES || query.trim()) && <p className={styles.hint}>Aucune carte trouvée pour cette série ou cette recherche.</p>}
+      {setId && !loadingCards && !error && !cards.length && (setId !== ALL_SERIES || query.trim()) && <p className={styles.hint}>{languageCode === 'FR' ? 'Aucune carte trouvée pour cette série ou cette recherche.' : 'Aucune impression ' + languageCode + ' vérifiée ne correspond à cette recherche pour le moment.'}</p>}
 
       {zoomedCard && <div className={styles.modal} role="presentation" onClick={() => setZoomedCard(null)}>
         <div className={styles.modalContent} role="dialog" aria-modal="true" aria-label={'Carte ' + zoomedCard.card_name} onClick={event => event.stopPropagation()}>
