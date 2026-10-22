@@ -1566,3 +1566,19 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
 .collectionSealedSubtypeBreakdown li{display:inline-flex;align-items:center;gap:8px;padding:6px 9px;border:1px solid #eee4cf;border-radius:999px;background:#fff;font-size:.84rem}
 .collectionSealedSubtypeBreakdown li b{color:#172b43}
 @media(max-width:700px){.collectionSealedSubtypeBreakdown{gap:7px;margin-bottom:9px;padding:9px}.collectionSealedSubtypeBreakdown ul{gap:6px}.collectionSealedSubtypeBreakdown li{padding:6px 8px;font-size:.8rem}}
+
+
+/* Keep watchlist cards and their controls inside narrow phone screens. */
+.productList,.productCard,.productMain,.productMain>*{min-width:0}
+@media(max-width:600px){
+  .productCard{padding:12px}
+  .productMain h3{overflow-wrap:anywhere}
+  .productValues{min-width:0}
+  .marketStats{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .marketStats>div{min-width:0;overflow-wrap:anywhere}
+  .rowActions{justify-content:flex-start;flex-wrap:wrap}
+  .rowActions>label{flex:1 1 100%;min-width:0}
+  .rowActions>.miniBtn{flex:1 1 auto;min-width:0;text-align:center;white-space:normal;overflow-wrap:anywhere}
+  .formGrid,.formGrid>*{min-width:0}
+  .formGrid input,.formGrid button{max-width:100%;min-width:0}
+}
