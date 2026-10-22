@@ -16,6 +16,9 @@ export default function ProfilePage() {
   const [socialAccess, setSocialAccess] = useState(null)
   const [socialConsentMessage, setSocialConsentMessage] = useState('')
   const [withdrawingSocialConsent, setWithdrawingSocialConsent] = useState(false)
+  const [cardExchangeEnabled, setCardExchangeEnabled] = useState(false)
+  const [cardExchangeSurplus, setCardExchangeSurplus] = useState(0)
+  const [savingCardExchangeConsent, setSavingCardExchangeConsent] = useState(false)
   const [email, setEmail] = useState('')
   const [confirmationText, setConfirmationText] = useState('')
   const [confirmationEmail, setConfirmationEmail] = useState('')
@@ -38,6 +41,12 @@ export default function ProfilePage() {
       if (!active) return
       const socialRow = Array.isArray(socialData) ? socialData[0] : socialData
       setSocialAccess(socialError ? null : Boolean(socialRow?.can_access))
+
+      const { data: cardExchangeData } = await supabase.rpc('get_card_exchange_status')
+      if (!active) return
+      const cardExchangeRow = Array.isArray(cardExchangeData) ? cardExchangeData[0] : cardExchangeData
+      setCardExchangeEnabled(Boolean(cardExchangeRow?.enabled))
+      setCardExchangeSurplus(Number(cardExchangeRow?.surplus_copies || 0))
 
       const { data, error } = await supabase
         .from('profiles')
@@ -75,6 +84,22 @@ export default function ProfilePage() {
       setSocialConsentMessage('Ton accord est retiré. L’accès à la Communauté et aux Trades est fermé ; ta collection reste disponible.')
     }
     setWithdrawingSocialConsent(false)
+  }
+
+  async function updateCardExchangeConsent(event) {
+    const enabled = event.target.checked
+    setSavingCardExchangeConsent(true)
+    setSocialConsentMessage('')
+    const { error } = await supabase.rpc('set_card_exchange_consent', { p_enabled: enabled })
+    if (error) {
+      setSocialConsentMessage(error.message || 'Impossible de modifier ce consentement pour le moment.')
+    } else {
+      setCardExchangeEnabled(enabled)
+      setSocialConsentMessage(enabled
+        ? 'Tes exemplaires en surplus sont automatiquement proposés aux membres qui recherchent ces cartes.'
+        : 'Tes doubles ne sont plus proposés. Ta collection n’a pas été modifiée.')
+    }
+    setSavingCardExchangeConsent(false)
   }
 
   async function saveProfile(event) {
@@ -239,6 +264,21 @@ export default function ProfilePage() {
           {socialAccess === true ? (
             <div style={{ display: 'grid', gap: 12 }}>
               <p>Ton accord permet d’accéder à la Communauté et aux Trades.</p>
+              <label style={{ display: 'grid', gridTemplateColumns: '24px minmax(0, 1fr)', gap: 10, alignItems: 'start', padding: 14, borderRadius: 12, background: '#fff', border: '1px solid #d8e0e9', fontWeight: 700 }}>
+                <input
+                  type="checkbox"
+                  checked={cardExchangeEnabled}
+                  onChange={updateCardExchangeConsent}
+                  disabled={savingCardExchangeConsent}
+                  style={{ width: 20, height: 20, margin: '2px 0 0' }}
+                />
+                <span>Proposer automatiquement mes cartes en double aux membres</span>
+              </label>
+              <p style={{ margin: 0, color: '#526173' }}>
+                Si tu actives cette option, tous les exemplaires supplémentaires de tes cartes non gradées dans ta collection personnelle seront proposés automatiquement.
+                Une copie de chaque impression reste réservée. Les autres membres ne verront un pseudo et un nombre de doubles que si ces cartes leur manquent.
+                {cardExchangeEnabled ? ` ${cardExchangeSurplus} exemplaire(s) en surplus actuellement.` : ''}
+              </p>
               <button className="btn ghost" type="button" onClick={withdrawSocialConsent} disabled={withdrawingSocialConsent}>
                 {withdrawingSocialConsent ? 'Retrait…' : 'Retirer mon accord social'}
               </button>
