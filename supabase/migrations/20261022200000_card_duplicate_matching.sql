@@ -218,7 +218,7 @@ begin
     t.print_language,
     t.print_set_name,
     p.display_name,
-    count(*)::integer as copies
+    (count(*) - 1)::integer as copies
   from missing_printings t
   join public.collection_cards cc
     on cc.card_print_variant_id = t.variant_id
