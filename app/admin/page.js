@@ -287,7 +287,7 @@ export default function AdminPage() {
               aria-pressed={productKind === 'sealed'}
               onClick={() => changeProductKind('sealed')}
             >
-              Produits scellés <span>{products.filter(product => product.category === 'sealed').length}</span>
+              Produits scellés
             </button>
             <button
               type="button"
@@ -295,7 +295,7 @@ export default function AdminPage() {
               aria-pressed={productKind === 'card'}
               onClick={() => changeProductKind('card')}
             >
-              Cartes <span>{products.filter(product => product.category !== 'sealed').length}</span>
+              Cartes
             </button>
           </fieldset>
 
