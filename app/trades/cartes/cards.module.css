@@ -1,0 +1,15 @@
+.seriesSelect {
+  font-family: inherit;
+  font-size: 16px;
+}
+
+.seriesSelect option {
+  font-size: 16px;
+}
+
+@media (max-width: 700px) {
+  .seriesSelect,
+  .seriesSelect option {
+    font-size: 14px;
+  }
+}

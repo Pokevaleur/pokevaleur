@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
+import styles from './cards.module.css'
 
 const LANGUAGE_NAMES = {
   FR: 'Français',
@@ -163,9 +164,10 @@ export default function CardTradesPage() {
                 Série et langue de l’impression recherchée
                 <select
                   id="card-trade-series"
+                  className={styles.seriesSelect}
                   value={selectedId}
                   onChange={event => setSelectedId(event.target.value)}
-                  style={{ display: 'block', width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', padding: '12px 38px 12px 12px', border: '1px solid #cbd5e1', borderRadius: 12, font: 'inherit', backgroundColor: '#fff' }}
+                  style={{ display: 'block', width: '100%', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', padding: '12px 38px 12px 12px', border: '1px solid #cbd5e1', borderRadius: 12, backgroundColor: '#fff' }}
                 >
                   {options.map(option => <option key={option.id} value={option.id}>{optionLabel(option)}</option>)}
                 </select>
