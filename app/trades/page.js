@@ -192,7 +192,7 @@ export default function TradesPage() {
           <p className="muted">PokéValeur facilite la mise en relation. Chaque membre reste responsable de l’échange qu’il accepte.</p>
         </div>
         <div className="collectionHeaderActions">
-          <a className="btn ghost" href="/communaute">💬 Communauté</a>
+          <a className="btn ghost" href="/communaute">💬 Salon de discussion</a>
           <a className="btn ghost" href="/collection">← Ma collection</a>
         </div>
       </div>
