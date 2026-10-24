@@ -67,7 +67,16 @@ export default function AdminProductCatalogPage() {
   const searchResults = useMemo(() => {
     const needle = searchText(query.trim())
     if (needle.length < 2) return []
-    return products.filter(product => [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => searchText(value).includes(needle)))
+    return products
+      .filter(product => [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => searchText(value).includes(needle)))
+      .sort((a, b) => {
+        const aTypeMatch = searchText(a.product_type) === needle ? 0 : 1
+        const bTypeMatch = searchText(b.product_type) === needle ? 0 : 1
+        if (aTypeMatch !== bTypeMatch) return aTypeMatch - bTypeMatch
+        const seriesOrder = String(a.series || '').localeCompare(String(b.series || ''), 'fr')
+        if (seriesOrder) return seriesOrder
+        return String(a.name || '').localeCompare(String(b.name || ''), 'fr')
+      })
   }, [products, query])
   const options = key => [...new Set(products.map(product => product[key]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'fr'))
 
