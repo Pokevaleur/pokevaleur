@@ -2,7 +2,6 @@
 
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
-import { ProfileAvatar } from '../../lib/profile-avatars'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { filterCollectionItems } from '../../lib/collection-search.mjs'
@@ -28,15 +27,11 @@ const emptyForm = {
 export default function CollectionPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState(null)
-  const [profileIdentity, setProfileIdentity] = useState(null)
   const [collectionProfiles, setCollectionProfiles] = useState([])
   const [activeProfileId, setActiveProfileId] = useState(null)
   const [isSwitchingProfile, setIsSwitchingProfile] = useState(false)
   const activeProfileIdRef = useRef(null)
   const loadRequestRef = useRef(0)
-  const [childName, setChildName] = useState('')
-  const [familyMessage, setFamilyMessage] = useState('')
-  const [transferLink, setTransferLink] = useState('')
   const [items, setItems] = useState([])
   const [form, setForm] = useState(emptyForm)
   const [message, setMessage] = useState('')
@@ -135,11 +130,6 @@ export default function CollectionPage() {
     if (!isCurrentRequest()) return
     setUser(user)
     if (!user) return
-
-    const { data: identity } = await supabase.from('profiles')
-      .select('display_name,avatar_key').eq('id', user.id).maybeSingle()
-    if (!isCurrentRequest()) return
-    setProfileIdentity(identity || null)
 
     const { data: profileRows, error: profilesError } = await supabase
       .from('collection_profiles')
@@ -260,41 +250,6 @@ export default function CollectionPage() {
       await load(profileId)
     } finally {
       setIsSwitchingProfile(false)
-    }
-  }
-
-  async function createChildProfile(e) {
-    e.preventDefault()
-    const name = childName.trim()
-    if (name.length < 1 || name.length > 32) return setFamilyMessage('Le prénom ou pseudo doit contenir de 1 à 32 caractères.')
-    const { data, error } = await supabase.from('collection_profiles').insert({
-      manager_user_id: user.id,
-      profile_type: 'child',
-      display_name: name,
-      avatar_key: 'star'
-    }).select('id').single()
-    if (error) return setFamilyMessage(error.message)
-    setChildName('')
-    setFamilyMessage(`La collection de ${name} est créée.`)
-    await selectCollectionProfile(data.id)
-  }
-
-  async function createTransferLink(profile) {
-    setFamilyMessage('')
-    const parentConsent = window.confirm('Si l’enfant a moins de 15 ans, confirme être son parent ou tuteur et autoriser son accès à la Communauté et aux Trades après son propre accord. Les règles demandent de rester respectueux, de ne pas partager ses coordonnées et de ne pas effectuer de paiement dans PokéValeur. Choisir « Annuler » crée quand même le lien de transfert, sans accès social.')
-    const { data, error } = await supabase.rpc('create_collection_transfer_invite_with_parent_consent', {
-      profile_id: profile.id,
-      p_parent_consent: parentConsent,
-      p_terms_version: 'social-v1-2026-10-03'
-    })
-    if (error) return setFamilyMessage(error.message)
-    const link = `${window.location.origin}/collection/rejoindre?token=${encodeURIComponent(data)}`
-    setTransferLink(link)
-    try {
-      await navigator.clipboard.writeText(link)
-      setFamilyMessage('Lien de transfert copié. Il est valable 7 jours et ne peut servir qu’une fois.')
-    } catch {
-      setFamilyMessage('Lien créé. Copie-le et transmets-le à l’enfant : il est valable 7 jours et ne peut servir qu’une fois.')
     }
   }
 
@@ -928,30 +883,6 @@ export default function CollectionPage() {
         </div>
         <p className="muted collectionSearchStatus" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Saisis un nom ou choisis un filtre.'}</p>
       </section>
-      <details className="panel collectionToolsPanel collectionFamilyPanel">
-        <summary>Collections de la famille</summary>
-        <p className="muted">Chaque enfant peut commencer sans compte. Quand il en crée un, tu peux lui transférer toute sa collection avec un lien à usage unique.</p>
-        <div className="buttonRow" style={{ flexWrap: 'wrap', gap: 8 }}>
-          {collectionProfiles.map(profile => (
-            <button key={profile.id} className={`btn ${profile.id === activeProfileId ? '' : 'ghost'}`} type="button" disabled={isSwitchingProfile} onClick={() => selectCollectionProfile(profile.id)}>
-              <ProfileAvatar className="collectionProfileAvatar" avatarKey={profile.is_default ? profileIdentity?.avatar_key : profile.avatar_key} aria-hidden="true" /> {profile.display_name}{profile.transferred_at ? ' (transférée)' : profile.is_default ? ' (toi)' : ''}
-            </button>
-          ))}
-        </div>
-        <form onSubmit={createChildProfile} className="buttonRow" style={{ marginTop: 14, gap: 8, flexWrap: 'wrap' }}>
-          <input aria-label="Prénom ou pseudo de l’enfant" value={childName} onChange={e => setChildName(e.target.value)} placeholder="Prénom ou pseudo de l’enfant" maxLength={32} disabled={isSwitchingProfile} />
-          <button className="btn" type="submit" disabled={isSwitchingProfile}>＋ Créer sa collection</button>
-        </form>
-        {collectionProfiles.filter(profile => profile.profile_type === 'child').map(profile => (
-          <div key={`invite-${profile.id}`} className="buttonRow" style={{ marginTop: 10 }}>
-            <button type="button" className="btn ghost" onClick={() => createTransferLink(profile)}>Transférer « {profile.display_name} » après création de son compte</button>
-          </div>
-        ))}
-        {isSwitchingProfile && <p role="status" className="muted">Chargement de la collection sélectionnée…</p>}
-        {familyMessage && <p role="status" className="muted">{familyMessage}</p>}
-        {transferLink && <p><a href={transferLink}>{transferLink}</a></p>}
-      </details>
-
       <section className="contentGrid">
         <div className="panel collectionObjectsPanel" id="objets">
           <div className="listHeader"><h2>Mes objets</h2></div>
