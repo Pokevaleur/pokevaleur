@@ -414,6 +414,15 @@ export default function CardChecklistPage() {
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const seriesPickerRef = useRef(null)
 
+  function openCardZoom(card, seriesName = '') {
+    const ownedVersions = (card.card_print_variants || []).map(variant => ({
+      label: variant.variant_label || variant.variant_key || variant.finish_code || 'Version',
+      quantity: (owned[variant.id] || []).length
+    })).filter(version => version.quantity > 0)
+
+    setZoomedCard({ ...card, seriesName, ownedVersions })
+  }
+
   useEffect(() => {
     const refreshOnReturn = () => {
       if (document.visibilityState === 'hidden') return
@@ -1433,7 +1442,7 @@ export default function CardChecklistPage() {
                 return <article className={styles.card} key={card.id}>
                   <div className={styles.cardTop}>
                     <div className={styles.artFrame}>
-                      {cardImage && <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => setZoomedCard({ ...card, seriesName: cardSet?.set_name || '' })}>
+                      {cardImage && <button type="button" className={styles.artZoomButton} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => openCardZoom(card, cardSet?.set_name || '')}>
                         <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.parentElement.dataset.imageMissing = 'true' }} />
                       </button>}
                       <span className={styles.zoomHint} aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><circle cx="10.8" cy="10.8" r="6.3" fill="none" stroke="currentColor" strokeWidth="2.2"/><path d="m15.4 15.4 5.1 5.1" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"/></svg></span>
@@ -1530,7 +1539,7 @@ export default function CardChecklistPage() {
                       type="button"
                       className={styles.masterChecklistThumb}
                       aria-label={'Agrandir l’image de ' + card.card_name}
-                      onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })}
+                      onClick={() => openCardZoom(card, selectedSet?.set_name || '')}
                       data-image-missing={!cardImage ? 'true' : undefined}
                     >
                       {cardImage
@@ -1539,7 +1548,7 @@ export default function CardChecklistPage() {
                     </button>
                     <div className={styles.masterChecklistMeta}>
                       <span className={styles.masterChecklistNumber}>N° {card.collector_number}</span>
-                      <h2 className={styles.masterChecklistName}><button type="button" className={styles.masterChecklistNameButton} onClick={() => setZoomedCard({ ...card, seriesName: selectedSet?.set_name || '' })} aria-label={'Voir la carte ' + card.card_name}>{card.card_name}</button></h2>
+                      <h2 className={styles.masterChecklistName}><button type="button" className={styles.masterChecklistNameButton} onClick={() => openCardZoom(card, selectedSet?.set_name || '')} aria-label={'Voir la carte ' + card.card_name}>{card.card_name}</button></h2>
                       <span className={styles.masterChecklistRarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</span>
                     </div>
                   </div>
@@ -1603,6 +1612,10 @@ export default function CardChecklistPage() {
           <button type="button" className={styles.zoomClose} aria-label="Fermer l’image agrandie" onClick={() => setZoomedCard(null)}>×</button>
           <img className={styles.zoomImage} src={imageUrl(zoomedCard, 'high')} alt={'Illustration agrandie de ' + zoomedCard.card_name} onError={event => { const fallback = imageUrl(zoomedCard, 'low'); if (event.currentTarget.src !== fallback) event.currentTarget.src = fallback }} />
           <p><strong>{zoomedCard.card_name}</strong> · N° {zoomedCard.collector_number}{zoomedCard.seriesName ? ' · ' + zoomedCard.seriesName : ''}</p>
+          {zoomedCard.ownedVersions?.length > 0 && <div className={styles.zoomOwnedVersions} aria-label={'Versions possédées de ' + zoomedCard.card_name}>
+            <strong>Dans ma collection</strong>
+            <ul>{zoomedCard.ownedVersions.map((version, index) => <li key={index}><span>{version.label}</span><b>{version.quantity} exemplaire{version.quantity > 1 ? 's' : ''}</b></li>)}</ul>
+          </div>}
           <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} />
         </section>
       </div>}
