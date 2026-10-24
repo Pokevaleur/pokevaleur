@@ -46,13 +46,13 @@ const navLinks = [
     ]
   },
   { href: '/opportunites', label: 'Watchlist' },
-  { href: '/communaute', label: 'Communauté' },
   {
     href: '/trades',
-    label: 'Trades',
+    label: 'Échanges',
     children: [
       { href: '/trades', label: 'Produits scellés' },
-      { href: '/trades/cartes', label: 'Doubles de cartes' }
+      { href: '/trades/cartes', label: 'Doubles de cartes' },
+      { href: '/communaute', label: 'Salon de discussion' }
     ]
   },
   { href: '/progression', label: 'Mon grade' },
