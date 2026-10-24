@@ -25,6 +25,7 @@ const navLinks = [
         ]
       },
       { href: '/collection/classeurs', label: 'Mes classeurs' },
+      { href: '/collection/import-export', label: 'Import-Export', memberOnly: true },
       {
         href: '/collection/valeur',
         label: 'Valeur',
