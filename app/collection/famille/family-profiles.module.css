@@ -1,0 +1,36 @@
+.page { display:grid; gap:16px; }
+.header { display:grid; gap:8px; }
+.backLink { width:max-content; color:#315b84; font-weight:750; }
+.kicker { margin:4px 0 0; color:#957528; font-size:.82rem; font-weight:850; letter-spacing:.08em; text-transform:uppercase; }
+.header h1 { margin:0; color:#122033; font-size:clamp(1.8rem,5vw,2.6rem); line-height:1.1; }
+.header>p:last-child { margin:0; color:#5c6b7d; line-height:1.5; }
+.profilePanel,.createPanel,.transferPanel { padding:20px; }
+.sectionHeading { display:flex; align-items:center; justify-content:space-between; gap:14px; margin-bottom:16px; }
+.sectionHeading h2,.createPanel h2,.transferPanel h2 { margin:0 0 5px; color:#183451; font-size:1.15rem; }
+.sectionHeading p,.createPanel>p,.transferPanel>p { margin:0; }
+.profileList { display:grid; gap:10px; }
+.profileCard { display:flex; align-items:center; gap:12px; min-width:0; padding:12px; border:1px solid #dfe6ee; border-radius:14px; background:#fff; }
+.profileCardActive { border-color:#9bb8d2; background:#f3f8fd; }
+.profileInfo { display:grid; flex:1; min-width:0; gap:3px; }
+.profileInfo strong { overflow-wrap:anywhere; color:#1c3047; }
+.profileInfo span { color:#65758b; font-size:.82rem; }
+.createForm { display:grid; gap:8px; margin-top:16px; }
+.createForm>label { color:#42536a; }
+.createControls { display:flex; align-items:stretch; gap:10px; }
+.createControls input { flex:1; min-width:0; }
+.transferList { display:grid; gap:10px; margin-top:14px; }
+.transferRow { display:flex; align-items:center; justify-content:space-between; gap:12px; padding:10px 0; border-top:1px solid #e6ebf1; }
+.transferRow strong { min-width:0; overflow-wrap:anywhere; }
+.message { margin:0; }
+.linkBox { margin:0; padding:12px; border:1px solid #dce3eb; border-radius:10px; overflow-wrap:anywhere; background:#fff; }
+.linkBox a { color:#1b5e92; text-decoration:underline; }
+
+@media(max-width:600px) {
+  .profilePanel,.createPanel,.transferPanel { padding:15px; }
+  .sectionHeading { align-items:stretch; flex-direction:column; }
+  .sectionHeading>a { text-align:center; }
+  .profileCard { flex-wrap:wrap; }
+  .profileCard>button { width:100%; }
+  .createControls { flex-direction:column; }
+  .transferRow { align-items:stretch; flex-direction:column; }
+}
