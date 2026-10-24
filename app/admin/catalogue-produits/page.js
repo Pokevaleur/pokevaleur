@@ -27,7 +27,7 @@ const searchText = value => String(value || '').normalize('NFD').replace(/[\u030
 const upcSearchTerms = new Set(['upc', 'ultra premium collection', 'collection ultra premium'])
 const isUpcProduct = product => {
   const searchable = searchText([product.name, product.product_type, product.category].filter(Boolean).join(' '))
-  return /\\bupc\\b/.test(searchable) || searchable.includes('ultra premium collection') || searchable.includes('collection ultra premium')
+  return searchable.split(/\s+/).includes('upc') || searchable.includes('ultra premium collection') || searchable.includes('collection ultra premium')
 }
 const asInput = (key, value) => {
   if (value == null) return ''
