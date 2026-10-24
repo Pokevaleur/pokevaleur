@@ -1,0 +1,155 @@
+.page {
+  min-height: 100vh;
+  padding: 28px 18px 56px;
+  background:
+    radial-gradient(ellipse at 90% 0%, rgba(221, 239, 255, .78), transparent 42%),
+    #f4f7fb;
+  color: #1b2a3d;
+}
+.container {
+  width: min(100%, 980px);
+  margin: 0 auto;
+}
+.backLink {
+  display: inline-flex;
+  margin-bottom: 22px;
+  color: #35587f;
+  font-weight: 700;
+  text-decoration: none;
+}
+.header {
+  margin-bottom: 24px;
+}
+.eyebrow {
+  color: #5e7fa6;
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .12em;
+  text-transform: uppercase;
+}
+.header h1 {
+  margin: 5px 0 8px;
+  color: #173052;
+  font-size: clamp(1.8rem, 4vw, 2.5rem);
+}
+.header p {
+  margin: 0;
+  max-width: 640px;
+  color: #52657b;
+  line-height: 1.6;
+}
+.panel, .futurePanel {
+  margin: 16px 0;
+  padding: clamp(18px, 3vw, 28px);
+  border: 1px solid #dce4ef;
+  border-radius: 20px;
+  background: rgba(255,255,255,.96);
+  box-shadow: 0 12px 32px rgba(24, 47, 78, .07);
+}
+.panelHeading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.panelHeading h2 {
+  margin: 0 0 6px;
+  color: #173052;
+  font-size: 1.24rem;
+}
+.panelHeading p, .note, .empty, .futurePanel p {
+  margin: 0;
+  color: #586a7e;
+  line-height: 1.55;
+}
+.formatBadge {
+  flex: none;
+  padding: 6px 10px;
+  border: 1px solid #dce6f2;
+  border-radius: 999px;
+  background: #f4f8fd;
+  color: #31577e;
+  font-size: .78rem;
+  font-weight: 800;
+}
+.summary {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 22px 0 16px;
+}
+.summary > div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  padding: 13px 15px;
+  border: 1px solid #e0e7ef;
+  border-radius: 14px;
+  background: linear-gradient(140deg, #f8fbff, #fff);
+}
+.summary strong {
+  overflow-wrap: anywhere;
+  color: #173052;
+  font-size: 1.08rem;
+}
+.summary span {
+  color: #62748a;
+  font-size: .8rem;
+}
+.note {
+  margin: 0 0 17px;
+  font-size: .9rem;
+}
+.primaryButton, .secondaryButton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  padding: 11px 17px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 800;
+  text-decoration: none;
+  cursor: pointer;
+}
+.primaryButton {
+  border: 1px solid #173c84;
+  background: #173c84;
+  color: #fff;
+}
+.primaryButton:hover:not(:disabled) { background: #102f6d; }
+.primaryButton:disabled { cursor: wait; opacity: .65; }
+.secondaryButton {
+  margin-top: 18px;
+  border: 1px solid #c8d6e7;
+  background: #f7faff;
+  color: #234b77;
+}
+.secondaryButton:hover { background: #edf4fd; }
+.error {
+  margin: 0 0 16px;
+  padding: 12px 14px;
+  border: 1px solid #edc2c2;
+  border-radius: 12px;
+  background: #fff6f6;
+  color: #8a2525;
+}
+.empty { margin-top: 20px; }
+.futurePanel {
+  border-style: dashed;
+  background: rgba(255,255,255,.65);
+  box-shadow: none;
+}
+.futurePanel strong {
+  display: block;
+  margin-bottom: 5px;
+  color: #35587f;
+}
+@media (max-width: 600px) {
+  .page { padding: 20px 12px 42px; }
+  .summary { grid-template-columns: 1fr; }
+  .summary > div { grid-template-columns: minmax(0, 1fr) auto; align-items: center; }
+  .summary span { text-align: right; }
+  .panelHeading h2 { font-size: 1.08rem; }
+  .primaryButton, .secondaryButton { width: 100%; text-align: center; }
+}
