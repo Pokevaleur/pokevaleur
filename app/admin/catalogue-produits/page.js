@@ -24,6 +24,11 @@ const groups = [
 const valueFields = new Set(['current_value', 'zero_defect_value', 'release_year', 'case_unit_count'])
 const requiredFields = new Set(['name', 'category', 'currency', 'image_usage_status'])
 const searchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
+const upcSearchTerms = new Set(['upc', 'ultra premium collection', 'collection ultra premium'])
+const isUpcProduct = product => {
+  const searchable = searchText([product.name, product.product_type, product.category].filter(Boolean).join(' '))
+  return searchable.split(/\s+/).includes('upc') || searchable.includes('ultra premium collection') || searchable.includes('collection ultra premium')
+}
 const asInput = (key, value) => {
   if (value == null) return ''
   if (key.endsWith('_at') && value) return String(value).slice(0, 16)
@@ -68,11 +73,8 @@ export default function AdminProductCatalogPage() {
     const needle = searchText(query.trim())
     if (needle.length < 2) return []
     return products
-      .filter(product => [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => searchText(value).includes(needle)))
+      .filter(product => (upcSearchTerms.has(needle) && isUpcProduct(product)) || [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => searchText(value).includes(needle)))
       .sort((a, b) => {
-        const aTypeMatch = searchText(a.product_type) === needle ? 0 : 1
-        const bTypeMatch = searchText(b.product_type) === needle ? 0 : 1
-        if (aTypeMatch !== bTypeMatch) return aTypeMatch - bTypeMatch
         const seriesOrder = String(a.series || '').localeCompare(String(b.series || ''), 'fr')
         if (seriesOrder) return seriesOrder
         return String(a.name || '').localeCompare(String(b.name || ''), 'fr')
