@@ -55,9 +55,18 @@ async function getAdminClient(request) {
 export async function GET(request) {
   const { adminClient, error } = await getAdminClient(request)
   if (error) return error
-  const { data, error: queryError } = await adminClient.from('products').select(productFields).order('name').order('id')
-  if (queryError) return jsonError('Impossible de charger les fiches du catalogue.', 503)
-  return NextResponse.json({ products: data || [] }, { headers: { 'Cache-Control': 'no-store' } })
+  // PostgREST/Supabase can cap a response at 1,000 rows. Read the catalogue in
+  // stable, bounded pages so records beyond that limit remain searchable in admin.
+  const pageSize = 500
+  const products = []
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error: queryError } = await adminClient.from('products')
+      .select(productFields).order('name').order('id').range(offset, offset + pageSize - 1)
+    if (queryError) return jsonError('Impossible de charger les fiches du catalogue.', 503)
+    products.push(...(data || []))
+    if (!data || data.length < pageSize) break
+  }
+  return NextResponse.json({ products }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 export async function POST(request) {
