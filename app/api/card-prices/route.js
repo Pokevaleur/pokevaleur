@@ -74,6 +74,7 @@ async function mapWithLimit(values, limit, callback) {
 }
 
 function tcgdexUrlForCard(card) {
+  if (TCGDEX_CARD_URL.test(card?.source_url || '')) return card.source_url
   if (TCGDEX_CARD_URL.test(card?.image_source_url || '')) return card.image_source_url
   if (String(card?.set_code || '').toLowerCase() === '2024sv' && /^\d+$/.test(String(card?.collector_number || ''))) {
     return `https://api.tcgdex.net/v2/fr/sets/2024sv/${card.collector_number}`
