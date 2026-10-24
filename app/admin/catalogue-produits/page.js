@@ -23,7 +23,7 @@ const groups = [
 
 const valueFields = new Set(['current_value', 'zero_defect_value', 'release_year', 'case_unit_count'])
 const requiredFields = new Set(['name', 'category', 'currency', 'image_usage_status'])
-const searchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr')
+const searchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr').replace(/[^a-z0-9]+/g, ' ').trim()
 const upcSearchTerms = new Set(['upc', 'ultra premium collection', 'collection ultra premium'])
 const isUpcProduct = product => {
   const searchable = searchText([product.name, product.product_type, product.category].filter(Boolean).join(' '))
