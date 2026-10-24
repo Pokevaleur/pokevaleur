@@ -348,3 +348,34 @@
   .duplicatePdfPreviewCards { grid-template-columns:minmax(0,1fr); gap:9px; padding:10px; }
   .duplicatePdfPreviewCard > img, .duplicatePdfPreviewNoImage { width:64px; height:92px; }
 }
+
+.zoomOwnedVersions {
+  width: min(100%, 560px);
+  padding: 12px 16px;
+  border: 1px solid #d9e1ec;
+  border-radius: 16px;
+  background: #f7f9fc;
+  color: #30445b;
+}
+.zoomOwnedVersions > strong {
+  display: block;
+  margin-bottom: 6px;
+  font-size: .96rem;
+}
+.zoomOwnedVersions ul {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.zoomOwnedVersions li {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 4px 14px;
+  line-height: 1.4;
+}
+.zoomOwnedVersions li b {
+  white-space: nowrap;
+}
