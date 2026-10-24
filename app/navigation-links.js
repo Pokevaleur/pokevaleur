@@ -12,6 +12,7 @@ const navLinks = [
   {
     label: 'Ma Collection',
     children: [
+      { href: '/collection/famille', label: 'Collections de la famille', memberOnly: true },
       { href: '/collection', label: 'Produits scellés' },
       { href: '/collection?search=ETB', label: 'ETB' },
       { href: '/collection/cartes', label: 'Mes cartes' },
