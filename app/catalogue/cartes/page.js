@@ -814,8 +814,8 @@ export default function CardCataloguePage() {
           <span>{selectedMcDonaldsSet ? 'Filtrer les éditions McDonald’s' : 'Filtrer cette série'}</span>
           <input type="search" value={filterQuery} onChange={event => { setFilterQuery(event.target.value); setSelection({}) }} placeholder="Numéro ou nom…" />
         </label>}
-        {profiles.length > 1 && <label className={styles.profileField}>
-          <span>Ajouter à la collection</span>
+        {user && profiles.length > 0 && <label className={styles.profileField}>
+          <span>Profil de collection</span>
           <select value={profileId} onChange={event => selectProfile(event.target.value)}>
             {profiles.map(profile => <option value={profile.id} key={profile.id}>{profile.display_name || (profile.profile_type === 'adult' ? 'Ma collection' : 'Collection')}</option>)}
           </select>
