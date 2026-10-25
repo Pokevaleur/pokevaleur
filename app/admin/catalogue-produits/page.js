@@ -121,7 +121,7 @@ export default function AdminProductCatalogPage() {
     return products
       .filter(product => {
         if (seriesTarget) {
-          const terms = searchText(seriesSearch.text).split(/\\s+/).filter(Boolean)
+          const terms = searchText(seriesSearch.text).split(/\s+/).filter(Boolean)
           const searchable = searchText([product.name, product.series, product.product_type, product.category, product.case_reference, product.id].filter(Boolean).join(' '))
           const productType = searchText(product.product_type)
           const isCaseResult = terms.includes('display') && productType.startsWith('case')
