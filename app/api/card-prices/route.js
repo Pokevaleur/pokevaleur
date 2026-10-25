@@ -196,7 +196,7 @@ function isRgbMewCard(card) {
 }
 
 function isCatalogEnergyMarketCard(card) {
-  return String(card?.set_code || '').toLowerCase() === 'mee30'
+  return ['mee30', 'tk-sm-l', 'tk-sm-r'].includes(String(card?.set_code || '').toLowerCase())
 }
 
 function cardmarketEnergyName(cardName) {
@@ -216,9 +216,27 @@ function cardmarketEnergyName(cardName) {
 function cardmarketProductForCatalogEnergy(card, products, expansionProducts) {
   const setCode = String(card?.set_code || '').toLowerCase()
   const energyName = cardmarketEnergyName(card?.card_name)
-  if (!energyName || setCode !== 'mee30') return null
-  const collectorNumber = String(card?.collector_number || '').padStart(3, '0')
-  const expectedName = productText(energyName + ' (MEE ' + collectorNumber + ')')
+  if (!energyName) return null
+
+  let expectedName
+  if (setCode === 'mee30') {
+    const collectorNumber = String(card?.collector_number || '').padStart(3, '0')
+    expectedName = productText(energyName + ' (MEE ' + collectorNumber + ')')
+  } else if (setCode === 'tk-sm-l' || setCode === 'tk-sm-r') {
+    const trainerEnergyName = productText(card?.card_name).includes('electrique') || productText(card?.card_name).includes('electrik')
+      ? 'Lightning Energy'
+      : productText(card?.card_name).includes('combat')
+        ? 'Fighting Energy'
+        : productText(card?.card_name).includes('psy')
+          ? 'Psychic Energy'
+          : null
+    if (!trainerEnergyName) return null
+    const trainerPrefix = setCode === 'tk-sm-l' ? 'L' : 'A'
+    const collectorNumber = String(card?.collector_number || '').padStart(2, '0')
+    expectedName = productText(trainerEnergyName + ' (TK10 ' + trainerPrefix + collectorNumber + ')')
+  } else {
+    return null
+  }
   const matches = products.filter(product => productText(product?.name) === expectedName)
   if (matches.length === 1) return matches[0]
   if (!matches.length) return null
