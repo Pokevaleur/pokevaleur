@@ -22,20 +22,20 @@ const emptyObservation = {
 function normalizeMarketText(value) {
   return String(value || '')
     .normalize('NFD')
-    .replace(/[\\u0300-\\u036f]/g, '')
+    .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .replace(/[–—]/g, ' ')
-    .replace(/\\s+/g, ' ')
+    .replace(/\s+/g, ' ')
     .trim()
 }
 
 function matchesSealedMarketSearch(product, query) {
-  const normalizedQuery = normalizeMarketText(query).replace(/\\bme\\s*0?6\\b/g, 'me06')
-  const tokens = normalizedQuery.split(/\\s+/).filter(Boolean)
+  const normalizedQuery = normalizeMarketText(query).replace(/\bme\s*0?6\b/g, 'me06')
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean)
   const name = normalizeMarketText(product.name)
   const series = normalizeMarketText(product.series)
   const type = normalizeMarketText(product.product_type)
-  const allText = `${name} ${series} ${type}`
+  const allText = name + ' ' + series + ' ' + type
 
   return tokens.every(token => {
     if (token === 'etb') return type === 'etb'
