@@ -146,7 +146,9 @@ export default function AdminProductCatalogPage() {
       </select>
     }
     if (type === 'product-select') return <select value={value} onChange={event => change(key, event.target.value)}><option value="">Aucun produit associé</option>{products.filter(item => item.id !== selectedId).map(item => <option key={item.id} value={item.id}>{item.name} · {item.product_type || item.category}</option>)}</select>
-    return <input type={type} step={type === 'number' ? (key === 'release_year' || key === 'case_unit_count' ? '1' : '0.01') : undefined} required={requiredFields.has(key)} value={value} onChange={event => change(key, event.target.value)} />
+    // Catalogue images may use same-site relative paths, so don't apply browser URL validation here.
+    const inputType = key === 'image_url' && type === 'url' ? 'text' : type
+    return <input type={inputType} step={type === 'number' ? (key === 'release_year' || key === 'case_unit_count' ? '1' : '0.01') : undefined} required={requiredFields.has(key)} value={value} onChange={event => change(key, event.target.value)} />
   }
 
   return <main className={styles.page}>
