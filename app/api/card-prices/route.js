@@ -355,7 +355,15 @@ export async function POST(request) {
         set_code: savedCard.card_sets?.set_code
       } : {}),
       variants: submittedVariants.length ? submittedVariants : canonical,
-      tcgdexUrl: tcgdexUrlForCard(card)
+      tcgdexUrl: tcgdexUrlForCard({
+        ...card,
+        ...(savedCard ? {
+          source_url: savedCard.source_url,
+          image_source_url: savedCard.image_source_url,
+          set_code: savedCard.card_sets?.set_code,
+          collector_number: savedCard.collector_number
+        } : {})
+      })
     }
   })
     .filter(card => typeof card?.id === 'string' && (
