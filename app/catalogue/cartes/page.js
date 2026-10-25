@@ -12,7 +12,7 @@ const MCDONALDS_SERIES = '__mcdonalds_series__'
 const ZENITH_MAIN_SET_CODE = 'swsh12.5'
 const ZENITH_GALLERY_SET_CODE = 'swsh12.5gg'
 const DEDICATED_ENERGY_SET_CODES = new Set(['sve', 'uen17', 'uen19', 'uen20', 'uen22', 'sme17', 'sme19', 'mee', 'mee30', 'sv10.5e'])
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
 const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
 
 function normalizedCardName(name) {
@@ -95,6 +95,32 @@ function isZenithGallerySet(set) {
 
 function relatedSet(card) {
   return Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+}
+
+function formatCatalogPrice(value) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value)
+}
+
+function priceDetailsText(price) {
+  const basisLabels = {
+    avg30: 'moyenne Cardmarket sur 30 jours',
+    'avg30-holo': 'moyenne Cardmarket holographique sur 30 jours',
+    avg7: 'moyenne Cardmarket sur 7 jours',
+    'avg7-holo': 'moyenne Cardmarket sur 7 jours',
+    avg: 'prix moyen Cardmarket',
+    'avg-holo': 'prix moyen Cardmarket',
+    trend: 'tendance Cardmarket',
+    'trend-holo': 'tendance Cardmarket',
+    marketPrice: 'prix de marché TCGplayer',
+    midPrice: 'prix médian TCGplayer'
+  }
+  const updated = price?.observedAt && !Number.isNaN(Date.parse(price.observedAt))
+    ? 'données du ' + new Date(price.observedAt).toLocaleDateString('fr-FR')
+    : ''
+  const converted = price?.exchange?.date
+    ? 'conversion du ' + new Date(price.exchange.date + 'T00:00:00').toLocaleDateString('fr-FR')
+    : ''
+  return [price?.source, basisLabels[price?.basis] || price?.basis, updated, converted].filter(Boolean).join(' · ')
 }
 
 function isGoldEnergy(card) {
@@ -212,6 +238,10 @@ export default function CardCataloguePage() {
   const [selection, setSelection] = useState({})
   const [saving, setSaving] = useState(false)
   const [zoomedCard, setZoomedCard] = useState(null)
+  const [showPrices, setShowPrices] = useState(false)
+  const [marketPrices, setMarketPrices] = useState({})
+  const [marketPricesLoading, setMarketPricesLoading] = useState(false)
+  const [marketPricesError, setMarketPricesError] = useState('')
   const [ownershipCardId, setOwnershipCardId] = useState(null)
   const [ownershipPopoverPosition, setOwnershipPopoverPosition] = useState(null)
   const [removingCopyId, setRemovingCopyId] = useState('')
@@ -586,6 +616,60 @@ export default function CardCataloguePage() {
     return () => { cancelled = true; window.clearTimeout(timer) }
   }, [supabase, setId, query, profileId, sets, languageCode, foreignSetId])
 
+  useEffect(() => {
+    if (!showPrices || languageCode !== 'FR' || !cards.length) {
+      setMarketPrices({})
+      setMarketPricesLoading(false)
+      setMarketPricesError('')
+      return
+    }
+
+    let cancelled = false
+    const controller = new AbortController()
+    async function loadMarketPrices() {
+      setMarketPrices({})
+      setMarketPricesError('')
+      setMarketPricesLoading(true)
+      try {
+        const nextPrices = {}
+        for (let offset = 0; offset < cards.length; offset += 400) {
+          const batch = cards.slice(offset, offset + 400)
+          const response = await fetch('/api/card-prices', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ cards: batch.map(card => ({
+              id: card.id,
+              source_url: card.source_url,
+              set_code: relatedSet(card)?.set_code,
+              collector_number: card.collector_number,
+              variants: (card.card_print_variants || []).map(variant => ({
+                id: variant.id,
+                finish_code: variant.finish_code
+              }))
+            })) }),
+            signal: controller.signal
+          })
+          if (!response.ok) throw new Error('Les cotes sont indisponibles pour le moment.')
+          const payload = await response.json()
+          for (const price of payload.prices || []) nextPrices[price.cardId] = price
+        }
+        if (!cancelled) setMarketPrices(nextPrices)
+      } catch (priceError) {
+        if (!cancelled && priceError.name !== 'AbortError') {
+          setMarketPricesError(priceError.message || 'Impossible de charger les cotes.')
+        }
+      } finally {
+        if (!cancelled) setMarketPricesLoading(false)
+      }
+    }
+
+    loadMarketPrices()
+    return () => {
+      cancelled = true
+      controller.abort()
+    }
+  }, [showPrices, languageCode, cards])
+
   const filteredSets = sets.filter(set => !isDedicatedEnergySet(set) && !isZenithGallerySet(set)
     && normalizedSearchText([seriesLabel(set), set.series_name, set.set_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
   const filteredForeignSets = foreignSets.filter(set => normalizedSearchText([set.set_name, set.series_name_fr, set.series_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
@@ -839,6 +923,13 @@ export default function CardCataloguePage() {
           : '/collection/cartes?set=' + encodeURIComponent(setId) + '&collection=owned'}>{selectedMcDonaldsSet ? 'Voir mon classeur McDonald’s →' : 'Voir mes cartes de cette série →'}</a>}
       </div>}
 
+      {visibleCards.length > 0 && !loadingCards && languageCode === 'FR' && <label className={styles.priceToggle}>
+        <input type="checkbox" checked={showPrices} onChange={event => setShowPrices(event.target.checked)} />
+        <span>Afficher les cotes</span>
+        {marketPricesLoading && <small role="status">Chargement…</small>}
+      </label>}
+      {marketPricesError && showPrices && <p className={styles.message} role="alert">{marketPricesError}</p>}
+
       {cards.length > 0 && !loadingCards && (
         <section className={styles.checklist} aria-label={selectedSet ? 'Liste des cartes de ' + seriesLabel(selectedSet) : 'Résultats de recherche'}>
           {!visibleCards.length && <p className={styles.hint}>Aucune carte ne correspond à ce filtre.</p>}
@@ -860,6 +951,7 @@ export default function CardCataloguePage() {
               ? [copyrightYearVariant.image_url, ...storedImageCandidates].filter((url, index, values) => values.indexOf(url) === index)
               : storedImageCandidates
             const imageUrl = imageCandidates[0] || ''
+            const cardMarketPrice = marketPrices[card.id] || null
             const ownedVariants = variants.map(variant => ({
               variant,
               copies: owned[variant.id] || []
@@ -948,6 +1040,16 @@ export default function CardCataloguePage() {
                     </div>}
                   </span>
                 </div>
+                {showPrices && <button
+                  type="button"
+                  className={styles.catalogPrice}
+                  onClick={() => setZoomedCard(card)}
+                  aria-label={cardMarketPrice?.amount != null
+                    ? 'Voir les finitions et le détail du prix de ' + card.card_name
+                    : 'Voir les cotes disponibles pour ' + card.card_name}
+                >
+                  {marketPricesLoading ? '…' : cardMarketPrice?.amount != null ? formatCatalogPrice(cardMarketPrice.amount) : 'Cote indisponible'}
+                </button>}
               </div>
               <div className={styles.printings} role="group" aria-label={'Impressions de ' + card.card_name}>
                 {!variants.length && <span className={styles.noVariants}>Impressions à préciser</span>}
@@ -1013,6 +1115,26 @@ export default function CardCataloguePage() {
           <button type="button" className={styles.closeButton} onClick={() => setZoomedCard(null)} aria-label="Fermer">×</button>
           <img src={zoomedCard.zoomImageUrl || cardImageCandidates[zoomedCard.id]?.[0] || zoomedCard.image_url} alt={zoomedCard.card_name} onError={event => advanceCardImage(event, zoomedCard.zoomImageCandidates || cardImageCandidates[zoomedCard.id] || [zoomedCard.image_url].filter(Boolean))} />
           <p>{zoomedCard.card_name} · {zoomedCard.collector_number}</p>
+          {showPrices && <section className={styles.zoomPrices} aria-label="Cotes par finition">
+            <strong>Cotes par finition</strong>
+            {marketPricesLoading
+              ? <p role="status">Chargement des cotes…</p>
+              : (() => {
+                const priceVariants = (zoomedCard.card_print_variants || []).filter(variant => variant.is_master_set_target)
+                if (!priceVariants.length) return <p>Cote indisponible</p>
+                return <ul>{priceVariants.map(variant => {
+                  const variantPrice = marketPrices[zoomedCard.id]?.variantPrices?.find(price => price.variantId === variant.id)
+                  const label = variant.variant_label === 'Carte (suivi de base)' ? 'Carte' : variant.variant_label || variant.variant_key || 'Finition'
+                  return <li key={variant.id}>
+                    <span>{label}</span>
+                    <div>
+                      <b>{variantPrice?.amount != null ? formatCatalogPrice(variantPrice.amount) : 'Cote indisponible'}</b>
+                      {variantPrice?.amount != null && <small>{priceDetailsText(variantPrice)}</small>}
+                    </div>
+                  </li>
+                })}</ul>
+              })()}
+          </section>}
           <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} />
         </div>
       </div>}
