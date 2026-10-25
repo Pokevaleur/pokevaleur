@@ -12,7 +12,7 @@ const MCDONALDS_SERIES = '__mcdonalds_series__'
 const ZENITH_MAIN_SET_CODE = 'swsh12.5'
 const ZENITH_GALLERY_SET_CODE = 'swsh12.5gg'
 const DEDICATED_ENERGY_SET_CODES = new Set(['sve', 'uen17', 'uen19', 'uen20', 'uen22', 'sme17', 'sme19', 'mee', 'mee30', 'sv10.5e'])
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,source_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,source_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
 const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
 
 function normalizedCardName(name) {
@@ -335,18 +335,34 @@ export default function CardCataloguePage() {
     let cancelled = false
     setLoadingForeignSets(true)
     async function loadForeignSets() {
-      const { data, error: loadError } = await fetchAllRows(() => supabase.from('foreign_card_sets')
-        .select('id,catalog_set_id,language_code,market_code,series_name,series_name_fr,set_name,set_code,release_date,validation_status')
-        .eq('language_code', languageCode)
-        .eq('validation_status', 'verified')
-        .order('release_date', { ascending: false })
-        .order('set_name'))
+      const [{ data, error: loadError }, { data: nativeRows, error: nativeError }] = await Promise.all([
+        fetchAllRows(() => supabase.from('foreign_card_sets')
+          .select('id,catalog_set_id,language_code,market_code,series_name,series_name_fr,set_name,set_code,release_date,validation_status')
+          .eq('language_code', languageCode)
+          .eq('validation_status', 'verified')
+          .order('release_date', { ascending: false })
+          .order('set_name')),
+        fetchAllRows(() => supabase.from('card_sets')
+          .select('id,series_name,set_name,set_code,language,release_date,advertised_card_count,checklist_scope_note')
+          .eq('language', languageCode).eq('is_public', true)
+          .order('release_date', { ascending: false }).order('set_name'))
+      ])
       if (cancelled) return
-      if (loadError) {
+      if (loadError || nativeError) {
         setError('Les séries étrangères ne peuvent pas être chargées pour le moment.')
         setForeignSets([])
       } else {
-        setForeignSets(data || [])
+        const nativeSets = (nativeRows || []).map(set => ({
+          ...set,
+          nativeCardSetId: set.id,
+          is_native_set: true,
+          language_code: set.language,
+          market_code: languageCode === 'JP' ? 'JP' : languageCode
+        }))
+        setForeignSets([...(data || []), ...nativeSets].sort((left, right) =>
+          String(right.release_date || '').localeCompare(String(left.release_date || ''))
+          || String(left.set_name || '').localeCompare(String(right.set_name || ''), 'fr')
+        ))
       }
       setLoadingForeignSets(false)
     }
@@ -482,6 +498,28 @@ export default function CardCataloguePage() {
                 }
               }]
             })
+          }
+          if (!foreignSetId && term) {
+            const nativeSetIds = foreignSets.filter(set => set.is_native_set).map(set => set.nativeCardSetId)
+            if (nativeSetIds.length) {
+              const pattern = '%' + term + '%'
+              const [nameResult, numberResult] = await Promise.all([
+                fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', nativeSetIds)
+                  .ilike('card_name', pattern).order('guide_order', { ascending: true })),
+                fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', nativeSetIds)
+                  .ilike('collector_number', pattern).order('guide_order', { ascending: true }))
+              ])
+              if (nameResult.error) throw nameResult.error
+              if (numberResult.error) throw numberResult.error
+              const searchTerms = normalizedSearchText(term).split(/\s+/).filter(Boolean)
+              const nativeCards = [...new Map([...(nameResult.data || []), ...(numberResult.data || [])].map(card => [card.id, card])).values()]
+                .filter(card => {
+                  const set = relatedSet(card)
+                  const searchable = normalizedSearchText([card.card_name, card.collector_number, set?.set_name, set?.series_name, set?.set_code].join(' '))
+                  return searchTerms.every(token => searchable.includes(token))
+                })
+              cardRows = [...cardRows, ...nativeCards]
+            }
           }
           cardRows.sort((left, right) => String(left.collector_number || '').localeCompare(String(right.collector_number || ''), 'fr', { numeric: true }))
         } else if (setId === ALL_SERIES && term) {
@@ -630,7 +668,7 @@ export default function CardCataloguePage() {
       }
     }, setId === ALL_SERIES ? 250 : 0)
     return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [supabase, setId, query, profileId, sets, languageCode, foreignSetId])
+  }, [supabase, setId, query, profileId, sets, languageCode, foreignSetId, foreignSets])
 
   useEffect(() => {
     if (!showPrices || languageCode !== 'FR' || !cards.length) {
@@ -693,8 +731,11 @@ export default function CardCataloguePage() {
   const filteredForeignSets = foreignSets.filter(set => normalizedSearchText([set.set_name, set.series_name_fr, set.series_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
   const zenithMainSet = sets.find(set => String(set.set_code || '').toLowerCase() === ZENITH_MAIN_SET_CODE)
   const selectedForeignSet = foreignSets.find(set => set.id === foreignSetId)
+  const selectedNativeSet = foreignSets.find(set => set.is_native_set && set.nativeCardSetId === setId)
   const selectedSet = selectedForeignSet
     ? { ...selectedForeignSet, language: selectedForeignSet.language_code, set_name: selectedForeignSet.set_name || selectedForeignSet.series_name_fr || selectedForeignSet.series_name }
+    : selectedNativeSet
+    ? selectedNativeSet
     : setId === MCDONALDS_SERIES
     ? { id: MCDONALDS_SERIES, set_code: 'MCD', set_name: 'McDonald’s · toutes les années', series_name: 'Collection McDonald’s' }
     : setId === zenithMainSet?.id
@@ -809,6 +850,7 @@ export default function CardCataloguePage() {
       const selectedCard = cardByVariantId.get(variantId)
       const foreignPrinting = selectedCard?.foreignPrinting
       const foreignSet = foreignPrinting?.foreign_card_sets
+      const nativeSet = relatedSet(selectedCard)
       const quantity = Math.max(1, Math.min(99, Math.floor(Number(rawQuantity) || 1)))
       if (!variant?.is_master_set_target) continue
       for (let index = 0; index < quantity; index++) rows.push({
@@ -822,6 +864,12 @@ export default function CardCataloguePage() {
           edition_set_name: [foreignSet.series_name_fr || foreignSet.series_name, foreignSet.set_name, foreignSet.set_code].filter(Boolean).join(' — '),
           edition_collector_number: foreignPrinting.collector_number,
           edition_card_name: foreignPrinting.card_name
+        } : nativeSet?.language && nativeSet.language !== 'FR' ? {
+          edition_language_code: nativeSet.language,
+          edition_market_code: nativeSet.language === 'JP' ? 'JP' : nativeSet.language,
+          edition_set_name: [nativeSet.series_name, nativeSet.set_name, nativeSet.set_code].filter(Boolean).join(' — '),
+          edition_collector_number: selectedCard.collector_number,
+          edition_card_name: selectedCard.card_name
         } : {})
       })
     }
@@ -896,8 +944,15 @@ export default function CardCataloguePage() {
               {languageCode !== 'FR' ? <>
                 <button type="button" aria-pressed={!foreignSetId && setId !== ALL_SERIES} className={styles.seriesPickerOption} onClick={() => { setForeignSetId(''); setSetId(''); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
                 <button type="button" aria-pressed={!foreignSetId && setId === ALL_SERIES} className={!foreignSetId && setId === ALL_SERIES ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setForeignSetId(''); setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
-                {filteredForeignSets.map(set => <button type="button" aria-pressed={foreignSetId === set.id} className={foreignSetId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setForeignSetId(set.id); setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{(set.set_code ? set.set_code.toUpperCase() + ' — ' : '') + (set.set_name || set.series_name_fr || set.series_name || 'Série')}</button>)}
-                {!loadingForeignSets && !filteredForeignSets.length && <p className={styles.seriesPickerEmpty}>{seriesPickerQuery ? 'Aucune série ne correspond.' : 'Aucune série vérifiée pour cette langue.'}</p>}
+                {filteredForeignSets.map(set => {
+                  const isSelected = set.is_native_set ? setId === set.nativeCardSetId && !foreignSetId : foreignSetId === set.id
+                  return <button type="button" aria-pressed={isSelected} className={isSelected ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={(set.is_native_set ? 'native-' : 'foreign-') + set.id} onClick={() => {
+                    setForeignSetId(set.is_native_set ? '' : set.id)
+                    setSetId(set.is_native_set ? set.nativeCardSetId : ALL_SERIES)
+                    setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false)
+                  }}>{(set.set_code ? set.set_code.toUpperCase() + ' — ' : '') + (set.set_name || set.series_name_fr || set.series_name || 'Série')}</button>
+                })}
+                {!loadingForeignSets && !filteredForeignSets.length && <p className={styles.seriesPickerEmpty}>{seriesPickerQuery ? 'Aucune série ne correspond.' : 'Aucune série disponible pour cette langue.'}</p>}
               </> : <>
                 <button type="button" aria-pressed={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
                 <button type="button" aria-pressed={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
