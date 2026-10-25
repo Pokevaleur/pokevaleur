@@ -163,6 +163,28 @@ async function mapWithLimit(values, limit, callback) {
   return results
 }
 
+function isRgbMewCard(card) {
+  return String(card?.set_code || '').toLowerCase() === '30c'
+    && String(card?.card_name || card?.name || '').toLowerCase() === 'mew'
+    && /^[RGB]\/RGB$/i.test(String(card?.collector_number || ''))
+}
+
+function cardmarketProductForRgbMew(card, products) {
+  const collectorNumber = String(card?.collector_number || '').toUpperCase()
+  const verifiedProductIds = { 'R/RGB': 909509, 'G/RGB': 909510, 'B/RGB': 909511 }
+  const verifiedId = verifiedProductIds[collectorNumber]
+  const byId = products.find(product =>
+    Number(product?.idExpansion) === 6601 && Number(product?.idProduct) === verifiedId
+  )
+  if (byId) return byId
+
+  const expected = productText(`Mew (30C ${collectorNumber})`)
+  const matches = products.filter(product =>
+    Number(product?.idExpansion) === 6601 && productText(product?.name) === expected
+  )
+  return matches.length === 1 ? matches[0] : null
+}
+
 function tcgdexUrlForCard(card) {
   if (TCGDEX_CARD_URL.test(card?.source_url || '')) return card.source_url
   if (TCGDEX_CARD_URL.test(card?.image_source_url || '')) return card.image_source_url
@@ -184,8 +206,15 @@ export async function POST(request) {
   if (!cards.length) return Response.json({ prices: [] })
 
   const validCards = cards.map(card => ({ ...card, tcgdexUrl: tcgdexUrlForCard(card) }))
-    .filter(card => typeof card?.id === 'string' && card.tcgdexUrl)
+    .filter(card => typeof card?.id === 'string' && (card.tcgdexUrl || isRgbMewCard(card)))
   const fetched = await mapWithLimit(validCards, 10, async card => {
+    if (isRgbMewCard(card)) {
+      return {
+        cardId: card.id, card, tcgdexUrl: null, tcgdexData: null,
+        cardmarket: null, tcgplayer: null, chosenMarket: null, chosenFallback: null,
+        variantPrices: [], tcgDexUpdatedAt: null
+      }
+    }
     try {
       const data = await fetchJson(card.tcgdexUrl)
       const finishes = orderedFinishes(card.variants)
@@ -232,10 +261,14 @@ export async function POST(request) {
     }
   })
 
-  const cardsNeedingCardmarket = fetched.filter(item => !item.chosenMarket && item.tcgdexData && item.tcgdexUrl)
+  const cardsNeedingCardmarket = fetched.filter(item => !item.chosenMarket && (
+    (item.tcgdexData && item.tcgdexUrl) || isRgbMewCard(item.card)
+  ))
   if (cardsNeedingCardmarket.length) {
     try {
-      const needsProductCatalog = cardsNeedingCardmarket.some(item => !directCardmarketProductId(item.tcgdexData, item.card?.variants || []))
+      const needsProductCatalog = cardsNeedingCardmarket.some(item =>
+        isRgbMewCard(item.card) || !directCardmarketProductId(item.tcgdexData, item.card?.variants || [])
+      )
       const [guideData, singleProducts, expansionProducts] = await Promise.all([
         fetchJson(CARDMARKET_GUIDE_URL),
         needsProductCatalog ? fetchJson(CARDMARKET_SINGLES_URL) : Promise.resolve(null),
@@ -255,7 +288,15 @@ export async function POST(request) {
           }).filter(Boolean)
           let productId = directIds[0] || null
 
-          if (!productId) {
+          if (isRgbMewCard(item.card)) {
+            const rgbProduct = cardmarketProductForRgbMew(item.card, singleProducts?.products || [])
+            productId = rgbProduct?.idProduct || null
+            if (productId) {
+              for (const variant of variants) productForVariant.set(variant?.id, productId)
+            }
+          }
+
+          if (!productId && item.tcgdexUrl) {
             const englishData = await fetchJson(tcgdexEnglishUrl(item.tcgdexUrl))
             const setId = tcgdexSetId(item.tcgdexUrl)
             const expansionIds = cardmarketExpansionIds(englishData?.set?.name, expansionProducts?.products || [])
