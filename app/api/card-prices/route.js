@@ -195,6 +195,56 @@ function isRgbMewCard(card) {
     && /^[RGB]\/RGB$/i.test(String(card?.collector_number || ''))
 }
 
+function isCatalogEnergyMarketCard(card) {
+  return ['mee30', 'tk-sm-l', 'tk-sm-r'].includes(String(card?.set_code || '').toLowerCase())
+}
+
+function cardmarketEnergyName(cardName) {
+  const name = productText(cardName)
+  if (name.includes('plante')) return 'Basic Grass Energy'
+  if (name.includes('feu')) return 'Basic Fire Energy'
+  if (name.includes('eau')) return 'Basic Water Energy'
+  if (name.includes('electrique') || name.includes('electrik')) return 'Basic Lightning Energy'
+  if (name.includes('psy')) return 'Basic Psychic Energy'
+  if (name.includes('combat')) return 'Basic Fighting Energy'
+  if (name.includes('obscurite')) return 'Basic Darkness Energy'
+  if (name.includes('metal')) return 'Basic Metal Energy'
+  if (name.includes('fee')) return 'Basic Fairy Energy'
+  return null
+}
+
+function cardmarketProductForCatalogEnergy(card, products, expansionProducts) {
+  const setCode = String(card?.set_code || '').toLowerCase()
+  const energyName = cardmarketEnergyName(card?.card_name)
+  if (!energyName) return null
+
+  let expectedName
+  if (setCode === 'mee30') {
+    const collectorNumber = String(card?.collector_number || '').padStart(3, '0')
+    expectedName = productText(energyName + ' (MEE ' + collectorNumber + ')')
+  } else if (setCode === 'tk-sm-l' || setCode === 'tk-sm-r') {
+    const trainerEnergyName = productText(card?.card_name).includes('electrique') || productText(card?.card_name).includes('electrik')
+      ? 'Lightning Energy'
+      : productText(card?.card_name).includes('combat')
+        ? 'Fighting Energy'
+        : productText(card?.card_name).includes('psy')
+          ? 'Psychic Energy'
+          : null
+    if (!trainerEnergyName) return null
+    const trainerPrefix = setCode === 'tk-sm-l' ? 'L' : 'A'
+    const collectorNumber = String(card?.collector_number || '').padStart(2, '0')
+    expectedName = productText(trainerEnergyName + ' (TK10 ' + trainerPrefix + collectorNumber + ')')
+  } else {
+    return null
+  }
+  const matches = products.filter(product => productText(product?.name) === expectedName)
+  if (matches.length === 1) return matches[0]
+  if (!matches.length) return null
+  const expansionIds = cardmarketExpansionIds('Mega Evolution Energies', expansionProducts)
+  const narrowed = matches.filter(product => expansionIds.includes(product?.idExpansion))
+  return narrowed.length === 1 ? narrowed[0] : null
+}
+
 function cardmarketProductForRgbMew(card, products) {
   const collectorNumber = String(card?.collector_number || '').toUpperCase()
   const verifiedProductIds = { 'R/RGB': 909509, 'G/RGB': 909510, 'B/RGB': 909511 }
@@ -241,9 +291,11 @@ export async function POST(request) {
   if (!cards.length) return Response.json({ prices: [] })
 
   const validCards = cards.map(card => ({ ...card, tcgdexUrl: tcgdexUrlForCard(card) }))
-    .filter(card => typeof card?.id === 'string' && (card.tcgdexUrl || isRgbMewCard(card)))
+    .filter(card => typeof card?.id === 'string' && (
+      card.tcgdexUrl || isRgbMewCard(card) || isCatalogEnergyMarketCard(card)
+    ))
   const fetched = await mapWithLimit(validCards, 10, async card => {
-    if (isRgbMewCard(card)) {
+    if (!card.tcgdexUrl) {
       return {
         cardId: card.id, card, tcgdexUrl: null, tcgdexData: null,
         cardmarket: null, tcgplayer: null, chosenMarket: null, chosenFallback: null,
@@ -297,12 +349,12 @@ export async function POST(request) {
   })
 
   const cardsNeedingCardmarket = fetched.filter(item => !item.chosenMarket && (
-    (item.tcgdexData && item.tcgdexUrl) || isRgbMewCard(item.card)
+    (item.tcgdexData && item.tcgdexUrl) || isRgbMewCard(item.card) || isCatalogEnergyMarketCard(item.card)
   ))
   if (cardsNeedingCardmarket.length) {
     try {
       const needsProductCatalog = cardsNeedingCardmarket.some(item =>
-        isRgbMewCard(item.card) || !directCardmarketProductId(item.tcgdexData, item.card?.variants || [])
+        isRgbMewCard(item.card) || isCatalogEnergyMarketCard(item.card) || !directCardmarketProductId(item.tcgdexData, item.card?.variants || [])
       )
       const [guideData, singleProducts, expansionProducts] = await Promise.all([
         fetchJson(CARDMARKET_GUIDE_URL),
@@ -326,6 +378,16 @@ export async function POST(request) {
           if (isRgbMewCard(item.card)) {
             const rgbProduct = cardmarketProductForRgbMew(item.card, singleProducts?.products || [])
             productId = rgbProduct?.idProduct || null
+            if (productId) {
+              for (const variant of variants) productForVariant.set(variant?.id, productId)
+            }
+          }
+
+          if (!productId && isCatalogEnergyMarketCard(item.card)) {
+            const energyProduct = cardmarketProductForCatalogEnergy(
+              item.card, singleProducts?.products || [], expansionProducts?.products || []
+            )
+            productId = energyProduct?.idProduct || null
             if (productId) {
               for (const variant of variants) productForVariant.set(variant?.id, productId)
             }
