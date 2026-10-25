@@ -1,4 +1,7 @@
 const TCGDEX_CARD_URL = /^https:\/\/api\.tcgdex\.net\/v2\/fr\/(?:(?:sets|sv|tk)\/[a-z0-9.-]+\/(?:[a-z0-9.-]+|!|%3f)|cards\/[a-z0-9.-]+)$/i
+const CARDMARKET_GUIDE_URL = 'https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json'
+const CARDMARKET_SINGLES_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_6.json'
+const CARDMARKET_PRODUCTS_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_6.json'
 
 export const maxDuration = 60
 
@@ -59,11 +62,65 @@ function pricingForFinish(data, finish) {
   const detail = exact || (details.length === 1 && details[0]?.pricing ? details[0] : null)
   return {
     cardmarket: detail?.pricing?.cardmarket || null,
+    cardmarketProductId: detail?.thirdParty?.cardmarket || detail?.pricing?.cardmarket?.idProduct || data?.thirdParty?.cardmarket || data?.pricing?.cardmarket?.idProduct || null,
     tcgplayer: detail?.pricing?.tcgplayer || null,
     rootCardmarket: data?.pricing?.cardmarket || null,
     rootTcgplayer: data?.pricing?.tcgplayer || null,
     finish: detail ? detailedFinish(detail) : finish
   }
+}
+
+function productText(value) {
+  return String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim()
+}
+
+function cardmarketExpansionIds(setName, products) {
+  const normalizedSetName = productText(setName)
+  if (!normalizedSetName) return []
+  const regionalSuffix = /^(jp|japanese|simplified chinese|traditional chinese|indonesian|thai|korean|portuguese|spanish|italian|german|french)\b/
+  const counts = new Map()
+  for (const product of products) {
+    const name = productText(product?.name)
+    if (!name.startsWith(`${normalizedSetName} `)) continue
+    const suffix = name.slice(normalizedSetName.length).trim()
+    if (regionalSuffix.test(suffix)) continue
+    counts.set(product.idExpansion, (counts.get(product.idExpansion) || 0) + 1)
+  }
+  if (!counts.size) return []
+  const bestCount = Math.max(...counts.values())
+  return [...counts].filter(([, count]) => count === bestCount).map(([id]) => id)
+}
+
+function cardmarketProductForCard(cardData, products, expansionIds) {
+  if (!cardData?.name || !expansionIds.length) return null
+  const labels = [
+    ...(Array.isArray(cardData.abilities) ? cardData.abilities.map(ability => ability?.name) : []),
+    ...(Array.isArray(cardData.attacks) ? cardData.attacks.map(attack => attack?.name) : [])
+  ].filter(Boolean).map(productText)
+  const cardName = productText(cardData.name)
+  const candidates = products.filter(product => {
+    if (!expansionIds.includes(product?.idExpansion)) return false
+    const name = productText(product?.name)
+    if (!(name === cardName || name.startsWith(`${cardName} `))) return false
+    return labels.every(label => name.includes(label))
+  })
+  return candidates.length === 1 ? candidates[0] : null
+}
+
+function tcgdexEnglishUrl(url) {
+  return String(url || '').replace('https://api.tcgdex.net/v2/fr/', 'https://api.tcgdex.net/v2/en/')
+}
+
+function tcgdexSetId(url) {
+  return String(url || '').match(/\/sets\/([a-z0-9.+-]+)\//i)?.[1] || null
+}
+
+function directCardmarketProductId(data, variants = []) {
+  for (const variant of variants) {
+    const source = pricingForFinish(data, normalizedPriceFinish(variant?.finish_code))
+    if (source.cardmarketProductId) return source.cardmarketProductId
+  }
+  return data?.thirdParty?.cardmarket || data?.pricing?.cardmarket?.idProduct || null
 }
 
 function tcgPlayerPrice(tcgplayer, finishes) {
@@ -160,6 +217,9 @@ export async function POST(request) {
       const tcgDexUpdatedAt = market?.updated || fallback?.updated || cardmarket?.updated || tcgplayer?.updated || null
       return {
         cardId: card.id,
+        card,
+        tcgdexUrl: card.tcgdexUrl,
+        tcgdexData: data,
         cardmarket,
         tcgplayer,
         chosenMarket: market ? { ...market, source: 'Cardmarket' } : null,
@@ -168,9 +228,83 @@ export async function POST(request) {
         tcgDexUpdatedAt
       }
     } catch {
-      return { cardId: card.id, cardmarket: null, tcgplayer: null, chosenMarket: null, chosenFallback: null, tcgDexUpdatedAt: null }
+      return { cardId: card.id, card, tcgdexUrl: card.tcgdexUrl, tcgdexData: null, cardmarket: null, tcgplayer: null, chosenMarket: null, chosenFallback: null, variantPrices: [], tcgDexUpdatedAt: null }
     }
   })
+
+  const cardsNeedingCardmarket = fetched.filter(item => !item.chosenMarket && item.tcgdexData && item.tcgdexUrl)
+  if (cardsNeedingCardmarket.length) {
+    try {
+      const needsProductCatalog = cardsNeedingCardmarket.some(item => !directCardmarketProductId(item.tcgdexData, item.card?.variants || []))
+      const [guideData, singleProducts, expansionProducts] = await Promise.all([
+        fetchJson(CARDMARKET_GUIDE_URL),
+        needsProductCatalog ? fetchJson(CARDMARKET_SINGLES_URL) : Promise.resolve(null),
+        needsProductCatalog ? fetchJson(CARDMARKET_PRODUCTS_URL) : Promise.resolve(null)
+      ])
+      const guideByProductId = new Map((guideData?.priceGuides || []).map(guide => [guide.idProduct, guide]))
+      const guideDate = guideData?.createdAt || null
+      const resolved = await mapWithLimit(cardsNeedingCardmarket, 5, async item => {
+        try {
+          const variants = item.card?.variants || []
+          const productForVariant = new Map()
+          const directIds = variants.map(variant => {
+            const finish = normalizedPriceFinish(variant?.finish_code)
+            const source = pricingForFinish(item.tcgdexData, finish)
+            if (source.cardmarketProductId) productForVariant.set(variant?.id, source.cardmarketProductId)
+            return source.cardmarketProductId
+          }).filter(Boolean)
+          let productId = directIds[0] || null
+
+          if (!productId) {
+            const englishData = await fetchJson(tcgdexEnglishUrl(item.tcgdexUrl))
+            const setId = tcgdexSetId(item.tcgdexUrl)
+            const expansionIds = cardmarketExpansionIds(englishData?.set?.name, expansionProducts?.products || [])
+            const fallbackProduct = cardmarketProductForCard(englishData, singleProducts?.products || [], expansionIds)
+              || (setId === '30th' ? cardmarketProductForCard(englishData, singleProducts?.products || [], [6601]) : null)
+            productId = fallbackProduct?.idProduct || null
+          }
+          if (!productId) return item
+
+          const rootGuide = guideByProductId.get(productId)
+          if (!rootGuide) return item
+          const pricedVariants = variants.map(variant => {
+            const finish = normalizedPriceFinish(variant?.finish_code)
+            const variantProductId = productForVariant.get(variant?.id) || productId
+            const guide = guideByProductId.get(variantProductId) || rootGuide
+            const market = firstMarketPrice(guide, [finish])
+            return {
+              variantId: variant?.id || null,
+              finish,
+              market: market ? { ...market, updated: guideDate } : null,
+              fallback: null
+            }
+          })
+          const finishes = orderedFinishes(variants)
+          const preferredVariant = finishes
+            .map(finish => pricedVariants.find(variant => variant.finish === finish && variant.market))
+            .find(Boolean)
+          const market = preferredVariant?.market || firstMarketPrice(rootGuide, finishes)
+          if (!market) return item
+          return {
+            ...item,
+            cardmarket: rootGuide,
+            chosenMarket: { ...market, source: 'Cardmarket' },
+            chosenFallback: null,
+            variantPrices: pricedVariants,
+            tcgDexUpdatedAt: guideDate
+          }
+        } catch {
+          return item
+        }
+      })
+      const resolvedById = new Map(resolved.map(item => [item.cardId, item]))
+      for (let index = 0; index < fetched.length; index += 1) {
+        if (resolvedById.has(fetched[index].cardId)) fetched[index] = resolvedById.get(fetched[index].cardId)
+      }
+    } catch {
+      // Continue with existing TCGdex and TCGplayer sources when the public Cardmarket files fail.
+    }
+  }
 
   const needsConversion = fetched.some(item => item.chosenFallback || item.variantPrices?.some(variant => variant.fallback))
   let exchange = null
@@ -184,6 +318,7 @@ export async function POST(request) {
   }
 
   const prices = fetched.map(item => {
+    const { card, tcgdexUrl, tcgdexData, ...publicItem } = item
     const variantPrices = (item.variantPrices || []).map(variant => {
       if (variant.market) return {
         variantId: variant.variantId,
@@ -216,7 +351,7 @@ export async function POST(request) {
     })
     if (item.chosenMarket) {
       return {
-        ...item,
+        ...publicItem,
         variantPrices,
         amount: item.chosenMarket.amount,
         currency: 'EUR',
@@ -227,7 +362,7 @@ export async function POST(request) {
     }
     if (item.chosenFallback && exchange) {
       return {
-        ...item,
+        ...publicItem,
         variantPrices,
         amount: Math.round(item.chosenFallback.amount * exchange.rate * 100) / 100,
         currency: 'EUR',
@@ -237,7 +372,7 @@ export async function POST(request) {
         exchange
       }
     }
-    return { ...item, variantPrices, amount: null, currency: null, source: null, basis: null, observedAt: item.tcgDexUpdatedAt, exchange }
+    return { ...publicItem, variantPrices, amount: null, currency: null, source: null, basis: null, observedAt: item.tcgDexUpdatedAt, exchange }
   })
 
   return Response.json({ prices, exchangeDate: exchange?.date || null })
