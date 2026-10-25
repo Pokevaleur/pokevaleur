@@ -108,3 +108,20 @@
 .seriesPickerOptions{box-sizing:border-box;min-width:0}
 .seriesPickerEmpty{margin:0;padding:10px;color:#657487;font-size:.8rem;line-height:1.4}
 @media(max-width:480px){.seriesField{width:100%}.seriesPickerTrigger>span:first-child{max-width:calc(100% - 24px)}}
+
+.priceToggle{display:flex;align-items:center;gap:9px;width:max-content;max-width:100%;margin:12px 0;padding:9px 12px;border:1px solid #dce3eb;border-radius:10px;background:#fff;color:#33445a;font-size:.84rem;font-weight:750;cursor:pointer}
+.priceToggle input{width:18px;height:18px;margin:0;accent-color:#174c79}
+.priceToggle small{color:#718096;font-size:.74rem;font-weight:600}
+.catalogPrice{width:max-content;max-width:100%;margin-top:3px;padding:2px 0;border:0;background:transparent;color:#8a6a18;font:inherit;font-size:.82rem;font-weight:850;text-align:left;cursor:pointer}
+.catalogPrice:hover,.catalogPrice:focus-visible{text-decoration:underline;outline:none}
+.zoomPrices{width:min(100%,420px);margin:14px 0 0;padding:12px;border:1px solid #e0e6ee;border-radius:12px;background:#f8fafc;color:#31445c;font-size:.82rem}
+.zoomPrices>strong{display:block;margin-bottom:8px;color:#183451;font-size:.88rem}
+.zoomPrices>p{margin:5px 0;text-align:left;font-weight:600}
+.zoomPrices ul{display:grid;gap:7px;margin:0;padding:0;list-style:none}
+.zoomPrices li{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:start;gap:8px;padding-top:7px;border-top:1px solid #e3e8ef}
+.zoomPrices li:first-child{padding-top:0;border-top:0}
+.zoomPrices li>span{font-weight:700}
+.zoomPrices li>div{display:grid;justify-items:end;gap:2px;text-align:right}
+.zoomPrices li b{color:#755a12;font-size:.84rem}
+.zoomPrices li small{max-width:220px;color:#708095;font-size:.68rem;font-weight:500;line-height:1.3}
+@media(max-width:480px){.priceToggle{margin:9px 0;padding:8px 10px;font-size:.78rem}.catalogPrice{font-size:.75rem}.zoomPrices{padding:10px}.zoomPrices li{grid-template-columns:minmax(0,1fr) auto;gap:6px}.zoomPrices li small{max-width:170px}}
