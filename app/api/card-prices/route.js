@@ -5,6 +5,25 @@ const CARDMARKET_PRODUCTS_URL = 'https://downloads.s3.cardmarket.com/productCata
 
 export const maxDuration = 60
 
+async function priceDatabaseClient(key) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!key || !url) return null
+  const { createClient } = await import('@supabase/supabase-js')
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }
+  })
+}
+
+function latestEstimateByVariant(rows = []) {
+  const latest = new Map()
+  for (const row of rows) {
+    if (row?.price_kind !== 'raw' || row?.observation_type !== 'estimate' || row?.currency !== 'EUR') continue
+    if (!isPrice(Number(row.amount)) || latest.has(row.card_print_variant_id)) continue
+    latest.set(row.card_print_variant_id, row)
+  }
+  return latest
+}
+
 function isPrice(value) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
@@ -299,7 +318,54 @@ export async function POST(request) {
   const cards = Array.isArray(body?.cards) ? body.cards.slice(0, 400) : []
   if (!cards.length) return Response.json({ prices: [] })
 
-  const validCards = cards.map(card => ({ ...card, tcgdexUrl: tcgdexUrlForCard(card) }))
+  const adminClient = await priceDatabaseClient(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
+  const readClient = adminClient
+  const requestedCardIds = [...new Set(cards.map(card => card?.id).filter(id => typeof id === 'string'))]
+  const canonicalVariants = new Map()
+  const canonicalCards = new Map()
+  const knownVariantIds = new Set()
+  if (readClient && requestedCardIds.length) {
+    for (let offset = 0; offset < requestedCardIds.length; offset += 100) {
+      const result = await readClient.from('card_print_variants')
+        .select('id,card_id,finish_code,cards!inner(card_name,collector_number,source_url,image_source_url,card_sets!cards_card_set_id_fkey(set_code))')
+        .in('card_id', requestedCardIds.slice(offset, offset + 100))
+      if (!result.error) {
+        for (const variant of result.data || []) {
+          knownVariantIds.add(variant.id)
+          if (variant.cards) canonicalCards.set(variant.card_id, variant.cards)
+          const list = canonicalVariants.get(variant.card_id) || []
+          list.push(variant)
+          canonicalVariants.set(variant.card_id, list)
+        }
+      }
+    }
+  }
+  const validCards = cards.map(card => {
+    const canonical = canonicalVariants.get(card?.id) || []
+    const savedCard = canonicalCards.get(card?.id)
+    const allowedIds = new Set(canonical.map(variant => variant.id))
+    const submittedVariants = (card?.variants || []).filter(variant => allowedIds.has(variant?.id))
+    return {
+      ...card,
+      ...(savedCard ? {
+        card_name: savedCard.card_name,
+        collector_number: savedCard.collector_number,
+        source_url: savedCard.source_url,
+        image_source_url: savedCard.image_source_url,
+        set_code: savedCard.card_sets?.set_code
+      } : {}),
+      variants: submittedVariants.length ? submittedVariants : (canonical.length ? canonical : (card?.variants || [])),
+      tcgdexUrl: tcgdexUrlForCard({
+        ...card,
+        ...(savedCard ? {
+          source_url: savedCard.source_url,
+          image_source_url: savedCard.image_source_url,
+          set_code: savedCard.card_sets?.set_code,
+          collector_number: savedCard.collector_number
+        } : {})
+      })
+    }
+  })
     .filter(card => typeof card?.id === 'string' && (
       card.tcgdexUrl || isRgbMewCard(card) || isCatalogEnergyMarketCard(card)
     ))
@@ -358,7 +424,7 @@ export async function POST(request) {
   })
 
   const cardsNeedingCardmarket = fetched.filter(item => !item.chosenMarket && (
-    (item.tcgdexData && item.tcgdexUrl) || isRgbMewCard(item.card) || isCatalogEnergyMarketCard(item.card)
+    item.tcgdexUrl || isRgbMewCard(item.card) || isCatalogEnergyMarketCard(item.card)
   ))
   if (cardsNeedingCardmarket.length) {
     try {
@@ -521,6 +587,100 @@ export async function POST(request) {
     }
     return { ...publicItem, variantPrices, amount: null, currency: null, source: null, basis: null, observedAt: item.tcgDexUpdatedAt, exchange }
   })
+  for (const price of prices) {
+    if (!isPrice(Number(price.amount)) || (price.variantPrices || []).some(variant => isPrice(Number(variant.amount)))) continue
+    const finishes = orderedFinishes(price.variants || [])
+    const preferred = finishes
+      .map(finish => price.variantPrices?.find(variant => variant.finish === finish))
+      .find(Boolean) || price.variantPrices?.[0]
+    if (preferred) Object.assign(preferred, {
+      amount: Number(price.amount),
+      currency: price.currency || 'EUR',
+      source: price.source,
+      basis: price.basis,
+      observedAt: price.observedAt,
+      inferredFromCardPrice: true
+    })
+  }
 
-  return Response.json({ prices, exchangeDate: exchange?.date || null })
+  // Store successful market snapshots as append-only estimates, then use the latest
+  // saved estimate whenever every live source is currently unavailable.
+  const variantIds = [...new Set(prices.flatMap(price =>
+    (price.variantPrices || []).map(variant => variant.variantId).filter(id => knownVariantIds.has(id))
+  ))]
+  let latestEstimates = new Map()
+  if (readClient && variantIds.length) {
+    const observations = []
+    for (let offset = 0; offset < variantIds.length; offset += 100) {
+      const result = await readClient.from('card_price_observations')
+        .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
+        .in('card_print_variant_id', variantIds.slice(offset, offset + 100))
+        .eq('price_kind', 'raw')
+        .eq('observation_type', 'estimate')
+        .eq('currency', 'EUR')
+        .order('observed_at', { ascending: false })
+      if (!result.error) observations.push(...(result.data || []))
+    }
+    latestEstimates = latestEstimateByVariant(observations)
+
+    if (adminClient) {
+      const inserts = []
+      for (const price of prices) {
+        const variantPrices = price.variantPrices || []
+        for (const variant of variantPrices) {
+          if (!knownVariantIds.has(variant.variantId) || !isPrice(Number(variant.amount))) continue
+          const source = `${variant.source || price.source || 'Marché'} · ${variant.basis || price.basis || 'cote'}`
+          const previous = latestEstimates.get(variant.variantId)
+          if (previous && Number(previous.amount) === Number(variant.amount) && previous.source === source) continue
+          inserts.push({
+            card_print_variant_id: variant.variantId,
+            price_kind: 'raw',
+            observation_type: 'estimate',
+            amount: Number(variant.amount),
+            currency: 'EUR',
+            source,
+            observed_at: new Date().toISOString()
+          })
+        }
+      }
+      for (let offset = 0; offset < inserts.length; offset += 100) {
+        await adminClient.from('card_price_observations').insert(inserts.slice(offset, offset + 100))
+      }
+    }
+  }
+
+  const pricesWithLastKnown = prices.map(price => {
+    const variantPrices = (price.variantPrices || []).map(variant => {
+      if (isPrice(Number(variant.amount))) return variant
+      const saved = latestEstimates.get(variant.variantId)
+      if (!saved) return variant
+      return {
+        ...variant,
+        amount: Number(saved.amount),
+        currency: saved.currency,
+        source: `Dernière cote connue · ${saved.source}`,
+        basis: 'dernière valeur enregistrée',
+        observedAt: saved.observed_at,
+        lastKnown: true
+      }
+    })
+    if (isPrice(Number(price.amount))) return { ...price, variantPrices }
+    const preferredFinishes = orderedFinishes(price.variants || [])
+    const savedVariant = preferredFinishes
+      .map(finish => variantPrices.find(variant => variant.finish === finish && isPrice(Number(variant.amount))))
+      .find(Boolean) || variantPrices.find(variant => isPrice(Number(variant.amount)))
+    if (!savedVariant) return { ...price, variantPrices }
+    return {
+      ...price,
+      variantPrices,
+      amount: Number(savedVariant.amount),
+      currency: 'EUR',
+      source: savedVariant.source,
+      basis: savedVariant.basis,
+      observedAt: savedVariant.observedAt,
+      lastKnown: true
+    }
+  })
+
+  return Response.json({ prices: pricesWithLastKnown, exchangeDate: exchange?.date || null })
 }
