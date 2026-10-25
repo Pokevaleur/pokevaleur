@@ -1,6 +1,3 @@
-import { createClient } from '@supabase/supabase-js'
-import { supabaseAnonKey, supabaseUrl } from '../../../lib/supabase-config'
-
 const TCGDEX_CARD_URL = /^https:\/\/api\.tcgdex\.net\/v2\/fr\/(?:(?:sets|sv|tk)\/[a-z0-9.-]+\/(?:[a-z0-9.-]+|!|%3f)|cards\/[a-z0-9.-]+)$/i
 const CARDMARKET_GUIDE_URL = 'https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json'
 const CARDMARKET_SINGLES_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_6.json'
@@ -8,10 +5,13 @@ const CARDMARKET_PRODUCTS_URL = 'https://downloads.s3.cardmarket.com/productCata
 
 export const maxDuration = 60
 
-function priceDatabaseClient(key) {
-  return key ? createClient(supabaseUrl, key, {
+async function priceDatabaseClient(key) {
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+  if (!key || !url) return null
+  const { createClient } = await import('@supabase/supabase-js')
+  return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false, detectSessionInUrl: false }
-  }) : null
+  })
 }
 
 function latestEstimateByVariant(rows = []) {
@@ -318,8 +318,8 @@ export async function POST(request) {
   const cards = Array.isArray(body?.cards) ? body.cards.slice(0, 400) : []
   if (!cards.length) return Response.json({ prices: [] })
 
-  const readClient = priceDatabaseClient(supabaseAnonKey)
-  const adminClient = priceDatabaseClient(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
+  const adminClient = await priceDatabaseClient(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
+  const readClient = adminClient
   const requestedCardIds = [...new Set(cards.map(card => card?.id).filter(id => typeof id === 'string'))]
   const canonicalVariants = new Map()
   const canonicalCards = new Map()
