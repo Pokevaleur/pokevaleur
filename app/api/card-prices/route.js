@@ -214,8 +214,17 @@ function cardmarketProductForRgbMew(card, products) {
 function tcgdexUrlForCard(card) {
   if (TCGDEX_CARD_URL.test(card?.source_url || '')) return card.source_url
   if (TCGDEX_CARD_URL.test(card?.image_source_url || '')) return card.image_source_url
-  if (String(card?.set_code || '').toLowerCase() === '2024sv' && /^\d+$/.test(String(card?.collector_number || ''))) {
-    return `https://api.tcgdex.net/v2/fr/sets/2024sv/${card.collector_number}`
+  const setCode = String(card?.set_code || '').trim().toLowerCase()
+  const collectorNumber = String(card?.collector_number || '').trim()
+  if (setCode === '2024sv' && /^\d+$/.test(collectorNumber)) {
+    return `https://api.tcgdex.net/v2/fr/sets/2024sv/${collectorNumber}`
+  }
+  const catalogOnlySets = new Set(['mee30', 'sme17', 'sme19', 'tk-sm-l', 'tk-sm-r'])
+  const tcgdexSetId = setCode === '30c' ? '30th' : setCode
+  if (!catalogOnlySets.has(setCode)
+    && /^[a-z0-9.-]+$/.test(tcgdexSetId)
+    && /^[a-z0-9.+-]+$/i.test(collectorNumber)) {
+    return `https://api.tcgdex.net/v2/fr/sets/${tcgdexSetId}/${encodeURIComponent(collectorNumber)}`
   }
   return null
 }
