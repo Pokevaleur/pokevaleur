@@ -33,6 +33,14 @@ function firstMarketPrice(cardmarket, finishes) {
   return null
 }
 
+function normalizedPriceFinish(value) {
+  const finish = String(value || '').toLowerCase()
+  if (finish.startsWith('reverse')) return 'reverse'
+  if (finish.startsWith('holo')) return 'holo'
+  if (finish.startsWith('standard')) return 'standard'
+  return 'normal'
+}
+
 function tcgPlayerPrice(tcgplayer, finishes) {
   const buckets = {
     normal: ['normal', 'nonHolo', 'unlimited'],
@@ -103,12 +111,19 @@ export async function POST(request) {
       const tcgplayer = data?.pricing?.tcgplayer || null
       const market = firstMarketPrice(cardmarket, finishes)
       const fallback = market ? null : tcgPlayerPrice(tcgplayer, finishes)
+      const variantPrices = (card.variants || []).map(variant => {
+        const finish = normalizedPriceFinish(variant?.finish_code)
+        const variantMarket = firstMarketPrice(cardmarket, [finish])
+        const variantFallback = variantMarket ? null : tcgPlayerPrice(tcgplayer, [finish])
+        return { variantId: variant?.id || null, finish, market: variantMarket, fallback: variantFallback }
+      })
       return {
         cardId: card.id,
         cardmarket,
         tcgplayer,
         chosenMarket: market ? { ...market, source: 'Cardmarket' } : null,
         chosenFallback: fallback ? { ...fallback, source: 'TCGplayer' } : null,
+        variantPrices,
         tcgDexUpdatedAt: market ? (cardmarket?.updated || null) : fallback ? (tcgplayer?.updated || null) : (cardmarket?.updated || tcgplayer?.updated || null)
       }
     } catch {
@@ -116,7 +131,7 @@ export async function POST(request) {
     }
   })
 
-  const needsConversion = fetched.some(item => item.chosenFallback)
+  const needsConversion = fetched.some(item => item.chosenFallback || item.variantPrices?.some(variant => variant.fallback))
   let exchange = null
   if (needsConversion) {
     try {
@@ -128,9 +143,40 @@ export async function POST(request) {
   }
 
   const prices = fetched.map(item => {
+    const variantPrices = (item.variantPrices || []).map(variant => {
+      if (variant.market) return {
+        variantId: variant.variantId,
+        finish: variant.finish,
+        amount: variant.market.amount,
+        currency: 'EUR',
+        source: 'Cardmarket',
+        basis: variant.market.field,
+        observedAt: item.tcgDexUpdatedAt
+      }
+      if (variant.fallback && exchange) return {
+        variantId: variant.variantId,
+        finish: variant.finish,
+        amount: Math.round(variant.fallback.amount * exchange.rate * 100) / 100,
+        currency: 'EUR',
+        source: 'TCGplayer · conversion de référence',
+        basis: variant.fallback.field,
+        observedAt: item.tcgDexUpdatedAt,
+        exchange
+      }
+      return {
+        variantId: variant.variantId,
+        finish: variant.finish,
+        amount: null,
+        currency: null,
+        source: null,
+        basis: null,
+        observedAt: item.tcgDexUpdatedAt
+      }
+    })
     if (item.chosenMarket) {
       return {
         ...item,
+        variantPrices,
         amount: item.chosenMarket.amount,
         currency: 'EUR',
         source: 'Cardmarket',
@@ -141,6 +187,7 @@ export async function POST(request) {
     if (item.chosenFallback && exchange) {
       return {
         ...item,
+        variantPrices,
         amount: Math.round(item.chosenFallback.amount * exchange.rate * 100) / 100,
         currency: 'EUR',
         source: 'TCGplayer · conversion de référence',
@@ -149,7 +196,7 @@ export async function POST(request) {
         exchange
       }
     }
-    return { ...item, amount: null, currency: null, source: null, basis: null, observedAt: item.tcgDexUpdatedAt, exchange }
+    return { ...item, variantPrices, amount: null, currency: null, source: null, basis: null, observedAt: item.tcgDexUpdatedAt, exchange }
   })
 
   return Response.json({ prices, exchangeDate: exchange?.date || null })
