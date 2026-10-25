@@ -196,7 +196,7 @@ function isRgbMewCard(card) {
 }
 
 function isCatalogEnergyMarketCard(card) {
-  return ['mee30', 'sme17', 'sme19'].includes(String(card?.set_code || '').toLowerCase())
+  return String(card?.set_code || '').toLowerCase() === 'mee30'
 }
 
 function cardmarketEnergyName(cardName) {
@@ -216,7 +216,7 @@ function cardmarketEnergyName(cardName) {
 function cardmarketProductForCatalogEnergy(card, products, expansionProducts) {
   const setCode = String(card?.set_code || '').toLowerCase()
   const energyName = cardmarketEnergyName(card?.card_name)
-  if (!energyName || !['mee30', 'sme17', 'sme19'].includes(setCode)) return null
+  if (!energyName || setCode !== 'mee30') return null
   const collectorNumber = String(card?.collector_number || '').padStart(3, '0')
   const expectedName = productText(energyName + ' (MEE ' + collectorNumber + ')')
   const matches = products.filter(product => productText(product?.name) === expectedName)
