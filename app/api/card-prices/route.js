@@ -354,7 +354,7 @@ export async function POST(request) {
         image_source_url: savedCard.image_source_url,
         set_code: savedCard.card_sets?.set_code
       } : {}),
-      variants: submittedVariants.length ? submittedVariants : canonical,
+      variants: submittedVariants.length ? submittedVariants : (canonical.length ? canonical : (card?.variants || [])),
       tcgdexUrl: tcgdexUrlForCard({
         ...card,
         ...(savedCard ? {
