@@ -1122,7 +1122,12 @@ export default function CardCataloguePage() {
               ? <p role="status">Chargement des cotes…</p>
               : (() => {
                 const priceVariants = (zoomedCard.card_print_variants || []).filter(variant => variant.is_master_set_target)
-                if (!priceVariants.length) return <p>Cote indisponible</p>
+                if (!priceVariants.length) {
+                  const overallPrice = marketPrices[zoomedCard.id]
+                  return overallPrice?.amount != null
+                    ? <ul><li><span>Carte</span><div><b>{formatCatalogPrice(overallPrice.amount)}</b><small>{priceDetailsText(overallPrice)}</small></div></li></ul>
+                    : <p>Cote indisponible</p>
+                }
                 return <ul>{priceVariants.map(variant => {
                   const variantPrice = marketPrices[zoomedCard.id]?.variantPrices?.find(price => price.variantId === variant.id)
                   const label = variant.variant_label === 'Carte (suivi de base)' ? 'Carte' : variant.variant_label || variant.variant_key || 'Finition'
