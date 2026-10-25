@@ -25,6 +25,50 @@ const valueFields = new Set(['current_value', 'zero_defect_value', 'release_year
 const requiredFields = new Set(['name', 'category', 'currency', 'image_usage_status'])
 const searchText = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase('fr').replace(/[^a-z0-9]+/g, ' ').trim()
 const upcSearchTerms = new Set(['upc', 'ultra premium collection', 'collection ultra premium'])
+const seriesSearchAliases = {
+  xy1: 'XY', xy2: 'XY – Étincelles', xy3: 'XY – Poings Furieux',
+  xy4: 'XY – Vigueur Spectrale', xy5: 'XY – Primo-Choc', xy6: 'XY – Ciel Rugissant',
+  xy7: 'XY – Origines Antiques', xy8: 'XY – Impulsion TURBO', xy9: 'XY – Rupture Turbo',
+  xy10: 'XY – Impact des Destins', xy11: 'XY – Offensive Vapeur', xy12: 'XY – Évolutions',
+  sl1: 'Soleil et Lune', sl2: 'Soleil et Lune – Gardiens Ascendants',
+  sl3: 'Soleil et Lune – Ombres Ardentes', sl5: 'Soleil et Lune – Invasion Carmin',
+  sl6: 'Soleil et Lune – Ultra-Prisme', sl7: 'Soleil et Lune – Lumière Interdite',
+  'sl7.5': 'Soleil et Lune – Majesté des Dragons', sl8: 'Soleil et Lune – Tempête Céleste',
+  sl9: 'Soleil et Lune – Tonnerre Perdu', sl10: 'Soleil et Lune – Duo de Choc',
+  sl11: 'Soleil et Lune – Alliance Infaillible', sl12: 'Soleil et Lune – Éclipse Cosmique',
+  eb1: 'Épée et Bouclier', eb2: 'Épée et Bouclier – Clash des Rebelles',
+  eb3: 'Épée et Bouclier – Ténèbres Embrasées', 'eb3.5': 'Épée et Bouclier – La Voie du Maître',
+  eb4: 'Épée et Bouclier – Voltage Éclatant', 'eb4.5': 'Épée et Bouclier – Destinées Radieuses',
+  eb5: 'Épée et Bouclier – Styles de Combat', eb6: 'Épée et Bouclier – Règne de Glace',
+  eb7: 'Épée et Bouclier – Évolution Céleste', 'eb7.5': 'Épée et Bouclier – Célébrations',
+  eb8: 'Épée et Bouclier – Poing de Fusion', eb9: 'Épée et Bouclier – Stars Étincelantes',
+  eb10: 'Épée et Bouclier – Astres Radieux', 'eb10.5': 'Pokémon GO',
+  eb11: 'Épée et Bouclier – Origine Perdue', eb12: 'Épée et Bouclier – Tempête Argentée',
+  'eb12.5': 'Épée et Bouclier – Zénith Suprême',
+  ev1: 'Écarlate et Violet', ev2: 'Écarlate et Violet – Évolutions à Paldea',
+  ev3: 'Écarlate et Violet – Flammes Obsidiennes', 'ev3.5': 'Écarlate et Violet – 151',
+  ev4: 'Écarlate et Violet – Faille Paradoxe', 'ev4.5': 'Écarlate et Violet – Destinées de Paldea',
+  ev5: 'Écarlate et Violet – Forces Temporelles',
+  ev6: 'Écarlate et Violet – Mascarade Crépusculaire',
+  'ev6.5': 'Écarlate et Violet – Fable Nébuleuse',
+  ev7: 'Écarlate et Violet – Couronne Stellaire',
+  ev8: 'Écarlate et Violet – Étincelles Déferlantes',
+  'ev8.5': 'Écarlate et Violet – Évolutions Prismatiques',
+  ev9: 'Écarlate et Violet – Aventures Ensemble',
+  ev10: 'Écarlate et Violet – Rivalités Destinées',
+  'ev10.5': 'Écarlate et Violet – Foudre Noire et Flamme Blanche',
+  me1: 'Méga-Évolution', me2: 'Méga-Évolution – Flammes Fantasmagoriques',
+  'me2.5': 'Méga-Évolution – Héros Transcendants',
+  me3: 'Méga-Évolution – Équilibre Parfait', me4: 'Méga-Évolution – Chaos Ascendant',
+  me5: 'Méga-Évolution – Nuit Noire'
+}
+const parseSeriesSearch = value => {
+  const match = String(value || '').match(/\b(xy|sl|eb|ev|me)\s*0*(\d+)(?:[.,]\s*0*(\d+))?\b/i)
+  if (!match) return null
+  const number = String(Number(match[2]))
+  const decimal = match[3] ? '.' + String(Number(match[3])) : ''
+  return { code: match[1].toLowerCase() + number + decimal, text: String(value).replace(match[0], ' ') }
+}
 const isUpcProduct = product => {
   const searchable = searchText([product.name, product.product_type, product.category].filter(Boolean).join(' '))
   return searchable.split(/\s+/).includes('upc') || searchable.includes('ultra premium collection') || searchable.includes('collection ultra premium')
@@ -70,10 +114,23 @@ export default function AdminProductCatalogPage() {
 
   const selected = products.find(product => product.id === selectedId)
   const searchResults = useMemo(() => {
+    const seriesSearch = parseSeriesSearch(query)
+    const seriesTarget = seriesSearch && seriesSearchAliases[seriesSearch.code]
     const needle = searchText(query.trim())
     if (needle.length < 2) return []
     return products
-      .filter(product => (upcSearchTerms.has(needle) && isUpcProduct(product)) || [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => searchText(value).includes(needle)))
+      .filter(product => {
+        if (seriesTarget) {
+          const terms = searchText(seriesSearch.text).split(/\s+/).filter(Boolean)
+          const searchable = searchText([product.name, product.series, product.product_type, product.category, product.case_reference, product.id].filter(Boolean).join(' '))
+          const productType = searchText(product.product_type)
+          const isCaseResult = terms.includes('display') && productType.startsWith('case')
+          return searchText(product.series) === searchText(seriesTarget)
+            && !isCaseResult
+            && terms.every(term => searchable.includes(term))
+        }
+        return (upcSearchTerms.has(needle) && isUpcProduct(product)) || [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => searchText(value).includes(needle))
+      })
       .sort((a, b) => {
         const seriesOrder = String(a.series || '').localeCompare(String(b.series || ''), 'fr')
         if (seriesOrder) return seriesOrder
