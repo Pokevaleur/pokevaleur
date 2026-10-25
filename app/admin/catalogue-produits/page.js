@@ -33,7 +33,7 @@ const seriesSearchAliases = {
   sl1: 'Soleil et Lune', sl2: 'Soleil et Lune – Gardiens Ascendants',
   sl3: 'Soleil et Lune – Ombres Ardentes', sl5: 'Soleil et Lune – Invasion Carmin',
   sl6: 'Soleil et Lune – Ultra-Prisme', sl7: 'Soleil et Lune – Lumière Interdite',
-  sl7.5: 'Soleil et Lune – Majesté des Dragons', sl8: 'Soleil et Lune – Tempête Céleste',
+  'sl7.5': 'Soleil et Lune – Majesté des Dragons', sl8: 'Soleil et Lune – Tempête Céleste',
   sl9: 'Soleil et Lune – Tonnerre Perdu', sl10: 'Soleil et Lune – Duo de Choc',
   sl11: 'Soleil et Lune – Alliance Infaillible', sl12: 'Soleil et Lune – Éclipse Cosmique',
   eb1: 'Épée et Bouclier', eb2: 'Épée et Bouclier – Clash des Rebelles',
@@ -63,7 +63,7 @@ const seriesSearchAliases = {
   me5: 'Méga-Évolution – Nuit Noire'
 }
 const parseSeriesSearch = value => {
-  const match = String(value || '').match(/\\b(xy|sl|eb|ev|me)\\s*0*(\\d+)(?:[.,]\\s*0*(\\d+))?\\b/i)
+  const match = String(value || '').match(/\b(xy|sl|eb|ev|me)\s*0*(\d+)(?:[.,]\s*0*(\d+))?\b/i)
   if (!match) return null
   const number = String(Number(match[2]))
   const decimal = match[3] ? '.' + String(Number(match[3])) : ''
