@@ -19,6 +19,32 @@ const emptyObservation = {
   observation_type: 'confirmed_sale'
 }
 
+function normalizeMarketText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/[–—]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+function matchesSealedMarketSearch(product, query) {
+  const normalizedQuery = normalizeMarketText(query).replace(/\bme\s*0?6\b/g, 'me06')
+  const tokens = normalizedQuery.split(/\s+/).filter(Boolean)
+  const name = normalizeMarketText(product.name)
+  const series = normalizeMarketText(product.series)
+  const type = normalizeMarketText(product.product_type)
+  const allText = name + ' ' + series + ' ' + type
+
+  return tokens.every(token => {
+    if (token === 'etb') return type === 'etb'
+    if (token === 'me') return series.includes('mega evolution')
+    if (token === 'me06') return series.includes('mega evolution') && series.includes('regne delta')
+    return allText.includes(token)
+  })
+}
+
 export default function AdminPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState(null)
@@ -72,22 +98,24 @@ export default function AdminPage() {
     let cancelled = false
     const timer = window.setTimeout(async () => {
       setMarketSearchLoading(true)
+      if (productKind === 'sealed') {
+        const matches = products
+          .filter(product => product.category === 'sealed' && matchesSealedMarketSearch(product, term))
+          .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
+          .slice(0, 30)
+        if (cancelled) return
+        setMarketResults(matches)
+        setMarketSearchLoading(false)
+        return
+      }
+
       const pattern = `%${term.replace(/[%,_]/g, ' ')}%`
-      const request = productKind === 'sealed'
-        ? supabase.from('products')
-          .select('id,name,series')
-          .eq('is_public', true)
-          .eq('category', 'sealed')
-          .ilike('name', pattern)
-          .order('name')
-          .limit(30)
-        : supabase.from('cards')
-          .select('id,card_set_id,collector_number,card_name,card_sets!cards_card_set_id_fkey!inner(set_name,set_code,is_public)')
-          .eq('card_sets.is_public', true)
-          .ilike('card_name', pattern)
-          .order('card_name')
-          .limit(30)
-      const { data, error } = await request
+      const { data, error } = await supabase.from('cards')
+        .select('id,card_set_id,collector_number,card_name,card_sets!cards_card_set_id_fkey!inner(set_name,set_code,is_public)')
+        .eq('card_sets.is_public', true)
+        .ilike('card_name', pattern)
+        .order('card_name')
+        .limit(30)
       if (cancelled) return
       setMarketResults(error ? [] : data || [])
       setMarketSearchLoading(false)
@@ -98,7 +126,7 @@ export default function AdminPage() {
       cancelled = true
       window.clearTimeout(timer)
     }
-  }, [marketSearch, productKind, supabase])
+  }, [marketSearch, productKind, products, supabase])
 
   useEffect(() => {
     if (!selectedCard) {
@@ -148,7 +176,7 @@ export default function AdminPage() {
         supabase.from('product_suggestions').select('*').order('created_at', { ascending: false }),
         supabase
           .from('products')
-          .select('id,name,series,category,current_value,zero_defect_value,price_updated_at,zero_defect_updated_at')
+          .select('id,name,series,category,product_type,current_value,zero_defect_value,price_updated_at,zero_defect_updated_at')
           .eq('is_public', true)
           .order('name'),
         supabase
