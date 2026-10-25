@@ -111,7 +111,7 @@ function cardmarketProductForCard(cardData, products, expansionIds) {
   const candidates = products.filter(product => {
     if (!expansionIds.includes(product?.idExpansion)) return false
     const name = productText(product?.name)
-    return name === cardName || name.startsWith(`\${cardName} `)
+    return name === cardName || name.startsWith(cardName + ' ')
   })
 
   const localId = cardData.localId || cardData.number || null
