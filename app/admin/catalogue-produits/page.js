@@ -60,14 +60,25 @@ const seriesSearchAliases = {
   me1: 'Méga-Évolution', me2: 'Méga-Évolution – Flammes Fantasmagoriques',
   'me2.5': 'Méga-Évolution – Héros Transcendants',
   me3: 'Méga-Évolution – Équilibre Parfait', me4: 'Méga-Évolution – Chaos Ascendant',
-  me5: 'Méga-Évolution – Nuit Noire'
+  me5: 'Méga-Évolution – Nuit Noire', me6: 'Méga-Évolution – Règne Delta'
+}
+const seriesSearchFamilies = {
+  xy: 'XY',
+  sl: 'Soleil et Lune',
+  eb: 'Épée et Bouclier',
+  ev: 'Écarlate et Violet',
+  me: 'Méga-Évolution'
 }
 const parseSeriesSearch = value => {
-  const match = String(value || '').match(/\b(xy|sl|eb|ev|me)\s*0*(\d+)(?:[.,]\s*0*(\d+))?\b/i)
-  if (!match) return null
-  const number = String(Number(match[2]))
-  const decimal = match[3] ? '.' + String(Number(match[3])) : ''
-  return { code: match[1].toLowerCase() + number + decimal, text: String(value).replace(match[0], ' ') }
+  const text = String(value || '')
+  const match = text.match(/\b(xy|sl|eb|ev|me)\s*0*(\d+)(?:[.,]\s*0*(\d+))?\b/i)
+  if (match) {
+    const number = String(Number(match[2]))
+    const decimal = match[3] ? '.' + String(Number(match[3])) : ''
+    return { code: match[1].toLowerCase() + number + decimal, text: text.replace(match[0], ' ') }
+  }
+  const family = text.match(/\b(xy|sl|eb|ev|me)\b/i)
+  return family ? { family: family[1].toLowerCase(), text: text.replace(family[0], ' ') } : null
 }
 const isUpcProduct = product => {
   const searchable = searchText([product.name, product.product_type, product.category].filter(Boolean).join(' '))
@@ -116,16 +127,21 @@ export default function AdminProductCatalogPage() {
   const searchResults = useMemo(() => {
     const seriesSearch = parseSeriesSearch(query)
     const seriesTarget = seriesSearch && seriesSearchAliases[seriesSearch.code]
+    const familyTarget = seriesSearch && seriesSearchFamilies[seriesSearch.family]
     const needle = searchText(query.trim())
     if (needle.length < 2) return []
     return products
       .filter(product => {
-        if (seriesTarget) {
+        if (seriesTarget || familyTarget) {
           const terms = searchText(seriesSearch.text).split(/\s+/).filter(Boolean)
           const searchable = searchText([product.name, product.series, product.product_type, product.category, product.case_reference, product.id].filter(Boolean).join(' '))
+          const productSeries = searchText(product.series)
           const productType = searchText(product.product_type)
           const isCaseResult = terms.includes('display') && productType.startsWith('case')
-          return searchText(product.series) === searchText(seriesTarget)
+          const seriesMatches = seriesTarget
+            ? productSeries === searchText(seriesTarget)
+            : productSeries.startsWith(searchText(familyTarget))
+          return seriesMatches
             && !isCaseResult
             && terms.every(term => searchable.includes(term))
         }
