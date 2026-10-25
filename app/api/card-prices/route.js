@@ -196,7 +196,7 @@ function isRgbMewCard(card) {
 }
 
 function isCatalogEnergyMarketCard(card) {
-  return ['mee30', 'tk-sm-l', 'tk-sm-r'].includes(String(card?.set_code || '').toLowerCase())
+  return ['mee30', 'sme17', 'sme19', 'tk-sm-l', 'tk-sm-r'].includes(String(card?.set_code || '').toLowerCase())
 }
 
 function cardmarketEnergyName(cardName) {
@@ -222,6 +222,15 @@ function cardmarketProductForCatalogEnergy(card, products, expansionProducts) {
   if (setCode === 'mee30') {
     const collectorNumber = String(card?.collector_number || '').padStart(3, '0')
     expectedName = productText(energyName + ' (MEE ' + collectorNumber + ')')
+  } else if (setCode === 'sme17' || setCode === 'sme19') {
+    const year = setCode === 'sme17' ? '2017' : '2019'
+    expectedName = productText(energyName.replace(/^Basic /, '') + ' (UEN ' + year + ')')
+    const matches = products.filter(product => productText(product?.name) === expectedName)
+    if (matches.length === 1) return matches[0]
+    if (!matches.length) return null
+    const unnumberedExpansionIds = cardmarketExpansionIds('Unnumbered Energies', expansionProducts)
+    const narrowed = matches.filter(product => unnumberedExpansionIds.includes(product?.idExpansion))
+    return narrowed.length === 1 ? narrowed[0] : null
   } else if (setCode === 'tk-sm-l' || setCode === 'tk-sm-r') {
     const trainerEnergyName = productText(card?.card_name).includes('electrique') || productText(card?.card_name).includes('electrik')
       ? 'Lightning Energy'
