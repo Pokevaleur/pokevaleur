@@ -41,6 +41,31 @@ function normalizedPriceFinish(value) {
   return 'normal'
 }
 
+function detailedFinish(variant) {
+  const details = [variant?.type, variant?.subtype, variant?.foil, ...(Array.isArray(variant?.stamp) ? variant.stamp : [])]
+    .filter(Boolean)
+    .join(' ')
+    .toLowerCase()
+  if (details.includes('reverse')) return 'reverse'
+  if (details.includes('holo') || details.includes('foil')) return 'holo'
+  return normalizedPriceFinish(variant?.type)
+}
+
+function pricingForFinish(data, finish) {
+  const details = Array.isArray(data?.variants_detailed) ? data.variants_detailed : []
+  const exact = details.find(variant => detailedFinish(variant) === finish)
+  // Some catalog records have one finish label that differs from TCGdex's printing metadata.
+  // When there is only one marketplace variant, its pricing is the only safe match.
+  const detail = exact || (details.length === 1 && details[0]?.pricing ? details[0] : null)
+  return {
+    cardmarket: detail?.pricing?.cardmarket || null,
+    tcgplayer: detail?.pricing?.tcgplayer || null,
+    rootCardmarket: data?.pricing?.cardmarket || null,
+    rootTcgplayer: data?.pricing?.tcgplayer || null,
+    finish: detail ? detailedFinish(detail) : finish
+  }
+}
+
 function tcgPlayerPrice(tcgplayer, finishes) {
   const buckets = {
     normal: ['normal', 'nonHolo', 'unlimited'],
@@ -107,16 +132,32 @@ export async function POST(request) {
     try {
       const data = await fetchJson(card.tcgdexUrl)
       const finishes = orderedFinishes(card.variants)
-      const cardmarket = data?.pricing?.cardmarket || null
-      const tcgplayer = data?.pricing?.tcgplayer || null
-      const market = firstMarketPrice(cardmarket, finishes)
-      const fallback = market ? null : tcgPlayerPrice(tcgplayer, finishes)
       const variantPrices = (card.variants || []).map(variant => {
         const finish = normalizedPriceFinish(variant?.finish_code)
-        const variantMarket = firstMarketPrice(cardmarket, [finish])
-        const variantFallback = variantMarket ? null : tcgPlayerPrice(tcgplayer, [finish])
-        return { variantId: variant?.id || null, finish, market: variantMarket, fallback: variantFallback }
+        const variantSource = pricingForFinish(data, finish)
+        const variantMarket = firstMarketPrice(variantSource.cardmarket, [variantSource.finish])
+          || firstMarketPrice(variantSource.rootCardmarket, [variantSource.finish])
+        const variantFallback = variantMarket ? null : tcgPlayerPrice(variantSource.tcgplayer, [variantSource.finish])
+          || tcgPlayerPrice(variantSource.rootTcgplayer, [variantSource.finish])
+        return {
+          variantId: variant?.id || null,
+          finish,
+          market: variantMarket ? { ...variantMarket, updated: variantSource.cardmarket?.updated || null } : null,
+          fallback: variantFallback ? { ...variantFallback, updated: variantSource.tcgplayer?.updated || null } : null
+        }
       })
+      const firstPricedVariant = variantPrices.find(variant => variant.market || variant.fallback)
+      const rootPricing = data?.pricing || null
+      const rootMarket = firstMarketPrice(rootPricing?.cardmarket, finishes)
+      const rootFallback = rootMarket ? null : tcgPlayerPrice(rootPricing?.tcgplayer, finishes)
+      const preferredVariant = finishes
+        .map(finish => variantPrices.find(variant => variant.finish === finish && (variant.market || variant.fallback)))
+        .find(Boolean) || firstPricedVariant
+      const market = preferredVariant?.market || rootMarket
+      const fallback = preferredVariant?.market ? null : preferredVariant?.fallback || rootFallback
+      const cardmarket = rootPricing?.cardmarket || null
+      const tcgplayer = rootPricing?.tcgplayer || null
+      const tcgDexUpdatedAt = market?.updated || fallback?.updated || cardmarket?.updated || tcgplayer?.updated || null
       return {
         cardId: card.id,
         cardmarket,
@@ -124,7 +165,7 @@ export async function POST(request) {
         chosenMarket: market ? { ...market, source: 'Cardmarket' } : null,
         chosenFallback: fallback ? { ...fallback, source: 'TCGplayer' } : null,
         variantPrices,
-        tcgDexUpdatedAt: market ? (cardmarket?.updated || null) : fallback ? (tcgplayer?.updated || null) : (cardmarket?.updated || tcgplayer?.updated || null)
+        tcgDexUpdatedAt
       }
     } catch {
       return { cardId: card.id, cardmarket: null, tcgplayer: null, chosenMarket: null, chosenFallback: null, tcgDexUpdatedAt: null }
@@ -151,7 +192,7 @@ export async function POST(request) {
         currency: 'EUR',
         source: 'Cardmarket',
         basis: variant.market.field,
-        observedAt: item.tcgDexUpdatedAt
+        observedAt: variant.market.updated || item.tcgDexUpdatedAt
       }
       if (variant.fallback && exchange) return {
         variantId: variant.variantId,
@@ -160,7 +201,7 @@ export async function POST(request) {
         currency: 'EUR',
         source: 'TCGplayer · conversion de référence',
         basis: variant.fallback.field,
-        observedAt: item.tcgDexUpdatedAt,
+        observedAt: variant.fallback.updated || item.tcgDexUpdatedAt,
         exchange
       }
       return {
