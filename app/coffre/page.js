@@ -15,8 +15,6 @@ const surprises=[
  {icon:"🕰️",type:"Coin vintage",title:"Regarde au-delà des nouveautés",text:"Les anciennes générations méritent aussi leur place dans PokéValeur. Aujourd'hui, explore une série que tu collectionnais moins ou que tu ne connais pas encore."}
 ]
 
-const visitorSurprises = surprises.filter(item => !item.partner && !item.badge && !item.xp)
-
 function dayNumber(){const d=new Date();return Math.floor(Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000)}
 
 export default function CoffrePage(){
@@ -27,6 +25,7 @@ export default function CoffrePage(){
  const openingRef=useRef(false)
  const [opening,setOpening]=useState(false)
  const [openError,setOpenError]=useState("")
+ const [loginRequired,setLoginRequired]=useState(false)
  const [member,setMember]=useState(false)
  const [serverReward,setServerReward]=useState(null)
  const [voucher,setVoucher]=useState(null)
@@ -51,7 +50,7 @@ export default function CoffrePage(){
         if(reward) setServerReward(reward)
       }
       setOpened(!!data)
-    }else setOpened(localStorage.getItem("lukulu-chest-day")===String(day))
+    }else setOpened(false)
     setReady(true)
   }
   load()
@@ -78,14 +77,13 @@ export default function CoffrePage(){
  }
  async function openChest(){
   if(!ready||opened||openingRef.current)return
+  if(!member){setLoginRequired(true);return}
   openingRef.current=true;setOpening(true);setOpenError("")
   try{
-   if(member){
-    const supabase=createClient()
-    const {data,error}=await supabase.rpc("open_daily_chest")
-    if(error||!data)throw error||new Error("Récompense indisponible")
-    setServerReward(data)
-   }else localStorage.setItem("lukulu-chest-day",String(day))
+   const supabase=createClient()
+   const {data,error}=await supabase.rpc("open_daily_chest")
+   if(error||!data)throw error||new Error("Récompense indisponible")
+   setServerReward(data)
    revealRequested.current=true
    setOpened(true)
   }catch{
@@ -95,15 +93,15 @@ export default function CoffrePage(){
   }
  }
 
- const shown=!member?visitorSurprises[day%visitorSurprises.length]:member&&serverReward?{icon:serverReward.icon,type:serverReward.label,title:serverReward.title,text:serverReward.body,xp:serverReward.xp_awarded,badge:serverReward.badge_key,partner:serverReward.reward_type==="partner"}:surprise
+ const shown=member&&serverReward?{icon:serverReward.icon,type:serverReward.label,title:serverReward.title,text:serverReward.body,xp:serverReward.xp_awarded,badge:serverReward.badge_key,partner:serverReward.reward_type==="partner"}:surprise
  const revealKind=shown.partner?"partner":shown.badge?"rare":shown.xp>0?"xp":"normal"
  const lukuluReaction=opened?({partner:"Lukulu a trouvé un vrai trésor ! 🎁",rare:"Lukulu semble très fier de cette trouvaille. ✨",xp:"Quelques éclats de plus pour ta progression ! 💎",normal:"Une nouvelle découverte gardée pour toi. 💙"}[revealKind]):"Lukulu veille sur le coffre…"
  return <main className="chestPage">
   <section className="chestHero crystalHero">
-   <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Ton trésor du jour</h1><p className="chestIntro">Une surprise à découvrir avec Lukulu.{member&&<span className="chestXpPromise"> +1 XP par ouverture quotidienne</span>}</p>{openError&&<p role="alert" className="chestOpenError">{openError}</p>}</div>
+   <div className="chestCopy"><span className="chestEyebrow">LE COFFRE DE LUKULU</span><h1>Ton trésor du jour</h1><p className="chestIntro">{member?"Une surprise à découvrir avec Lukulu.":"Connecte-toi pour ouvrir ton coffre et recevoir ta surprise du jour."}{member&&<span className="chestXpPromise"> +1 XP par ouverture quotidienne</span>}</p>{loginRequired&&<div role="status" className="chestOpenError"><p>Le coffre du jour est réservé aux membres. Connecte-toi pour l’ouvrir.</p><a className="claimRewardBtn" href="/login?next=%2Fcoffre">Me connecter</a></div>}{openError&&<p role="alert" className="chestOpenError">{openError}</p>}</div>
    <div className="chestScene">
     <div className={"lukuluReaction "+(opened?revealKind:"waiting")}><span>{lukuluReaction}</span><img src={opened?"/coffre/lukulu-happy.webp":"/coffre/lukulu-waiting.webp"} alt={opened?"Lukulu célèbre ta découverte":"Lukulu veille sur ton coffre"} className="chestLukulu"/></div>
-    <button className={"crystalChest "+(opened?"open":"")} onClick={openChest} disabled={!ready||opened||opening} aria-label={opened?"Coffre ouvert, surprise découverte":"Ouvrir le coffre de Lukulu"}><img src={opened?"/coffre/chest-blue-open.webp":"/coffre/chest-blue-closed.webp"} alt=""/><span className="crystalAction">{opened?"À demain ✦":opening?"Ouverture…":"Toucher pour ouvrir ✦"}</span></button>
+    <button className={"crystalChest "+(opened?"open":"")} onClick={openChest} disabled={!ready||opened||opening} aria-label={opened?"Coffre ouvert, surprise découverte":member?"Ouvrir le coffre de Lukulu":"Se connecter pour ouvrir le coffre de Lukulu"}><img src={opened?"/coffre/chest-blue-open.webp":"/coffre/chest-blue-closed.webp"} alt=""/><span className="crystalAction">{opened?"À demain ✦":opening?"Ouverture…":!ready?"Chargement…":member?"Toucher pour ouvrir ✦":"Connexion requise ✦"}</span></button>
    </div>
   <section ref={revealRef} tabIndex={-1} aria-label="Ta surprise du jour" aria-live="polite" className={"dailyReveal "+(opened?"revealed "+revealKind+"Reveal ":"")}>
    {!opened?null:
@@ -115,7 +113,7 @@ export default function CoffrePage(){
    <div className="chestGuideFacts"><span>✦ Une ouverture par jour</span><span>💎 +1 XP pour les membres</span></div>
    <h2 id="chest-guide-title">Des surprises de toutes les générations.</h2>
    <p>Le coffre contient des conseils, des découvertes et des petits défis.</p>
-   <div className="chestGuideActions">{!member&&ready&&<a href="/login?next=%2Fcoffre">Me connecter pour gagner des XP →</a>}<a href="/progression">Voir ma progression →</a></div>
+   <div className="chestGuideActions">{!member&&ready&&<a href="/login?next=%2Fcoffre">Me connecter pour ouvrir le coffre et gagner des XP →</a>}<a href="/progression">Voir ma progression →</a></div>
   </section>
  </main>
 }
