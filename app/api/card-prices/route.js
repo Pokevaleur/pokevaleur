@@ -171,6 +171,13 @@ function isRgbMewCard(card) {
 
 function cardmarketProductForRgbMew(card, products) {
   const collectorNumber = String(card?.collector_number || '').toUpperCase()
+  const verifiedProductIds = { 'R/RGB': 909509, 'G/RGB': 909510, 'B/RGB': 909511 }
+  const verifiedId = verifiedProductIds[collectorNumber]
+  const byId = products.find(product =>
+    Number(product?.idExpansion) === 6601 && Number(product?.idProduct) === verifiedId
+  )
+  if (byId) return byId
+
   const expected = productText(`Mew (30C ${collectorNumber})`)
   const matches = products.filter(product =>
     Number(product?.idExpansion) === 6601 && productText(product?.name) === expected
