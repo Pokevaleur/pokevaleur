@@ -91,6 +91,16 @@ function cardmarketExpansionIds(setName, products) {
   return [...counts].filter(([, count]) => count === bestCount).map(([id]) => id)
 }
 
+function productHasCollectorNumber(productName, collectorNumber) {
+  const productTokens = productText(productName).split(' ').filter(Boolean)
+  const numberTokens = productText(collectorNumber).split(' ').filter(Boolean)
+  if (!numberTokens.length) return false
+  for (let index = 0; index <= productTokens.length - numberTokens.length; index += 1) {
+    if (numberTokens.every((token, offset) => productTokens[index + offset] === token)) return true
+  }
+  return false
+}
+
 function cardmarketProductForCard(cardData, products, expansionIds) {
   if (!cardData?.name || !expansionIds.length) return null
   const labels = [
@@ -101,10 +111,26 @@ function cardmarketProductForCard(cardData, products, expansionIds) {
   const candidates = products.filter(product => {
     if (!expansionIds.includes(product?.idExpansion)) return false
     const name = productText(product?.name)
-    if (!(name === cardName || name.startsWith(`${cardName} `))) return false
-    return labels.every(label => name.includes(label))
+    return name === cardName || name.startsWith(cardName + ' ')
   })
-  return candidates.length === 1 ? candidates[0] : null
+
+  const localId = cardData.localId || cardData.number || null
+  if (localId) {
+    const numberedCandidates = candidates.filter(product => productHasCollectorNumber(product?.name, localId))
+    if (numberedCandidates.length === 1) return numberedCandidates[0]
+    if (numberedCandidates.length > 1) {
+      const disambiguated = numberedCandidates.filter(product =>
+        labels.every(label => productText(product?.name).includes(label))
+      )
+      if (disambiguated.length === 1) return disambiguated[0]
+    }
+  }
+
+  if (candidates.length === 1) return candidates[0]
+  const disambiguated = candidates.filter(product =>
+    labels.every(label => productText(product?.name).includes(label))
+  )
+  return disambiguated.length === 1 ? disambiguated[0] : null
 }
 
 function tcgdexEnglishUrl(url) {
