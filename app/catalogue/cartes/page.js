@@ -38,6 +38,18 @@ function mcdonaldsCardImageCandidates(card, set, matchingImages = []) {
   return [...new Set(candidates)]
 }
 
+function mewRgbPokepediaImage(card, set) {
+  const setCode = String(set?.set_code || '').toLowerCase()
+  const number = String(card?.collector_number || '').toUpperCase()
+  if (setCode !== '30c' || String(card?.card_name || '').toLowerCase() !== 'mew') return null
+  const images = {
+    'G/RGB': 'https://www.pokepedia.fr/images/b/b8/Carte_30e_Anniversaire_G.png',
+    'R/RGB': 'https://www.pokepedia.fr/images/3/38/Carte_30e_Anniversaire_R.png',
+    'B/RGB': 'https://www.pokepedia.fr/images/6/61/Carte_30e_Anniversaire_B.png'
+  }
+  return images[number] || null
+}
+
 function advanceCardImage(event, candidates) {
   const image = event.currentTarget
   const nextIndex = Number(image.dataset.imageIndex || 0) + 1
@@ -542,6 +554,10 @@ export default function CardCataloguePage() {
         if (cancelled) return
         const mcDonaldCards = cardRows.filter(card => isMcDonaldsSet(relatedSet(card)))
         const imageCandidates = {}
+        for (const card of cardRows) {
+          const pokepediaImage = mewRgbPokepediaImage(card, relatedSet(card))
+          if (pokepediaImage) imageCandidates[card.id] = [pokepediaImage, card.image_url].filter(Boolean)
+        }
         const printYearSearch = normalizedSearchText(term).match(/^(20\d{2})$/)?.[1]
         if (printYearSearch) {
           for (const card of cardRows) {
@@ -642,6 +658,7 @@ export default function CardCataloguePage() {
               source_url: card.source_url,
               image_source_url: card.image_source_url,
               set_code: relatedSet(card)?.set_code,
+              card_name: card.card_name,
               collector_number: card.collector_number,
               variants: (card.card_print_variants || []).map(variant => ({
                 id: variant.id,
