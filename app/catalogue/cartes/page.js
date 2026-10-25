@@ -12,7 +12,7 @@ const MCDONALDS_SERIES = '__mcdonalds_series__'
 const ZENITH_MAIN_SET_CODE = 'swsh12.5'
 const ZENITH_GALLERY_SET_CODE = 'swsh12.5gg'
 const DEDICATED_ENERGY_SET_CODES = new Set(['sve', 'uen17', 'uen19', 'uen20', 'uen22', 'sme17', 'sme19', 'mee', 'mee30', 'sv10.5e'])
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,source_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,set_name,set_code,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
 const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
 
 function normalizedCardName(name) {
@@ -640,6 +640,7 @@ export default function CardCataloguePage() {
             body: JSON.stringify({ cards: batch.map(card => ({
               id: card.id,
               source_url: card.source_url,
+              image_source_url: card.image_source_url,
               set_code: relatedSet(card)?.set_code,
               collector_number: card.collector_number,
               variants: (card.card_print_variants || []).map(variant => ({
