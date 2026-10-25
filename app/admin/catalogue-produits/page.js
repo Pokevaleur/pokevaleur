@@ -145,7 +145,9 @@ export default function AdminProductCatalogPage() {
             && !isCaseResult
             && terms.every(term => searchable.includes(term))
         }
-        return (upcSearchTerms.has(needle) && isUpcProduct(product)) || [product.name, product.series, product.product_type, product.category, product.case_reference, product.id].some(value => searchText(value).includes(needle))
+        const searchable = searchText([product.name, product.series, product.product_type, product.category, product.case_reference, product.id].filter(Boolean).join(' '))
+        const terms = needle.split(/\s+/).filter(Boolean)
+        return (upcSearchTerms.has(needle) && isUpcProduct(product)) || terms.every(term => searchable.includes(term))
       })
       .sort((a, b) => {
         const seriesOrder = String(a.series || '').localeCompare(String(b.series || ''), 'fr')
@@ -240,6 +242,7 @@ export default function AdminProductCatalogPage() {
         {searchResults.length > visibleResultCount && <button className={styles.result} type="button" onClick={() => setVisibleResultCount(count => count + 30)}>Afficher les {Math.min(30, searchResults.length - visibleResultCount)} fiches suivantes</button>}
       </div>}
       {selected && <div className={styles.selectedProduct}><span>Fiche sélectionnée</span><strong>{selected.name}</strong><small>{[selected.series, selected.product_type || selected.category].filter(Boolean).join(' · ')}</small></div>}
+      {selected && query.trim() && !searchResults.some(product => product.id === selected.id) && <p className={styles.noResults} role="status">La fiche actuellement ouverte ne correspond pas aux résultats de cette recherche. Sélectionne un résultat avant de modifier une autre fiche.</p>}
     </section>
     {selected && draft && <form className={styles.form} onSubmit={save}>
       <section className={styles.panel}><h2>Identifiants protégés</h2><div className={styles.readonly}><span>ID catalogue</span><code>{selected.id}</code><span>Créée le</span><code>{selected.created_at ? new Date(selected.created_at).toLocaleString('fr-FR') : '—'}</code></div><p className={styles.help}>L’identifiant ne change pas : les collections qui utilisent cette fiche restent liées au produit.</p></section>
