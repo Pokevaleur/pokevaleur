@@ -183,7 +183,7 @@ export default function SeriesStatsPage() {
                       <li>154/159 · Paddoxton</li>
                     </ul>
                   </details>
-                  <p>Le document détaillé de la liste Ligue n’est pas fourni ici ; les 29 variantes source ne sont donc pas encore rapprochées une à une.</p>
+                  <p>La liste Ligue fournie détaille 29 variantes Play! Pokémon : 12 promos non holo et 17 promos holo/cosmos/ultra. PokéValeur rattache 25 variantes Play! Pokémon à ce niveau. L’écart est donc de quatre variantes par rapport au document source; les 25 entrées ci-dessus sont celles actuellement présentes dans le catalogue.</p>
 
                   <p><strong>Staff — total toutes cartes incluses : 377 selon le calcul 373 + 4 ; 380 cibles dans PokéValeur.</strong> Les quatre variantes promo Staff sont :</p>
                   <ul>
