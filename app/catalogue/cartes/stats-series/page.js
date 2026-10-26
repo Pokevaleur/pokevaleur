@@ -122,6 +122,17 @@ export default function SeriesStatsPage() {
               <th scope="row">
                 <span className={styles.seriesName}>{setLabel(row)}</span>
                 <span className={styles.seriesGroup}>{row.series_name}</span>
+                {row.stats?.sourceCode === 'EV09' && <details className={styles.differences}>
+                  <summary>Master Set : 6 variantes en plus dans PokéValeur</summary>
+                  <ul>
+                    <li><strong>052/159 · Têtampoule de Mashynn</strong> : Holo cosmos</li>
+                    <li><strong>055/159 · Fulgulairo de Mashynn</strong> : Normale</li>
+                    <li><strong>128/159 · Bruyverne</strong> : Normale</li>
+                    <li><strong>135/159 · Moumouton de Nabil</strong> : Holo cosmos</li>
+                    <li><strong>136/159 · Moumouflon de Nabil</strong> : Holo cosmos</li>
+                    <li><strong>151/159 · Perle de Lilie</strong> : Holo cosmos</li>
+                  </ul>
+                </details>}
               </th>
               <td data-label="Full Set">{showCount(row.stats?.fullSet)}</td>
               <td data-label="Master Set">{showCount(row.stats?.masterSet)}</td>
