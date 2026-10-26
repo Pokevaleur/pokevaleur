@@ -123,16 +123,20 @@ export default function SeriesStatsPage() {
                 <span className={styles.seriesName}>{setLabel(row)}</span>
                 <span className={styles.seriesGroup}>{row.series_name}</span>
                 {row.stats?.sourceCode === 'EV09' && <details className={styles.differences}>
-                  <summary>Master Set : 6 variantes en plus dans PokéValeur</summary>
+                  <summary>Voir les cartes rattachées à chaque niveau EV09</summary>
+                  <p><strong>Totaux de référence / cibles PokéValeur :</strong> Master 333 / 339 · Ultra Master 344 / 351 · Ligue 373 / 376 · toutes cartes Staff incluses 377 / 380.</p>
+
+                  <p><strong>Master Set — 333 dans la source, 339 dans PokéValeur.</strong> Ces six variantes sont des cibles supplémentaires dans PokéValeur; l’Ultra Master source les reprend :</p>
                   <ul>
                     <li><strong>052/159 · Têtampoule de Mashynn</strong> : Holo cosmos</li>
-                    <li><strong>055/159 · Fulgulairo de Mashynn</strong> : Normale dans PokéValeur, promo non holo dans l’Ultra Master source</li>
-                    <li><strong>128/159 · Bruyverne</strong> : Normale dans PokéValeur, promo non holo dans l’Ultra Master source</li>
+                    <li><strong>055/159 · Fulgulairo de Mashynn</strong> : Normale dans PokéValeur, promo non holo dans la liste Ultra source</li>
+                    <li><strong>128/159 · Bruyverne</strong> : Normale dans PokéValeur, promo non holo dans la liste Ultra source</li>
                     <li><strong>135/159 · Moumouton de Nabil</strong> : Holo cosmos</li>
                     <li><strong>136/159 · Moumouflon de Nabil</strong> : Holo cosmos</li>
                     <li><strong>151/159 · Perle de Lilie</strong> : Holo cosmos</li>
                   </ul>
-                  <p>Ces six variantes sont aussi incluses dans la liste Ultra Master de WikiPokeTCG (344 cartes). Celle-ci en ajoute cinq autres :</p>
+
+                  <p><strong>Ultra Master — 344 dans la source, 351 dans PokéValeur.</strong> L’Ultra Master source compte cinq variantes spéciales en plus des six précédentes :</p>
                   <ul>
                     <li><strong>024/159 · Braségali-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
                     <li><strong>030/159 · Reshiram-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
@@ -140,12 +144,53 @@ export default function SeriesStatsPage() {
                     <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
                     <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
                   </ul>
-                  <p><strong>EV09 · Total toutes cartes incluses : 377</strong> (373 cartes Ultra Master Ligue + 4 promos Staff).</p>
+                  <p>PokéValeur rattache aussi sept promos SVP au niveau Ultra Master :</p>
                   <ul>
-                    <li><strong>SVP 181 · Darumacho de N</strong> : version promo Staff</li>
-                    <li><strong>SVP 182 · Fulgulairo de Mashynn</strong> : version promo Staff</li>
-                    <li><strong>SVP 183 · Rubombelle de Lilie</strong> : version promo Staff</li>
-                    <li><strong>SVP 184 · Ronflex de Nabil</strong> : version promo Staff</li>
+                    <li>SVP 181 · Darumacho de N</li>
+                    <li>SVP 182 · Fulgulairo de Mashynn</li>
+                    <li>SVP 183 · Rubombelle de Lilie</li>
+                    <li>SVP 184 · Ronflex de Nabil</li>
+                    <li>SVP 187 · Yanmega</li>
+                    <li>SVP 188 · Baggaïd</li>
+                    <li>SVP 189 · Zorua de N</li>
+                  </ul>
+
+                  <p><strong>Ultra Master Ligue — 373 dans la source, 376 dans PokéValeur.</strong> La source ajoute 29 variantes à son Ultra Master. PokéValeur suit 25 variantes tamponnées Play! Pokémon :</p>
+                  <details>
+                    <summary>Afficher les 25 variantes Play! Pokémon</summary>
+                    <ul>
+                      <li>027/159 · Darumacho de N</li>
+                      <li>047/159 · Voltorbe de Mashynn</li>
+                      <li>053/159 · Ampibidou-ex de Mashynn</li>
+                      <li>055/159 · Fulgulairo de Mashynn</li>
+                      <li>056/159 · Mélofée-ex de Lilie</li>
+                      <li>067/159 · Rubombelle de Lilie — Normale et Holo cosmos</li>
+                      <li>079/159 · Mammochon-ex</li>
+                      <li>095/159 · Tyranocif</li>
+                      <li>098/159 · Zoroark-ex de N</li>
+                      <li>111/159 · Zacian-ex de Nabil</li>
+                      <li>116/159 · Reshiram de N</li>
+                      <li>117/159 · Ronflex de Nabil</li>
+                      <li>136/159 · Moumouflon de Nabil</li>
+                      <li>146/159 · Exploration de Pierre</li>
+                      <li>147/159 · Sac de Nabil</li>
+                      <li>148/159 · Bandeau Choix de Nabil</li>
+                      <li>149/159 · Esprit Combatif d’Iris</li>
+                      <li>150/159 · Levalendura — Normale et Holo cosmos</li>
+                      <li>151/159 · Perle de Lilie</li>
+                      <li>152/159 · Palais de N</li>
+                      <li>153/159 · PP Plus de N — Normale et Holo cosmos</li>
+                      <li>154/159 · Paddoxton</li>
+                    </ul>
+                  </details>
+                  <p>Le document détaillé de la liste Ligue n’est pas fourni ici ; les 29 variantes source ne sont donc pas encore rapprochées une à une.</p>
+
+                  <p><strong>Staff — total toutes cartes incluses : 377 selon le calcul 373 + 4 ; 380 cibles dans PokéValeur.</strong> Les quatre variantes promo Staff sont :</p>
+                  <ul>
+                    <li>SVP 181 · Darumacho de N</li>
+                    <li>SVP 182 · Fulgulairo de Mashynn</li>
+                    <li>SVP 183 · Rubombelle de Lilie</li>
+                    <li>SVP 184 · Ronflex de Nabil</li>
                   </ul>
                 </details>}
               </th>
