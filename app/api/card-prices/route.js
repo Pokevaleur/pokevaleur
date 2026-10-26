@@ -5,8 +5,8 @@ const CARDMARKET_PRODUCTS_URL = 'https://downloads.s3.cardmarket.com/productCata
 
 export const maxDuration = 60
 
-async function priceDatabaseClient(key) {
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL
+async function priceDatabaseClient(key, databaseUrl) {
+  const url = databaseUrl || process.env.NEXT_PUBLIC_SUPABASE_URL
   if (!key || !url) return null
   const { createClient } = await import('@supabase/supabase-js')
   return createClient(url, key, {
@@ -351,7 +351,7 @@ export async function POST(request) {
   if (!cards.length) return Response.json({ prices: [] })
 
   const adminClient = await priceDatabaseClient(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
-  const readClient = adminClient
+  const readClient = adminClient || await priceDatabaseClient(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
   const requestedCardIds = [...new Set(cards.map(card => card?.id).filter(id => typeof id === 'string'))]
   const canonicalVariants = new Map()
   const canonicalCards = new Map()
