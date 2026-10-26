@@ -18,6 +18,8 @@ export const metadata = {
   }
 }
 
+const hiddenGuideQuestionIds = new Set(['sets-qu-est-ce-qu-un-master-set', 'sets-qu-est-ce-qu-un-ultra-master-set'])
+
 async function loadGuide() {
   try {
     const supabase = createPublicServerClient()
@@ -29,6 +31,7 @@ async function loadGuide() {
     if (topicError || questionError || glossaryError || !topicRows?.length) throw new Error('Guide content is not available yet')
     const questionsByTopic = new Map()
     for (const question of questionRows || []) {
+      if (hiddenGuideQuestionIds.has(question.id)) continue
       const list = questionsByTopic.get(question.topic_id) || []
       list.push(question)
       questionsByTopic.set(question.topic_id, list)
