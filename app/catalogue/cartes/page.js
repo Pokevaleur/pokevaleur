@@ -135,6 +135,20 @@ function priceDetailsText(price) {
   return [price?.source, basisLabels[price?.basis] || price?.basis, updated, converted].filter(Boolean).join(' · ')
 }
 
+function observedSalesDetailsText(sales) {
+  if (!sales) return ''
+  const saleLabel = sales.count === 1 ? 'Médiane · 1 vente confirmée' : 'Médiane de ' + sales.count + ' ventes confirmées'
+  const formatDate = value => value && !Number.isNaN(Date.parse(value))
+    ? new Date(value).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })
+    : ''
+  const firstDate = formatDate(sales.earliestObservedAt)
+  const lastDate = formatDate(sales.latestObservedAt)
+  const dateLabel = firstDate && lastDate
+    ? firstDate === lastDate ? 'vente du ' + firstDate : 'ventes du ' + firstDate + ' au ' + lastDate
+    : firstDate || lastDate
+  return [saleLabel, ...(sales.sources || []), dateLabel].filter(Boolean).join(' · ')
+}
+
 function isGoldEnergy(card) {
   return card?.card_type === 'Énergie' && /hyper rare/i.test(card?.rarity_label || '')
 }
@@ -1213,6 +1227,25 @@ export default function CardCataloguePage() {
                 })}</ul>
               })()}
           </section>}
+          {showPrices && (() => {
+            const observedVariants = (marketPrices[zoomedCard.id]?.variantPrices || [])
+              .filter(variantPrice => Number(variantPrice.observedSales?.count) > 0)
+            if (!observedVariants.length) return null
+            return <section className={styles.zoomPrices} aria-label="Ventes observées PokéValeur">
+              <strong>Ventes observées PokéValeur</strong>
+              <ul>{observedVariants.map(variantPrice => {
+                const variant = (zoomedCard.card_print_variants || []).find(item => item.id === variantPrice.variantId)
+                const label = variant?.variant_label === 'Carte (suivi de base)' ? 'Carte' : variant?.variant_label || variantPrice.finish || 'Finition'
+                return <li key={variantPrice.variantId}>
+                  <span>{label}</span>
+                  <div>
+                    <b>{formatCatalogPrice(variantPrice.observedSales.amount)}</b>
+                    <small>{observedSalesDetailsText(variantPrice.observedSales)}</small>
+                  </div>
+                </li>
+              })}</ul>
+            </section>
+          })()}
           <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} />
         </div>
       </div>}

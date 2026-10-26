@@ -24,6 +24,38 @@ function latestEstimateByVariant(rows = []) {
   return latest
 }
 
+function median(values = []) {
+  const sorted = values.map(Number).filter(value => Number.isFinite(value)).sort((a, b) => a - b)
+  if (!sorted.length) return null
+  const middle = Math.floor(sorted.length / 2)
+  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
+}
+
+function confirmedSalesByVariant(rows = []) {
+  const grouped = new Map()
+  for (const row of rows) {
+    if (row?.price_kind !== 'raw' || row?.observation_type !== 'confirmed_sale' || row?.currency !== 'EUR') continue
+    const amount = Number(row.amount)
+    if (!isPrice(amount) || !row.card_print_variant_id) continue
+    const group = grouped.get(row.card_print_variant_id) || []
+    group.push(row)
+    grouped.set(row.card_print_variant_id, group)
+  }
+
+  const summaries = new Map()
+  for (const [variantId, sales] of grouped) {
+    const ordered = [...sales].sort((a, b) => new Date(a.observed_at) - new Date(b.observed_at))
+    summaries.set(variantId, {
+      amount: median(ordered.map(sale => sale.amount)),
+      count: ordered.length,
+      earliestObservedAt: ordered[0]?.observed_at || null,
+      latestObservedAt: ordered[ordered.length - 1]?.observed_at || null,
+      sources: [...new Set(ordered.map(sale => String(sale.source || '').trim()).filter(Boolean))]
+    })
+  }
+  return summaries
+}
+
 function isPrice(value) {
   return typeof value === 'number' && Number.isFinite(value) && value > 0
 }
@@ -609,19 +641,33 @@ export async function POST(request) {
     (price.variantPrices || []).map(variant => variant.variantId).filter(id => knownVariantIds.has(id))
   ))]
   let latestEstimates = new Map()
+  let observedSalesByVariant = new Map()
   if (readClient && variantIds.length) {
     const observations = []
+    const confirmedSales = []
     for (let offset = 0; offset < variantIds.length; offset += 100) {
-      const result = await readClient.from('card_price_observations')
-        .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
-        .in('card_print_variant_id', variantIds.slice(offset, offset + 100))
-        .eq('price_kind', 'raw')
-        .eq('observation_type', 'estimate')
-        .eq('currency', 'EUR')
-        .order('observed_at', { ascending: false })
-      if (!result.error) observations.push(...(result.data || []))
+      const batch = variantIds.slice(offset, offset + 100)
+      const [estimateResult, salesResult] = await Promise.all([
+        readClient.from('card_price_observations')
+          .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
+          .in('card_print_variant_id', batch)
+          .eq('price_kind', 'raw')
+          .eq('observation_type', 'estimate')
+          .eq('currency', 'EUR')
+          .order('observed_at', { ascending: false }),
+        readClient.from('card_price_observations')
+          .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
+          .in('card_print_variant_id', batch)
+          .eq('price_kind', 'raw')
+          .eq('observation_type', 'confirmed_sale')
+          .eq('currency', 'EUR')
+          .order('observed_at', { ascending: false })
+      ])
+      if (!estimateResult.error) observations.push(...(estimateResult.data || []))
+      if (!salesResult.error) confirmedSales.push(...(salesResult.data || []))
     }
     latestEstimates = latestEstimateByVariant(observations)
+    observedSalesByVariant = confirmedSalesByVariant(confirmedSales)
 
     if (adminClient) {
       const inserts = []
@@ -682,5 +728,13 @@ export async function POST(request) {
     }
   })
 
-  return Response.json({ prices: pricesWithLastKnown, exchangeDate: exchange?.date || null })
+  const pricesWithObservedSales = pricesWithLastKnown.map(price => ({
+    ...price,
+    variantPrices: (price.variantPrices || []).map(variant => ({
+      ...variant,
+      observedSales: observedSalesByVariant.get(variant.variantId) || null
+    }))
+  }))
+
+  return Response.json({ prices: pricesWithObservedSales, exchangeDate: exchange?.date || null })
 }
