@@ -11,7 +11,7 @@ function normalizeText(value) {
 }
 
 function normalizeSeriesCode(value) {
-  return normalizeText(value).replace(/^([a-z]+)0+(?=\\d)/, '$1')
+  return normalizeText(value).replace(/^([a-z]+)0+(?=\d)/, '$1')
 }
 
 function formatNumber(value) {
