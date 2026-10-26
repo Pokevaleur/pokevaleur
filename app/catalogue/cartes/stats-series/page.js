@@ -132,6 +132,14 @@ export default function SeriesStatsPage() {
                     <li><strong>136/159 · Moumouflon de Nabil</strong> : Holo cosmos</li>
                     <li><strong>151/159 · Perle de Lilie</strong> : Holo cosmos</li>
                   </ul>
+                  <p>Ces six variantes sont aussi incluses dans la liste Ultra Master de WikiPokeTCG. Celle-ci en ajoute cinq autres :</p>
+                  <ul>
+                    <li><strong>024/159 · Braségali-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
+                    <li><strong>030/159 · Reshiram-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
+                    <li><strong>032/159 · Artikodin</strong> : holo cosmos avec tampon flocon</li>
+                    <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
+                    <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
+                  </ul>
                 </details>}
               </th>
               <td data-label="Full Set">{showCount(row.stats?.fullSet)}</td>
