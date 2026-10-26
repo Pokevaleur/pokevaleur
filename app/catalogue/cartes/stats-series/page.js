@@ -125,8 +125,9 @@ export default function SeriesStatsPage() {
               <th scope="col">Série</th>
               <th scope="col">Annoncées</th>
               <th scope="col">Cataloguées</th>
+              <th scope="col">Cibles totales</th>
               <th scope="col">Checklist principale</th>
-              <th scope="col">Promos / tampons inclus</th>
+              <th scope="col">Compléments inclus</th>
               <th scope="col">Fiche catalogue</th>
             </tr>
           </thead>
@@ -142,8 +143,9 @@ export default function SeriesStatsPage() {
               </th>
               <td data-label="Annoncées">{displayCount(row.advertised_card_count)}</td>
               <td data-label="Cataloguées">{formatNumber(row.cardCount || 0)}</td>
+              <td data-label="Cibles totales">{displayCount(row.totalTargets)}</td>
               <td data-label="Checklist principale">{displayCount(row.mainTargets)}</td>
-              <td data-label="Promos / tampons inclus">{displayCount(row.extraTargets + row.unclassifiedTargets)}</td>
+              <td data-label="Compléments inclus">{displayCount(row.extraTargets + row.unclassifiedTargets)}</td>
               <td data-label="Fiche catalogue"><a className={styles.catalogLink} href={'/catalogue/cartes?set=' + encodeURIComponent(row.id)}>Voir les cartes</a></td>
             </tr>)}
           </tbody>
