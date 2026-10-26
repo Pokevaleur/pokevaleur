@@ -126,17 +126,17 @@ export default function SeriesStatsPage() {
                   <summary>Master Set : 6 variantes en plus dans PokéValeur</summary>
                   <ul>
                     <li><strong>052/159 · Têtampoule de Mashynn</strong> : Holo cosmos</li>
-                    <li><strong>055/159 · Fulgulairo de Mashynn</strong> : Normale</li>
-                    <li><strong>128/159 · Bruyverne</strong> : Normale</li>
+                    <li><strong>055/159 · Fulgulairo de Mashynn</strong> : Normale dans PokéValeur, promo non holo dans l’Ultra Master source</li>
+                    <li><strong>128/159 · Bruyverne</strong> : Normale dans PokéValeur, promo non holo dans l’Ultra Master source</li>
                     <li><strong>135/159 · Moumouton de Nabil</strong> : Holo cosmos</li>
                     <li><strong>136/159 · Moumouflon de Nabil</strong> : Holo cosmos</li>
                     <li><strong>151/159 · Perle de Lilie</strong> : Holo cosmos</li>
                   </ul>
-                  <p>Ces six variantes sont aussi incluses dans la liste Ultra Master de WikiPokeTCG. Celle-ci en ajoute cinq autres :</p>
+                  <p>Ces six variantes sont aussi incluses dans la liste Ultra Master de WikiPokeTCG (344 cartes). Celle-ci en ajoute cinq autres :</p>
                   <ul>
                     <li><strong>024/159 · Braségali-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
                     <li><strong>030/159 · Reshiram-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
-                    <li><strong>032/159 · Artikodin</strong> : holo cosmos avec tampon flocon</li>
+                    <li><strong>032/159 · Artikodin</strong> : holo cosmos avec tampon flocon dans la source ; PokéValeur le classe en holo tamponné flocon</li>
                     <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
                     <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
                   </ul>
