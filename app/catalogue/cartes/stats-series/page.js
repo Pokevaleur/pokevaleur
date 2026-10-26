@@ -6,6 +6,19 @@ import { fetchAllRows } from '../../../../lib/supabase-pagination'
 import { SERIES_STATS_SOURCE } from './series-stats-data'
 import styles from './page.module.css'
 
+
+const EV09_SVP_PROMOS = [
+  { number: 'SVP 181', name: 'Darumacho de N', staff: true },
+  { number: 'SVP 182', name: 'Fulgulairo de Mashynn', staff: true },
+  { number: 'SVP 183', name: 'Rubombelle de Lilie', staff: true },
+  { number: 'SVP 184', name: 'Ronflex de Nabil', staff: true },
+  { number: 'SVP 187', name: 'Yanmega' },
+  { number: 'SVP 188', name: 'Baggaïd' },
+  { number: 'SVP 189', name: 'Zorua de N' },
+  { number: 'SVP 194', name: 'Ampibidou-ex de Mashynn' },
+  { number: 'SVP 195', name: 'Mélofée-ex de Lilie' }
+]
+
 function normalizeText(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
 }
@@ -35,6 +48,7 @@ export default function SeriesStatsPage() {
       .map(item => [normalizeText(item.catalogCode), item])
   ), [])
   const [rows, setRows] = useState([])
+  const [promoCards, setPromoCards] = useState([])
   const [query, setQuery] = useState('')
   const [showOnlyWithStats, setShowOnlyWithStats] = useState(false)
   const [loading, setLoading] = useState(true)
@@ -63,6 +77,24 @@ export default function SeriesStatsPage() {
     return () => { cancelled = true }
   }, [supabase, sourceByCode])
 
+  useEffect(() => {
+    const ev09Set = rows.find(row => row.stats?.sourceCode === 'EV09')
+    if (!ev09Set) return
+    let cancelled = false
+    async function loadPromoCards() {
+      const { data, error: loadError } = await fetchAllRows(() => supabase
+        .from('cards')
+        .select('id,collector_number,card_name,image_url')
+        .eq('card_set_id', ev09Set.id)
+        .in('collector_number', EV09_SVP_PROMOS.map(promo => promo.number)))
+      if (loadError) throw loadError
+      if (!cancelled) setPromoCards(data || [])
+    }
+    loadPromoCards().catch(() => { if (!cancelled) setPromoCards([]) })
+    return () => { cancelled = true }
+  }, [rows, supabase])
+
+  const ev09SetId = rows.find(row => row.stats?.sourceCode === 'EV09')?.id
   const matchedCount = rows.filter(row => row.stats).length
   const visibleRows = rows.filter(row => {
     if (showOnlyWithStats && !row.stats) return false
@@ -155,26 +187,37 @@ export default function SeriesStatsPage() {
                     <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
                     <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
                   </ul>
-                  <p id="ev09-promos"><strong>13 impressions portant le symbole SVP</strong> : neuf cartes promo françaises et les quatre versions Staff des SVP 181 à 184. Les versions Staff sont aussi listées dans leur palier dédié.</p>
-                  <ul>
-                    <li>SVP 181 · Darumacho de N</li>
-                    <li>SVP 182 · Fulgulairo de Mashynn</li>
-                    <li>SVP 183 · Rubombelle de Lilie</li>
-                    <li>SVP 184 · Ronflex de Nabil</li>
-                    <li>SVP 187 · Yanmega</li>
-                    <li>SVP 188 · Baggaïd</li>
-                    <li>SVP 189 · Zorua de N — coffret Dresseur d’élite</li>
-                    <li>SVP 194 · Ampibidou-ex de Mashynn — Collection Premium</li>
-                    <li>SVP 195 · Mélofée-ex de Lilie — Collection Tournoi Premium</li>
-                  </ul>
-                  <p><strong>Versions Staff également marquées SVP :</strong></p>
-                  <ul>
-                    <li>SVP 181 · Darumacho de N — tampon Staff</li>
-                    <li>SVP 182 · Fulgulairo de Mashynn — tampon Staff</li>
-                    <li>SVP 183 · Rubombelle de Lilie — tampon Staff</li>
-                    <li>SVP 184 · Ronflex de Nabil — tampon Staff</li>
-                  </ul>
-                  <p>Les quatre versions Staff et les neuf autres promos SVP françaises sont incluses dans l’Ultra Master maximum de 386 cartes. Chaque carte ou variante est comptée une seule fois.</p>
+                  <section id="ev09-promos" className={styles.promoGallery} aria-label="Galerie des 13 impressions SVP EV09">
+                    <h3>13 impressions SVP incluses</h3>
+                    <p>Neuf promos françaises et quatre versions Staff. Sélectionne une vignette pour ouvrir la carte dans le catalogue.</p>
+                    <div className={styles.promoGrid}>
+                      {EV09_SVP_PROMOS.flatMap(promo => {
+                        const card = promoCards.find(item => item.collector_number === promo.number)
+                        const editions = promo.staff ? ['Promo SVP', 'Version Staff'] : ['Promo SVP']
+                        return editions.map(edition => (
+                          <a
+                            key={promo.number + edition}
+                            className={styles.promoCard}
+                            href={'/catalogue/cartes?set=' + encodeURIComponent(ev09SetId || '') + '&search=' + encodeURIComponent(promo.number)}
+                            aria-label={'Voir ' + promo.number + ' ' + promo.name + ' — ' + edition + ' dans le catalogue'}
+                          >
+                            {card?.image_url
+                              ? <img className={styles.promoImage} src={card.image_url} alt={promo.name + ' · ' + edition} loading="lazy" />
+                              : <span className={styles.promoImageFallback}>Visuel à ouvrir dans le catalogue</span>}
+                            <span className={styles.promoInfo}>
+                              <strong>{promo.number}</strong>
+                              <span>{promo.name}</span>
+                              <small>{edition}</small>
+                            </span>
+                          </a>
+                        ))
+                      })}
+                    </div>
+                    <details className={styles.promoCountDetails}>
+                      <summary>Détail du comptage</summary>
+                      <p>Les 13 impressions regroupent les neuf promos françaises SVP 181 à 184, 187 à 189, 194 et 195, ainsi que les quatre variantes Staff des SVP 181 à 184. Ces versions Staff sont également signalées dans le palier Staff de l’Ultra Master.</p>
+                    </details>
+                  </section>
 
                   <p id="ev09-league"><strong>Variantes Play! Pokémon de Ligue — 29 variantes incluses dans l’Ultra Master maximum :</strong></p>
                   <details>
@@ -225,7 +268,7 @@ export default function SeriesStatsPage() {
               <td data-label="Full Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-full-set" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.fullSet)}</a> : showCount(row.stats?.fullSet)}</td>
               <td data-label="Master Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-master-set" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.masterSet)}</a> : showCount(row.stats?.masterSet)}</td>
               <td data-label="Ultra Master Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-staff" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.ultraMasterSet)}</a> : showCount(row.stats?.ultraMasterSet)}</td>
-              <td data-label="Promos SVP">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-promos" aria-label="Afficher les 13 impressions portant le symbole SVP, dont quatre Staff déjà comptées" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>13</a> : '—'}</td>
+              <td data-label="Promos SVP">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-promos" aria-label="Afficher les visuels des 13 impressions SVP, dont quatre versions Staff déjà comptées" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>13</a> : '—'}</td>
               <td data-label="Catalogue"><a className={styles.catalogLink} href={'/catalogue/cartes?set=' + encodeURIComponent(row.id)}>Voir les cartes</a></td>
             </tr>)}
           </tbody>
