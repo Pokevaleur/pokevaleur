@@ -641,33 +641,19 @@ export async function POST(request) {
     (price.variantPrices || []).map(variant => variant.variantId).filter(id => knownVariantIds.has(id))
   ))]
   let latestEstimates = new Map()
-  let observedSalesByVariant = new Map()
   if (readClient && variantIds.length) {
     const observations = []
-    const confirmedSales = []
     for (let offset = 0; offset < variantIds.length; offset += 100) {
-      const batch = variantIds.slice(offset, offset + 100)
-      const [estimateResult, salesResult] = await Promise.all([
-        readClient.from('card_price_observations')
-          .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
-          .in('card_print_variant_id', batch)
-          .eq('price_kind', 'raw')
-          .eq('observation_type', 'estimate')
-          .eq('currency', 'EUR')
-          .order('observed_at', { ascending: false }),
-        readClient.from('card_price_observations')
-          .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
-          .in('card_print_variant_id', batch)
-          .eq('price_kind', 'raw')
-          .eq('observation_type', 'confirmed_sale')
-          .eq('currency', 'EUR')
-          .order('observed_at', { ascending: false })
-      ])
-      if (!estimateResult.error) observations.push(...(estimateResult.data || []))
-      if (!salesResult.error) confirmedSales.push(...(salesResult.data || []))
+      const result = await readClient.from('card_price_observations')
+        .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
+        .in('card_print_variant_id', variantIds.slice(offset, offset + 100))
+        .eq('price_kind', 'raw')
+        .eq('observation_type', 'estimate')
+        .eq('currency', 'EUR')
+        .order('observed_at', { ascending: false })
+      if (!result.error) observations.push(...(result.data || []))
     }
     latestEstimates = latestEstimateByVariant(observations)
-    observedSalesByVariant = confirmedSalesByVariant(confirmedSales)
 
     if (adminClient) {
       const inserts = []
@@ -693,6 +679,25 @@ export async function POST(request) {
         await adminClient.from('card_price_observations').insert(inserts.slice(offset, offset + 100))
       }
     }
+  }
+
+  // Confirmed sales are keyed to every catalog variant in the request, independently
+  // of whether an external market source returned a price for that variant.
+  let observedSalesByVariant = new Map()
+  const observationVariantIds = [...knownVariantIds]
+  if (readClient && observationVariantIds.length) {
+    const confirmedSales = []
+    for (let offset = 0; offset < observationVariantIds.length; offset += 100) {
+      const result = await readClient.from('card_price_observations')
+        .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
+        .in('card_print_variant_id', observationVariantIds.slice(offset, offset + 100))
+        .eq('price_kind', 'raw')
+        .eq('observation_type', 'confirmed_sale')
+        .eq('currency', 'EUR')
+        .order('observed_at', { ascending: false })
+      if (!result.error) confirmedSales.push(...(result.data || []))
+    }
+    observedSalesByVariant = confirmedSalesByVariant(confirmedSales)
   }
 
   const pricesWithLastKnown = prices.map(price => {
