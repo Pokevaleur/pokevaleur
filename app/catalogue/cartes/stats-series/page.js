@@ -82,7 +82,7 @@ export default function SeriesStatsPage() {
         <div><strong>Full Set</strong><span>Une carte de chaque numéro de la série, secrètes comprises.</span></div>
         <div><strong>Master Set</strong><span>Le Full Set avec les versions de cartes trouvables dans les boosters.</span></div>
         <div><strong>Ultra Master Set</strong><span>Le niveau le plus complet indiqué par la source, avec les cartes de Ligue et Staff lorsqu’elles y figurent.</span></div>
-        <p>Les niveaux s’ajoutent les uns aux autres. Le chiffre Ultra Master Set reprend le total le plus élevé disponible entre Ultra Master Set, Ligue et Staff, sans additionner ces totaux cumulatifs.</p>
+        <p>Les niveaux s’ajoutent les uns aux autres. Le total Ultra Master Set comprend toutes les cartes incluses dans le niveau le plus complet indiqué par la source. Il reprend le total le plus élevé disponible entre Ultra Master Set, Ligue et Staff, sans additionner ces totaux cumulatifs.</p>
         <p>Ces chiffres décrivent le référentiel WikiPokeTCG et peuvent différer des cibles calculées par le classeur de collection PokéValeur.</p>
       </section>
 
@@ -113,7 +113,7 @@ export default function SeriesStatsPage() {
               <th scope="col">Série</th>
               <th scope="col">Full Set</th>
               <th scope="col">Master Set</th>
-              <th scope="col">Ultra Master Set<br /><small>Ligue et Staff inclus si disponibles</small></th>
+              <th scope="col">Ultra Master Set<br /><small>Toutes cartes incluses</small></th>
               <th scope="col">Catalogue</th>
             </tr>
           </thead>
