@@ -124,7 +124,7 @@ export default function SeriesStatsPage() {
                 <span className={styles.seriesGroup}>{row.series_name}</span>
                 {row.stats?.sourceCode === 'EV09' && <details className={styles.differences}>
                   <summary>Voir les cartes rattachées à chaque niveau EV09</summary>
-                  <p><strong>Totaux de référence / cibles PokéValeur :</strong> Master 333 / 339 · Ultra Master 344 / 351 · Ligue 373 / 376 · toutes cartes Staff incluses 377 / 380.</p>
+                  <p><strong>Totaux de référence / cibles PokéValeur :</strong> Master 333 / 339 · Ultra Master 344 / 351 · Ligue 373 / 380 · toutes cartes Staff incluses 377 / 384.</p>
 
                   <p><strong>Master Set — 333 dans la source, 339 dans PokéValeur.</strong> Ces six variantes sont des cibles supplémentaires dans PokéValeur; l’Ultra Master source les reprend :</p>
                   <ul>
@@ -155,9 +155,9 @@ export default function SeriesStatsPage() {
                     <li>SVP 189 · Zorua de N</li>
                   </ul>
 
-                  <p><strong>Ultra Master Ligue — 373 dans la source, 376 dans PokéValeur.</strong> La source ajoute 29 variantes à son Ultra Master. PokéValeur suit 25 variantes tamponnées Play! Pokémon :</p>
+                  <p><strong>Ultra Master Ligue — 373 dans la source, 380 dans PokéValeur.</strong> La source compte 29 variantes Play! Pokémon, désormais toutes représentées dans PokéValeur :</p>
                   <details>
-                    <summary>Afficher les 25 variantes Play! Pokémon</summary>
+                    <summary>Afficher les 29 variantes Play! Pokémon</summary>
                     <ul>
                       <li>027/159 · Darumacho de N</li>
                       <li>047/159 · Voltorbe de Mashynn</li>
@@ -167,11 +167,12 @@ export default function SeriesStatsPage() {
                       <li>067/159 · Rubombelle de Lilie — Normale et Holo cosmos</li>
                       <li>079/159 · Mammochon-ex</li>
                       <li>095/159 · Tyranocif</li>
+                      <li>097/159 · Zorua de N</li>
                       <li>098/159 · Zoroark-ex de N</li>
                       <li>111/159 · Zacian-ex de Nabil</li>
-                      <li>116/159 · Reshiram de N</li>
-                      <li>117/159 · Ronflex de Nabil</li>
-                      <li>136/159 · Moumouflon de Nabil</li>
+                      <li>116/159 · Reshiram de N — promo non holo et holo promo</li>
+                      <li>117/159 · Ronflex de Nabil — promo non holo et holo promo Play! Pokémon</li>
+                      <li>136/159 · Moumouflon de Nabil — promo non holo et holo promo Play! Pokémon</li>
                       <li>146/159 · Exploration de Pierre</li>
                       <li>147/159 · Sac de Nabil</li>
                       <li>148/159 · Bandeau Choix de Nabil</li>
@@ -183,9 +184,9 @@ export default function SeriesStatsPage() {
                       <li>154/159 · Paddoxton</li>
                     </ul>
                   </details>
-                  <p>La liste Ligue fournie détaille 29 variantes Play! Pokémon : 12 promos non holo et 17 promos holo/cosmos/ultra. PokéValeur rattache 25 variantes Play! Pokémon à ce niveau. L’écart est donc de quatre variantes par rapport au document source; les 25 entrées ci-dessus sont celles actuellement présentes dans le catalogue.</p>
+                  <p>La liste Ligue détaille 29 variantes Play! Pokémon : 12 promos non holo et 17 promos holo/cosmos/ultra. Les quatre variantes qui manquaient au catalogue sont maintenant ajoutées : 097/159 Zorua de N, ainsi que la seconde variante tamponnée Play! Pokémon pour 116/159 Reshiram de N, 117/159 Ronflex de Nabil et 136/159 Moumouflon de Nabil. PokéValeur compte aussi sept promos SVP dans son Ultra Master, ce qui explique son total de 384 contre 377 dans la source, Staff compris.</p>
 
-                  <p><strong>Staff — total toutes cartes incluses : 377 selon le calcul 373 + 4 ; 380 cibles dans PokéValeur.</strong> Les quatre variantes promo Staff sont :</p>
+                  <p><strong>Staff — total toutes cartes incluses : 377 selon le calcul 373 + 4 ; 384 cibles dans PokéValeur.</strong> Les quatre variantes promo Staff sont :</p>
                   <ul>
                     <li>SVP 181 · Darumacho de N</li>
                     <li>SVP 182 · Fulgulairo de Mashynn</li>
