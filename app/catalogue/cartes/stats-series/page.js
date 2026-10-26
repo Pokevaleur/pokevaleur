@@ -164,23 +164,29 @@ export default function SeriesStatsPage() {
                       <li>053/159 · Ampibidou-ex de Mashynn</li>
                       <li>055/159 · Fulgulairo de Mashynn</li>
                       <li>056/159 · Mélofée-ex de Lilie</li>
-                      <li>067/159 · Rubombelle de Lilie — Normale et Holo cosmos</li>
+                      <li>067/159 · Rubombelle de Lilie — promo non holo</li>
+                      <li>067/159 · Rubombelle de Lilie — promo holo cosmos</li>
                       <li>079/159 · Mammochon-ex</li>
                       <li>095/159 · Tyranocif</li>
                       <li>097/159 · Zorua de N</li>
                       <li>098/159 · Zoroark-ex de N</li>
                       <li>111/159 · Zacian-ex de Nabil</li>
-                      <li>116/159 · Reshiram de N — promo non holo et holo promo</li>
-                      <li>117/159 · Ronflex de Nabil — promo non holo et holo promo Play! Pokémon</li>
-                      <li>136/159 · Moumouflon de Nabil — promo non holo et holo promo Play! Pokémon</li>
+                      <li>116/159 · Reshiram de N — promo non holo</li>
+                      <li>116/159 · Reshiram de N — holo promo Play! Pokémon</li>
+                      <li>117/159 · Ronflex de Nabil — promo non holo</li>
+                      <li>117/159 · Ronflex de Nabil — holo promo Play! Pokémon</li>
+                      <li>136/159 · Moumouflon de Nabil — promo non holo</li>
+                      <li>136/159 · Moumouflon de Nabil — holo promo Play! Pokémon</li>
                       <li>146/159 · Exploration de Pierre</li>
                       <li>147/159 · Sac de Nabil</li>
                       <li>148/159 · Bandeau Choix de Nabil</li>
                       <li>149/159 · Esprit Combatif d’Iris</li>
-                      <li>150/159 · Levalendura — Normale et Holo cosmos</li>
+                      <li>150/159 · Levalendura — promo non holo</li>
+                      <li>150/159 · Levalendura — promo holo cosmos</li>
                       <li>151/159 · Perle de Lilie</li>
                       <li>152/159 · Palais de N</li>
-                      <li>153/159 · PP Plus de N — Normale et Holo cosmos</li>
+                      <li>153/159 · PP Plus de N — promo non holo</li>
+                      <li>153/159 · PP Plus de N — promo holo cosmos</li>
                       <li>154/159 · Paddoxton</li>
                     </ul>
                   </details>
