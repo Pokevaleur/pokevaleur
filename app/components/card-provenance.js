@@ -64,7 +64,7 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
           <ul className={styles.list}>
             {variantProvenance.map((item, index) => <li key={item.finish + item.packSeries + index} className={styles.entry}>
               <div className={styles.entryHeading}><strong>{item.finish} + tampon Play! Pokémon</strong></div>
-              <p className={styles.meta}>Booster Pack Récompense · série {item.packSeries}</p>
+              <p className={styles.meta}>Booster Pack Récompense · {item.packSeries}e série</p>
             </li>)}
           </ul>
         </>}
