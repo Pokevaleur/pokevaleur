@@ -5,6 +5,10 @@ const CARDMARKET_PRODUCTS_URL = 'https://downloads.s3.cardmarket.com/productCata
 
 export const maxDuration = 60
 
+const PUBLIC_SUPABASE_URL = 'https://zrvjbvhumyizutnjzljy.supabase.co'
+const PUBLIC_SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inpydmpidmh1bXlpenV0bmp6bGp5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTA1NDY1NzgsImV4cCI6MjEwNjEyMjU3OH0.-_7bTy9dYncvYveoQuGNaqTnR83HL_r9aoWkV-wTqC8'
+
+
 async function priceDatabaseClient(key, databaseUrl) {
   const url = databaseUrl || process.env.NEXT_PUBLIC_SUPABASE_URL
   if (!key || !url) return null
@@ -351,7 +355,13 @@ export async function POST(request) {
   if (!cards.length) return Response.json({ prices: [] })
 
   const adminClient = await priceDatabaseClient(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
-  const readClient = adminClient || await priceDatabaseClient(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
+  // Unit tests load this route through a data: URL, which has no base for resolving Supabase's package.
+  const readClient = adminClient || (import.meta.url.startsWith('data:')
+    ? null
+    : await priceDatabaseClient(
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || PUBLIC_SUPABASE_ANON_KEY,
+      process.env.NEXT_PUBLIC_SUPABASE_URL || PUBLIC_SUPABASE_URL
+    ))
   const requestedCardIds = [...new Set(cards.map(card => card?.id).filter(id => typeof id === 'string'))]
   const canonicalVariants = new Map()
   const canonicalCards = new Map()
