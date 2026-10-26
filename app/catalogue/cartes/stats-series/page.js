@@ -82,7 +82,7 @@ export default function SeriesStatsPage() {
         <div><strong>Full Set</strong><span>Une carte de chaque numéro de la série, secrètes comprises.</span></div>
         <div><strong>Master Set</strong><span>Le Full Set avec les versions de cartes trouvables dans les boosters.</span></div>
         <div><strong>Ultra Master Set</strong><span>Le niveau le plus complet indiqué par la source, avec les cartes de Ligue et Staff lorsqu’elles y figurent.</span></div>
-        <p>Les niveaux s’ajoutent les uns aux autres. Le total Ultra Master Set comprend toutes les cartes incluses dans le niveau le plus complet indiqué par la source. Il reprend le total le plus élevé disponible entre Ultra Master Set, Ligue et Staff, sans additionner ces totaux cumulatifs.</p>
+        <p>Les niveaux s’ajoutent les uns aux autres. Le total Ultra Master Set reprend le niveau cumulé le plus élevé disponible entre Ultra Master Set, Ligue et Staff, sans additionner ces niveaux entre eux. Pour EV09, le total toutes cartes incluses ajoute les quatre versions promo Staff au total Ligue : 373 + 4 = 377.</p>
         <p>Ces chiffres décrivent le référentiel WikiPokeTCG et peuvent différer des cibles calculées par le classeur de collection PokéValeur.</p>
       </section>
 
@@ -139,6 +139,13 @@ export default function SeriesStatsPage() {
                     <li><strong>032/159 · Artikodin</strong> : holo cosmos avec tampon flocon dans la source ; PokéValeur le classe en holo tamponné flocon</li>
                     <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
                     <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
+                  </ul>
+                  <p><strong>EV09 · Total toutes cartes incluses : 377</strong> (373 cartes Ultra Master Ligue + 4 promos Staff).</p>
+                  <ul>
+                    <li><strong>SVP 181 · Darumacho de N</strong> : version promo Staff</li>
+                    <li><strong>SVP 182 · Fulgulairo de Mashynn</strong> : version promo Staff</li>
+                    <li><strong>SVP 183 · Rubombelle de Lilie</strong> : version promo Staff</li>
+                    <li><strong>SVP 184 · Ronflex de Nabil</strong> : version promo Staff</li>
                   </ul>
                 </details>}
               </th>
