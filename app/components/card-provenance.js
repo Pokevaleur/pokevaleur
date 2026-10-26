@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import styles from './card-provenance.module.css'
+import { EV09_PLAY_PROVENANCE } from '../../lib/ev09-play-provenance'
 
 function productFor(entry) {
   return Array.isArray(entry.products) ? entry.products[0] : entry.products
@@ -13,7 +14,11 @@ function confidenceLabel(confidence) {
   return 'Source à confirmer'
 }
 
-export default function CardProvenanceButton({ supabase, cardId }) {
+export default function CardProvenanceButton({ supabase, cardId, setCode = '', collectorNumber = '' }) {
+  const normalizedSetCode = String(setCode || '').toUpperCase()
+  const variantProvenance = ['SV09', 'EV09'].includes(normalizedSetCode)
+    ? EV09_PLAY_PROVENANCE[collectorNumber] || []
+    : []
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState('idle')
   const [entries, setEntries] = useState([])
@@ -54,10 +59,19 @@ export default function CardProvenanceButton({ supabase, cardId }) {
         <span className={styles.chevron} aria-hidden="true">{open ? '⌃' : '⌄'}</span>
       </button>
       {open && <section id={'card-provenance-' + cardId} className={styles.panel} aria-live="polite">
-        <h3>Produits contenant cette carte</h3>
+        {variantProvenance.length > 0 && <>
+          <h3>Première apparition des variantes Play! Pokémon</h3>
+          <ul className={styles.list}>
+            {variantProvenance.map((item, index) => <li key={item.finish + item.packSeries + index} className={styles.entry}>
+              <div className={styles.entryHeading}><strong>{item.finish} + tampon Play! Pokémon</strong></div>
+              <p className={styles.meta}>Booster Pack Récompense · {item.packSeries}e série</p>
+            </li>)}
+          </ul>
+        </>}
+        <h3>Produits répertoriés pour cette carte</h3>
         {status === 'loading' && <p className={styles.muted}>Recherche des produits…</p>}
         {status === 'error' && <p className={styles.error}>{error}</p>}
-        {status === 'loaded' && entries.length === 0 && (
+        {status === 'loaded' && entries.length === 0 && variantProvenance.length === 0 && (
           <p className={styles.muted}>Aucun produit d’origine n’est encore répertorié pour cette carte.</p>
         )}
         {entries.length > 0 && <ul className={styles.list}>
