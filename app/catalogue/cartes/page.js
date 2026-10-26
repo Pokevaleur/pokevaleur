@@ -921,6 +921,10 @@ export default function CardCataloguePage() {
         <p className={styles.kicker}>Catalogue · Cartes</p>
         <h1>Choisir des cartes à ajouter</h1>
         <p>Choisis une série pour afficher sa liste complète. Coche chaque impression que tu possèdes, indique les doublons, puis ajoute la sélection à la collection choisie.</p>
+        <nav className={styles.sectionNav} aria-label="Pages du catalogue de cartes">
+          <a href="/catalogue/cartes" aria-current="page">Catalogue des cartes</a>
+          <a href="/catalogue/cartes/stats-series">Stats séries</a>
+        </nav>
       </header>
 
       <section className={styles.selectionPanel} aria-label="Choix de la langue, de la série et de la collection">
