@@ -1616,7 +1616,7 @@ export default function CardChecklistPage() {
             <strong>Dans ma collection</strong>
             <ul>{zoomedCard.ownedVersions.map((version, index) => <li key={index}><span>{version.label}</span><b>{version.quantity} exemplaire{version.quantity > 1 ? 's' : ''}</b></li>)}</ul>
           </div>}
-          <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} />
+          <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} setCode={zoomedCard.card_sets?.set_code || selectedSet?.set_code || ''} collectorNumber={zoomedCard.collector_number} />
         </section>
       </div>}
     </main>
