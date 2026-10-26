@@ -37,7 +37,7 @@ async function loadGuide() {
       questionsByTopic.set(question.topic_id, list)
     }
     return {
-      topics: topicRows.map(topic => ({ ...topic, questions: questionsByTopic.get(topic.id) || [] })),
+      topics: topicRows.map(topic => ({ ...topic, intro: topic.id === 'sets' ? 'Les appellations utilisées pour décrire une collection complète peuvent varier selon les collectionneurs.' : topic.intro, questions: questionsByTopic.get(topic.id) || [] })),
       glossary: glossaryRows || []
     }
   } catch {
