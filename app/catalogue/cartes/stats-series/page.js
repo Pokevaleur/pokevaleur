@@ -136,7 +136,7 @@ export default function SeriesStatsPage() {
                     <li><strong>151/159 · Perle de Lilie</strong> : Holo cosmos</li>
                   </ul>
 
-                  <p><strong>Ultra Master — 344 dans la source, 351 dans PokéValeur.</strong> L’Ultra Master source compte cinq variantes spéciales en plus des six précédentes :</p>
+                  <p><strong>Ultra Master — 344 dans la source, 353 dans PokéValeur.</strong> L’Ultra Master source compte cinq variantes spéciales en plus des six précédentes :</p>
                   <ul>
                     <li><strong>024/159 · Braségali-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
                     <li><strong>030/159 · Reshiram-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
