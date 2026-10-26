@@ -136,21 +136,12 @@ export default function SeriesStatsPage() {
                   </ul>
                   <p id="ev09-full-set"><strong>Full Set — 190 cartes.</strong> Les cartes numérotées de la série, secrètes comprises.</p>
 
-                  <p id="ev09-master-set"><strong>Master Set — 333 cartes.</strong> Ce palier suit le périmètre de la source. Les variantes supplémentaires ci-dessous rejoignent l’Ultra Master.</p>
-                  <ul>
-                    <li><strong>052/159 · Têtampoule de Mashynn</strong> : Holo cosmos</li>
-                    <li><strong>055/159 · Fulgulairo de Mashynn</strong> : Normale dans PokéValeur, promo non holo dans la liste Ultra source</li>
-                    <li><strong>128/159 · Bruyverne</strong> : Normale dans PokéValeur, promo non holo dans la liste Ultra source</li>
-                    <li><strong>135/159 · Moumouton de Nabil</strong> : Holo cosmos</li>
-                    <li><strong>136/159 · Moumouflon de Nabil</strong> : Holo cosmos</li>
-                    <li><strong>151/159 · Perle de Lilie</strong> : Holo cosmos</li>
-                  </ul>
-
+                  <p id="ev09-master-set"><strong>Master Set — 333 cartes.</strong> Ce palier contient 333 cartes, conformément au périmètre retenu pour le Master Set. Les variantes supplémentaires sont détaillées dans l’Ultra Master.</p>
                   <p id="ev09-ultra-master"><strong>Ultra Master Set — maximum PokéValeur : 386 cartes.</strong> Il reprend le Master Set de 333 cartes et comprend les variantes supplémentaires, les promos SVP françaises, les versions Play! Pokémon de Ligue et les versions Staff. Les 185 et 186 restent hors périmètre français ; la 193 Jumbo est exclue.</p>
                   <p><strong>Six variantes supplémentaires comptées dans l’Ultra Master :</strong></p>
                   <ul>
                     <li><strong>052/159 · Têtampoule de Mashynn</strong> : Holo cosmos</li>
-                    <li><strong>055/159 · Fulgulairo de Mashynn</strong> : Normale dans PokéValeur, promo non holo dans la liste Ultra source</li>
+                    <li><strong>055/159 · Fulgulairo de Mashynn</strong> : variante promo non holo</li>
                     <li><strong>128/159 · Bruyverne</strong> : Normale dans PokéValeur, promo non holo dans la liste Ultra source</li>
                     <li><strong>135/159 · Moumouton de Nabil</strong> : Holo cosmos</li>
                     <li><strong>136/159 · Moumouflon de Nabil</strong> : Holo cosmos</li>
@@ -160,7 +151,7 @@ export default function SeriesStatsPage() {
                   <ul>
                     <li><strong>024/159 · Braségali-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
                     <li><strong>030/159 · Reshiram-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
-                    <li><strong>032/159 · Artikodin</strong> : holo cosmos avec tampon flocon dans la source ; PokéValeur le classe en holo tamponné flocon</li>
+                    <li><strong>032/159 · Artikodin</strong> : holo cosmos avec tampon flocon</li>
                     <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
                     <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
                   </ul>
@@ -220,7 +211,7 @@ export default function SeriesStatsPage() {
                       <li>154/159 · Paddoxton</li>
                     </ul>
                   </details>
-                  <p>La liste Ligue détaille 29 variantes Play! Pokémon : 12 promos non holo et 17 promos holo/cosmos/ultra. PokéValeur compte aussi neuf promos SVP françaises dans son Ultra Master, ce qui explique son total de 386 contre 377 dans la source, Staff compris. Les 185 et 186 restent hors périmètre français, et la 193 Jumbo est exclue. La Collection Tournoi Premium Lilie comprend aussi trois Perle de Lilie : ce sont des impressions holo cosmos JTG de la 151/159, déjà comptées comme une seule variante JTG, pas des cartes SVP.</p>
+                  <p>La liste Ligue détaille 29 variantes Play! Pokémon : 12 promos non holo et 17 promos holo/cosmos/ultra. Les 185 et 186 restent hors périmètre français, et la 193 Jumbo est exclue. La Collection Tournoi Premium Lilie comprend aussi trois Perle de Lilie : ce sont des impressions holo cosmos JTG de la 151/159, déjà comptées comme une seule variante JTG, pas des cartes SVP.</p>
 
                   <p id="ev09-staff"><strong>Versions Staff — quatre variantes incluses dans le maximum de 386 cartes :</strong></p>
                   <ul>
