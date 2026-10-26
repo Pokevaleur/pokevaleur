@@ -211,7 +211,7 @@ export default function SeriesStatsPage() {
                       <li>154/159 · Paddoxton</li>
                     </ul>
                   </details>
-                  <p>La liste Ligue détaille 29 variantes Play! Pokémon : 12 promos non holo et 17 promos holo/cosmos/ultra. Les quatre variantes qui manquaient au catalogue sont maintenant ajoutées : 097/159 Zorua de N, ainsi que la seconde variante tamponnée Play! Pokémon pour 116/159 Reshiram de N, 117/159 Ronflex de Nabil et 136/159 Moumouflon de Nabil. PokéValeur compte aussi neuf promos SVP françaises dans son Ultra Master, ce qui explique son total de 386 contre 377 dans la source, Staff compris. Les 185 et 186 restent hors périmètre français, et la 193 Jumbo est exclue. La Collection Tournoi Premium Lilie comprend aussi trois Perle de Lilie : ce sont des impressions holo cosmos JTG de la 151/159, déjà comptées comme une seule variante JTG, pas des cartes SVP.</p>
+                  <p>La liste Ligue détaille 29 variantes Play! Pokémon : 12 promos non holo et 17 promos holo/cosmos/ultra. PokéValeur compte aussi neuf promos SVP françaises dans son Ultra Master, ce qui explique son total de 386 contre 377 dans la source, Staff compris. Les 185 et 186 restent hors périmètre français, et la 193 Jumbo est exclue. La Collection Tournoi Premium Lilie comprend aussi trois Perle de Lilie : ce sont des impressions holo cosmos JTG de la 151/159, déjà comptées comme une seule variante JTG, pas des cartes SVP.</p>
 
                   <p id="ev09-staff"><strong>Staff — total toutes cartes incluses : 377 selon le calcul 373 + 4 ; 386 cibles dans PokéValeur.</strong> Les quatre variantes promo Staff sont :</p>
                   <ul>
