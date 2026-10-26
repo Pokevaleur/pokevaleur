@@ -1,5 +1,3 @@
-import { supabaseAnonKey, supabaseUrl } from '../../../lib/supabase-config'
-
 const TCGDEX_CARD_URL = /^https:\/\/api\.tcgdex\.net\/v2\/fr\/(?:(?:sets|sv|tk)\/[a-z0-9.-]+\/(?:[a-z0-9.-]+|!|%3f)|cards\/[a-z0-9.-]+)$/i
 const CARDMARKET_GUIDE_URL = 'https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json'
 const CARDMARKET_SINGLES_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_6.json'
@@ -353,10 +351,7 @@ export async function POST(request) {
   if (!cards.length) return Response.json({ prices: [] })
 
   const adminClient = await priceDatabaseClient(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
-  const readClient = adminClient || await priceDatabaseClient(
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || supabaseAnonKey,
-    supabaseUrl
-  )
+  const readClient = adminClient || await priceDatabaseClient(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY)
   const requestedCardIds = [...new Set(cards.map(card => card?.id).filter(id => typeof id === 'string'))]
   const canonicalVariants = new Map()
   const canonicalCards = new Map()
