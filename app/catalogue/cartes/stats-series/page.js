@@ -10,6 +10,10 @@ function normalizeText(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
 }
 
+function normalizeSeriesCode(value) {
+  return normalizeText(value).replace(/^([a-z]+)0+(?=\d)/, '$1')
+}
+
 function formatNumber(value) {
   return new Intl.NumberFormat('fr-FR').format(value)
 }
@@ -62,8 +66,11 @@ export default function SeriesStatsPage() {
   const matchedCount = rows.filter(row => row.stats).length
   const visibleRows = rows.filter(row => {
     if (showOnlyWithStats && !row.stats) return false
-    const searchText = normalizeText([row.series_name, row.set_name, row.set_code].join(' '))
-    return searchText.includes(normalizeText(query))
+    const term = normalizeText(query)
+    if (!term) return true
+    const searchText = normalizeText([row.series_name, row.set_name, row.set_code, row.stats?.sourceCode].join(' '))
+    const codeAliases = [row.set_code, row.stats?.sourceCode].map(normalizeSeriesCode)
+    return searchText.includes(term) || codeAliases.includes(normalizeSeriesCode(term))
   })
 
   return (
@@ -78,22 +85,9 @@ export default function SeriesStatsPage() {
         </nav>
       </header>
 
-      <section className={styles.intro} aria-label="Comprendre les niveaux">
-        <div><strong>Full Set</strong><span>Une carte de chaque numéro de la série, secrètes comprises.</span></div>
-        <div><strong>Master Set</strong><span>Le Full Set avec les versions de cartes trouvables dans les boosters.</span></div>
-        <div><strong>Ultra Master Set</strong><span>Le niveau le plus complet indiqué par la source, avec les cartes de Ligue et Staff lorsqu’elles y figurent.</span></div>
-        <p>Les niveaux s’ajoutent les uns aux autres. Le total Ultra Master Set reprend le niveau cumulé le plus élevé disponible entre Ultra Master Set, Ligue et Staff, sans additionner ces niveaux entre eux. Pour EV09, le total toutes cartes incluses ajoute les quatre versions promo Staff au total Ligue : 373 + 4 = 377.</p>
-        <p>Ces chiffres décrivent le référentiel WikiPokeTCG et peuvent différer des cibles calculées par le classeur de collection PokéValeur.</p>
-      </section>
-
-      <p className={styles.attribution}>
-        Source des chiffres : WikiPokeTCG, « Référencement de toutes les cartes FR », par grall_69.
-        Licence <a href="https://creativecommons.org/licenses/by-nc-nd/4.0/" target="_blank" rel="noreferrer">Creative Commons BY-NC-ND 4.0</a>.
-      </p>
-
       <label className={styles.search}>
         <span>Rechercher une série</span>
-        <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, code ou bloc…" />
+        <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom ou abréviation, ex. EV9…" />
       </label>
       <label className={styles.toggle}>
         <input type="checkbox" checked={showOnlyWithStats} onChange={event => setShowOnlyWithStats(event.target.checked)} />
@@ -113,7 +107,8 @@ export default function SeriesStatsPage() {
               <th scope="col">Série</th>
               <th scope="col">Full Set</th>
               <th scope="col">Master Set</th>
-              <th scope="col">Ultra Master Set<br /><small>Toutes cartes incluses</small></th>
+              <th scope="col">Ultra Master Set</th>
+              <th scope="col">Promos SVP</th>
               <th scope="col">Catalogue</th>
             </tr>
           </thead>
@@ -122,16 +117,14 @@ export default function SeriesStatsPage() {
               <th scope="row">
                 <span className={styles.seriesName}>{setLabel(row)}</span>
                 <span className={styles.seriesGroup}>{row.series_name}</span>
-                {row.stats?.sourceCode === 'EV09' && <details className={styles.differences}>
-                  <summary>Voir les cartes rattachées à chaque niveau EV09</summary>
-                  <p><strong>Paliers EV09 — chaque total ouvre le détail des cartes du niveau :</strong></p>
+                {row.stats?.sourceCode === 'EV09' && <details id="ev09-breakdown" className={styles.differences}>
+                  <summary>Voir le détail des cartes EV09 par niveau</summary>
+                  <p><strong>Paliers EV09 :</strong></p>
                   <ul className={styles.ev09TierLinks}>
                     <li><a href="#ev09-full-set">190 — Full Set</a></li>
-                    <li><a href="#ev09-master-set">333 (+143) — Master Set</a></li>
-                    <li><a href="#ev09-ultra-master">344 (+11) — Ultra Master</a></li>
-                    <li><a href="#ev09-league">373 (+29) — Ligue</a></li>
-                    <li><a href="#ev09-staff">377 (+4) — toutes cartes, Staff incluses</a></li>
-                    <li><a href="#ev09-promos">386 — total PokéValeur, avec les 9 promos SVP</a></li>
+                    <li><a href="#ev09-master-set">333 — Master Set</a></li>
+                    <li><a href="#ev09-staff">377 — Ultra Master Set, League et Staff</a></li>
+                    <li><a href="#ev09-promos">13 impressions portant le symbole SVP</a></li>
                   </ul>
                   <p><strong>Référence source / cibles PokéValeur :</strong> Master 333 / 339 · Ultra Master 344 / 353 · Ligue 373 / 382 · toutes cartes Staff incluses 377 / 386.</p>
                   <p id="ev09-full-set"><strong>Full Set — 190 cartes.</strong> Les cartes numérotées de la série, secrètes comprises.</p>
@@ -154,7 +147,7 @@ export default function SeriesStatsPage() {
                     <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
                     <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
                   </ul>
-                  <p id="ev09-promos">PokéValeur rattache neuf promos SVP françaises aux produits EV09 :</p>
+                  <p id="ev09-promos"><strong>13 impressions portant le symbole SVP</strong> : neuf cartes promo françaises et les quatre versions Staff des SVP 181 à 184. Les versions Staff sont aussi listées dans leur palier dédié.</p>
                   <ul>
                     <li>SVP 181 · Darumacho de N</li>
                     <li>SVP 182 · Fulgulairo de Mashynn</li>
@@ -166,6 +159,14 @@ export default function SeriesStatsPage() {
                     <li>SVP 194 · Ampibidou-ex de Mashynn — Collection Premium</li>
                     <li>SVP 195 · Mélofée-ex de Lilie — Collection Tournoi Premium</li>
                   </ul>
+                  <p><strong>Versions Staff également marquées SVP :</strong></p>
+                  <ul>
+                    <li>SVP 181 · Darumacho de N — tampon Staff</li>
+                    <li>SVP 182 · Fulgulairo de Mashynn — tampon Staff</li>
+                    <li>SVP 183 · Rubombelle de Lilie — tampon Staff</li>
+                    <li>SVP 184 · Ronflex de Nabil — tampon Staff</li>
+                  </ul>
+                  <p>Les quatre versions Staff sont déjà comprises parmi les 377 cartes du palier Staff. Les neuf autres promos SVP portent le total PokéValeur à 386.</p>
 
                   <p id="ev09-league"><strong>Ultra Master Ligue — 373 dans la source, 382 dans PokéValeur.</strong> La source compte 29 variantes Play! Pokémon, désormais toutes représentées dans PokéValeur :</p>
                   <details>
@@ -213,9 +214,10 @@ export default function SeriesStatsPage() {
                   </ul>
                 </details>}
               </th>
-              <td data-label="Full Set">{showCount(row.stats?.fullSet)}</td>
-              <td data-label="Master Set">{showCount(row.stats?.masterSet)}</td>
-              <td data-label="Ultra Master Set">{showCount(row.stats?.ultraMasterSet)}</td>
+              <td data-label="Full Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-full-set" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.fullSet)}</a> : showCount(row.stats?.fullSet)}</td>
+              <td data-label="Master Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-master-set" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.masterSet)}</a> : showCount(row.stats?.masterSet)}</td>
+              <td data-label="Ultra Master Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-staff" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.ultraMasterSet)}</a> : showCount(row.stats?.ultraMasterSet)}</td>
+              <td data-label="Promos SVP">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-promos" aria-label="Afficher les 13 impressions portant le symbole SVP, dont quatre Staff déjà comptées" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>13</a> : '—'}</td>
               <td data-label="Catalogue"><a className={styles.catalogLink} href={'/catalogue/cartes?set=' + encodeURIComponent(row.id)}>Voir les cartes</a></td>
             </tr>)}
           </tbody>
