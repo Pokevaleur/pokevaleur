@@ -124,7 +124,7 @@ export default function SeriesStatsPage() {
                     <li><a href="#ev09-full-set">190 — Full Set</a></li>
                     <li><a href="#ev09-master-set">333 — Master Set</a></li>
                     <li><a href="#ev09-staff">377 — Ultra Master Set, League et Staff</a></li>
-                    <li><a href="#ev09-promos">9 — promos SVP françaises</a></li>
+                    <li><a href="#ev09-promos">13 impressions portant le symbole SVP</a></li>
                   </ul>
                   <p><strong>Référence source / cibles PokéValeur :</strong> Master 333 / 339 · Ultra Master 344 / 353 · Ligue 373 / 382 · toutes cartes Staff incluses 377 / 386.</p>
                   <p id="ev09-full-set"><strong>Full Set — 190 cartes.</strong> Les cartes numérotées de la série, secrètes comprises.</p>
@@ -147,7 +147,7 @@ export default function SeriesStatsPage() {
                     <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
                     <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
                   </ul>
-                  <p id="ev09-promos">PokéValeur rattache neuf promos SVP françaises aux produits EV09 :</p>
+                  <p id="ev09-promos"><strong>13 impressions portant le symbole SVP</strong> : neuf cartes promo françaises et les quatre versions Staff des SVP 181 à 184. Les versions Staff sont aussi listées dans leur palier dédié.</p>
                   <ul>
                     <li>SVP 181 · Darumacho de N</li>
                     <li>SVP 182 · Fulgulairo de Mashynn</li>
@@ -159,6 +159,14 @@ export default function SeriesStatsPage() {
                     <li>SVP 194 · Ampibidou-ex de Mashynn — Collection Premium</li>
                     <li>SVP 195 · Mélofée-ex de Lilie — Collection Tournoi Premium</li>
                   </ul>
+                  <p><strong>Versions Staff également marquées SVP :</strong></p>
+                  <ul>
+                    <li>SVP 181 · Darumacho de N — tampon Staff</li>
+                    <li>SVP 182 · Fulgulairo de Mashynn — tampon Staff</li>
+                    <li>SVP 183 · Rubombelle de Lilie — tampon Staff</li>
+                    <li>SVP 184 · Ronflex de Nabil — tampon Staff</li>
+                  </ul>
+                  <p>Les quatre versions Staff sont déjà comprises parmi les 377 cartes du palier Staff. Les neuf autres promos SVP portent le total PokéValeur à 386.</p>
 
                   <p id="ev09-league"><strong>Ultra Master Ligue — 373 dans la source, 382 dans PokéValeur.</strong> La source compte 29 variantes Play! Pokémon, désormais toutes représentées dans PokéValeur :</p>
                   <details>
@@ -209,7 +217,7 @@ export default function SeriesStatsPage() {
               <td data-label="Full Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-full-set" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.fullSet)}</a> : showCount(row.stats?.fullSet)}</td>
               <td data-label="Master Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-master-set" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.masterSet)}</a> : showCount(row.stats?.masterSet)}</td>
               <td data-label="Ultra Master Set">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-staff" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>{showCount(row.stats?.ultraMasterSet)}</a> : showCount(row.stats?.ultraMasterSet)}</td>
-              <td data-label="Promos SVP">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-promos" onClick={() => { const details = document.getElementById('ev09-breakdown'); if (details) details.open = true }}>9</a> : '—'}</td>
+              <td data-label="Promos SVP">{row.stats?.sourceCode === 'EV09' ? <a className={styles.tierCountLink} href="#ev09-promos" aria-label="Afficher les 13 impressions portant le symbole SVP, dont quatre Staff déjà comptées">13</a> : '—'}</td>
               <td data-label="Catalogue"><a className={styles.catalogLink} href={'/catalogue/cartes?set=' + encodeURIComponent(row.id)}>Voir les cartes</a></td>
             </tr>)}
           </tbody>
