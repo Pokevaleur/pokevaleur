@@ -124,9 +124,19 @@ export default function SeriesStatsPage() {
                 <span className={styles.seriesGroup}>{row.series_name}</span>
                 {row.stats?.sourceCode === 'EV09' && <details className={styles.differences}>
                   <summary>Voir les cartes rattachées à chaque niveau EV09</summary>
-                  <p><strong>Totaux de référence / cibles PokéValeur :</strong> Master 333 / 339 · Ultra Master 344 / 353 · Ligue 373 / 382 · toutes cartes Staff incluses 377 / 386.</p>
+                  <p><strong>Paliers EV09 — chaque total ouvre le détail des cartes du niveau :</strong></p>
+                  <ul className={styles.ev09TierLinks}>
+                    <li><a href="#ev09-full-set">190 — Full Set</a></li>
+                    <li><a href="#ev09-master-set">333 (+143) — Master Set</a></li>
+                    <li><a href="#ev09-ultra-master">344 (+11) — Ultra Master</a></li>
+                    <li><a href="#ev09-league">373 (+29) — Ligue</a></li>
+                    <li><a href="#ev09-staff">377 (+4) — toutes cartes, Staff incluses</a></li>
+                    <li><a href="#ev09-promos">386 — total PokéValeur, avec les 9 promos SVP</a></li>
+                  </ul>
+                  <p><strong>Référence source / cibles PokéValeur :</strong> Master 333 / 339 · Ultra Master 344 / 353 · Ligue 373 / 382 · toutes cartes Staff incluses 377 / 386.</p>
+                  <p id="ev09-full-set"><strong>Full Set — 190 cartes.</strong> Les cartes numérotées de la série, secrètes comprises.</p>
 
-                  <p><strong>Master Set — 333 dans la source, 339 dans PokéValeur.</strong> Ces six variantes sont des cibles supplémentaires dans PokéValeur; l’Ultra Master source les reprend :</p>
+                  <p id="ev09-master-set"><strong>Master Set — 333 dans la source, 339 dans PokéValeur.</strong> Ces six variantes sont des cibles supplémentaires dans PokéValeur; l’Ultra Master source les reprend :</p>
                   <ul>
                     <li><strong>052/159 · Têtampoule de Mashynn</strong> : Holo cosmos</li>
                     <li><strong>055/159 · Fulgulairo de Mashynn</strong> : Normale dans PokéValeur, promo non holo dans la liste Ultra source</li>
@@ -136,7 +146,7 @@ export default function SeriesStatsPage() {
                     <li><strong>151/159 · Perle de Lilie</strong> : Holo cosmos</li>
                   </ul>
 
-                  <p><strong>Ultra Master — 344 dans la source, 353 dans PokéValeur.</strong> L’Ultra Master source compte cinq variantes spéciales en plus des six précédentes :</p>
+                  <p id="ev09-ultra-master"><strong>Ultra Master — 344 dans la source, 353 dans PokéValeur.</strong> L’Ultra Master source compte cinq variantes spéciales en plus des six précédentes :</p>
                   <ul>
                     <li><strong>024/159 · Braségali-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
                     <li><strong>030/159 · Reshiram-ex</strong> : holo promo avec tampon Aventures Ensemble</li>
@@ -144,7 +154,7 @@ export default function SeriesStatsPage() {
                     <li><strong>117/159 · Ronflex de Nabil</strong> : holo avec tampon GameStop</li>
                     <li><strong>167/159 · Reshiram de N</strong> : holo promo avec tampon Aventures Ensemble</li>
                   </ul>
-                  <p>PokéValeur rattache neuf promos SVP françaises aux produits EV09 :</p>
+                  <p id="ev09-promos">PokéValeur rattache neuf promos SVP françaises aux produits EV09 :</p>
                   <ul>
                     <li>SVP 181 · Darumacho de N</li>
                     <li>SVP 182 · Fulgulairo de Mashynn</li>
@@ -157,7 +167,7 @@ export default function SeriesStatsPage() {
                     <li>SVP 195 · Mélofée-ex de Lilie — Collection Tournoi Premium</li>
                   </ul>
 
-                  <p><strong>Ultra Master Ligue — 373 dans la source, 382 dans PokéValeur.</strong> La source compte 29 variantes Play! Pokémon, désormais toutes représentées dans PokéValeur :</p>
+                  <p id="ev09-league"><strong>Ultra Master Ligue — 373 dans la source, 382 dans PokéValeur.</strong> La source compte 29 variantes Play! Pokémon, désormais toutes représentées dans PokéValeur :</p>
                   <details>
                     <summary>Afficher les 29 variantes Play! Pokémon</summary>
                     <ul>
@@ -194,7 +204,7 @@ export default function SeriesStatsPage() {
                   </details>
                   <p>La liste Ligue détaille 29 variantes Play! Pokémon : 12 promos non holo et 17 promos holo/cosmos/ultra. Les quatre variantes qui manquaient au catalogue sont maintenant ajoutées : 097/159 Zorua de N, ainsi que la seconde variante tamponnée Play! Pokémon pour 116/159 Reshiram de N, 117/159 Ronflex de Nabil et 136/159 Moumouflon de Nabil. PokéValeur compte aussi neuf promos SVP françaises dans son Ultra Master, ce qui explique son total de 386 contre 377 dans la source, Staff compris. Les 185 et 186 restent hors périmètre français, et la 193 Jumbo est exclue. La Collection Tournoi Premium Lilie comprend aussi trois Perle de Lilie : ce sont des impressions holo cosmos JTG de la 151/159, déjà comptées comme une seule variante JTG, pas des cartes SVP.</p>
 
-                  <p><strong>Staff — total toutes cartes incluses : 377 selon le calcul 373 + 4 ; 386 cibles dans PokéValeur.</strong> Les quatre variantes promo Staff sont :</p>
+                  <p id="ev09-staff"><strong>Staff — total toutes cartes incluses : 377 selon le calcul 373 + 4 ; 386 cibles dans PokéValeur.</strong> Les quatre variantes promo Staff sont :</p>
                   <ul>
                     <li>SVP 181 · Darumacho de N</li>
                     <li>SVP 182 · Fulgulairo de Mashynn</li>
