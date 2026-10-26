@@ -1215,8 +1215,8 @@ export const SERIES_STATS_SOURCE = [
     "catalogCode": "SV09",
     "fullSet": 190,
     "masterSet": 333,
-    "ultraMasterSet": 377,
-    "ultraMasterSourceTier": "league + staff",
+    "ultraMasterSet": 386,
+    "ultraMasterSourceTier": "PokéValeur maximum : Ligue + Staff",
     "sourceVersion": "Disponible Version : 1.03"
   },
   {
