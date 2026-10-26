@@ -70,7 +70,15 @@ export default function SeriesStatsPage() {
     if (!term) return true
     const searchText = normalizeText([row.series_name, row.set_name, row.set_code, row.stats?.sourceCode].join(' '))
     const codeAliases = [row.set_code, row.stats?.sourceCode].map(normalizeSeriesCode)
-    return searchText.includes(term) || codeAliases.includes(normalizeSeriesCode(term))
+    const codeTerm = normalizeSeriesCode(term)
+    const matchesSeriesCode = codeTerm.length >= 2 && rows.some(candidate =>
+      [candidate.set_code, candidate.stats?.sourceCode]
+        .map(normalizeSeriesCode)
+        .some(code => code.startsWith(codeTerm))
+    )
+    return matchesSeriesCode
+      ? codeAliases.some(code => code.startsWith(codeTerm))
+      : searchText.includes(term)
   })
 
   return (
