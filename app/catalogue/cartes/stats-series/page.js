@@ -83,6 +83,7 @@ export default function SeriesStatsPage() {
         <div><strong>Master Set</strong><span>Le Full Set avec les versions de cartes trouvables dans les boosters.</span></div>
         <div><strong>Ultra Master Set</strong><span>Le niveau le plus complet indiqué par la source, avec les cartes de Ligue et Staff lorsqu’elles y figurent.</span></div>
         <p>Les niveaux s’ajoutent les uns aux autres. Le chiffre Ultra Master Set reprend le total le plus élevé disponible entre Ultra Master Set, Ligue et Staff, sans additionner ces totaux cumulatifs.</p>
+        <p>Ces chiffres décrivent le référentiel WikiPokeTCG et peuvent différer des cibles calculées par le classeur de collection PokéValeur.</p>
       </section>
 
       <p className={styles.attribution}>
