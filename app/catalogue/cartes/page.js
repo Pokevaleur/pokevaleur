@@ -1250,7 +1250,7 @@ export default function CardCataloguePage() {
               })}</ul>
             </section>
           })()}
-          <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} />
+          <CardProvenanceButton supabase={supabase} cardId={zoomedCard.id} setCode={zoomedCard.card_sets?.set_code || zoomedCard.set_code || ''} collectorNumber={zoomedCard.collector_number} />
         </div>
       </div>}
     </main>
