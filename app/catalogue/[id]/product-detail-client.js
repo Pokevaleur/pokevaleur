@@ -17,7 +17,7 @@ function packStampVariant(card, seriesNumber) {
     return key.includes('series_' + seriesNumber) || key.includes('_s' + seriesNumber)
   })
   if (exact.length) return exact[0]
-  if (![7, 8].includes(seriesNumber)) return null
+  if (![7, 8, 9].includes(seriesNumber)) return null
   return variants.find(variant => {
     const key = String(variant.variant_key || '').toLowerCase()
     return isPlayStamp(variant) && /player_rewards_program|stamp_play_pokemon_(cosmos_ultra|non_holo)/.test(key)
