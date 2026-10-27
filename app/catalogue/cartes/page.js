@@ -1156,6 +1156,13 @@ export default function CardCataloguePage() {
                       <span>{label}</span>
                       {copies > 0 && <small>Déjà {copies} en collection</small>}
                     </label>
+                    {variant.image_url && <button
+                      type="button"
+                      className={styles.variantPreviewButton}
+                      aria-label={'Agrandir le visuel ' + label + ' de ' + card.card_name}
+                      title="Agrandir le visuel de cette impression"
+                      onClick={() => setZoomedCard({ ...card, zoomImageUrl: variant.image_url, zoomImageCandidates: [variant.image_url, card.image_url].filter(Boolean), zoomVariantLabel: label })}
+                    >Voir</button>}
                     <a
                       className={styles.gradedAddButton}
                       href={'/collection/cartes-gradees/ajouter?variant_id=' + encodeURIComponent(variant.id)}
@@ -1205,7 +1212,7 @@ export default function CardCataloguePage() {
         <div className={styles.modalContent} role="dialog" aria-modal="true" aria-label={'Carte ' + zoomedCard.card_name} onClick={event => event.stopPropagation()}>
           <button type="button" className={styles.closeButton} onClick={() => setZoomedCard(null)} aria-label="Fermer">×</button>
           <img src={zoomedCard.zoomImageUrl || cardImageCandidates[zoomedCard.id]?.[0] || zoomedCard.image_url} alt={zoomedCard.card_name} onError={event => advanceCardImage(event, zoomedCard.zoomImageCandidates || cardImageCandidates[zoomedCard.id] || [zoomedCard.image_url].filter(Boolean))} />
-          <p>{zoomedCard.card_name} · {zoomedCard.collector_number}</p>
+          <p>{zoomedCard.card_name} · {zoomedCard.collector_number}{zoomedCard.zoomVariantLabel ? ' · ' + zoomedCard.zoomVariantLabel : ''}</p>
           {showPrices && <section className={styles.zoomPrices} aria-label="Cotes par finition">
             <strong>Cotes par finition</strong>
             {marketPricesLoading
