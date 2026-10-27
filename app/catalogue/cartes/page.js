@@ -306,7 +306,7 @@ export default function CardCataloguePage() {
           .eq('is_public', true).eq('language', 'FR').order('release_date', { ascending: false }).order('set_name'),
         supabase.from('products').select('id,name,product_type,series,release_date')
           .eq('is_public', true).eq('product_type', 'Pack Récompense').eq('series', 'Play! Pokémon')
-          .order('release_date', { ascending: true }).order('name'),
+          .order('name'),
         supabase.auth.getUser()
       ])
       if (cancelled) return
