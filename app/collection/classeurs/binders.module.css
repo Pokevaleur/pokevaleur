@@ -106,7 +106,7 @@
 .bonusZoomClose:focus-visible { outline:3px solid #e7b929; outline-offset:2px; }
 .bonusZoomImage { display:block; width:auto; max-width:100%; max-height:min(72dvh,780px); object-fit:contain; border-radius:8px; box-shadow:0 8px 24px #10243a26; }
 .thumb { position:relative; width:100%; height:clamp(68px,9vw,128px); display:grid; place-items:center; overflow:hidden; border-radius:4px; background:#fff; }
-.thumb img { width:100%; height:100%; object-fit:contain; }
+.thumb img { display:block; width:auto; max-width:100%; height:100%; aspect-ratio:63 / 88; object-fit:contain; }
 .thumb > span { color:#8791a0; font-size:.6rem; }
 .copyBadge { position:absolute; top:3px; right:3px; padding:2px 5px; border-radius:999px; background:#173c73e8; color:#fff; font-size:.62rem; }
 .slotZoomHint { position:absolute; left:3px; bottom:3px; display:grid; width:18px; height:18px; place-items:center; border-radius:50%; background:#ffffffeb; color:#173c73; box-shadow:0 1px 4px #07172b33; }
