@@ -1698,9 +1698,11 @@ function BindersContent() {
                       {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{binderExtraLabel(item)}</span>}
                     </button>
                   }
-                  return <article key={item ? item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-') : 'empty-' + side + '-' + slotIndex} className={styles.slot}>
+                  return <article key={item ? item.kind + '-' + card.id + '-' + variants.map(variant => variant.id).join('-') : 'empty-' + side + '-' + slotIndex} className={card ? styles.slot + ' ' + styles.slotMissingArtwork : styles.slot}>
                     {card ? <>
-                      <span className={styles.emptyNumber}>{card ? (isEnergyBinder ? energyCardNumber(card) + ' · ' + (item.kind === 'extra' ? energyPrintYear(item) : setYear(cardSetFor(card))) : card.collector_number) : '—'}</span>
+                      {itemArt ? <div className={styles.thumb + ' ' + styles.missingThumb}><CardArtwork card={card} src={itemArt} alt="" /></div> : null}
+                      <strong className={styles.cardName}>{card.card_name}</strong>
+                      <span className={styles.emptyNumber}>{isEnergyBinder ? energyCardNumber(card) + ' · ' + (item.kind === 'extra' ? energyPrintYear(item) : setYear(cardSetFor(card))) : card.collector_number}</span>
                       <span className={styles.emptyHint}>À compléter</span>
                       {missingVariants.length > 0 && <span className={styles.extraVariantLabel}>{missingVariants.map(pdfVariantLabel).join(', ')}</span>}
                       {item.kind === 'extra' && <span className={styles.extraVariantLabel}>{binderExtraLabel(item)}</span>}

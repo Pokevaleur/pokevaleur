@@ -91,6 +91,9 @@
 .pageFooter { padding:8px 2px 0; border-top:1px solid #e5e0d6; letter-spacing:.03em; text-transform:none; }
 .cardSlots { display:grid; flex:1; grid-template-columns:repeat(4,minmax(0,1fr)); grid-template-rows:repeat(3,minmax(112px,1fr)); gap:8px; padding:10px 0; }
 .slot,.slotOwned,.slotCatalog { position:relative; display:flex; min-width:0; flex-direction:column; align-items:center; justify-content:center; overflow:hidden; padding:5px; border:1px dashed #c9cbd0; border-radius:7px; background:linear-gradient(135deg,#f0f1f2,#e8e9eb); text-align:center; }
+.slotMissingArtwork { padding:4px; }
+.missingThumb { height:clamp(52px,7vw,94px); flex:none; }
+.missingThumb img { filter:grayscale(.35); opacity:.76; }
 .slotOwned,.slotCatalog { border:1px solid #e1d5b4; background:linear-gradient(145deg,#fffdf7,#fbf5e7); box-shadow:0 2px 5px #24344a0b; }
 .slotCatalog { appearance:none; width:100%; border-style:solid; color:inherit; font:inherit; cursor:zoom-in; transition:transform .15s ease,border-color .15s ease,box-shadow .15s ease; }
 .slotCatalog:hover { transform:translateY(-2px); border-color:#9eb3c4; box-shadow:0 5px 12px #24344a18; }
