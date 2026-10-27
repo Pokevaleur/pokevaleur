@@ -24,6 +24,7 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
   const [status, setStatus] = useState('idle')
   const [entries, setEntries] = useState([])
   const [inferredBoosters, setInferredBoosters] = useState([])
+  const [inferredBoosterSources, setInferredBoosterSources] = useState([])
   const [error, setError] = useState('')
 
   async function toggleProvenance() {
@@ -55,18 +56,65 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
       .maybeSingle()
     const cardSet = Array.isArray(card?.card_sets) ? card.card_sets[0] : card?.card_sets
     if (cardSet?.language === 'FR' && cardSet.set_name) {
-      const { data: boosterProducts } = await supabase
-        .from('products')
-        .select('id,name,category,series,language,product_type,booster_artwork,image_url')
-        .eq('category', 'sealed')
-        .eq('product_type', 'Booster loose')
-        .eq('language', 'FR')
-        .not('image_url', 'is', null)
-        .ilike('series', '%' + cardSet.set_name + '%')
-        .order('booster_artwork', { ascending: true, nullsFirst: false })
+      const boosterSeriesName = String(cardSet.set_name).split(/[–—-]/).pop().trim()
+      const [
+        { data: boosterProducts },
+        { data: containedBoosterRows },
+        { data: expectedBoosterRows },
+        { data: boosterBundleProducts }
+      ] = await Promise.all([
+        supabase
+          .from('products')
+          .select('id,name,category,series,language,product_type,booster_artwork,image_url')
+          .eq('category', 'sealed')
+          .eq('product_type', 'Booster loose')
+          .eq('language', 'FR')
+          .eq('is_public', true)
+          .not('image_url', 'is', null)
+          .ilike('series', '%' + cardSet.set_name + '%')
+          .order('booster_artwork', { ascending: true, nullsFirst: false }),
+        supabase
+          .from('product_contents')
+          .select('id,item_name,quantity,source_label,source_url,products(id,name,category,series,language,product_type,image_url,is_public)')
+          .eq('content_type', 'booster')
+          .ilike('item_name', '%' + boosterSeriesName + '%'),
+        supabase
+          .from('product_expected_booster_series')
+          .select('expected_quantity,source_label,source_url,products(id,name,category,series,language,product_type,image_url,is_public)')
+          .eq('series_name', cardSet.set_name),
+        supabase
+          .from('products')
+          .select('id,name,category,series,language,product_type,image_url')
+          .eq('category', 'sealed')
+          .eq('product_type', 'Booster bundle')
+          .eq('language', 'FR')
+          .eq('is_public', true)
+          .not('image_url', 'is', null)
+          .ilike('series', '%' + cardSet.set_name + '%')
+      ])
+
       const linkedProductIds = new Set((data || []).map(entry => productFor(entry)?.id).filter(Boolean))
-      const availableBoosters = boosterProducts || []
-      setInferredBoosters(availableBoosters.filter(booster => !linkedProductIds.has(booster.id)))
+      const availableBoosters = (boosterProducts || []).filter(booster => !linkedProductIds.has(booster.id))
+      setInferredBoosters(availableBoosters)
+
+      const standaloneBoosterIds = new Set(availableBoosters.map(booster => booster.id))
+      const sourceProducts = new Map()
+      const addBoosterSource = (product, quantity, sourceLabel, sourceUrl) => {
+        if (!product?.id || !product.image_url || !product.is_public || linkedProductIds.has(product.id) || standaloneBoosterIds.has(product.id)) return
+        const existing = sourceProducts.get(product.id)
+        sourceProducts.set(product.id, {
+          ...product,
+          boosterQuantity: quantity || existing?.boosterQuantity || null,
+          boosterSeriesName,
+          sourceLabel: sourceLabel || existing?.sourceLabel || null,
+          sourceUrl: sourceUrl || existing?.sourceUrl || null
+        })
+      }
+
+      ;(containedBoosterRows || []).forEach(row => addBoosterSource(productFor(row), row.quantity, row.source_label, row.source_url))
+      ;(expectedBoosterRows || []).forEach(row => addBoosterSource(productFor(row), row.expected_quantity, row.source_label, row.source_url))
+      ;(boosterBundleProducts || []).forEach(product => addBoosterSource(product, null, null, null))
+      setInferredBoosterSources([...sourceProducts.values()])
     }
 
     setStatus('loaded')
@@ -97,7 +145,7 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
         <h3>Produits répertoriés pour cette carte</h3>
         {status === 'loading' && <p className={styles.muted}>Recherche des produits…</p>}
         {status === 'error' && <p className={styles.error}>{error}</p>}
-        {status === 'loaded' && entries.length === 0 && inferredBoosters.length === 0 && variantProvenance.length === 0 && (
+        {status === 'loaded' && entries.length === 0 && inferredBoosters.length === 0 && inferredBoosterSources.length === 0 && variantProvenance.length === 0 && (
           <p className={styles.muted}>Aucun produit d’origine n’est encore répertorié pour cette carte.</p>
         )}
         {inferredBoosters.length > 0 && <>
@@ -109,6 +157,27 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
                 <a className={styles.productLink} href={'/catalogue/' + encodeURIComponent(booster.id)}>Voir la fiche →</a>
               </div>
               <p className={styles.meta}>Présence possible · {confidenceLabel('set_inferred')}</p>
+            </li>)}
+          </ul>
+        </>}
+        {inferredBoosterSources.length > 0 && <>
+          <h3>Produits contenant des boosters de la série</h3>
+          <ul className={styles.list}>
+            {inferredBoosterSources.map(source => <li key={source.id} className={styles.entry}>
+              <div className={styles.entryHeading}>
+                <strong>{source.name}</strong>
+                <a className={styles.productLink} href={'/catalogue/' + encodeURIComponent(source.id)}>Voir la fiche →</a>
+              </div>
+              <p className={styles.itemName}>
+                {source.boosterQuantity ? source.boosterQuantity + ' booster' + (source.boosterQuantity === 1 ? '' : 's') + ' · ' : ''}
+                {source.boosterSeriesName}
+              </p>
+              <p className={styles.meta}>Présence possible · La carte peut se trouver dans l’un des boosters</p>
+              {(source.sourceLabel || source.sourceUrl) && <p className={styles.source}>
+                {source.sourceUrl
+                  ? <a href={source.sourceUrl} target="_blank" rel="noreferrer">{source.sourceLabel || 'Consulter la source'}</a>
+                  : source.sourceLabel}
+              </p>}
             </li>)}
           </ul>
         </>}
