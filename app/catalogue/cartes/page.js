@@ -115,7 +115,7 @@ function isPackRewardSelection(id) {
 }
 
 function isPlayStampVariant(variant) {
-  return variant?.checklist_group === 'stamp' || /play|reward|prize/i.test([variant?.variant_key, variant?.variant_label, variant?.guide_marker].join(' '))
+  return /play|reward|prize/i.test([variant?.variant_key, variant?.variant_label, variant?.guide_marker].join(' '))
 }
 
 function formatCatalogPrice(value) {
@@ -899,7 +899,7 @@ export default function CardCataloguePage() {
       const foreignSet = foreignPrinting?.foreign_card_sets
       const nativeSet = relatedSet(selectedCard)
       const quantity = Math.max(1, Math.min(99, Math.floor(Number(rawQuantity) || 1)))
-      if (!variant || (!variant.is_master_set_target && !isPackRewardSelection(setId))) continue
+      if (!variant || (!variant.is_master_set_target && !isPlayStampVariant(variant))) continue
       for (let index = 0; index < quantity; index++) rows.push({
         user_id: user.id,
         collection_profile_id: profileId,
@@ -1070,7 +1070,7 @@ export default function CardCataloguePage() {
               : [])
             const copyrightYearVariant = yearVariants.find(variant => variant.image_url) || yearVariants[0] || null
             const displayCopyrightYear = Number(copyrightYearVariant?.copyright_year) || null
-            const variants = yearGroupVariants || (card.card_print_variants || []).filter(variant => (isPackRewardSelection(setId) ? isPlayStampVariant(variant) : variant.is_master_set_target)
+            const variants = yearGroupVariants || (card.card_print_variants || []).filter(variant => (isPackRewardSelection(setId) ? isPlayStampVariant(variant) : variant.is_master_set_target || isPlayStampVariant(variant))
               && (!yearSearch || Number(variant.copyright_year) === Number(yearSearch) || String(relatedSet(card)?.release_date || '').startsWith(yearSearch)))
             const set = relatedSet(card)
             const previousEntry = index ? group.entries[index - 1] : null
