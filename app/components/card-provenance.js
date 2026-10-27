@@ -57,16 +57,17 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
     if (cardSet?.language === 'FR' && cardSet.set_name) {
       const { data: boosterProducts } = await supabase
         .from('products')
-        .select('id,name,category,series,language,product_type,booster_artwork')
+        .select('id,name,category,series,language,product_type,booster_artwork,image_url')
         .eq('category', 'sealed')
         .eq('product_type', 'Booster loose')
         .eq('language', 'FR')
-        .is('booster_artwork', null)
+        .not('image_url', 'is', null)
         .ilike('series', '%' + cardSet.set_name + '%')
+        .order('booster_artwork', { ascending: true, nullsFirst: false })
         .limit(1)
       const booster = boosterProducts?.[0]
-      if (booster && !(data || []).some(entry => productFor(entry)?.id === booster.id)) {
-        setInferredBooster(booster)
+      if (!(data || []).some(entry => booster && productFor(entry)?.id === booster.id)) {
+        setInferredBooster(booster || { name: 'Booster de la série ' + cardSet.set_name })
       }
     }
 
@@ -107,7 +108,7 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
             <li className={styles.entry}>
               <div className={styles.entryHeading}>
                 <strong>{inferredBooster.name}</strong>
-                <a className={styles.productLink} href={'/catalogue/' + encodeURIComponent(inferredBooster.id)}>Voir la fiche →</a>
+                {inferredBooster.id && <a className={styles.productLink} href={'/catalogue/' + encodeURIComponent(inferredBooster.id)}>Voir la fiche →</a>}
               </div>
               <p className={styles.meta}>Présence possible · {confidenceLabel('set_inferred')}</p>
             </li>
