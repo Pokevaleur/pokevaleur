@@ -636,9 +636,28 @@ export default function CardCataloguePage() {
         if (cancelled) return
         const mcDonaldCards = cardRows.filter(card => isMcDonaldsSet(relatedSet(card)))
         const imageCandidates = {}
+        const rewardSeriesNumber = String(rewardProducts.find(product => product.id === packRewardProductId)?.name || '').match(/série\s*(\d+)/i)?.[1]
         for (const card of cardRows) {
           const pokepediaImage = mewRgbPokepediaImage(card, relatedSet(card))
           if (pokepediaImage) imageCandidates[card.id] = [pokepediaImage, card.image_url].filter(Boolean)
+          if (packRewardProductId) {
+            const stampVariants = (card.card_print_variants || [])
+              .filter(variant => isPlayStampVariant(variant) && variant.image_url)
+              .sort((left, right) => {
+                const leftText = [left.variant_key, left.variant_label, left.guide_marker].join(' ')
+                const rightText = [right.variant_key, right.variant_label, right.guide_marker].join(' ')
+                const seriesPattern = rewardSeriesNumber ? new RegExp('(?:series|série|s)[ _-]*' + rewardSeriesNumber + '(?:\\D|$)', 'i') : null
+                const leftExact = seriesPattern?.test(leftText) ? 1 : 0
+                const rightExact = seriesPattern?.test(rightText) ? 1 : 0
+                if (leftExact !== rightExact) return rightExact - leftExact
+                const leftHolo = /holo|cosmos/i.test(leftText) ? 1 : 0
+                const rightHolo = /holo|cosmos/i.test(rightText) ? 1 : 0
+                return rightHolo - leftHolo
+              })
+            if (stampVariants.length) {
+              imageCandidates[card.id] = [...new Set([...stampVariants.map(variant => variant.image_url), card.image_url].filter(Boolean))]
+            }
+          }
         }
         const printYearSearch = normalizedSearchText(term).match(/^(20\d{2})$/)?.[1]
         if (printYearSearch) {
