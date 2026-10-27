@@ -20,7 +20,7 @@ function normalizedCardName(name) {
   return String(name || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]/g, '')
 }
 
-function mcdonaldsCardImageCandidates(card, set, matchingImages = []) {
+function mcdonaldsCardImageCandidates(card, set) {
   if (!isMcDonaldsSet(set)) return card.image_url ? [card.image_url] : []
 
   const year = String(set?.set_name || '').match(/20\d{2}/)?.[0]
@@ -33,7 +33,6 @@ function mcdonaldsCardImageCandidates(card, set, matchingImages = []) {
   const candidates = [
     tcgApiImage,
     !hasUnavailableTcgdexPath ? originalImage : null,
-    ...matchingImages,
     hasUnavailableTcgdexPath ? originalImage : null
   ].filter(Boolean)
   return [...new Set(candidates)]
@@ -669,35 +668,9 @@ export default function CardCataloguePage() {
           }
         }
         if (mcDonaldCards.length) {
-          const searchNames = Array.from(new Set(mcDonaldCards.flatMap(card => {
-            const name = card.card_name || ''
-            return [name, name.replace(/[’‘`´]/g, "'") , name.replace(/'/g, '’')]
-          })))
-          const matchingCards = []
-          try {
-            for (let offset = 0; offset < searchNames.length; offset += 50) {
-              const { data, error: imageLoadError } = await fetchAllRows(() => supabase.from('cards')
-                .select('card_name,image_url,card_sets!cards_card_set_id_fkey(set_name)')
-                .in('card_name', searchNames.slice(offset, offset + 50))
-                .not('image_url', 'is', null))
-              if (!imageLoadError) matchingCards.push(...(data || []))
-            }
-          } catch {
-            // The catalog stays usable when an optional cross-set image lookup is unavailable.
-          }
-          const matchingImagesByName = new Map()
-          for (const candidate of matchingCards) {
-            const candidateSet = Array.isArray(candidate.card_sets) ? candidate.card_sets[0] : candidate.card_sets
-            if (!candidate.image_url || isMcDonaldsSet(candidateSet)) continue
-            const name = normalizedCardName(candidate.card_name)
-            if (!name) continue
-            const current = matchingImagesByName.get(name) || []
-            if (!current.includes(candidate.image_url)) current.push(candidate.image_url)
-            matchingImagesByName.set(name, current)
-          }
           for (const card of mcDonaldCards) {
             const set = relatedSet(card)
-            imageCandidates[card.id] = mcdonaldsCardImageCandidates(card, set, matchingImagesByName.get(normalizedCardName(card.card_name)) || [])
+            imageCandidates[card.id] = mcdonaldsCardImageCandidates(card, set)
           }
         }
         const variantIds = Array.from(new Set(cardRows.flatMap(card => (card.card_print_variants || []).map(variant => variant.id))))
