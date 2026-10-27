@@ -1,0 +1,70 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1460" role="img" aria-labelledby="title desc">
+<title id="title">Repères pour lire une carte Pokémon</title>
+<desc id="desc">Carte Pokémon schématique avec neuf repères numérotés et leur explication détaillée.</desc>
+<rect width="1080" height="1460" rx="36" fill="#f3f7fb"/>
+<text x="540" y="74" text-anchor="middle" font-family="Arial,sans-serif" font-size="38" font-weight="700" fill="#17324d">Lire une carte Pokémon</text>
+<text x="540" y="112" text-anchor="middle" font-family="Arial,sans-serif" font-size="20" fill="#5c6e80">Repères numérotés sur un exemple schématique</text>
+<!-- illustrative card -->
+<g font-family="Arial,sans-serif">
+ <rect x="360" y="150" width="360" height="735" rx="28" fill="#fff" stroke="#8fa4b7" stroke-width="8"/>
+ <path d="M375 185 Q375 165 397 165 H683 Q705 165 705 187 V243 H375Z" fill="#dff0d3"/>
+ <text x="397" y="210" font-size="23" font-weight="700" fill="#17324d">Floravie</text>
+ <text x="620" y="210" font-size="18" font-weight="700" fill="#17324d">PV 120</text>
+ <circle cx="681" cy="202" r="16" fill="#42a65a"/><path d="M677 211 Q673 194 687 191 Q690 203 677 211 M679 207L687 197" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round"/>
+ <rect x="381" y="255" width="318" height="48" rx="12" fill="#f4f7fa"/>
+ <text x="396" y="285" font-size="16" fill="#42566a">Niveau 1 · Évolue de Florinou</text>
+ <rect x="386" y="314" width="308" height="286" rx="14" fill="#d8eddf" stroke="#c8d8cf" stroke-width="2"/>
+ <circle cx="535" cy="436" r="91" fill="#a8d8a9"/>
+ <path d="M468 487 Q485 424 532 446 Q559 399 600 427 Q605 481 548 521Z" fill="#4c9c63"/>
+ <path d="M492 450 Q515 392 554 430 Q579 391 594 423" fill="none" stroke="#e8f4db" stroke-width="15" stroke-linecap="round"/>
+ <text x="540" y="575" text-anchor="middle" font-size="14" fill="#496556">Illustration · nom de l’artiste</text>
+ <rect x="381" y="612" width="318" height="116" rx="14" fill="#f5f8fb"/>
+ <text x="401" y="644" font-size="20" font-weight="700" fill="#17324d">Attaque : Feuille vive</text>
+ <circle cx="404" cy="680" r="14" fill="#42a65a"/><path d="M400 687 Q397 674 409 672 Q411 681 400 687" fill="none" stroke="#fff" stroke-width="2"/>
+ <text x="432" y="687" font-size="15" fill="#4b6072">Coût en Énergie</text>
+ <text x="676" y="687" text-anchor="end" font-size="20" font-weight="700" fill="#17324d">50</text>
+ <text x="400" y="714" font-size="14" fill="#566c7c">Effet ou règle de l’attaque</text>
+ <rect x="381" y="740" width="318" height="69" rx="12" fill="#f4f7fa"/>
+ <text x="396" y="770" font-size="14" fill="#465c6d">Faiblesse · Résistance · Retraite</text>
+ <text x="396" y="796" font-size="13" fill="#6b7c8b">Coûts et modificateurs éventuels</text>
+ <rect x="381" y="821" width="318" height="46" rx="8" fill="#edf2f5"/>
+ <text x="394" y="850" font-size="13" fill="#4b6072">Illustrateur · 012/198 · ★ · symbole série</text>
+</g>
+<!-- number markers and pointer lines -->
+<g fill="none" stroke="#d39a27" stroke-width="3">
+ <path d="M345 200H316"/><path d="M735 278H766"/><path d="M735 204H766"/>
+ <path d="M345 442H316"/><path d="M735 663H766"/><path d="M735 776H766"/>
+ <path d="M345 843H316"/><path d="M345 580H316"/><path d="M735 644H766"/>
+</g>
+<g font-family="Arial,sans-serif" font-size="18" font-weight="700" text-anchor="middle">
+ <g fill="#fff" stroke="#d39a27" stroke-width="3">
+  <circle cx="345" cy="200" r="18"/><circle cx="735" cy="278" r="18"/><circle cx="735" cy="204" r="18"/>
+  <circle cx="345" cy="442" r="18"/><circle cx="735" cy="663" r="18"/><circle cx="735" cy="776" r="18"/>
+  <circle cx="345" cy="843" r="18"/><circle cx="345" cy="580" r="18"/><circle cx="735" cy="644" r="18"/>
+ </g>
+ <g fill="#17324d" stroke="none">
+  <text x="345" y="206">1</text><text x="735" y="284">2</text><text x="735" y="210">3</text>
+  <text x="345" y="448">4</text><text x="735" y="669">5</text><text x="735" y="782">6</text>
+  <text x="345" y="849">7</text><text x="345" y="586">8</text><text x="735" y="650">9</text>
+ </g>
+</g>
+<!-- explanatory legend -->
+<g font-family="Arial,sans-serif">
+ <rect x="42" y="930" width="996" height="450" rx="24" fill="#fff" stroke="#d5e0e9" stroke-width="3"/>
+ <text x="76" y="980" font-size="25" font-weight="700" fill="#17324d">À quoi servent ces repères ?</text>
+ <g font-size="18" fill="#344b60">
+  <circle cx="84" cy="1030" r="17" fill="#e7f0fa"/><text x="84" y="1036" text-anchor="middle" font-weight="700">1</text><text x="112" y="1036"><tspan font-weight="700">Nom</tspan><tspan> : identifie le Pokémon.</tspan></text>
+  <circle cx="84" cy="1090" r="17" fill="#e7f0fa"/><text x="84" y="1096" text-anchor="middle" font-weight="700">2</text><text x="112" y="1096"><tspan font-weight="700">Évolution</tspan><tspan> : Base, Niveau 1/2 ou autre étape.</tspan></text>
+  <circle cx="84" cy="1150" r="17" fill="#e7f0fa"/><text x="84" y="1156" text-anchor="middle" font-weight="700">3</text><text x="112" y="1156"><tspan font-weight="700">PV et type</tspan><tspan> : endurance et famille du Pokémon.</tspan></text>
+  <circle cx="84" cy="1210" r="17" fill="#e7f0fa"/><text x="84" y="1216" text-anchor="middle" font-weight="700">4</text><text x="112" y="1216"><tspan font-weight="700">Illustration</tspan><tspan> : image et crédit de l’artiste.</tspan></text>
+  <circle cx="84" cy="1270" r="17" fill="#e7f0fa"/><text x="84" y="1276" text-anchor="middle" font-weight="700">5</text><text x="112" y="1276"><tspan font-weight="700">Attaque</tspan><tspan> : coût, dégâts et effet éventuel.</tspan></text>
+  <circle cx="570" cy="1030" r="17" fill="#fff0d4"/><text x="570" y="1036" text-anchor="middle" font-weight="700">6</text><text x="598" y="1036"><tspan font-weight="700">Combat</tspan><tspan> : Faiblesse, Résistance et Retraite.</tspan></text>
+  <circle cx="570" cy="1090" r="17" fill="#fff0d4"/><text x="570" y="1096" text-anchor="middle" font-weight="700">7</text><text x="598" y="1096"><tspan font-weight="700">Bas de carte</tspan><tspan> : numéro, rareté, série.</tspan></text>
+  <circle cx="570" cy="1150" r="17" fill="#fff0d4"/><text x="570" y="1156" text-anchor="middle" font-weight="700">8</text><text x="598" y="1156"><tspan font-weight="700">Illustrateur</tspan><tspan> : nom crédité sur la carte.</tspan></text>
+  <circle cx="570" cy="1210" r="17" fill="#fff0d4"/><text x="570" y="1216" text-anchor="middle" font-weight="700">9</text><text x="598" y="1216"><tspan font-weight="700">Coût d’attaque</tspan><tspan> : symboles d’Énergie requis.</tspan></text>
+ </g>
+ <path d="M76 1318H1004" stroke="#e2e9ef" stroke-width="2"/>
+ <text x="76" y="1350" font-size="16" fill="#596d7d">Les cartes Dresseur et Énergie ont une mise en page différente ; une carte peut aussi ne pas comporter</text>
+ <text x="76" y="1374" font-size="16" fill="#596d7d">tous ces éléments. Schéma pédagogique, non reproduit à partir d’une carte officielle.</text>
+</g>
+</svg>
