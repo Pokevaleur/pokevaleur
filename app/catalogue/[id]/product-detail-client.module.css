@@ -173,3 +173,73 @@
     height: 190px;
   }
 }
+
+
+.possibleCardGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(132px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.possibleCard {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: #f8f9fc;
+}
+
+.possibleCard img,
+.possibleCardPlaceholder {
+  display: block;
+  width: 100%;
+  aspect-ratio: 2.5 / 3.5;
+  object-fit: contain;
+  background: #fff;
+}
+
+.possibleCardPlaceholder {
+  display: grid;
+  place-items: center;
+  padding: 12px;
+  color: var(--muted);
+  font-size: .82rem;
+  text-align: center;
+}
+
+.possibleCard figcaption {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+}
+
+.possibleCard figcaption strong {
+  display: -webkit-box;
+  overflow: hidden;
+  color: var(--navy);
+  font-size: .78rem;
+  line-height: 1.25;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.possibleCard figcaption span,
+.possibleCard figcaption small {
+  color: var(--muted);
+  font-size: .7rem;
+  line-height: 1.3;
+}
+
+@media (max-width: 600px) {
+  .possibleCardGrid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 9px;
+  }
+
+  .possibleCard figcaption {
+    padding: 7px;
+  }
+}
