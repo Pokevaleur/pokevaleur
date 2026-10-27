@@ -105,8 +105,8 @@
 .bonusZoomClose { position:absolute; top:9px; right:9px; display:grid; width:40px; height:40px; place-items:center; border:1px solid #d6dde5; border-radius:50%; background:#fff; color:#173c73; font-size:1.6rem; line-height:1; cursor:pointer; }
 .bonusZoomClose:focus-visible { outline:3px solid #e7b929; outline-offset:2px; }
 .bonusZoomImage { display:block; width:auto; max-width:100%; max-height:min(72dvh,780px); object-fit:contain; border-radius:8px; box-shadow:0 8px 24px #10243a26; }
-.thumb { position:relative; width:100%; height:clamp(68px,9vw,128px); display:grid; place-items:center; overflow:hidden; border-radius:4px; background:#fff; }
-.thumb img { display:block; width:auto; max-width:100%; height:100%; aspect-ratio:63 / 88; object-fit:contain; }
+.thumb { position:relative; width:auto; max-width:100%; height:clamp(68px,9vw,128px); aspect-ratio:63 / 88; display:grid; place-items:center; overflow:hidden; border-radius:4px; background:#fff; }
+.thumb img { display:block; width:100%; height:100%; object-fit:contain; }
 .thumb > span { color:#8791a0; font-size:.6rem; }
 .copyBadge { position:absolute; top:3px; right:3px; padding:2px 5px; border-radius:999px; background:#173c73e8; color:#fff; font-size:.62rem; }
 .slotZoomHint { position:absolute; left:3px; bottom:3px; display:grid; width:18px; height:18px; place-items:center; border-radius:50%; background:#ffffffeb; color:#173c73; box-shadow:0 1px 4px #07172b33; }
