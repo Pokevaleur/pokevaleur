@@ -17,6 +17,7 @@ export default function ProductDetailClient({ product }) {
   const supabase = useMemo(() => createClient(), [])
   const [history, setHistory] = useState([])
   const [contents, setContents] = useState([])
+  const [cardsById, setCardsById] = useState({})
   const [boosterArtworks, setBoosterArtworks] = useState([])
 
   function handleCatalogBack(event) {
@@ -58,14 +59,27 @@ export default function ProductDetailClient({ product }) {
           .order('observed_at', { ascending: true }),
         supabase
           .from('product_contents')
-          .select('id,content_type,item_name,quantity,source_label,source_url,confidence,content_role')
+          .select('id,content_type,item_name,quantity,card_id,source_label,source_url,confidence,content_role')
           .eq('product_id', product.id)
           .order('content_type')
           .order('item_name', { ascending: true })
       ])
+      const cardIds = [...new Set((contentData || [])
+        .filter(item => item.content_role === 'possible' && item.card_id)
+        .map(item => item.card_id))]
+      let cardData = []
+      if (cardIds.length) {
+        const { data } = await supabase
+          .from('cards')
+          .select('id,card_name,collector_number,image_url')
+          .in('id', cardIds)
+        cardData = data || []
+      }
+
       if (!active) return
       setHistory(historyData || [])
       setContents(contentData || [])
+      setCardsById(Object.fromEntries(cardData.map(card => [card.id, card])))
 
       if (product.product_type === 'Artset' && product.series) {
         const { data: artworkData } = await supabase
@@ -89,6 +103,9 @@ export default function ProductDetailClient({ product }) {
 
   const guaranteedContents = contents.filter(item => (item.content_role || 'guaranteed') === 'guaranteed')
   const possibleContents = contents.filter(item => item.content_role === 'possible')
+  const uniquePossibleContents = [...new Map(possibleContents.map(item => [
+    item.card_id || item.item_name.trim().toLocaleLowerCase('fr'), item
+  ])).values()]
 
   const confirmedSales = history.filter(item => (item.observation_type || 'confirmed_sale') === 'confirmed_sale')
   const observedListings = history.filter(item => item.observation_type === 'observed_listing')
@@ -262,14 +279,31 @@ export default function ProductDetailClient({ product }) {
             <p><a className="detailLink" href={possibleContents[0].source_url} target="_blank" rel="noreferrer">Consulter la checklist source →</a></p>
           )}
           <details className="possibleContentsDetails">
-            <summary>Afficher les {possibleContents.length} cartes recensées</summary>
-            <div className="productContentsList">
-              {possibleContents.map(item => (
-                <div key={item.id} className="productContentRow">
-                  <span>{item.quantity > 1 ? `${item.quantity} × ` : ''}{item.item_name}</span>
-                  <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
-                </div>
-              ))}
+            <summary>Voir les {uniquePossibleContents.length} cartes en images</summary>
+            <div className={styles.possibleCardGrid}>
+              {uniquePossibleContents.map(item => {
+                const card = item.card_id ? cardsById[item.card_id] : null
+                const imageLabel = card?.card_name || item.item_name
+                return (
+                  <figure
+                    key={item.card_id || item.item_name.trim().toLocaleLowerCase('fr')}
+                    className={styles.possibleCard}
+                  >
+                    {card?.image_url ? (
+                      <img src={card.image_url} alt={imageLabel} loading="lazy" decoding="async" />
+                    ) : (
+                      <div className={styles.possibleCardPlaceholder} role="img" aria-label={imageLabel}>
+                        Visuel indisponible
+                      </div>
+                    )}
+                    <figcaption>
+                      <strong>{imageLabel}</strong>
+                      {card?.collector_number && <span>N° {card.collector_number}</span>}
+                      <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
+                    </figcaption>
+                  </figure>
+                )
+              })}
             </div>
           </details>
         </section>
