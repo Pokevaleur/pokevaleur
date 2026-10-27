@@ -11,6 +11,7 @@ function productFor(entry) {
 function confidenceLabel(confidence) {
   if (confidence === 'verified') return 'Source vérifiée'
   if (confidence === 'photo_inferred') return 'Déduit d’une photo'
+  if (confidence === 'set_inferred') return 'Déduit de la série de la carte'
   return 'Source à confirmer'
 }
 
@@ -22,6 +23,7 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState('idle')
   const [entries, setEntries] = useState([])
+  const [inferredBooster, setInferredBooster] = useState(null)
   const [error, setError] = useState('')
 
   async function toggleProvenance() {
@@ -43,6 +45,31 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
       return
     }
     setEntries(data || [])
+
+    // A card in a French expansion can also come from that expansion's boosters.
+    // Keep this as an inferred, possible source and preserve specific catalog links.
+    const { data: card } = await supabase
+      .from('cards')
+      .select('card_sets!cards_card_set_id_fkey(set_name,language)')
+      .eq('id', cardId)
+      .maybeSingle()
+    const cardSet = Array.isArray(card?.card_sets) ? card.card_sets[0] : card?.card_sets
+    if (cardSet?.language === 'FR' && cardSet.set_name) {
+      const { data: boosterProducts } = await supabase
+        .from('products')
+        .select('id,name,category,series,language,product_type,booster_artwork')
+        .eq('category', 'sealed')
+        .eq('product_type', 'Booster loose')
+        .eq('language', 'FR')
+        .is('booster_artwork', null)
+        .ilike('series', '%' + cardSet.set_name + '%')
+        .limit(1)
+      const booster = boosterProducts?.[0]
+      if (booster && !(data || []).some(entry => productFor(entry)?.id === booster.id)) {
+        setInferredBooster(booster)
+      }
+    }
+
     setStatus('loaded')
   }
 
@@ -71,9 +98,21 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
         <h3>Produits répertoriés pour cette carte</h3>
         {status === 'loading' && <p className={styles.muted}>Recherche des produits…</p>}
         {status === 'error' && <p className={styles.error}>{error}</p>}
-        {status === 'loaded' && entries.length === 0 && variantProvenance.length === 0 && (
+        {status === 'loaded' && entries.length === 0 && !inferredBooster && variantProvenance.length === 0 && (
           <p className={styles.muted}>Aucun produit d’origine n’est encore répertorié pour cette carte.</p>
         )}
+        {inferredBooster && <>
+          <h3>Booster de la série</h3>
+          <ul className={styles.list}>
+            <li className={styles.entry}>
+              <div className={styles.entryHeading}>
+                <strong>{inferredBooster.name}</strong>
+                <a className={styles.productLink} href={'/catalogue/' + encodeURIComponent(inferredBooster.id)}>Voir la fiche →</a>
+              </div>
+              <p className={styles.meta}>Présence possible · {confidenceLabel('set_inferred')}</p>
+            </li>
+          </ul>
+        </>}
         {entries.length > 0 && <ul className={styles.list}>
           {entries.map(entry => {
             const product = productFor(entry)
