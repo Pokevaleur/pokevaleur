@@ -63,6 +63,8 @@ function advanceCardImage(event, candidates) {
 }
 
 const FRENCH_SET_CODES = {
+  sm9: 'SL09',
+  smp: 'SM',
   swsh1: 'EB01',
   swsh2: 'EB02',
   swsh3: 'EB03',
@@ -95,10 +97,13 @@ const FRENCH_SET_CODES = {
 function seriesLabel(set) {
   const code = (set?.set_code || '').toLowerCase()
   const rawCode = set?.set_code || ''
+  const setName = code === 'smp' && set?.language === 'FR'
+    ? 'Promos Soleil et Lune'
+    : set?.set_name || 'Série'
   const displayCode = set?.language && set.language !== 'FR'
     ? rawCode.toUpperCase()
     : FRENCH_SET_CODES[code] || (/^sv\d/i.test(rawCode) ? 'EV' + rawCode.slice(2).toUpperCase() : rawCode.toUpperCase())
-  return (displayCode ? displayCode + ' — ' : '') + (set?.set_name || 'Série')
+  return (displayCode ? displayCode + ' — ' : '') + setName
 }
 
 function isZenithGallerySet(set) {
