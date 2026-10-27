@@ -4,6 +4,27 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../lib/supabase-browser'
 import styles from './product-detail-client.module.css'
 
+function packStampVariant(card, seriesNumber) {
+  const variants = (card?.card_print_variants || []).filter(variant => variant.image_url)
+  const isPlayStamp = variant => /play|reward/i.test((variant.variant_key || '') + ' ' + (variant.variant_label || ''))
+  const exact = variants.filter(variant => {
+    const key = String(variant.variant_key || '').toLowerCase()
+    if (!isPlayStamp(variant)) return false
+    if (seriesNumber === 9) return key.includes('s9')
+    if (seriesNumber === 7) return key.includes('series_7')
+    if (seriesNumber === 6) return key.includes('prize_pack_6')
+    if (seriesNumber === 4) return key.includes('series_4')
+    return key.includes('series_' + seriesNumber) || key.includes('_s' + seriesNumber)
+  })
+  if (exact.length) return exact[0]
+  if (![7, 8].includes(seriesNumber)) return null
+  return variants.find(variant => {
+    const key = String(variant.variant_key || '').toLowerCase()
+    return isPlayStamp(variant) && /player_rewards_program|stamp_play_pokemon_(cosmos_ultra|non_holo)/.test(key)
+      && !/series_\d|_s\d/.test(key)
+  }) || null
+}
+
 function median(values) {
   if (!values.length) return null
   const sorted = [...values].sort((a, b) => a - b)
@@ -19,6 +40,7 @@ export default function ProductDetailClient({ product }) {
   const [contents, setContents] = useState([])
   const [cardsById, setCardsById] = useState({})
   const [boosterArtworks, setBoosterArtworks] = useState([])
+  const packSeriesNumber = Number(String(product.name || '').match(/Série\s+(\d+)/i)?.[1]) || 0
 
   function handleCatalogBack(event) {
     event.preventDefault()
@@ -71,7 +93,7 @@ export default function ProductDetailClient({ product }) {
       if (cardIds.length) {
         const { data } = await supabase
           .from('cards')
-          .select('id,card_name,collector_number,image_url')
+          .select('id,card_name,collector_number,image_url,card_print_variants(id,variant_key,variant_label,finish_code,image_url,image_source_url)')
           .in('id', cardIds)
         cardData = data || []
       }
@@ -284,13 +306,16 @@ export default function ProductDetailClient({ product }) {
               {uniquePossibleContents.map(item => {
                 const card = item.card_id ? cardsById[item.card_id] : null
                 const imageLabel = card?.card_name || item.item_name
+                const stampedVariant = card ? packStampVariant(card, packSeriesNumber) : null
+                const stampedContent = /estampille Play! Pokémon/i.test(item.item_name || '')
+                const cardImageUrl = stampedVariant?.image_url || card?.image_url
                 return (
                   <figure
                     key={item.card_id || item.item_name.trim().toLocaleLowerCase('fr')}
                     className={styles.possibleCard}
                   >
-                    {card?.image_url ? (
-                      <img src={card.image_url} alt={imageLabel} loading="lazy" decoding="async" />
+                    {cardImageUrl ? (
+                      <img src={cardImageUrl} alt={stampedVariant ? imageLabel + ' avec estampille Play! Pokémon' : imageLabel} loading="lazy" decoding="async" />
                     ) : (
                       <div className={styles.possibleCardPlaceholder} role="img" aria-label={imageLabel}>
                         Visuel indisponible
@@ -299,7 +324,7 @@ export default function ProductDetailClient({ product }) {
                     <figcaption>
                       <strong>{imageLabel}</strong>
                       {card?.collector_number && <span>N° {card.collector_number}</span>}
-                      <small>{item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
+                      <small>{stampedVariant ? 'Visuel estampillé Play! Pokémon' : stampedContent ? 'Visuel standard · image estampillée indisponible' : item.confidence === 'verified' ? 'Vérifié' : 'Déduit de la photo'}</small>
                     </figcaption>
                   </figure>
                 )
