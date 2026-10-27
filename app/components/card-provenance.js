@@ -23,7 +23,8 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
   const [open, setOpen] = useState(false)
   const [status, setStatus] = useState('idle')
   const [entries, setEntries] = useState([])
-  const [inferredBooster, setInferredBooster] = useState(null)
+  const [inferredBoosters, setInferredBoosters] = useState([])
+  const [inferredBoosterLabel, setInferredBoosterLabel] = useState('')
   const [error, setError] = useState('')
 
   async function toggleProvenance() {
@@ -64,10 +65,11 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
         .not('image_url', 'is', null)
         .ilike('series', '%' + cardSet.set_name + '%')
         .order('booster_artwork', { ascending: true, nullsFirst: false })
-        .limit(1)
-      const booster = boosterProducts?.[0]
-      if (!(data || []).some(entry => booster && productFor(entry)?.id === booster.id)) {
-        setInferredBooster(booster || { name: 'Booster de la série ' + cardSet.set_name })
+      const linkedProductIds = new Set((data || []).map(entry => productFor(entry)?.id).filter(Boolean))
+      const availableBoosters = boosterProducts || []
+      setInferredBoosters(availableBoosters.filter(booster => !linkedProductIds.has(booster.id)))
+      if (availableBoosters.length === 0) {
+        setInferredBoosterLabel('Booster de la série ' + cardSet.set_name)
       }
     }
 
@@ -99,19 +101,23 @@ export default function CardProvenanceButton({ supabase, cardId, setCode = '', c
         <h3>Produits répertoriés pour cette carte</h3>
         {status === 'loading' && <p className={styles.muted}>Recherche des produits…</p>}
         {status === 'error' && <p className={styles.error}>{error}</p>}
-        {status === 'loaded' && entries.length === 0 && !inferredBooster && variantProvenance.length === 0 && (
+        {status === 'loaded' && entries.length === 0 && inferredBoosters.length === 0 && !inferredBoosterLabel && variantProvenance.length === 0 && (
           <p className={styles.muted}>Aucun produit d’origine n’est encore répertorié pour cette carte.</p>
         )}
-        {inferredBooster && <>
-          <h3>Booster de la série</h3>
+        {(inferredBoosters.length > 0 || inferredBoosterLabel) && <>
+          <h3>Boosters de la série</h3>
           <ul className={styles.list}>
-            <li className={styles.entry}>
+            {inferredBoosters.map(booster => <li key={booster.id} className={styles.entry}>
               <div className={styles.entryHeading}>
-                <strong>{inferredBooster.name}</strong>
-                {inferredBooster.id && <a className={styles.productLink} href={'/catalogue/' + encodeURIComponent(inferredBooster.id)}>Voir la fiche →</a>}
+                <strong>{booster.name}</strong>
+                <a className={styles.productLink} href={'/catalogue/' + encodeURIComponent(booster.id)}>Voir la fiche →</a>
               </div>
               <p className={styles.meta}>Présence possible · {confidenceLabel('set_inferred')}</p>
-            </li>
+            </li>)}
+            {inferredBoosterLabel && <li className={styles.entry}>
+              <div className={styles.entryHeading}><strong>{inferredBoosterLabel}</strong></div>
+              <p className={styles.meta}>Présence possible · {confidenceLabel('set_inferred')}</p>
+            </li>}
           </ul>
         </>}
         {entries.length > 0 && <ul className={styles.list}>
