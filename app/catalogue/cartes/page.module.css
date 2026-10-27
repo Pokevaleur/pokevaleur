@@ -61,6 +61,8 @@
 .printingCheck{display:flex;align-items:center;gap:7px;color:#33445a;font-size:.82rem;font-weight:750;cursor:pointer}
 .printingCheck input{width:18px;height:18px;margin:0;accent-color:#174c79}
 .variantThumb{width:34px;height:46px;object-fit:contain;border:1px solid #e2e7ed;border-radius:4px;background:#fff}
+.variantPreviewButton{min-height:30px;padding:4px 7px;border:1px solid #cbd7e5;border-radius:7px;background:#f5f8fc;color:#174c79;font:inherit;font-size:.72rem;font-weight:800;cursor:pointer}
+.variantPreviewButton:hover{background:#eaf1f8}
 .printingCheck small{color:#728197;font-size:.69rem;font-weight:600}
 .quantity{display:flex;align-items:center;gap:5px;color:#728197;font-size:.7rem}
 .quantity input{width:46px;height:29px;padding:2px 4px;border:1px solid #cbd4df;border-radius:6px;font:inherit;font-size:.78rem;text-align:center}
