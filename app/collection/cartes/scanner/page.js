@@ -579,7 +579,7 @@ export default function CardScannerPage() {
                       <span className={styles.candidateText}>
                         <strong>{card.card_name}</strong>
                         <small>{set.set_name || 'Série inconnue'} · {card.collector_number || 'Numéro inconnu'}</small>
-                        <small>{set.language || 'FR'} · {card.card_type || 'Carte Pokémon'}{Number.isFinite(card.visualDistance) ? ' · proximité visuelle ' + (64 - card.visualDistance) + '/64' : ''}</small>
+                        <small>{set.language || 'FR'} · {card.card_type || 'Carte Pokémon'}{Number.isFinite(card.visualDistance) ? ' · écart visuel ' + card.visualDistance + '/64' : ''}</small>
                       </span>
                       {active && <span className={styles.selectedMark} aria-label="Sélectionnée">✓</span>}
                     </button>
