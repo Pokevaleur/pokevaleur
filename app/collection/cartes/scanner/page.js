@@ -65,6 +65,8 @@ function prepareOcrImages(file) {
     const regions = [
       { x: 0, y: 0, width: 1, height: 1 },
       { x: 0.06, y: 0.02, width: 0.88, height: 0.30 },
+      { x: 0.16, y: 0.06, width: 0.58, height: 0.10 },
+      { x: 0.10, y: 0.91, width: 0.52, height: 0.08 },
       { x: 0, y: 0.68, width: 1, height: 0.32 }
     ]
     const images = regions.map(region => {
@@ -189,7 +191,10 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const yearMatch = copyrightYears.some(year => knownYears.includes(year))
     const yearMismatch = copyrightYears.length > 0 && knownYears.length > 0 && !yearMatch
     const setCode = normalizeText(set?.set_code).replace(/\s+/g, '')
-    const setCodeMatch = setCode.length >= 3 && normalizedOcr.replace(/\s+/g, '').includes(setCode)
+    const setCodeSuffix = setCode.match(/[a-z]{2,}$/)?.[0] || ''
+    const compactOcr = normalizedOcr.replace(/\s+/g, '')
+    const setCodeMatch = (setCode.length >= 3 && compactOcr.includes(setCode))
+      || (setCodeSuffix.length >= 2 && compactOcr.includes(setCodeSuffix))
     const strongNumberMatch = exactNumber || codeNumberMatch || (numericPart && yearMatch)
     const strongNameMatch = fullNameMatch || matchedWords >= 2
     const hasReliableEvidence = strongNumberMatch || strongNameMatch || setCodeMatch
@@ -394,7 +399,7 @@ export default function CardScannerPage() {
           ? 'Lecture de la carte…'
           : 'Lecture du nom, du numéro et des indices imprimés (' + (index + 1) + '/' + ocrImages.length + ')…')
         await worker.setParameters({
-          tessedit_pageseg_mode: index === 0 ? '3' : index === 1 ? '6' : '11',
+          tessedit_pageseg_mode: index === 0 ? '3' : index === 1 ? '6' : index === 2 ? '7' : index === 3 ? '7' : '11',
           preserve_interword_spaces: '1'
         })
         const result = await worker.recognize(ocrImages[index])
