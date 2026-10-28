@@ -24,6 +24,11 @@ ALLOWED_IMAGE_HOSTS = {
     "www.dexocard.com",
     "www.pokepedia.fr",
     "assets.tcgdex.net",
+    "cdn2.pokemoncarte.com",
+}
+FALLBACK_IMAGE_URLS = {
+    # Lugulabre TG04 in the test photo; the catalogue's TCGdex asset currently returns 404.
+    "675feebc-b360-4363-bd63-89b0a9e8dfe6": "https://cdn2.pokemoncarte.com/9020-home_default/lugulabre-pv-150-tg04-tg30-carte-ultra-rare-full-art-galerie-des-dresseurs-origine-perdue.jpg",
 }
 PAGE_SIZE = 500
 WORKERS = 12
@@ -42,15 +47,26 @@ def fetch(url, headers=None, allowed_hosts=None):
         return response.read()
 
 
-def fingerprint(image_url):
-    parsed = urlparse(image_url)
-    if parsed.scheme != "https" or parsed.hostname not in ALLOWED_IMAGE_HOSTS:
-        raise ValueError("Image host is not in the public catalogue allowlist")
-    data = fetch(image_url, {"User-Agent": "PokeValeur-public-catalog-index/1.0"}, ALLOWED_IMAGE_HOSTS)
-    image = Image.open(BytesIO(data))
-    image = ImageOps.exif_transpose(image).convert("L").resize(
-        (DCT_SIZE, DCT_SIZE), Image.Resampling.LANCZOS
-    )
+def fingerprint(image_url, card_id):
+    candidates = [image_url]
+    if card_id in FALLBACK_IMAGE_URLS:
+        candidates.append(FALLBACK_IMAGE_URLS[card_id])
+    last_error = None
+    for candidate in candidates:
+        try:
+            parsed = urlparse(candidate)
+            if parsed.scheme != "https" or parsed.hostname not in ALLOWED_IMAGE_HOSTS:
+                raise ValueError("Image host is not in the public catalogue allowlist")
+            data = fetch(candidate, {"User-Agent": "PokeValeur-public-catalog-index/1.0"}, ALLOWED_IMAGE_HOSTS)
+            image = Image.open(BytesIO(data))
+            image = ImageOps.exif_transpose(image).convert("L").resize(
+                (DCT_SIZE, DCT_SIZE), Image.Resampling.LANCZOS
+            )
+            break
+        except Exception as exc:
+            last_error = exc
+    else:
+        raise last_error or ValueError("No usable public image")
     pixels = image.load()
     coeffs = []
     for v in range(LOW_SIZE):
@@ -99,14 +115,22 @@ def read_catalogue():
 
 def main():
     rows = read_catalogue()
-    records = []
+    existing = {}
+    if os.path.exists(OUTPUT_PATH):
+        with open(OUTPUT_PATH, encoding="utf-8") as source:
+            previous = json.load(source)
+        existing = {card_id: value for card_id, value in previous.get("cards", [])}
+    for card_id in FALLBACK_IMAGE_URLS:
+        existing.pop(card_id, None)
+    pending = [row for row in rows if row["id"] not in existing]
+    records = list(existing.items())
     failures = []
     with ThreadPoolExecutor(max_workers=WORKERS) as pool:
-        futures = {pool.submit(fingerprint, row["image_url"]): row for row in rows}
+        futures = {pool.submit(fingerprint, row["image_url"], row["id"]): row for row in pending}
         for done, future in enumerate(as_completed(futures), 1):
             row = futures[future]
             try:
-                records.append([row["id"], future.result()])
+                records.append((row["id"], future.result()))
             except Exception as exc:
                 failures.append((row["id"], str(exc)))
             if done % 500 == 0:
@@ -116,7 +140,7 @@ def main():
     os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
     with open(OUTPUT_PATH, "w", encoding="utf-8") as output:
         json.dump({"version": 1, "cards": records}, output, separators=(",", ":"))
-    print(f"Index créé : {len(records)} cartes; images ignorées : {len(failures)}.", flush=True)
+    print(f"Index créé : {len(records)} cartes; images ignorées : {len(failures)}; images nouvelles tentées : {len(pending)}.", flush=True)
     for card_id, message in failures[:20]:
         print(f"Image ignorée ({card_id}) : {message}", flush=True)
     if not records:
