@@ -156,6 +156,7 @@ export default function CardScannerPage() {
   const [profiles, setProfiles] = useState([])
   const [profileId, setProfileId] = useState('')
   const [publicSetIds, setPublicSetIds] = useState([])
+  const [publicSets, setPublicSets] = useState([])
   const [photoUrl, setPhotoUrl] = useState('')
   const [candidates, setCandidates] = useState([])
   const [selectedCardId, setSelectedCardId] = useState('')
@@ -178,9 +179,10 @@ export default function CardScannerPage() {
       setUser(signedInUser || null)
 
       const { data: setRows, error: setRowsError } = await supabase.from('card_sets')
-        .select('id').eq('is_public', true)
+        .select('id,set_name,set_code,language,release_date').eq('is_public', true)
       if (!active) return
       if (setRowsError) throw setRowsError
+      setPublicSets(setRows || [])
       setPublicSetIds((setRows || []).map(row => row.id))
 
       if (signedInUser) {
@@ -225,6 +227,15 @@ export default function CardScannerPage() {
     const cardQuery = () => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', publicSetIds)
 
     const requests = []
+    const compactOcr = normalizeText(text).replace(/\s+/g, '')
+    const hintedSets = publicSets.filter(set => {
+      const code = normalizeText(set.set_code).replace(/\s+/g, '')
+      return code.length >= 3 && compactOcr.includes(code)
+    })
+    if (hintedSets.length) {
+      requests.push(supabase.from('cards').select(CARD_FIELDS)
+        .in('card_set_id', hintedSets.map(set => set.id)).limit(250))
+    }
     for (const number of numberCandidates) {
       requests.push(cardQuery().ilike('collector_number', number).limit(80))
       requests.push(cardQuery().ilike('collector_number', '%' + number.split('/')[0] + '%').limit(80))
