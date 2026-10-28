@@ -112,28 +112,38 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const number = normalizeCollectorToken(card.collector_number)
     const exactNumber = collectorNumbers.some(value => number === normalizeCollectorToken(value))
     const numericPart = collectorNumbers.some(value => number.includes(normalizeCollectorToken(value.split('/')[0])))
+    const codeNumberMatch = collectorNumbers.some(value => {
+      const firstPart = normalizeCollectorToken(value.split('/')[0])
+      return /[a-z]/i.test(firstPart) && number === firstPart
+    })
     const name = normalizeText(card.card_name)
     const nameWords = name.split(/\s+/).filter(word => word.length >= 3)
     const matchedWords = nameWords.filter(word => words.has(word)).length
     const fullNameMatch = name.length > 3 && normalizedOcr.includes(name)
-    const variantYearMatch = (card.card_print_variants || []).some(variant =>
-      copyrightYears.some(year => String(variant.variant_label || '').includes(String(year)))
-    )
+    const variants = card.card_print_variants || []
+    const variantYears = variants.flatMap(variant => findCopyrightYears(variant.variant_label || ''))
     const releaseYear = set?.release_date ? Number(String(set.release_date).slice(0, 4)) : null
-    const setYearMatch = releaseYear && copyrightYears.includes(releaseYear)
+    const knownYears = [...variantYears, ...(releaseYear ? [releaseYear] : [])]
+    const yearMatch = copyrightYears.some(year => knownYears.includes(year))
+    const yearMismatch = copyrightYears.length > 0 && knownYears.length > 0 && !yearMatch
     const setCode = normalizeText(set?.set_code).replace(/\s+/g, '')
-    const setCodeMatch = setCode.length >= 2 && normalizedOcr.replace(/\s+/g, '').includes(setCode)
-    const score = (exactNumber ? 100 : numericPart ? 45 : 0)
-      + matchedWords * 12 + (fullNameMatch ? 25 : 0)
-      + (variantYearMatch ? 32 : 0) + (setYearMatch ? 12 : 0) + (setCodeMatch ? 24 : 0)
-    if (!score) continue
+    const setCodeMatch = setCode.length >= 3 && normalizedOcr.replace(/\s+/g, '').includes(setCode)
+    const strongNumberMatch = exactNumber || codeNumberMatch || (numericPart && yearMatch)
+    const strongNameMatch = fullNameMatch || matchedWords >= 2
+    const hasReliableEvidence = strongNumberMatch || strongNameMatch || setCodeMatch
+    const score = (exactNumber ? 120 : codeNumberMatch ? 95 : numericPart ? 55 : 0)
+      + (fullNameMatch ? 80 : 0) + Math.min(matchedWords, 2) * 10
+      + (yearMatch ? 25 : 0) + (setCodeMatch ? 35 : 0)
+      - (yearMismatch ? 90 : 0)
+    if (!hasReliableEvidence || score < 60) continue
     const previous = byId.get(card.id)
     if (!previous || score > previous.score) byId.set(card.id, { ...card, card_sets: set, score })
   }
 
-  return [...byId.values()]
+  const ranked = [...byId.values()]
     .sort((a, b) => b.score - a.score || a.card_name.localeCompare(b.card_name, 'fr'))
-    .slice(0, 12)
+  const bestScore = ranked[0]?.score || 0
+  return ranked.filter(card => card.score >= Math.max(60, bestScore - 35)).slice(0, 6)
 }
 
 function meaningfulOcrWords(text) {
