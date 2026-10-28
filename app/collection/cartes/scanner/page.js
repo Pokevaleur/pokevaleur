@@ -308,7 +308,9 @@ export default function CardScannerPage() {
     const compactOcr = normalizeText(text).replace(/\s+/g, '')
     const hintedSets = publicSets.filter(set => {
       const code = normalizeText(set.set_code).replace(/\s+/g, '')
-      return code.length >= 3 && compactOcr.includes(code)
+      const suffix = code.match(/[a-z]{2,}$/)?.[0] || ''
+      return (code.length >= 3 && compactOcr.includes(code))
+        || (suffix.length >= 2 && compactOcr.includes(suffix))
     })
     if (hintedSets.length) {
       requests.push(supabase.from('cards').select(CARD_FIELDS)
