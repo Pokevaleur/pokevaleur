@@ -337,7 +337,7 @@ export default function CardScannerPage() {
     for (const entry of index) {
       if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[1] !== 'string') continue
       const distance = fingerprintDistance(fingerprint, entry[1])
-      if (distance <= 20) ranked.push({ card_id: entry[0], distance })
+      if (distance <= 8) ranked.push({ card_id: entry[0], distance })
     }
     ranked.sort((a, b) => a.distance - b.distance)
     const matches = ranked.slice(0, 24)
