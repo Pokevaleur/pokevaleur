@@ -8,7 +8,7 @@ const TESSERACT_VERSION = '5.1.1'
 const OCR_WORKER_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@' + TESSERACT_VERSION + '/dist/worker.min.js'
 const OCR_CORE_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1'
 const OCR_LANGUAGE_URL = 'https://tessdata.projectnaptha.com/4.0.0'
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,rarity_label,image_url,image_source_url,card_sets!cards_card_set_id_fkey(set_name,set_code,language),card_print_variants(id,variant_key,variant_label,finish_code,is_master_set_target)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,rarity_label,image_url,image_source_url,card_sets!cards_card_set_id_fkey(set_name,set_code,language,release_date),card_print_variants(id,variant_key,variant_label,finish_code,is_master_set_target,copyright_year)'
 
 function loadOcrLibrary() {
   if (window.Tesseract?.createWorker) return Promise.resolve(window.Tesseract)
@@ -40,26 +40,92 @@ function normalizeText(value) {
     .trim()
 }
 
-function findCollectorNumbers(text) {
-  const matches = [...String(text || '').matchAll(/\b([a-z]{0,4}\d{1,5}[a-z]?)\s*[\/|]\s*([a-z]{0,4}\d{1,5}[a-z]?)\b/gi)]
-  return [...new Set(matches.map(match => match[1].toLowerCase() + '/' + match[2].toLowerCase()))]
+function normalizeCollectorToken(value) {
+  return String(value || '').toLowerCase().replace(/\s+/g, '')
+    .replace(/([a-z]*)([0-9oil]+)([a-z]*)/i, (_, prefix, digits, suffix) =>
+      prefix + digits.replace(/o/g, '0').replace(/[il]/g, '1') + suffix)
 }
 
-function rankCards(rows, text, collectorNumbers) {
+function findCollectorNumbers(text) {
+  const matches = [...String(text || '').matchAll(/\b([a-z]{0,4}[\dOIl]{1,5}[a-z]?)\s*[\/|\\]\s*([a-z]{0,4}[\dOIl]{1,5}[a-z]?)\b/gi)]
+  return [...new Set(matches.map(match =>
+    normalizeCollectorToken(match[1]) + '/' + normalizeCollectorToken(match[2])
+  ))]
+}
+
+function findCopyrightYears(text) {
+  return [...new Set([...String(text || '').matchAll(/(?:©|c)?\s*\b(20[0-3]\d)\b/gi)].map(match => Number(match[1])))]
+}
+
+function prepareOcrImages(file) {
+  if (typeof createImageBitmap !== 'function') return Promise.resolve([file])
+  return createImageBitmap(file).then(bitmap => {
+    const width = bitmap.width
+    const height = bitmap.height
+    const regions = [
+      { x: 0, y: 0, width: 1, height: 1 },
+      { x: 0.06, y: 0.02, width: 0.88, height: 0.30 },
+      { x: 0, y: 0.68, width: 1, height: 0.32 }
+    ]
+    const images = regions.map(region => {
+      const sx = Math.floor(width * region.x)
+      const sy = Math.floor(height * region.y)
+      const sw = Math.max(1, Math.floor(width * region.width))
+      const sh = Math.max(1, Math.floor(height * region.height))
+      const scale = Math.min(3, Math.max(1, 1600 / Math.max(sw, sh)))
+      const canvas = document.createElement('canvas')
+      canvas.width = Math.max(1, Math.round(sw * scale))
+      canvas.height = Math.max(1, Math.round(sh * scale))
+      const context = canvas.getContext('2d', { willReadFrequently: true })
+      context.drawImage(bitmap, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height)
+      const pixels = context.getImageData(0, 0, canvas.width, canvas.height)
+      for (let index = 0; index < pixels.data.length; index += 4) {
+        const gray = pixels.data[index] * 0.299 + pixels.data[index + 1] * 0.587 + pixels.data[index + 2] * 0.114
+        const contrast = Math.max(0, Math.min(255, (gray - 128) * 1.35 + 128))
+        pixels.data[index] = contrast
+        pixels.data[index + 1] = contrast
+        pixels.data[index + 2] = contrast
+      }
+      context.putImageData(pixels, 0, 0)
+      return canvas
+    })
+    bitmap.close()
+    return images
+  }).catch(() => [file])
+}
+
+function preferredVariant(card, text) {
+  const years = findCopyrightYears(text)
+  const variants = card?.card_print_variants || []
+  return variants.find(variant => years.includes(Number(variant.copyright_year)))
+    || variants.find(variant => variant.is_master_set_target)
+    || variants[0]
+}
+
+function rankCards(rows, text, collectorNumbers, copyrightYears) {
   const normalizedOcr = normalizeText(text)
   const words = new Set(normalizedOcr.split(/\s+/).filter(word => word.length >= 3))
   const byId = new Map()
 
   for (const card of rows || []) {
     const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
-    const number = normalizeText(card.collector_number).replace(/\s+/g, '')
-    const exactNumber = collectorNumbers.some(value => number === value.replace(/\s+/g, ''))
-    const numericPart = collectorNumbers.some(value => number.includes(value.split('/')[0]))
+    const number = normalizeCollectorToken(card.collector_number)
+    const exactNumber = collectorNumbers.some(value => number === normalizeCollectorToken(value))
+    const numericPart = collectorNumbers.some(value => number.includes(normalizeCollectorToken(value.split('/')[0])))
     const name = normalizeText(card.card_name)
     const nameWords = name.split(/\s+/).filter(word => word.length >= 3)
     const matchedWords = nameWords.filter(word => words.has(word)).length
     const fullNameMatch = name.length > 3 && normalizedOcr.includes(name)
-    const score = (exactNumber ? 100 : numericPart ? 45 : 0) + matchedWords * 12 + (fullNameMatch ? 25 : 0)
+    const variantYearMatch = (card.card_print_variants || []).some(variant =>
+      copyrightYears.includes(Number(variant.copyright_year))
+    )
+    const releaseYear = set?.release_date ? Number(String(set.release_date).slice(0, 4)) : null
+    const setYearMatch = releaseYear && copyrightYears.includes(releaseYear)
+    const setCode = normalizeText(set?.set_code).replace(/\s+/g, '')
+    const setCodeMatch = setCode.length >= 2 && normalizedOcr.replace(/\s+/g, '').includes(setCode)
+    const score = (exactNumber ? 100 : numericPart ? 45 : 0)
+      + matchedWords * 12 + (fullNameMatch ? 25 : 0)
+      + (variantYearMatch ? 32 : 0) + (setYearMatch ? 12 : 0) + (setCodeMatch ? 24 : 0)
     if (!score) continue
     const previous = byId.get(card.id)
     if (!previous || score > previous.score) byId.set(card.id, { ...card, card_sets: set, score })
@@ -153,6 +219,7 @@ export default function CardScannerPage() {
   async function searchCatalog(text) {
     if (!publicSetIds.length) throw new Error('Le catalogue public est indisponible.')
     const numberCandidates = findCollectorNumbers(text)
+    const copyrightYears = findCopyrightYears(text)
     const terms = meaningfulOcrWords(text)
     const rowsById = new Map()
     const cardQuery = () => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', publicSetIds)
@@ -175,7 +242,7 @@ export default function CardScannerPage() {
 
     return {
       numbers: numberCandidates,
-      cards: rankCards([...rowsById.values()], text, numberCandidates)
+      cards: rankCards([...rowsById.values()], text, numberCandidates, copyrightYears)
     }
   }
 
@@ -214,18 +281,26 @@ export default function CardScannerPage() {
         }
       })
       workerRef.current = worker
-      const result = await worker.recognize(file)
-      const text = result?.data?.text || ''
+      const ocrImages = await prepareOcrImages(file)
+      const recognizedParts = []
+      for (let index = 0; index < ocrImages.length; index += 1) {
+        setStatus(ocrImages.length === 1
+          ? 'Lecture de la carte…'
+          : 'Lecture du nom, du numéro et des indices imprimés (' + (index + 1) + '/' + ocrImages.length + ')…')
+        const result = await worker.recognize(ocrImages[index])
+        const recognizedText = result?.data?.text || ''
+        if (recognizedText) recognizedParts.push(recognizedText)
+      }
+      const text = recognizedParts.join('\n')
       setOcrText(text)
-      setStatus('Recherche dans le catalogue…')
+      setStatus('Recherche dans le catalogue avec le numéro, l’année et le code de série…')
       const matchResult = await searchCatalog(text)
       if (!matchResult.cards.length) {
         setStatus('Aucune correspondance certaine. Essaie une photo plus nette ou poursuis avec la recherche manuelle.')
       } else {
         setCandidates(matchResult.cards)
         setSelectedCardId(matchResult.cards[0].id)
-        const firstVariant = (matchResult.cards[0].card_print_variants || [])
-          .find(variant => variant.is_master_set_target) || matchResult.cards[0].card_print_variants?.[0]
+        const firstVariant = preferredVariant(matchResult.cards[0], text)
         setSelectedVariantId(firstVariant?.id || '')
         setStatus(matchResult.cards.length === 1 ? 'Une carte correspond au texte lu.' : 'Vérifie la bonne carte parmi les correspondances.')
       }
@@ -243,8 +318,7 @@ export default function CardScannerPage() {
 
   function chooseCard(card) {
     setSelectedCardId(card.id)
-    const variant = (card.card_print_variants || []).find(item => item.is_master_set_target)
-      || card.card_print_variants?.[0]
+    const variant = preferredVariant(card, ocrText)
     setSelectedVariantId(variant?.id || '')
   }
 
@@ -296,7 +370,7 @@ export default function CardScannerPage() {
         <div>
           <span className={styles.eyebrow}>POKÉVALEUR · CATALOGUE CARTES</span>
           <h1>Scanner une carte</h1>
-          <p>Photographie le recto : Pokévaleur lit le nom et le numéro, puis cherche les cartes correspondantes dans son catalogue.</p>
+          <p>Photographie le recto : Pokévaleur lit le nom, le numéro, l’année et les codes imprimés, puis cherche les cartes correspondantes dans son catalogue.</p>
         </div>
         <div className={styles.cameraBadge} aria-hidden="true">▣</div>
       </header>
@@ -327,7 +401,7 @@ export default function CardScannerPage() {
                 <div className={styles.emptyPreview}>
                   <span aria-hidden="true">📷</span>
                   <strong>Place une carte à plat, bien éclairée</strong>
-                  <small>Garde le nom et le numéro visibles. La photo est lue dans ton navigateur et n’est pas enregistrée.</small>
+                  <small>Garde le nom en haut et le numéro, l’année © et le symbole de série en bas bien visibles. La photo est lue dans ton navigateur et n’est pas enregistrée.</small>
                 </div>
               )}
             </div>
