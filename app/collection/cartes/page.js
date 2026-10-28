@@ -6,6 +6,7 @@ import CardProvenanceButton from '../../components/card-provenance'
 import styles from './cards.module.css'
 
 const ALL_SERIES_FILTER = '__all_series__'
+const ALL_LANGUAGES_FILTER = 'all'
 
 function collectMissingTargetVariantIds(variants, ownedByVariant = {}) {
   const ids = new Set()
@@ -303,9 +304,9 @@ function loadPdfArtwork(url) {
   })
 }
 
-function duplicateVariantsForCard(card, owned) {
+function duplicateVariantsForCard(card, displayedOwned) {
   return (card?.card_print_variants || [])
-    .map(variant => ({ variant, copies: owned[variant.id] || [] }))
+    .map(variant => ({ variant, copies: displayedOwned[variant.id] || [] }))
     .filter(entry => entry.copies.length > 1)
 }
 
@@ -376,7 +377,46 @@ function cardSearchText(card) {
     const illustrators = link.illustrators
     return Array.isArray(illustrators) ? illustrators.map(item => item?.name) : [illustrators?.name]
   }).filter(Boolean)
-  return normalizeCardSearch([card.collector_number, card.card_name, ...artistNames].join(' '))
+  return normalizeCardSearch([card.collector_number, card.card_name, ...(card.search_aliases || []), ...artistNames].join(' '))
+}
+
+function normalizeCollectionLanguage(value) {
+  const language = String(value || 'FR').trim().toUpperCase().replace(/_/g, '-')
+  if (language === 'JA' || language === 'JPN') return 'JP'
+  if (language === 'ZH-HANT' || language === 'ZH-TW' || language === 'TW') return 'ZH-HANT'
+  if (language === 'ZH-HANS' || language === 'ZH-CN' || language === 'CN') return 'ZH-HANS'
+  return language || 'FR'
+}
+
+function collectionLanguageLabel(value) {
+  const code = normalizeCollectionLanguage(value)
+  const labels = {
+    FR: 'Français', EN: 'Anglais', JP: 'Japonais', DE: 'Allemand', IT: 'Italien',
+    ES: 'Espagnol', PT: 'Portugais', KO: 'Coréen', 'ZH-HANT': 'Chinois traditionnel',
+    'ZH-HANS': 'Chinois simplifié'
+  }
+  return labels[code] || code
+}
+
+function ownedEditionRows(card, owned) {
+  const set = Array.isArray(card?.card_sets) ? card.card_sets[0] : card?.card_sets
+  const groups = new Map()
+  for (const variant of card?.card_print_variants || []) {
+    const label = variant.variant_label || variant.variant_key || variant.finish_code || 'Version'
+    for (const copy of owned[variant.id] || []) {
+      const language = normalizeCollectionLanguage(copy.edition_language_code || set?.language || 'FR')
+      const editionName = copy.edition_set_name || set?.set_name || 'Série'
+      const number = copy.edition_collector_number || card.collector_number
+      const cardName = copy.edition_card_name || card.card_name
+      const key = [language, editionName, number, cardName, label].join('|')
+      const current = groups.get(key) || {
+        language, editionName, number, cardName, variantLabel: label, quantity: 0
+      }
+      current.quantity += 1
+      groups.set(key, current)
+    }
+  }
+  return [...groups.values()]
 }
 
 export default function CardChecklistPage() {
@@ -396,6 +436,7 @@ export default function CardChecklistPage() {
   const [selectedElementTypes, setSelectedElementTypes] = useState([])
   const [selectedVersions, setSelectedVersions] = useState([])
   const [collectionFilter, setCollectionFilter] = useState('owned')
+  const [languageFilter, setLanguageFilter] = useState(ALL_LANGUAGES_FILTER)
   const [checklistFilter, setChecklistFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
@@ -417,7 +458,7 @@ export default function CardChecklistPage() {
   function openCardZoom(card, seriesName = '') {
     const ownedVersions = (card.card_print_variants || []).map(variant => ({
       label: variant.variant_label || variant.variant_key || variant.finish_code || 'Version',
-      quantity: (owned[variant.id] || []).length
+      quantity: (displayedOwned[variant.id] || []).length
     })).filter(version => version.quantity > 0)
 
     setZoomedCard({ ...card, seriesName, ownedVersions })
@@ -467,6 +508,8 @@ export default function CardChecklistPage() {
       const requestedSetId = params.get('set') || ''
       const requestedRarity = params.get('rarity') || ''
       const requestedChecklist = params.get('checklist')
+      const requestedLanguage = params.get('language')
+      if (requestedLanguage) setLanguageFilter(requestedLanguage.toLowerCase() === ALL_LANGUAGES_FILTER ? ALL_LANGUAGES_FILTER : normalizeCollectionLanguage(requestedLanguage))
       setRarity(requestedRarity ? requestedRarity.split(',').map(rarityKey).filter(Boolean) : [])
       const requestedCollectionFilter = params.get('collection') || 'owned'
       if (['all', 'owned', 'missing', 'duplicates'].includes(requestedCollectionFilter)) setCollectionFilter(requestedCollectionFilter)
@@ -509,6 +552,7 @@ export default function CardChecklistPage() {
       setSets(availableSets)
       if (requestedSetId === ALL_SERIES_FILTER) setSetId(ALL_SERIES_FILTER)
       else if (availableSets.some(row => row.id === requestedSetId)) setSetId(requestedSetId)
+      else setSetId(ALL_SERIES_FILTER)
 
       const { data: companyRows, error: companyError } = await supabase.from('card_grading_companies')
         .select('id,company_name,abbreviation').eq('is_active', true).order('company_name')
@@ -530,7 +574,7 @@ export default function CardChecklistPage() {
       setCards([])
       setOwned({})
       const { data: cardRows, error: cardError } = await supabase.from('cards')
-        .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(set_name,set_code),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
+        .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(set_name,set_code,language),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
         .eq('card_set_id', setId).order('guide_order', { ascending: true })
       if (cardError) throw cardError
       if (cancelled) return
@@ -538,9 +582,8 @@ export default function CardChecklistPage() {
       const copyPageSize = 500
       for (let offset = 0; ; offset += copyPageSize) {
         const { data, error: copyError } = await supabase.from('collection_cards')
-          .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,edition_language_code,card_grading_companies(company_name,abbreviation)')
+          .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,edition_language_code,edition_market_code,edition_set_name,edition_collector_number,edition_card_name,card_grading_companies(company_name,abbreviation)')
           .eq('collection_profile_id', profileId)
-          .or('edition_language_code.is.null,edition_language_code.eq.FR')
           .order('created_at', { ascending: true })
           .order('id', { ascending: true })
           .range(offset, offset + copyPageSize - 1)
@@ -580,7 +623,7 @@ export default function CardChecklistPage() {
       try {
         const escapedTerm = term.replace(/[%_]/g, '\\$&')
         const pattern = '%' + escapedTerm + '%'
-        const fields = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,image_source_url,card_sets!cards_card_set_id_fkey(set_name,set_code),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
+        const fields = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,image_source_url,card_sets!cards_card_set_id_fkey(set_name,set_code,language),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)'
         const accentNamePattern = accentInsensitiveCardNamePattern(term)
         const [nameResult, numberResult, accentNameResult] = await Promise.all([
           supabase.from('cards').select(fields).in('card_set_id', searchableSetIds)
@@ -618,14 +661,34 @@ export default function CardChecklistPage() {
         }
         const cardsById = new Map()
         for (const card of [...(nameResult.data || []), ...(numberResult.data || []), ...(accentNameResult.data || []), ...artistRows]) cardsById.set(card.id, card)
+
+        const { data: editionNameRows, error: editionNameError } = await supabase.from('collection_cards')
+          .select('card_print_variant_id')
+          .eq('collection_profile_id', profileId)
+          .ilike('edition_card_name', pattern)
+          .limit(500)
+        if (editionNameError) throw editionNameError
+        const editionVariantIds = [...new Set((editionNameRows || []).map(row => row.card_print_variant_id).filter(Boolean))]
+        if (editionVariantIds.length) {
+          const { data: editionVariants, error: editionVariantError } = await supabase.from('card_print_variants')
+            .select('id,card_id').in('id', editionVariantIds)
+          if (editionVariantError) throw editionVariantError
+          const canonicalCardIds = [...new Set((editionVariants || []).map(row => row.card_id).filter(Boolean))]
+          if (canonicalCardIds.length) {
+            const { data: editionCards, error: editionCardError } = await supabase.from('cards')
+              .select(fields).in('card_set_id', searchableSetIds).in('id', canonicalCardIds)
+              .order('card_name', { ascending: true }).limit(500)
+            if (editionCardError) throw editionCardError
+            for (const card of editionCards || []) cardsById.set(card.id, { ...card, search_aliases: [...(card.search_aliases || []), term] })
+          }
+        }
         const cardRows = [...cardsById.values()].sort((a, b) => a.card_name.localeCompare(b.card_name, 'fr')).slice(0, 500)
         const variantIds = cardRows.flatMap(card => (card.card_print_variants || []).map(variant => variant.id))
         let copyRows = []
         for (let offset = 0; offset < variantIds.length; offset += 100) {
           const { data, error: copyError } = await supabase.from('collection_cards')
-            .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,edition_language_code,card_grading_companies(company_name,abbreviation)')
+            .select('id,card_print_variant_id,ownership_type,grade,grade_label,certification_number,grading_company_id,edition_language_code,edition_market_code,edition_set_name,edition_collector_number,edition_card_name,card_grading_companies(company_name,abbreviation)')
             .eq('collection_profile_id', profileId).in('card_print_variant_id', variantIds.slice(offset, offset + 100))
-            .or('edition_language_code.is.null,edition_language_code.eq.FR')
           if (copyError) throw copyError
           copyRows = copyRows.concat(data || [])
         }
@@ -648,6 +711,30 @@ export default function CardChecklistPage() {
 
   const isAllSeriesSelected = setId === ALL_SERIES_FILTER
   const selectedSet = sets.find(row => row.id === setId)
+  const displayedOwned = useMemo(() => {
+    if (languageFilter === ALL_LANGUAGES_FILTER) return owned
+    const fallbackByVariant = new Map()
+    for (const card of cards) {
+      const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+      const fallbackLanguage = set?.language || selectedSet?.language || 'FR'
+      for (const variant of card.card_print_variants || []) fallbackByVariant.set(variant.id, fallbackLanguage)
+    }
+    const filtered = {}
+    for (const [variantId, copies] of Object.entries(owned)) {
+      const fallbackLanguage = fallbackByVariant.get(variantId) || selectedSet?.language || 'FR'
+      filtered[variantId] = copies.filter(copy =>
+        normalizeCollectionLanguage(copy.edition_language_code || fallbackLanguage) === languageFilter
+      )
+    }
+    return filtered
+  }, [owned, languageFilter, cards, selectedSet])
+  const languageOptions = useMemo(() => {
+    const known = ['FR', 'EN', 'JP', 'DE', 'IT', 'ES', 'PT', 'KO', 'ZH-HANT', 'ZH-HANS']
+    const observed = Object.values(owned).flat().map(copy => normalizeCollectionLanguage(copy.edition_language_code))
+    const fromSets = sets.map(set => normalizeCollectionLanguage(set.language))
+    return [...new Set([...known, ...fromSets, ...observed])].filter(Boolean)
+      .sort((a, b) => (known.indexOf(a) < 0 ? 999 : known.indexOf(a)) - (known.indexOf(b) < 0 ? 999 : known.indexOf(b)) || a.localeCompare(b, 'fr'))
+  }, [owned, sets])
   const isGlobalSearchView = isAllSeriesSelected || !selectedSet
   const isIncludedVariant = variant => (
     checklistFilter === 'all' ||
@@ -682,7 +769,7 @@ export default function CardChecklistPage() {
   }, [checklistCards, query])
 
   function matchesVariantCollectionFilter(variant, filter) {
-    const count = (owned[variant.id] || []).length
+    const count = (displayedOwned[variant.id] || []).length
     if (filter === 'owned') return count > 0
     if (filter === 'missing') return count === 0
     if (filter === 'duplicates') return count > 1
@@ -692,7 +779,7 @@ export default function CardChecklistPage() {
   function matchesCollectionFilter(card, filter) {
     const variants = (card.card_print_variants || []).filter(variant => !selectedVersions.length || selectedVersions.includes(variant.variant_key))
     if (filter === 'duplicates') {
-      return variants.some(variant => (owned[variant.id] || []).length > 1)
+      return variants.some(variant => (displayedOwned[variant.id] || []).length > 1)
     }
     const targets = variants.filter(isProgressTarget)
     return targets.some(variant => matchesVariantCollectionFilter(variant, filter))
@@ -700,7 +787,7 @@ export default function CardChecklistPage() {
 
   const visibleCards = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
   const duplicateVariantRows = collectionFilter === 'duplicates'
-    ? visibleCards.flatMap(card => duplicateVariantsForCard(card, owned)
+    ? visibleCards.flatMap(card => duplicateVariantsForCard(card, displayedOwned)
       .filter(({ variant }) => !selectedVersions.length || selectedVersions.includes(variant.variant_key))
       .map(({ variant, copies }) => ({ card, variant, copies, availableCopies: copies.length - 1 })))
       .sort((a, b) => {
@@ -715,21 +802,21 @@ export default function CardChecklistPage() {
   const availableDuplicateCopyCount = duplicateVariantRows.reduce((sum, row) => sum + row.availableCopies, 0)
   const duplicateCardCount = new Set(duplicateVariantRows.map(row => row.card.id)).size
   const duplicateCardCountForPill = baseFilteredCards.filter(card => (card.card_print_variants || []).some(variant =>
-    (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (owned[variant.id] || []).length > 1
+    (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (displayedOwned[variant.id] || []).length > 1
   )).length
   const duplicateDocumentTitle = isGlobalSearchView ? query.trim() : (selectedSet?.set_name || query.trim())
   const visibleOwnedCopyCount = visibleCards.reduce((total, card) => total +
     (card.card_print_variants || [])
       .filter(variant => variant.is_master_set_target)
-      .reduce((cardTotal, variant) => cardTotal + (owned[variant.id] || []).length, 0), 0
+      .reduce((cardTotal, variant) => cardTotal + (displayedOwned[variant.id] || []).length, 0), 0
   )
   const missingVariantRows = cards.flatMap(card => (card.card_print_variants || [])
-    .filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && !(owned[variant.id] || []).length)
+    .filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && !(displayedOwned[variant.id] || []).length)
     .map(variant => ({ card, variant, label: missingVariantLabel(variant) })))
   const missingCardsForCopy = collectionFilter === 'missing' && isGlobalSearchView
     ? visibleCards.map(card => {
       const cardMissingVariants = (card.card_print_variants || [])
-        .filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && !(owned[variant.id] || []).length)
+        .filter(variant => isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && !(displayedOwned[variant.id] || []).length)
       return { card, variants: cardMissingVariants }
     }).filter(entry => entry.variants.length)
       .sort((a, b) => {
@@ -754,7 +841,7 @@ export default function CardChecklistPage() {
     visibleCards.flatMap(card => (card.card_print_variants || []).filter(isProgressTarget)),
     owned
   )
-  const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
+  const visibleOwnedVariantCount = visibleTargetVariants.filter(variant => (displayedOwned[variant.id] || []).length > 0).length
   const selectedVariantCount = selectedVariantIds.length
   const selectedCardCount = masterSetCards.filter(card =>
     (card.card_print_variants || []).some(variant => variant.is_master_set_target && selectedVariantIds.includes(variant.id))
@@ -762,14 +849,14 @@ export default function CardChecklistPage() {
 
   const targetVariants = cards.flatMap(card => (card.card_print_variants || []).filter(variant => variant.is_master_set_target))
   const cardsWithProgressTargets = cards.filter(card => (card.card_print_variants || []).some(variant => variant.is_master_set_target))
-  const ownedTargetCount = targetVariants.filter(variant => (owned[variant.id] || []).length > 0).length
+  const ownedTargetCount = targetVariants.filter(variant => (displayedOwned[variant.id] || []).length > 0).length
   const selectedSetVariantIds = new Set(cards.flatMap(card => card.card_print_variants || []).map(variant => variant.id))
-  const ownedCopyCount = Object.entries(owned).reduce((sum, [variantId, copies]) =>
+  const ownedCopyCount = Object.entries(displayedOwned).reduce((sum, [variantId, copies]) =>
     sum + (selectedSetVariantIds.has(variantId) ? copies.length : 0), 0
   )
   const completedCardCount = cardsWithProgressTargets.filter(card => {
     const targets = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
-    return targets.every(variant => (owned[variant.id] || []).length > 0)
+    return targets.every(variant => (displayedOwned[variant.id] || []).length > 0)
   }).length
   const completion = targetVariants.length ? Math.round(ownedTargetCount * 100 / targetVariants.length) : 0
 
@@ -812,10 +899,22 @@ export default function CardChecklistPage() {
 
   function selectCollectionFilter(nextFilter) {
     setCollectionFilter(nextFilter)
+    if (nextFilter === 'all' || nextFilter === 'missing') setLanguageFilter(ALL_LANGUAGES_FILTER)
     const url = new URL(window.location.href)
     if (nextFilter === 'all') url.searchParams.delete('collection')
     else url.searchParams.set('collection', nextFilter)
     url.searchParams.delete('owned')
+    if (nextFilter === 'all' || nextFilter === 'missing') url.searchParams.delete('language')
+    window.history.replaceState({}, '', url)
+  }
+
+  function selectLanguage(nextLanguage) {
+    setLanguageFilter(nextLanguage)
+    if (collectionFilter === 'all' || collectionFilter === 'missing') setCollectionFilter('owned')
+    const url = new URL(window.location.href)
+    if (nextLanguage === ALL_LANGUAGES_FILTER) url.searchParams.delete('language')
+    else url.searchParams.set('language', nextLanguage)
+    if (collectionFilter === 'all' || collectionFilter === 'missing') url.searchParams.set('collection', 'owned')
     window.history.replaceState({}, '', url)
   }
 
@@ -1122,7 +1221,7 @@ export default function CardChecklistPage() {
   }
 
   function toggleVariantSelection(variant) {
-    if (!variant?.is_master_set_target || (owned[variant.id] || []).length || savingBulk) return
+    if (!variant?.is_master_set_target || (owned[variant.id] || []).length || savingBulk)
     setSelectedVariantIds(current => current.includes(variant.id)
       ? current.filter(id => id !== variant.id)
       : [...current, variant.id])
@@ -1337,6 +1436,13 @@ export default function CardChecklistPage() {
             {profiles.map(profile => <option key={profile.id} value={profile.id}>{profile.display_name || (profile.profile_type === 'adult' ? 'Ma collection' : 'Collection familiale')}</option>)}
           </select>
         </label>
+        <label>
+          Langue des cartes
+          <select value={languageFilter} onChange={event => selectLanguage(event.target.value)} disabled={collectionFilter === 'all' || collectionFilter === 'missing'}>
+            <option value={ALL_LANGUAGES_FILTER}>Toutes les langues</option>
+            {languageOptions.map(language => <option key={language} value={language}>{collectionLanguageLabel(language)}</option>)}
+          </select>
+        </label>
         {isAdmin && selectedSet && !selectedSet.is_public && <p className={styles.adminNote}>Série privée : visible ici pour la vérification administrateur uniquement.</p>}
       </section>
 
@@ -1417,7 +1523,7 @@ export default function CardChecklistPage() {
               >{label}</button>
             ))}
           </div>}
-          {!query.trim() && <p className={styles.scope}>Saisis un nom, un numéro ou un artiste pour retrouver tes cartes dans les séries françaises.</p>}
+          {!query.trim() && <p className={styles.scope}>Saisis un nom, un numéro ou un artiste pour retrouver tes cartes possédées, quelle que soit leur langue.</p>}
           {!!query.trim() && <p className={styles.resultCount} aria-live="polite">{collectionFilter === 'duplicates' && isGlobalSearchView
             ? <><strong>{duplicateCardCount}</strong> carte{duplicateCardCount === 1 ? '' : 's'} avec des doubles pour « {query.trim()} » · <strong>{availableDuplicateCopyCount}</strong> exemplaire{availableDuplicateCopyCount === 1 ? '' : 's'} en double</>
             : <><strong>{visibleCards.length}</strong> carte{visibleCards.length > 1 ? 's différentes' : ' différente'} pour « {query.trim()} » · <strong>{visibleOwnedCopyCount}</strong> exemplaire{visibleOwnedCopyCount > 1 ? 's possédés' : ' possédé'}</>
@@ -1439,6 +1545,7 @@ export default function CardChecklistPage() {
               {visibleCards.map(card => {
                 const cardSet = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
                 const cardImage = imageUrl(card)
+                const editions = ownedEditionRows(card, displayedOwned)
                 return <article className={styles.card} key={card.id}>
                   <div className={styles.cardTop}>
                     <div className={styles.artFrame}>
@@ -1454,8 +1561,14 @@ export default function CardChecklistPage() {
                       <small>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</small>
                     </div>
                   </div>
-                  {collectionFilter === 'duplicates' && isGlobalSearchView && duplicateVariantsForCard(card, owned).length > 0 && <div className={styles.duplicateVariantList} aria-label={'Variantes en double de ' + card.card_name}>
-                    {duplicateVariantsForCard(card, owned).map(({ variant, copies }) => <div className={styles.duplicateVariantRow} key={variant.id}>
+                  {editions.length > 0 && <div className={styles.ownedVariantList} aria-label={'Éditions possédées de ' + card.card_name}>
+                    {editions.map((edition, index) => <div className={styles.ownedVariantRow} key={index}>
+                      <span>{collectionLanguageLabel(edition.language)} · {edition.editionName} · N° {edition.number} · {edition.cardName} · {edition.variantLabel}</span>
+                      <strong className={styles.ownedQuantity}>{edition.quantity} ex.</strong>
+                    </div>)}
+                  </div>}
+                  {collectionFilter === 'duplicates' && isGlobalSearchView && duplicateVariantsForCard(card, displayedOwned).length > 0 && <div className={styles.duplicateVariantList} aria-label={'Variantes en double de ' + card.card_name}>
+                    {duplicateVariantsForCard(card, displayedOwned).map(({ variant, copies }) => <div className={styles.duplicateVariantRow} key={variant.id}>
                       <span>{variant.variant_label || variant.variant_key || 'Variante'}</span>
                       <strong>{copies.length - 1} en double</strong>
                     </div>)}
@@ -1530,7 +1643,7 @@ export default function CardChecklistPage() {
               {!visibleCards.length && <div className={styles.emptyCollection}><p>{query.trim() ? 'Aucune carte ne correspond à cette recherche.' : collectionFilter === 'owned' ? 'Aucune carte de cette série dans cette collection pour le moment.' : 'Aucune carte ne correspond à ce filtre.'}</p><a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Ajouter des cartes depuis le Catalogue →</a></div>}
               {visibleCards.map(card => {
                 const targetVariants = (card.card_print_variants || []).filter(variant => collectionFilter === 'duplicates'
-                  ? (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (owned[variant.id] || []).length > 1
+                  ? (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (displayedOwned[variant.id] || []).length > 1
                   : variant.is_master_set_target)
                 const cardImage = imageUrl(card)
                 return <article className={styles.masterChecklistCard} key={card.id}>
@@ -1555,7 +1668,7 @@ export default function CardChecklistPage() {
                   {targetVariants.length ? (
                     <div className={styles.ownedVariantList} aria-label={'Versions possédées de ' + card.card_name}>
                       {targetVariants.map(variant => {
-                        const quantity = (owned[variant.id] || []).length
+                        const quantity = (displayedOwned[variant.id] || []).length
                         const label = variant.variant_label || variant.variant_key || variant.finish_code || 'Version'
                         return <div className={styles.ownedVariantRow} key={variant.id}>
                           <span>{label}</span>
