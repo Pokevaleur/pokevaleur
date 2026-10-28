@@ -1,6 +1,7 @@
 const navLinks = [
   { href: '/', label: 'Accueil' },
   { href: '/guide', label: 'Guide PokéValeur' },
+  { href: '/collection/cartes/scanner', label: '📷 Scanner', memberOnly: true },
   {
     label: 'Catalogue',
     children: [
