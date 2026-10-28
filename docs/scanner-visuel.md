@@ -4,7 +4,7 @@ Le rapprochement visuel compare une empreinte perceptuelle calculée dans le nav
 
 ## Initialisation
 
-1. Appliquer la migration `supabase/migrations/20261028210000_card_visual_fingerprints.sql` au projet Supabase utilisé par le déploiement.
+1. Appliquer la migration `supabase/migrations/20261028205834_card_visual_fingerprints.sql` au projet Supabase utilisé par le déploiement.
 2. Depuis un environnement autorisé à lire les images du catalogue et à écrire dans Supabase, installer Pillow et lancer le script :
 
 ```sh
