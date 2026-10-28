@@ -176,7 +176,7 @@ function energyVariantCopyrightYear(card, variant) {
 
   const setCode = String(relatedSet(card)?.set_code || '').toLowerCase()
   const collectorNumber = Number(String(card?.collector_number || '').replace(/^0+/, ''))
-  if (setCode === 'sve' && variant?.variant_key === 'catalog_base' && collectorNumber >= 9 && collectorNumber <= 15) return 2024
+  if (setCode === 'sve' && variant?.variant_key === 'catalog_base' && collectorNumber >= 9 && collectorNumber <= 16) return 2024
 
   return Number(String(relatedSet(card)?.release_date || '').slice(0, 4)) || null
 }
