@@ -101,3 +101,9 @@
 .progressIndicator{position:absolute;inset:0 auto 0 0;width:35%;border-radius:inherit;background:linear-gradient(90deg,#365aa2,#8a73bd);animation:collectionValueProgress 1.5s ease-in-out infinite}
 @keyframes collectionValueProgress{from{transform:translateX(-110%)}to{transform:translateX(310%)}}
 @media(prefers-reduced-motion:reduce){.progressIndicator{width:100%;animation:none;opacity:.65}}
+
+
+.familyFilter{display:grid;gap:7px;max-width:360px;margin-top:14px;color:#384b62;font-size:.85rem;font-weight:750}
+.familySelect{width:100%;min-height:44px;padding:9px 12px;border:1px solid #cbd4df;border-radius:13px;background:#fff;color:#172b43;font:inherit;font-weight:600}
+.familySelect:focus-visible{outline:3px solid #d7b34e;outline-offset:2px}
+@media(max-width:760px){.familyFilter{gap:5px;max-width:none;margin-top:9px;font-size:.76rem}.familySelect{min-height:40px;padding:7px 10px;font-size:.8rem}}

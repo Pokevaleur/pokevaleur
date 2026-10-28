@@ -65,19 +65,31 @@ async function loadSeriesValueSummaries(supabase, copies) {
 export default function CollectionValueOverviewPage() {
   const supabase = useMemo(() => createClient(), [])
   const [showAllSeries, setShowAllSeries] = useState(false)
+  const [familyProfiles, setFamilyProfiles] = useState([])
+  const [selectedProfileId, setSelectedProfileId] = useState('')
   const [state, setState] = useState({ loading: true, loadingMessage: 'Préparation du calcul…', error: '', profileName: 'Ma collection', cardsValue: null, cardCount: 0, sealedValue: null, sealedCount: 0, calculatedAt: null, seriesSummaries: [], seriesError: '' })
 
   useEffect(() => {
     let cancelled = false
     async function load() {
       try {
+        if (!cancelled) setState(current => ({ ...current, loading: true, error: '', loadingMessage: 'Préparation du calcul…' }))
         const active = await loadActiveCollectionProfile(supabase)
         if (!active) {
           window.location.replace('/login?next=%2Fcollection%2Fvaleur')
           return
         }
-        const { profile } = active
-        if (!cancelled) setState(current => ({ ...current, loadingMessage: 'Lecture des cartes et produits scellés…' }))
+        const profilesResult = await supabase.from('collection_profiles')
+          .select('id,display_name,is_default')
+          .order('created_at')
+        if (profilesResult.error) throw profilesResult.error
+        const profiles = profilesResult.data || []
+        const profile = profiles.find(row => row.id === selectedProfileId) || active.profile
+        if (!profiles.some(row => row.id === selectedProfileId)) setSelectedProfileId(profile.id)
+        if (!cancelled) {
+          setFamilyProfiles(profiles)
+          setState(current => ({ ...current, loadingMessage: 'Lecture des cartes et produits scellés…' }))
+        }
         const [itemsResult, productsResult, cardsResult] = await Promise.all([
           fetchAllRows(() => supabase.from('collection_items')
             .select('id,custom_name,quantity,product_id,current_value_override,sealed_condition')
@@ -130,7 +142,7 @@ export default function CollectionValueOverviewPage() {
     }
     load()
     return () => { cancelled = true }
-  }, [supabase])
+  }, [supabase, selectedProfileId])
 
   const hasAnyValue = state.cardsValue != null || state.sealedValue != null
   const displayedSeries = showAllSeries ? state.seriesSummaries : state.seriesSummaries.slice(0, 5)
@@ -140,6 +152,21 @@ export default function CollectionValueOverviewPage() {
       <header className={styles.pageHeader}>
         <h1>Valeur de {state.profileName === 'Ma collection' ? 'ma collection' : state.profileName}</h1>
         <p>Cartes et produits scellés</p>
+        {familyProfiles.length > 1 && <label className={styles.familyFilter}>
+          Collection affichée
+          <select
+            className={styles.familySelect}
+            value={selectedProfileId}
+            disabled={state.loading}
+            onChange={event => setSelectedProfileId(event.target.value)}
+          >
+            {familyProfiles.map(profile => (
+              <option key={profile.id} value={profile.id}>
+                {profile.is_default ? 'Ma collection' : profile.display_name || 'Collection familiale'}
+              </option>
+            ))}
+          </select>
+        </label>}
       </header>
 
       {state.error && <section className={styles.error} role="alert"><strong>Valeurs indisponibles</strong><p>{state.error}</p></section>}
