@@ -218,7 +218,9 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const setCodeMatch = (setCode.length >= 3 && compactOcr.includes(setCode))
       || (setCodeSuffix.length >= 2 && compactOcr.includes(setCodeSuffix))
     const strongNumberMatch = exactNumber || codeNumberMatch || (numericPart && yearMatch)
-    const strongNameMatch = fullNameMatch || matchedWords >= 2 || fuzzyNameScore >= 0.72
+    const fuzzyNameMatch = fuzzyNameScore >= 0.68
+      || (fuzzyNameScore >= 0.62 && (yearMatch || setCodeMatch || strongNumberMatch))
+    const strongNameMatch = fullNameMatch || matchedWords >= 2 || fuzzyNameMatch
     const hasReliableEvidence = strongNumberMatch || strongNameMatch || setCodeMatch
     const score = (exactNumber ? 120 : codeNumberMatch ? 95 : numericPart ? 55 : 0)
       + (fullNameMatch ? 80 : 0) + Math.min(matchedWords, 2) * 10
