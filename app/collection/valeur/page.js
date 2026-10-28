@@ -73,6 +73,7 @@ export default function CollectionValueOverviewPage() {
     let cancelled = false
     async function load() {
       try {
+        if (!cancelled) setState(current => ({ ...current, loading: true, error: '', loadingMessage: 'Préparation du calcul…' }))
         const active = await loadActiveCollectionProfile(supabase)
         if (!active) {
           window.location.replace('/login?next=%2Fcollection%2Fvaleur')
