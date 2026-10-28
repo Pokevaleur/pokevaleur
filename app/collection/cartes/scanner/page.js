@@ -294,7 +294,7 @@ export default function CardScannerPage() {
       <a className={styles.backLink} href={user ? "/collection/cartes" : "/catalogue/cartes"}>{user ? "← Retour à Mes cartes" : "← Retour au catalogue"}</a>
       <header className={styles.hero}>
         <div>
-          <span className={styles.eyebrow}>POKÉVALEUR · MA COLLECTION</span>
+          <span className={styles.eyebrow}>POKÉVALEUR · CATALOGUE CARTES</span>
           <h1>Scanner une carte</h1>
           <p>Photographie le recto : Pokévaleur lit le nom et le numéro, puis cherche les cartes correspondantes dans son catalogue.</p>
         </div>
