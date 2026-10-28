@@ -298,6 +298,10 @@ export default function CardScannerPage() {
         setStatus(ocrImages.length === 1
           ? 'Lecture de la carte…'
           : 'Lecture du nom, du numéro et des indices imprimés (' + (index + 1) + '/' + ocrImages.length + ')…')
+        await worker.setParameters({
+          tessedit_pageseg_mode: index === 0 ? '3' : index === 1 ? '6' : '11',
+          preserve_interword_spaces: '1'
+        })
         const result = await worker.recognize(ocrImages[index])
         const recognizedText = result?.data?.text || ''
         if (recognizedText) recognizedParts.push(recognizedText)
