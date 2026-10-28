@@ -175,6 +175,7 @@ export default function CardScannerPage() {
   const [status, setStatus] = useState('')
   const [error, setError] = useState('')
   const [ocrText, setOcrText] = useState('')
+  const [manualQuery, setManualQuery] = useState('')
   const [loading, setLoading] = useState(true)
   const [busy, setBusy] = useState(false)
 
@@ -337,6 +338,36 @@ export default function CardScannerPage() {
         await worker.terminate().catch(() => {})
         if (workerRef.current === worker) workerRef.current = null
       }
+      setBusy(false)
+    }
+  }
+
+  async function searchManually(event) {
+    event.preventDefault()
+    const query = manualQuery.trim()
+    if (!query || busy) return
+    setBusy(true)
+    setError('')
+    setStatus('Recherche dans le catalogue…')
+    try {
+      const matchResult = await searchCatalog(query)
+      setCandidates(matchResult.cards)
+      if (!matchResult.cards.length) {
+        setSelectedCardId('')
+        setSelectedVariantId('')
+        setStatus('Aucune carte ne correspond à ce nom ou numéro. Essaie une autre écriture.')
+      } else {
+        setSelectedCardId(matchResult.cards[0].id)
+        const firstVariant = preferredVariant(matchResult.cards[0], query)
+        setSelectedVariantId(firstVariant?.id || '')
+        setStatus(matchResult.cards.length === 1
+          ? 'Une carte correspond à ta recherche.'
+          : 'Vérifie la bonne carte parmi les résultats.')
+      }
+    } catch (searchError) {
+      setError(searchError.message || 'La recherche dans le catalogue a échoué.')
+      setStatus('')
+    } finally {
       setBusy(false)
     }
   }
@@ -527,9 +558,27 @@ export default function CardScannerPage() {
 
           <details className={styles.manualFallback}>
             <summary>La carte n’a pas été reconnue ?</summary>
-            <p>Tu peux la retrouver avec la recherche habituelle de la checklist.</p>
-            <a href={user ? "/collection/cartes" : "/catalogue/cartes"}>{user ? "Rechercher dans Mes cartes" : "Rechercher dans le catalogue"}</a>
-            {ocrText && <small className={styles.ocrSummary}>Texte lu : {ocrText.slice(0, 240)}</small>}
+            <p>Saisis son nom ou son numéro pour chercher dans le catalogue, sans quitter le scanner.</p>
+            <form onSubmit={searchManually} style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+              <label style={{ display: 'grid', gap: 7, fontWeight: 800 }}>
+                <span>Nom ou numéro de la carte</span>
+                <input
+                  type="search"
+                  value={manualQuery}
+                  onChange={event => setManualQuery(event.target.value)}
+                  placeholder="Ex. Lugulabre ou TG04/TG30"
+                  autoComplete="off"
+                  style={{ width: '100%', boxSizing: 'border-box', padding: 12, border: '1px solid #cfd8e3', borderRadius: 10, font: 'inherit' }}
+                />
+              </label>
+              <button className={styles.addButton} type="submit" disabled={busy || !manualQuery.trim()}>
+                {busy ? 'Recherche…' : 'Chercher dans le catalogue'}
+              </button>
+            </form>
+            <a href={user ? "/collection/cartes" : "/catalogue/cartes"} style={{ marginTop: 12 }}>
+              {user ? "Ouvrir Mes cartes" : "Ouvrir le catalogue"}
+            </a>
+            {ocrText && <small className={styles.ocrSummary}>Texte lu par le scanner : {ocrText.slice(0, 240)}</small>}
           </details>
         </>
       )}
