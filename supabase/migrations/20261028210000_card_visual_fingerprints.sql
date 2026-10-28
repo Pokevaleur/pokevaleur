@@ -25,7 +25,7 @@ as $$
   where s.is_public = true
     and c.image_url is not null
     and bit_count(f.fingerprint # query_fingerprint) <= 20
-  order by f.fingerprint # query_fingerprint
+  order by bit_count(f.fingerprint # query_fingerprint) asc
   limit greatest(1, least(coalesce(result_limit, 24), 40));
 $$;
 
