@@ -41,8 +41,8 @@ function normalizeText(value) {
 }
 
 function findCollectorNumbers(text) {
-  const matches = [...String(text || '').matchAll(/\b(\d{1,3})\s*[/|]\s*(\d{1,3})\b/g)]
-  return [...new Set(matches.map(match => match[1] + '/' + match[2]))]
+  const matches = [...String(text || '').matchAll(/\b([a-z]{0,4}\d{1,5}[a-z]?)\s*[\/|]\s*([a-z]{0,4}\d{1,5}[a-z]?)\b/gi)]
+  return [...new Set(matches.map(match => match[1].toLowerCase() + '/' + match[2].toLowerCase()))]
 }
 
 function rankCards(rows, text, collectorNumbers) {
@@ -161,7 +161,7 @@ export default function CardScannerPage() {
 
     const requests = []
     for (const number of numberCandidates) {
-      requests.push(cardQuery().eq('collector_number', number).limit(80))
+      requests.push(cardQuery().ilike('collector_number', number).limit(80))
       requests.push(cardQuery().ilike('collector_number', '%' + number.split('/')[0] + '%').limit(80))
     }
     for (const term of terms) {
@@ -340,7 +340,11 @@ export default function CardScannerPage() {
                 type="file"
                 accept="image/*"
                 capture="environment"
-                onChange={event => scanPhoto(event.target.files?.[0])}
+                onChange={event => {
+                  const file = event.target.files?.[0]
+                  event.target.value = ''
+                  scanPhoto(file)
+                }}
                 disabled={busy || loading}
               />
             </label>
