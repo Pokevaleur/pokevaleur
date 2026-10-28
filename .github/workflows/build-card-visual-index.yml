@@ -46,8 +46,16 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          STASHED_CHANGES=false
+          if ! git diff --quiet || [ -n "$(git ls-files --others --exclude-standard)" ]; then
+            git stash push --include-untracked -m "generated card visual index"
+            STASHED_CHANGES=true
+          fi
           git fetch origin "$BRANCH_NAME"
           git rebase "origin/$BRANCH_NAME"
+          if [ "$STASHED_CHANGES" = true ]; then
+            git stash pop
+          fi
           git add public/card-visual-index.json
           if git diff --cached --quiet; then
             echo "Visual index is already up to date."
