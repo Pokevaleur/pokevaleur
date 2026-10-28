@@ -115,14 +115,14 @@ export default function CardScannerPage() {
       }
       setUser(signedInUser)
 
-      const [{ data: profileRows, error: profileError }, { data: setRows, error: setError }] = await Promise.all([
+      const [{ data: profileRows, error: profileError }, { data: setRows, error: setRowsError }] = await Promise.all([
         supabase.from('collection_profiles')
           .select('id,display_name,is_default,profile_type').order('created_at'),
         supabase.from('card_sets').select('id').eq('is_public', true)
       ])
       if (!active) return
       if (profileError) throw profileError
-      if (setError) throw setError
+      if (setRowsError) throw setRowsError
 
       const availableProfiles = profileRows || []
       setProfiles(availableProfiles)
