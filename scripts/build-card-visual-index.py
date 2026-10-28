@@ -7,7 +7,6 @@ this job is intentionally public; never use a service-role/secret key here.
 import json
 import math
 import os
-import time
 import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -34,11 +33,11 @@ COSINES = [[math.cos((2 * x + 1) * u * math.pi / (2 * DCT_SIZE))
             for x in range(DCT_SIZE)] for u in range(LOW_SIZE)]
 
 
-def fetch(url, headers=None):
+def fetch(url, headers=None, allowed_hosts=None):
     req = urllib.request.Request(url, headers=headers or {})
     with urllib.request.urlopen(req, timeout=25) as response:
         final_host = urlparse(response.geturl()).hostname
-        if final_host not in ALLOWED_IMAGE_HOSTS:
+        if allowed_hosts and final_host not in allowed_hosts:
             raise ValueError("Image redirected to an unapproved host")
         return response.read()
 
@@ -47,7 +46,7 @@ def fingerprint(image_url):
     parsed = urlparse(image_url)
     if parsed.scheme != "https" or parsed.hostname not in ALLOWED_IMAGE_HOSTS:
         raise ValueError("Image host is not in the public catalogue allowlist")
-    data = fetch(image_url, {"User-Agent": "PokeValeur-public-catalog-index/1.0"})
+    data = fetch(image_url, {"User-Agent": "PokeValeur-public-catalog-index/1.0"}, ALLOWED_IMAGE_HOSTS)
     image = Image.open(BytesIO(data))
     image = ImageOps.exif_transpose(image).convert("L").resize(
         (DCT_SIZE, DCT_SIZE), Image.Resampling.LANCZOS
