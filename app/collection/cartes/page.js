@@ -588,7 +588,7 @@ export default function CardChecklistPage() {
       let cardRows = []
       if (setId === ENERGY_SERIES_FILTER) {
         const energySetIds = sets.filter(row => row.is_public && row.language === 'FR').map(row => row.id)
-        for (let offset = 0; offset < energySetIds.length + 1; offset += 500) {
+        for (let offset = 0; ; offset += 500) {
           const { data, error: cardError } = await supabase.from('cards').select(cardFields)
             .in('card_set_id', energySetIds).eq('card_type', 'Énergie')
             .order('guide_order', { ascending: true }).range(offset, offset + 499)
@@ -628,7 +628,7 @@ export default function CardChecklistPage() {
     loadChecklist().catch(loadError => { if (!cancelled) setError(loadError.message || 'Impossible de charger les cartes.') })
       .finally(() => { if (!cancelled) setCardsLoading(false) })
     return () => { cancelled = true }
-  }, [supabase, setId, profileId, checklistRefreshKey])
+  }, [supabase, setId, profileId, checklistRefreshKey, sets])
 
   useEffect(() => {
     if (!profileId || (setId !== ALL_SERIES_FILTER && setId !== '')) return
