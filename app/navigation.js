@@ -104,7 +104,7 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
           <div className="collectionNavSubpanel">{renderMenuItems(item.children)}</div>
         </details>
       )
-      : <a href={item.href} key={`${item.label}-${item.href}`}>{item.label}</a>)
+      : <a href={item.href} className={item.href === '/collection/cartes/scanner' ? 'scannerNavLink' : undefined} key={`${item.label}-${item.href}`}>{item.label}</a>)
   }
 
   function renderLinks() {
@@ -120,7 +120,7 @@ export default function Navigation({ links, mobileOnly = false, overlayTrigger =
           </div>
         </details>
       )
-      : <a href={link.label === 'Accueil' && identity ? '/' : link.href} key={link.href}>{link.label}</a>)
+      : <a href={link.label === 'Accueil' && identity ? '/' : link.href} className={link.href === '/collection/cartes/scanner' ? 'scannerNavLink' : undefined} key={link.href}>{link.label}</a>)
   }
   const accountMenu = identity && (
     <details className="accountMenu">
