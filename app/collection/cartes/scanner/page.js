@@ -221,7 +221,7 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const fuzzyNameMatch = fuzzyNameScore >= 0.68
       || (fuzzyNameScore >= 0.62 && (yearMatch || setCodeMatch || strongNumberMatch))
     const strongNameMatch = fullNameMatch || matchedWords >= 2 || fuzzyNameMatch
-    const hasReliableEvidence = strongNumberMatch || strongNameMatch || setCodeMatch
+    const hasReliableEvidence = strongNumberMatch || strongNameMatch
     const score = (exactNumber ? 120 : codeNumberMatch ? 95 : numericPart ? 55 : 0)
       + (fullNameMatch ? 80 : 0) + Math.min(matchedWords, 2) * 10
       + Math.round(fuzzyNameScore * 70)
@@ -621,6 +621,9 @@ export default function CardScannerPage() {
             <p className={styles.helper}>Si ton téléphone le propose, tu peux aussi choisir une photo déjà prise.</p>
             {busy && <p className={styles.progress} role="status">{status || 'Lecture en cours…'}</p>}
             {!busy && status && <p className={styles.notice} role="status">{status}</p>}
+            {!busy && ocrText && candidates.length === 0 && (
+              <p className={styles.ocrSummary}><strong>Texte lu par le scanner :</strong> {ocrText.slice(0, 240)}</p>
+            )}
           </section>
 
           {candidates.length > 0 && (
