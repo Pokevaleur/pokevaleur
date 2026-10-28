@@ -8,7 +8,7 @@ const TESSERACT_VERSION = '5.1.1'
 const OCR_WORKER_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js@' + TESSERACT_VERSION + '/dist/worker.min.js'
 const OCR_CORE_URL = 'https://cdn.jsdelivr.net/npm/tesseract.js-core@5.1.1'
 const OCR_LANGUAGE_URL = 'https://tessdata.projectnaptha.com/4.0.0'
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,rarity_label,image_url,image_source_url,card_sets!cards_card_set_id_fkey(set_name,set_code,language,release_date),card_print_variants(id,variant_key,variant_label,finish_code,is_master_set_target,copyright_year)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,rarity_label,image_url,image_source_url,card_sets!cards_card_set_id_fkey(set_name,set_code,language,release_date),card_print_variants(id,variant_key,variant_label,finish_code,is_master_set_target)'
 
 function loadOcrLibrary() {
   if (window.Tesseract?.createWorker) return Promise.resolve(window.Tesseract)
@@ -97,9 +97,9 @@ function prepareOcrImages(file) {
 function preferredVariant(card, text) {
   const years = findCopyrightYears(text)
   const variants = card?.card_print_variants || []
-  return variants.find(variant => years.includes(Number(variant.copyright_year)))
-    || variants.find(variant => variant.is_master_set_target)
-    || variants[0]
+  return variants.find(variant => years.some(year =>
+    String(variant.variant_label || '').includes(String(year))
+  )) || variants.find(variant => variant.is_master_set_target) || variants[0]
 }
 
 function rankCards(rows, text, collectorNumbers, copyrightYears) {
@@ -117,7 +117,7 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const matchedWords = nameWords.filter(word => words.has(word)).length
     const fullNameMatch = name.length > 3 && normalizedOcr.includes(name)
     const variantYearMatch = (card.card_print_variants || []).some(variant =>
-      copyrightYears.includes(Number(variant.copyright_year))
+      copyrightYears.some(year => String(variant.variant_label || '').includes(String(year)))
     )
     const releaseYear = set?.release_date ? Number(String(set.release_date).slice(0, 4)) : null
     const setYearMatch = releaseYear && copyrightYears.includes(releaseYear)
