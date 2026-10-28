@@ -53,6 +53,25 @@ function findCollectorNumbers(text) {
   ))]
 }
 
+function fuzzySimilarity(left, right) {
+  if (!left || !right) return 0
+  const previous = Array.from({ length: right.length + 1 }, (_, index) => index)
+  for (let row = 1; row <= left.length; row += 1) {
+    let diagonal = previous[0]
+    previous[0] = row
+    for (let column = 1; column <= right.length; column += 1) {
+      const above = previous[column]
+      previous[column] = Math.min(
+        previous[column] + 1,
+        previous[column - 1] + 1,
+        diagonal + (left[row - 1] === right[column - 1] ? 0 : 1)
+      )
+      diagonal = above
+    }
+  }
+  return 1 - previous[right.length] / Math.max(left.length, right.length)
+}
+
 function findCopyrightYears(text) {
   return [...new Set([...String(text || '').matchAll(/(?:©|c)?\s*\b(20[0-3]\d)\b/gi)].map(match => Number(match[1])))]
 }
@@ -184,6 +203,9 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const nameWords = name.split(/\s+/).filter(word => word.length >= 3)
     const matchedWords = nameWords.filter(word => words.has(word)).length
     const fullNameMatch = name.length > 3 && normalizedOcr.includes(name)
+    const fuzzyNameScore = Math.max(0, ...nameWords.flatMap(nameWord =>
+      [...words].filter(word => word.length >= 6).map(word => fuzzySimilarity(word, nameWord))
+    ))
     const variants = card.card_print_variants || []
     const variantYears = variants.flatMap(variant => findCopyrightYears(variant.variant_label || ''))
     const releaseYear = set?.release_date ? Number(String(set.release_date).slice(0, 4)) : null
@@ -196,10 +218,11 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const setCodeMatch = (setCode.length >= 3 && compactOcr.includes(setCode))
       || (setCodeSuffix.length >= 2 && compactOcr.includes(setCodeSuffix))
     const strongNumberMatch = exactNumber || codeNumberMatch || (numericPart && yearMatch)
-    const strongNameMatch = fullNameMatch || matchedWords >= 2
+    const strongNameMatch = fullNameMatch || matchedWords >= 2 || fuzzyNameScore >= 0.72
     const hasReliableEvidence = strongNumberMatch || strongNameMatch || setCodeMatch
     const score = (exactNumber ? 120 : codeNumberMatch ? 95 : numericPart ? 55 : 0)
       + (fullNameMatch ? 80 : 0) + Math.min(matchedWords, 2) * 10
+      + Math.round(fuzzyNameScore * 70)
       + (yearMatch ? 25 : 0) + (setCodeMatch ? 35 : 0)
       - (yearMismatch ? 90 : 0)
     if (!hasReliableEvidence || score < 60) continue
@@ -322,6 +345,12 @@ export default function CardScannerPage() {
     }
     for (const term of terms) {
       requests.push(cardQuery().ilike('card_name', '%' + term + '%').limit(30))
+    }
+    for (const term of terms.filter(value => value.length >= 7).slice(0, 3)) {
+      const fragments = new Set(Array.from({ length: term.length - 4 }, (_, index) => term.slice(index, index + 5)))
+      for (const fragment of fragments) {
+        requests.push(cardQuery().ilike('card_name', '%' + fragment + '%').limit(30))
+      }
     }
 
     const results = await Promise.all(requests)
