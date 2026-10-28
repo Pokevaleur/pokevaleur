@@ -304,6 +304,10 @@ export default function CardScannerPage() {
   }
 
   async function searchVisualCatalog(file) {
+    const { data: indexedRows, error: indexError } = await supabase.from('card_image_fingerprints')
+      .select('card_id').limit(1)
+    if (indexError) throw indexError
+    if (!indexedRows?.length) throw new Error('L’index visuel du catalogue n’a pas encore été initialisé.')
     const fingerprint = await visualFingerprint(file)
     const { data: matches, error: matchError } = await supabase.rpc('search_card_image_fingerprints', {
       query_fingerprint: fingerprint,
