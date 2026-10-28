@@ -1,44 +1,57 @@
 #!/usr/bin/env python3
-"""Build perceptual hashes for public card images and upsert them into Supabase.
+"""Build a compact perceptual-hash index from public catalogue images.
 
-Requires Pillow (python -m pip install Pillow) and SUPABASE_URL /
-SUPABASE_SERVICE_ROLE_KEY in the environment. This is a one-off catalogue job;
-rerun it after importing or changing card images.
+Only public card-set images are fetched. The Supabase publishable key used by
+this job is intentionally public; never use a service-role/secret key here.
 """
 import json
 import math
 import os
+import time
+import urllib.parse
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
+from urllib.parse import urlparse
 
 from PIL import Image, ImageOps
 
 SUPABASE_URL = os.environ["SUPABASE_URL"].rstrip("/")
-SERVICE_KEY = os.environ["SUPABASE_SERVICE_ROLE_KEY"]
-HEADERS = {
-    "apikey": SERVICE_KEY,
-    "Authorization": "Bearer " + SERVICE_KEY,
-    "Content-Type": "application/json",
+PUBLISHABLE_KEY = os.environ["SUPABASE_PUBLISHABLE_KEY"]
+OUTPUT_PATH = "public/card-visual-index.json"
+ALLOWED_IMAGE_HOSTS = {
+    "cdn.pokemon-france.com",
+    "images-cartes.pokevalue.fr",
+    "www.dexocard.com",
+    "www.pokepedia.fr",
+    "assets.tcgdex.net",
 }
-BATCH_SIZE = 100
+PAGE_SIZE = 500
+WORKERS = 12
 DCT_SIZE = 32
 LOW_SIZE = 8
 COSINES = [[math.cos((2 * x + 1) * u * math.pi / (2 * DCT_SIZE))
             for x in range(DCT_SIZE)] for u in range(LOW_SIZE)]
 
 
-def request(url, headers=HEADERS, data=None, method=None):
-    req = urllib.request.Request(url, data=data, headers=headers, method=method)
+def fetch(url, headers=None):
+    req = urllib.request.Request(url, headers=headers or {})
     with urllib.request.urlopen(req, timeout=25) as response:
+        final_host = urlparse(response.geturl()).hostname
+        if final_host not in ALLOWED_IMAGE_HOSTS:
+            raise ValueError("Image redirected to an unapproved host")
         return response.read()
 
 
 def fingerprint(image_url):
-    req = urllib.request.Request(image_url, headers={"User-Agent": "PokeValeur-card-index/1.0"})
-    with urllib.request.urlopen(req, timeout=20) as response:
-        image = Image.open(BytesIO(response.read()))
-        image = ImageOps.exif_transpose(image).convert("L").resize((DCT_SIZE, DCT_SIZE), Image.Resampling.LANCZOS)
+    parsed = urlparse(image_url)
+    if parsed.scheme != "https" or parsed.hostname not in ALLOWED_IMAGE_HOSTS:
+        raise ValueError("Image host is not in the public catalogue allowlist")
+    data = fetch(image_url, {"User-Agent": "PokeValeur-public-catalog-index/1.0"})
+    image = Image.open(BytesIO(data))
+    image = ImageOps.exif_transpose(image).convert("L").resize(
+        (DCT_SIZE, DCT_SIZE), Image.Resampling.LANCZOS
+    )
     pixels = image.load()
     coeffs = []
     for v in range(LOW_SIZE):
@@ -52,47 +65,63 @@ def fingerprint(image_url):
     return "".join("1" if value > median else "0" for value in coeffs)
 
 
-def main():
-    cards_url = SUPABASE_URL + "/rest/v1/cards?select=id,image_url,card_sets!inner(is_public)"
-    cards_url += "&card_sets.is_public=eq.true&image_url=not.is.null&order=id.asc"
+def catalogue_page(offset):
+    params = urllib.parse.urlencode({
+        "select": "id,image_url,card_sets!inner(is_public)",
+        "card_sets.is_public": "eq.true",
+        "image_url": "not.is.null",
+        "order": "id.asc",
+        "limit": str(PAGE_SIZE),
+        "offset": str(offset),
+    })
+    url = SUPABASE_URL + "/rest/v1/cards?" + params
+    headers = {
+        "apikey": PUBLISHABLE_KEY,
+        "Range-Unit": "items",
+        "Range": f"{offset}-{offset + PAGE_SIZE - 1}",
+    }
+    return json.loads(fetch(url, headers))
+
+
+def read_catalogue():
     rows = []
-    start = 0
+    offset = 0
     while True:
-        page_url = cards_url + "&limit=500&offset=" + str(start)
-        page = json.loads(request(page_url, {**HEADERS, "Range-Unit": "items", "Range": f"{start}-{start + 499}"}))
+        page = catalogue_page(offset)
         if not page:
             break
         rows.extend(page)
-        start += len(page)
-        print(f"Catalogue lu : {start} cartes", flush=True)
-        if len(page) < 500:
+        offset += len(page)
+        print(f"Cartes publiques lues : {offset}", flush=True)
+        if len(page) < PAGE_SIZE:
             break
+    return rows
 
+
+def main():
+    rows = read_catalogue()
     records = []
-    errors = 0
-    with ThreadPoolExecutor(max_workers=12) as pool:
-        futures = {pool.submit(fingerprint, card["image_url"]): card for card in rows}
-        for index, future in enumerate(as_completed(futures), 1):
-            card = futures[future]
+    failures = []
+    with ThreadPoolExecutor(max_workers=WORKERS) as pool:
+        futures = {pool.submit(fingerprint, row["image_url"]): row for row in rows}
+        for done, future in enumerate(as_completed(futures), 1):
+            row = futures[future]
             try:
-                records.append({"card_id": card["id"], "fingerprint": future.result()})
+                records.append([row["id"], future.result()])
             except Exception as exc:
-                errors += 1
-                print(f"Image ignorée ({card['id']}): {exc}", flush=True)
-            if len(records) >= BATCH_SIZE:
-                upload(records)
-                records.clear()
-            if index % 100 == 0:
-                print(f"Empreintes calculées : {index}/{len(rows)}", flush=True)
-    if records:
-        upload(records)
-    print(f"Terminé : {len(rows) - errors} empreintes, {errors} images ignorées.")
+                failures.append((row["id"], str(exc)))
+            if done % 500 == 0:
+                print(f"Empreintes calculées : {done}/{len(rows)}", flush=True)
 
-
-def upload(records):
-    url = SUPABASE_URL + "/rest/v1/card_image_fingerprints?on_conflict=card_id"
-    headers = {**HEADERS, "Prefer": "resolution=merge-duplicates,return=minimal"}
-    request(url, headers, json.dumps(records).encode("utf-8"), "POST")
+    records.sort(key=lambda item: item[0])
+    os.makedirs(os.path.dirname(OUTPUT_PATH), exist_ok=True)
+    with open(OUTPUT_PATH, "w", encoding="utf-8") as output:
+        json.dump({"version": 1, "cards": records}, output, separators=(",", ":"))
+    print(f"Index créé : {len(records)} cartes; images ignorées : {len(failures)}.", flush=True)
+    for card_id, message in failures[:20]:
+        print(f"Image ignorée ({card_id}) : {message}", flush=True)
+    if not records:
+        raise RuntimeError("Aucune empreinte n’a été créée.")
 
 
 if __name__ == "__main__":
