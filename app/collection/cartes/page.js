@@ -1602,29 +1602,25 @@ export default function CardChecklistPage() {
           ) : (
           <section className={styles.progressCard} aria-label="Progression de la série">
             <div className={styles.progressHeading}>
-              <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>variantes possédées</span></div>
+              <div><strong>{ownedTargetCount} / {targetVariants.length}</strong><span>{selectedSet.set_code === 'SV09' ? 'variantes Ultra Master possédées' : 'variantes possédées'}</span></div>
               <div><strong>{completedCardCount} / {cardsWithProgressTargets.length}</strong><span>cartes complètes</span></div>
               <strong className={styles.percent}>{completion}%</strong>
             </div>
-            <div className={styles.progressTrack} role="progressbar" aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100" aria-label="Progression de la checklist">
+            <div className={styles.progressTrack} role="progressbar" aria-valuenow={completion} aria-valuemin="0" aria-valuemax="100" aria-label={selectedSet.set_code === 'SV09' ? "Progression de l’Ultra Master Set" : "Progression de la checklist"}>
               <span style={{ width: completion + '%' }} />
             </div>
-            <details className={styles.scopeDetails}>
-              <summary>{selectedSet.set_code === 'SV09' ? 'Décompte de référence EV9' : 'Détails du calcul'}</summary>
-              {selectedSet.set_code === 'SV09' ? (
-                <div className={styles.scope}>
-                  <p>{selectedSet.checklist_scope_note} Les nombres ci-dessous sont le périmètre retenu pour la checklist EV9 :</p>
-                  <ul>
-                    <li><strong>190 cartes</strong> dans la série complète.</li>
-                    <li><strong>339 cartes</strong> dans le Master Set PokéValeur.</li>
-                    <li><strong>377 cartes</strong> dans l’Ultra Master Set : 339 du Master Set, 7 promos et 31 cartes avec tampon.</li>
-                  </ul>
-                  <p>Les promos SVP 185, SVP 186 et SVP 193 sont exclues, car elles ne sont pas sorties en France. Les variantes (Normale, Reverse, Holo, promo ou tampon) se comptent séparément dans le suivi correspondant.</p>
-                </div>
-              ) : (
+            {selectedSet.set_code === 'SV09' ? (
+              <div className={styles.scope} aria-label="Périmètre retenu pour EV9">
+                <p><strong>Cartes suivies :</strong> 190 cartes de la série + 9 promos françaises = 199.</p>
+                <p><strong>Master Set :</strong> 333 variantes.</p>
+                <p><strong>Ultra Master Set :</strong> 386 variantes maximum.</p>
+              </div>
+            ) : (
+              <details className={styles.scopeDetails}>
+                <summary>Détails du calcul</summary>
                 <p className={styles.scope}>{selectedSet.checklist_scope_note} Les variantes (Normale, Reverse, tamponnée…) comptent séparément. Une carte est complète seulement lorsque toutes ses variantes sont possédées.</p>
-              )}
-            </details>
+              </details>
+            )}
           </section>
           )}
 
