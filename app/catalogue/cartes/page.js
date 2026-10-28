@@ -170,6 +170,17 @@ function isUnnumberedEnergyCard(card) {
   return card?.card_type === 'Énergie' && /^UEN-/i.test(String(card?.collector_number || ''))
 }
 
+function energyVariantCopyrightYear(card, variant) {
+  const copyrightYear = Number(variant?.copyright_year)
+  if (copyrightYear) return copyrightYear
+
+  const setCode = String(relatedSet(card)?.set_code || '').toLowerCase()
+  const collectorNumber = Number(String(card?.collector_number || '').replace(/^0+/, ''))
+  if (setCode === 'sve' && variant?.variant_key === 'catalog_base' && collectorNumber >= 9 && collectorNumber <= 15) return 2024
+
+  return Number(String(relatedSet(card)?.release_date || '').slice(0, 4)) || null
+}
+
 function energyPrintYearGroups(cards) {
   const groups = new Map()
   for (const card of cards) {
@@ -177,7 +188,7 @@ function energyPrintYearGroups(cards) {
     const variants = (card.card_print_variants || []).filter(variant => variant.is_master_set_target)
     const byYear = new Map()
     for (const variant of variants) {
-      const year = Number(variant.copyright_year) || Number(releaseYear)
+      const year = energyVariantCopyrightYear(card, variant) || Number(releaseYear)
       if (!year) continue
       if (!byYear.has(year)) byYear.set(year, [])
       byYear.get(year).push(variant)
@@ -608,7 +619,7 @@ export default function CardCataloguePage() {
             cardRows = cardRows.filter(card => {
               if (card.card_type !== 'Énergie') return false
               const releaseYear = String(relatedSet(card)?.release_date || '').slice(0, 4)
-              const hasPrintYear = (card.card_print_variants || []).some(variant => Number(variant.copyright_year) === Number(yearSearch))
+              const hasPrintYear = (card.card_print_variants || []).some(variant => variant.is_master_set_target && energyVariantCopyrightYear(card, variant) === Number(yearSearch))
               return releaseYear === yearSearch || hasPrintYear
             })
           }
@@ -1063,12 +1074,12 @@ export default function CardCataloguePage() {
             const entries = group.entries.map(({ card, variants: yearGroupVariants }, index) => {
             const yearSearch = normalizedSearchText(query).match(/^(20\d{2})$/)?.[1]
             const yearVariants = yearGroupVariants || (yearSearch
-              ? (card.card_print_variants || []).filter(variant => variant.is_master_set_target && Number(variant.copyright_year) === Number(yearSearch))
+              ? (card.card_print_variants || []).filter(variant => variant.is_master_set_target && energyVariantCopyrightYear(card, variant) === Number(yearSearch))
               : [])
             const copyrightYearVariant = yearVariants.find(variant => variant.image_url) || yearVariants[0] || null
-            const displayCopyrightYear = Number(copyrightYearVariant?.copyright_year) || null
+            const displayCopyrightYear = copyrightYearVariant ? energyVariantCopyrightYear(card, copyrightYearVariant) : null
             const variants = yearGroupVariants || (card.card_print_variants || []).filter(variant => (isPackRewardSelection(setId) ? isPlayStampVariant(variant) : variant.is_master_set_target || isPlayStampVariant(variant))
-              && (!yearSearch || Number(variant.copyright_year) === Number(yearSearch) || String(relatedSet(card)?.release_date || '').startsWith(yearSearch)))
+              && (!yearSearch || energyVariantCopyrightYear(card, variant) === Number(yearSearch) || String(relatedSet(card)?.release_date || '').startsWith(yearSearch)))
             const set = relatedSet(card)
             const previousEntry = index ? group.entries[index - 1] : null
             const showEnergyGroup = !groupedEnergyView && setId === ALL_SERIES && /^20\d{2}$/.test(normalizedSearchText(query)) && set?.id !== relatedSet(previousEntry?.card)?.id
