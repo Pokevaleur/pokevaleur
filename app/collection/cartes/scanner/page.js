@@ -107,33 +107,31 @@ export default function CardScannerPage() {
   useEffect(() => {
     let active = true
     async function initialize() {
-      const { data: { user: signedInUser }, error: authError } = await supabase.auth.getUser()
+      const { data: { user: signedInUser } } = await supabase.auth.getUser()
       if (!active) return
-      if (authError || !signedInUser) {
-        window.location.replace('/login?next=%2Fcollection%2Fcartes%2Fscanner')
-        return
-      }
-      setUser(signedInUser)
+      setUser(signedInUser || null)
 
-      const [{ data: profileRows, error: profileError }, { data: setRows, error: setRowsError }] = await Promise.all([
-        supabase.from('collection_profiles')
-          .select('id,display_name,is_default,profile_type').order('created_at'),
-        supabase.from('card_sets').select('id').eq('is_public', true)
-      ])
+      const { data: setRows, error: setRowsError } = await supabase.from('card_sets')
+        .select('id').eq('is_public', true)
       if (!active) return
-      if (profileError) throw profileError
       if (setRowsError) throw setRowsError
-
-      const availableProfiles = profileRows || []
-      setProfiles(availableProfiles)
       setPublicSetIds((setRows || []).map(row => row.id))
 
-      const savedProfileId = window.localStorage.getItem('pokevaleur-collection:' + signedInUser.id)
-      const activeProfile = availableProfiles.find(row => row.id === savedProfileId)
-        || availableProfiles.find(row => row.is_default)
-        || availableProfiles[0]
-      if (activeProfile) setProfileId(activeProfile.id)
-      else setError('Aucun profil de collection disponible pour ce compte.')
+      if (signedInUser) {
+        const { data: profileRows, error: profileError } = await supabase.from('collection_profiles')
+          .select('id,display_name,is_default,profile_type').order('created_at')
+        if (!active) return
+        if (profileError) throw profileError
+
+        const availableProfiles = profileRows || []
+        setProfiles(availableProfiles)
+        const savedProfileId = window.localStorage.getItem('pokevaleur-collection:' + signedInUser.id)
+        const activeProfile = availableProfiles.find(row => row.id === savedProfileId)
+          || availableProfiles.find(row => row.is_default)
+          || availableProfiles[0]
+        if (activeProfile) setProfileId(activeProfile.id)
+        else setError('Aucun profil de collection disponible pour ce compte.')
+      }
     }
     initialize().catch(loadError => {
       if (active) setError(loadError.message || 'Impossible de préparer le scanner.')
@@ -293,7 +291,7 @@ export default function CardScannerPage() {
 
   return (
     <main className={styles.page}>
-      <a className={styles.backLink} href="/collection/cartes">← Retour à Mes cartes</a>
+      <a className={styles.backLink} href={user ? "/collection/cartes" : "/catalogue/cartes"}>{user ? "← Retour à Mes cartes" : "← Retour au catalogue"}</a>
       <header className={styles.hero}>
         <div>
           <span className={styles.eyebrow}>POKÉVALEUR · MA COLLECTION</span>
@@ -386,28 +384,44 @@ export default function CardScannerPage() {
               </div>
 
               {selectedCard && (
-                <div className={styles.confirmPanel}>
-                  <label>
-                    <span>Version imprimée</span>
-                    <select value={selectedVariantId} onChange={event => setSelectedVariantId(event.target.value)}>
-                      {selectedVariants.map(variant => (
-                        <option key={variant.id} value={variant.id}>
-                          {variant.variant_label || variant.variant_key || variant.finish_code || 'Version catalogue'}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
-                    <span>Nombre d’exemplaires</span>
-                    <input type="number" min="1" max="20" value={quantity}
-                      onChange={event => setQuantity(event.target.value)} />
-                  </label>
-                  <button className={styles.addButton} type="button" onClick={addToCollection}
-                    disabled={busy || !selectedVariantId || !profileId}>
-                    {busy ? 'Enregistrement…' : 'Ajouter à ma collection'}
-                  </button>
-                  <p>L’ajout se fait uniquement après ta confirmation. Les exemplaires déjà possédés restent inchangés.</p>
-                </div>
+                user ? (
+                  <div className={styles.confirmPanel}>
+                    {profiles.length > 0 ? (
+                      <>
+                        <label>
+                          <span>Version imprimée</span>
+                          <select value={selectedVariantId} onChange={event => setSelectedVariantId(event.target.value)}>
+                            {selectedVariants.map(variant => (
+                              <option key={variant.id} value={variant.id}>
+                                {variant.variant_label || variant.variant_key || variant.finish_code || 'Version catalogue'}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>Nombre d’exemplaires</span>
+                          <input type="number" min="1" max="20" value={quantity}
+                            onChange={event => setQuantity(event.target.value)} />
+                        </label>
+                        <button className={styles.addButton} type="button" onClick={addToCollection}
+                          disabled={busy || !selectedVariantId || !profileId}>
+                          {busy ? 'Enregistrement…' : 'Ajouter à ma collection'}
+                        </button>
+                        <p>L’ajout se fait uniquement après ta confirmation. Les exemplaires déjà possédés restent inchangés.</p>
+                      </>
+                    ) : (
+                      <p>Aucun profil de collection n’est disponible pour ce compte.</p>
+                    )}
+                  </div>
+                ) : (
+                  <div className={styles.confirmPanel}>
+                    <div className={styles.guestMessage}>
+                      <strong>La carte est reconnue.</strong>
+                      <p>Tu peux utiliser le scanner sans compte. Connecte-toi seulement si tu veux enregistrer cette carte dans ta collection.</p>
+                    </div>
+                    <a className={styles.addButton} href="/login?next=%2Fcollection%2Fcartes%2Fscanner">Se connecter pour l’ajouter</a>
+                  </div>
+                )
               )}
             </section>
           )}
@@ -415,7 +429,7 @@ export default function CardScannerPage() {
           <details className={styles.manualFallback}>
             <summary>La carte n’a pas été reconnue ?</summary>
             <p>Tu peux la retrouver avec la recherche habituelle de la checklist.</p>
-            <a href="/collection/cartes">Rechercher dans Mes cartes</a>
+            <a href={user ? "/collection/cartes" : "/catalogue/cartes"}>{user ? "Rechercher dans Mes cartes" : "Rechercher dans le catalogue"}</a>
             {ocrText && <small className={styles.ocrSummary}>Texte lu : {ocrText.slice(0, 240)}</small>}
           </details>
         </>
