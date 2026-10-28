@@ -1,19 +1,9 @@
-# Index visuel du scanner
+# Comparaison visuelle du scanner
 
-Le rapprochement visuel compare une empreinte perceptuelle calculée dans le navigateur à une empreinte préparée pour chaque image du catalogue. La photo de scan reste dans le navigateur.
+Le scanner calcule une empreinte perceptuelle dans le navigateur, puis la compare à un fichier compact pré-calculé à partir des images publiques du catalogue. La photo n’est pas envoyée au serveur et aucun service d’IA n’est utilisé.
 
-## Initialisation
+## Génération de l’index
 
-1. Appliquer la migration `supabase/migrations/20261028205834_card_visual_fingerprints.sql` au projet Supabase utilisé par le déploiement.
-2. Depuis un environnement autorisé à lire les images du catalogue et à écrire dans Supabase, installer Pillow et lancer le script :
+Le workflow GitHub Actions `.github/workflows/build-card-visual-index.yml` génère automatiquement `public/card-visual-index.json` après une mise à jour du générateur. Il lit uniquement les cartes des séries publiques et utilise la clé publishable Supabase, qui est une clé cliente publique; aucune clé secrète ni service_role n’est nécessaire. Le workflow ajoute le fichier d’index à la branche de test, puis Vercel redéploie l’aperçu.
 
-```sh
-python3 -m pip install Pillow
-export SUPABASE_URL="https://<projet>.supabase.co"
-export SUPABASE_SERVICE_ROLE_KEY="<clé service_role du projet>"
-python3 scripts/build-card-visual-index.py
-```
-
-Ne pas enregistrer la clé service_role dans le dépôt, dans une variable publique `NEXT_PUBLIC_*`, ni dans un journal de commandes partagé. Le script parcourt les cartes publiques avec image, calcule les empreintes et les envoie par lots. Il peut être relancé après une importation d’images; les lignes existantes sont mises à jour.
-
-Tant que la migration et l’index ne sont pas disponibles, le scanner continue à proposer les résultats OCR et la recherche manuelle. Le rapprochement visuel ne valide jamais une carte automatiquement : la personne doit confirmer la proposition avant l’ajout.
+Si GitHub désactive les Actions sur le dépôt ou si une image publique échoue au téléchargement, le workflow affichera le détail dans ses journaux. Il faut aussi éviter d’ajouter un secret Supabase à la configuration de ce workflow.
