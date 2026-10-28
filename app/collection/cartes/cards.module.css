@@ -225,6 +225,8 @@
 /* Checklist dense, lisible comme une liste papier. */
 
 .masterChecklist { display:grid; gap:0; overflow:hidden; border:1px solid #d7dee8; border-radius:12px; background:#fff; }
+.energyYearGroup { display:contents; }
+.energyYearHeading { grid-column:1 / -1; margin:0; padding:12px 16px; border-bottom:1px solid #d7dee8; background:#edf2f8; color:#263b53; font-size:1rem; font-weight:750; }
 .masterChecklistCard { display:grid; grid-template-columns:minmax(0, 1fr) minmax(220px, auto); align-items:center; gap:14px; padding:10px 14px; border-bottom:1px solid #e7ebf0; color:#1c2a3b; }
 .masterChecklistCard:nth-child(even) { background:#f6f8fa; }
 .masterChecklistCard:last-child { border-bottom:0; }
