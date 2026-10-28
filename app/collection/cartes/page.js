@@ -6,6 +6,7 @@ import CardProvenanceButton from '../../components/card-provenance'
 import styles from './cards.module.css'
 
 const ALL_SERIES_FILTER = '__all_series__'
+const ENERGY_SERIES_FILTER = '__energies_by_year__'
 const ALL_LANGUAGES_FILTER = 'all'
 
 function collectMissingTargetVariantIds(variants, ownedByVariant = {}) {
@@ -35,6 +36,16 @@ function seriesOptionLabel(set) {
   const abbreviation = seriesAbbreviation(set)
   const name = (set.set_name || '').replace(/Classique(?=30e)/i, 'Classique ')
   return (abbreviation ? abbreviation + ' — ' : '') + name + (set.is_public ? '' : ' · brouillon privé')
+}
+
+function energyCollectionYear(card, variant) {
+  const copyrightYear = Number(variant?.copyright_year)
+  if (copyrightYear) return copyrightYear
+  const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+  const setCode = String(set?.set_code || '').toLowerCase()
+  const collectorNumber = Number(String(card?.collector_number || '').replace(/^0+/, ''))
+  if (setCode === 'sve' && variant?.variant_key === 'catalog_base' && collectorNumber >= 9 && collectorNumber <= 16) return 2024
+  return Number(String(set?.release_date || '').slice(0, 4)) || null
 }
 
 const RARITY_FILTERS = [
@@ -550,7 +561,7 @@ export default function CardChecklistPage() {
       if (cancelled) return
       const availableSets = setRows || []
       setSets(availableSets)
-      if (requestedSetId === ALL_SERIES_FILTER) setSetId(ALL_SERIES_FILTER)
+      if (requestedSetId === ALL_SERIES_FILTER || requestedSetId === ENERGY_SERIES_FILTER) setSetId(requestedSetId)
       else if (availableSets.some(row => row.id === requestedSetId)) setSetId(requestedSetId)
       else setSetId(ALL_SERIES_FILTER)
 
@@ -573,10 +584,24 @@ export default function CardChecklistPage() {
       setNotice('')
       setCards([])
       setOwned({})
-      const { data: cardRows, error: cardError } = await supabase.from('cards')
-        .select('id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(set_name,set_code,language),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target)')
-        .eq('card_set_id', setId).order('guide_order', { ascending: true })
-      if (cardError) throw cardError
+      const cardFields = 'id,card_set_id,collector_number,card_name,card_type,element_types,guide_category_label,guide_category_code,rarity_label,mechanic_label,image_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(set_name,set_code,language,release_date),card_illustrators(illustrators(name)),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year)'
+      let cardRows = []
+      if (setId === ENERGY_SERIES_FILTER) {
+        const energySetIds = sets.filter(row => row.is_public && row.language === 'FR').map(row => row.id)
+        for (let offset = 0; offset < energySetIds.length + 1; offset += 500) {
+          const { data, error: cardError } = await supabase.from('cards').select(cardFields)
+            .in('card_set_id', energySetIds).eq('card_type', 'Énergie')
+            .order('guide_order', { ascending: true }).range(offset, offset + 499)
+          if (cardError) throw cardError
+          cardRows = cardRows.concat(data || [])
+          if (!data || data.length < 500) break
+        }
+      } else {
+        const { data, error: cardError } = await supabase.from('cards').select(cardFields)
+          .eq('card_set_id', setId).order('guide_order', { ascending: true })
+        if (cardError) throw cardError
+        cardRows = data || []
+      }
       if (cancelled) return
       const copyRows = []
       const copyPageSize = 500
@@ -710,7 +735,9 @@ export default function CardChecklistPage() {
   }, [supabase, setId, profileId, query, sets])
 
   const isAllSeriesSelected = setId === ALL_SERIES_FILTER
-  const selectedSet = sets.find(row => row.id === setId)
+  const isEnergyYearView = setId === ENERGY_SERIES_FILTER
+  const energySeriesOption = { id: ENERGY_SERIES_FILTER, set_name: 'Énergies · par année', set_code: '', language: 'FR', is_public: true }
+  const selectedSet = isEnergyYearView ? energySeriesOption : sets.find(row => row.id === setId)
   const displayedOwned = useMemo(() => {
     if (languageFilter === ALL_LANGUAGES_FILTER) return owned
     const fallbackByVariant = new Map()
@@ -735,7 +762,7 @@ export default function CardChecklistPage() {
     return [...new Set([...known, ...fromSets, ...observed])].filter(Boolean)
       .sort((a, b) => (known.indexOf(a) < 0 ? 999 : known.indexOf(a)) - (known.indexOf(b) < 0 ? 999 : known.indexOf(b)) || a.localeCompare(b, 'fr'))
   }, [owned, sets])
-  const isGlobalSearchView = isAllSeriesSelected || !selectedSet
+  const isGlobalSearchView = !isEnergyYearView && (isAllSeriesSelected || !selectedSet)
   const isIncludedVariant = variant => (
     checklistFilter === 'all' ||
     (checklistFilter === 'stamps' ? variant.checklist_group === 'stamp' :
@@ -786,6 +813,33 @@ export default function CardChecklistPage() {
   }
 
   const visibleCards = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
+  const energyYearGroups = useMemo(() => {
+    if (!isEnergyYearView) return []
+    const groups = new Map()
+    for (const card of visibleCards) {
+      const variants = (card.card_print_variants || []).filter(variant => collectionFilter === 'duplicates'
+        ? (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (displayedOwned[variant.id] || []).length > 1
+        : isProgressTarget(variant) && (!selectedVersions.length || selectedVersions.includes(variant.variant_key)))
+      for (const variant of variants) {
+        const year = energyCollectionYear(card, variant)
+        if (!year) continue
+        if (!groups.has(year)) groups.set(year, new Map())
+        const entries = groups.get(year)
+        if (!entries.has(card.id)) entries.set(card.id, { card, variantIds: [] })
+        entries.get(card.id).variantIds.push(variant.id)
+      }
+    }
+    return [...groups.entries()].sort(([a], [b]) => b - a).map(([year, entries]) => ({
+      year,
+      entries: [...entries.values()].sort((a, b) => {
+        const aSet = Array.isArray(a.card.card_sets) ? a.card.card_sets[0] : a.card.card_sets
+        const bSet = Array.isArray(b.card.card_sets) ? b.card.card_sets[0] : b.card.card_sets
+        return String(bSet?.release_date || '').localeCompare(String(aSet?.release_date || ''))
+          || String(a.card.collector_number || '').localeCompare(String(b.card.collector_number || ''), 'fr', { numeric: true })
+          || String(a.card.card_name || '').localeCompare(String(b.card.card_name || ''), 'fr')
+      })
+    }))
+  }, [isEnergyYearView, visibleCards, collectionFilter, selectedVersions, displayedOwned, isProgressTarget])
   const duplicateVariantRows = collectionFilter === 'duplicates'
     ? visibleCards.flatMap(card => duplicateVariantsForCard(card, displayedOwned)
       .filter(({ variant }) => !selectedVersions.length || selectedVersions.includes(variant.variant_key))
@@ -1371,6 +1425,38 @@ export default function CardChecklistPage() {
 
   if (loading) return <main className={styles.page}><p className={styles.status}>Chargement de la collection de cartes…</p></main>
 
+  function renderChecklistCard(card, variantIds = null, year = null) {
+    const targetVariants = (card.card_print_variants || []).filter(variant =>
+      (!variantIds || variantIds.includes(variant.id)) && (collectionFilter === 'duplicates'
+        ? (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (displayedOwned[variant.id] || []).length > 1
+        : variant.is_master_set_target)
+    )
+    const cardImage = imageUrl(card)
+    return <article className={styles.masterChecklistCard} key={card.id + (year ? '-' + year : '')}>
+      <div className={styles.masterChecklistHead}>
+        <button type="button" className={styles.masterChecklistThumb} aria-label={'Agrandir l’image de ' + card.card_name} onClick={() => openCardZoom(card, selectedSet?.set_name || '')} data-image-missing={!cardImage ? 'true' : undefined}>
+          {cardImage ? <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.parentElement.dataset.imageMissing = 'true'; event.currentTarget.style.display = 'none' }} /> : <span aria-hidden="true">Image</span>}
+        </button>
+        <div className={styles.masterChecklistMeta}>
+          <span className={styles.masterChecklistNumber}>N° {card.collector_number}</span>
+          <h2 className={styles.masterChecklistName}><button type="button" className={styles.masterChecklistNameButton} onClick={() => openCardZoom(card, selectedSet?.set_name || '')} aria-label={'Voir la carte ' + card.card_name}>{card.card_name}</button></h2>
+          <span className={styles.masterChecklistRarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</span>
+        </div>
+      </div>
+      {targetVariants.length ? <div className={styles.ownedVariantList} aria-label={'Versions possédées de ' + card.card_name}>
+        {targetVariants.map(variant => {
+          const quantity = (displayedOwned[variant.id] || []).length
+          const label = variant.variant_label || variant.variant_key || variant.finish_code || 'Version'
+          return <div className={styles.ownedVariantRow} key={variant.id}>
+            <span>{label}</span>
+            <strong className={quantity ? styles.ownedQuantity : styles.missingQuantity}>{quantity ? quantity + ' ex.' : 'Non possédée'}</strong>
+            {quantity > 0 && <button type="button" className={styles.removeCopyButton} onClick={() => removeOneCopy(variant)} disabled={busyVariant === variant.id || savingBulk} aria-label={'Retirer un exemplaire de ' + card.card_name + ' (' + label + ')'} title="Retirer un exemplaire">−</button>}
+          </div>
+        })}
+      </div> : <p className={styles.masterChecklistStatus}>Aucune variante de Master Set répertoriée.</p>}
+    </article>
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.topLine}>
@@ -1382,7 +1468,7 @@ export default function CardChecklistPage() {
         <h1>Mes cartes</h1>
         {selectedSet && !cardsLoading && !isCatalogOnlySet && <p className={styles.ownedSummary}>{ownedCopyCount} exemplaire{ownedCopyCount === 1 ? '' : 's'} possédé{ownedCopyCount === 1 ? '' : 's'} dans cette série</p>}
         <p>Choisis une série pour afficher tes cartes possédées, en double ou non possédées. Pour en ajouter, sélectionne-les dans le Catalogue.</p>
-        <a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Choisir des cartes dans le Catalogue →</a>
+        <a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER && setId !== ENERGY_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Choisir des cartes dans le Catalogue →</a>
       </header>
 
       {error && <p className={styles.error} role="alert">{error}</p>}
@@ -1413,6 +1499,13 @@ export default function CardChecklistPage() {
                   className={isAllSeriesSelected ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
                   onClick={() => { selectSet(ALL_SERIES_FILTER); setSeriesPickerOpen(false) }}
                 >Toutes les séries</button>
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isEnergyYearView}
+                  className={isEnergyYearView ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
+                  onClick={() => { selectSet(ENERGY_SERIES_FILTER); setSeriesPickerOpen(false) }}
+                >Énergies · par année</button>
                 {sets.map(set => {
                   const selected = set.id === setId
                   return (
@@ -1636,46 +1729,13 @@ export default function CardChecklistPage() {
 
           {cardsLoading ? <p className={styles.status}>Chargement des cartes…</p> : (
             <section className={styles.masterChecklist} aria-label="Liste complète des cartes du Master Set">
-              {!visibleCards.length && <div className={styles.emptyCollection}><p>{query.trim() ? 'Aucune carte ne correspond à cette recherche.' : collectionFilter === 'owned' ? 'Aucune carte de cette série dans cette collection pour le moment.' : 'Aucune carte ne correspond à ce filtre.'}</p><a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Ajouter des cartes depuis le Catalogue →</a></div>}
-              {visibleCards.map(card => {
-                const targetVariants = (card.card_print_variants || []).filter(variant => collectionFilter === 'duplicates'
-                  ? (!selectedVersions.length || selectedVersions.includes(variant.variant_key)) && (displayedOwned[variant.id] || []).length > 1
-                  : variant.is_master_set_target)
-                const cardImage = imageUrl(card)
-                return <article className={styles.masterChecklistCard} key={card.id}>
-                  <div className={styles.masterChecklistHead}>
-                    <button
-                      type="button"
-                      className={styles.masterChecklistThumb}
-                      aria-label={'Agrandir l’image de ' + card.card_name}
-                      onClick={() => openCardZoom(card, selectedSet?.set_name || '')}
-                      data-image-missing={!cardImage ? 'true' : undefined}
-                    >
-                      {cardImage
-                        ? <img src={cardImage} alt={'Illustration de ' + card.card_name} loading="lazy" onError={event => { event.currentTarget.parentElement.dataset.imageMissing = 'true'; event.currentTarget.style.display = 'none' }} />
-                        : <span aria-hidden="true">Image</span>}
-                    </button>
-                    <div className={styles.masterChecklistMeta}>
-                      <span className={styles.masterChecklistNumber}>N° {card.collector_number}</span>
-                      <h2 className={styles.masterChecklistName}><button type="button" className={styles.masterChecklistNameButton} onClick={() => openCardZoom(card, selectedSet?.set_name || '')} aria-label={'Voir la carte ' + card.card_name}>{card.card_name}</button></h2>
-                      <span className={styles.masterChecklistRarity}>{rarityDisplayLabel(card.rarity_label || 'Rareté à préciser')}</span>
-                    </div>
-                  </div>
-                  {targetVariants.length ? (
-                    <div className={styles.ownedVariantList} aria-label={'Versions possédées de ' + card.card_name}>
-                      {targetVariants.map(variant => {
-                        const quantity = (displayedOwned[variant.id] || []).length
-                        const label = variant.variant_label || variant.variant_key || variant.finish_code || 'Version'
-                        return <div className={styles.ownedVariantRow} key={variant.id}>
-                          <span>{label}</span>
-                          <strong className={quantity ? styles.ownedQuantity : styles.missingQuantity}>{quantity ? quantity + ' ex.' : 'Non possédée'}</strong>
-                          {quantity > 0 && <button type="button" className={styles.removeCopyButton} onClick={() => removeOneCopy(variant)} disabled={busyVariant === variant.id || savingBulk} aria-label={'Retirer un exemplaire de ' + card.card_name + ' (' + label + ')'} title="Retirer un exemplaire">−</button>}
-                        </div>
-                      })}
-                    </div>
-                  ) : <p className={styles.masterChecklistStatus}>Aucune variante de Master Set répertoriée.</p>}
-                </article>
-              })}
+              {!visibleCards.length && <div className={styles.emptyCollection}><p>{query.trim() ? 'Aucune carte ne correspond à cette recherche.' : collectionFilter === 'owned' ? 'Aucune carte de cette série dans cette collection pour le moment.' : 'Aucune carte ne correspond à ce filtre.'}</p><a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER && setId !== ENERGY_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Ajouter des cartes depuis le Catalogue →</a></div>}
+              {isEnergyYearView
+                ? energyYearGroups.map(group => <div className={styles.energyYearGroup} key={'energy-year-' + group.year}>
+                  <h2 className={styles.energyYearHeading}>{group.year}</h2>
+                  {group.entries.map(({ card, variantIds }) => renderChecklistCard(card, variantIds, group.year))}
+                </div>)
+                : visibleCards.map(card => renderChecklistCard(card))}
             </section>
           )}
         </>
