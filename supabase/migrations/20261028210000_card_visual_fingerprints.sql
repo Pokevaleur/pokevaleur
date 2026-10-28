@@ -6,7 +6,9 @@ create table if not exists public.card_image_fingerprints (
 );
 
 alter table public.card_image_fingerprints enable row level security;
-revoke all on public.card_image_fingerprints from anon, authenticated;
+grant select on public.card_image_fingerprints to anon, authenticated;
+create policy "Public catalogue fingerprints are readable" on public.card_image_fingerprints
+  for select to anon, authenticated using (true);
 
 create or replace function public.search_card_image_fingerprints(
   query_fingerprint bit(64),
@@ -15,7 +17,7 @@ create or replace function public.search_card_image_fingerprints(
 returns table(card_id uuid, distance integer)
 language sql
 stable
-security definer
+security invoker
 set search_path = public
 as $$
   select f.card_id, bit_count(f.fingerprint # query_fingerprint)::integer as distance
