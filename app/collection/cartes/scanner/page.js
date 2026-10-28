@@ -94,6 +94,41 @@ function prepareOcrImages(file) {
   }).catch(() => [file])
 }
 
+function visualFingerprint(file) {
+  return createImageBitmap(file).then(bitmap => {
+    const size = 32
+    const low = 8
+    const canvas = document.createElement('canvas')
+    canvas.width = size
+    canvas.height = size
+    const context = canvas.getContext('2d', { willReadFrequently: true })
+    context.drawImage(bitmap, 0, 0, size, size)
+    bitmap.close()
+    const rgba = context.getImageData(0, 0, size, size).data
+    const pixels = new Float64Array(size * size)
+    for (let i = 0; i < pixels.length; i += 1) {
+      pixels[i] = rgba[i * 4] * 0.299 + rgba[i * 4 + 1] * 0.587 + rgba[i * 4 + 2] * 0.114
+    }
+    const cosines = Array.from({ length: low }, (_, u) =>
+      Array.from({ length: size }, (_, x) => Math.cos((2 * x + 1) * u * Math.PI / (2 * size))))
+    const coefficients = []
+    for (let v = 0; v < low; v += 1) {
+      for (let u = 0; u < low; u += 1) {
+        let total = 0
+        for (let y = 0; y < size; y += 1) {
+          let row = 0
+          for (let x = 0; x < size; x += 1) row += pixels[y * size + x] * cosines[u][x]
+          total += row * cosines[v][y]
+        }
+        coefficients.push(total)
+      }
+    }
+    const medianValues = coefficients.slice(1).sort((a, b) => a - b)
+    const median = medianValues[Math.floor(medianValues.length / 2)]
+    return coefficients.map(value => value > median ? '1' : '0').join('')
+  })
+}
+
 function preferredVariant(card, text) {
   const years = findCopyrightYears(text)
   const variants = card?.card_print_variants || []
@@ -268,6 +303,25 @@ export default function CardScannerPage() {
     }
   }
 
+  async function searchVisualCatalog(file) {
+    const fingerprint = await visualFingerprint(file)
+    const { data: matches, error: matchError } = await supabase.rpc('search_card_image_fingerprints', {
+      query_fingerprint: fingerprint,
+      result_limit: 24
+    })
+    if (matchError) throw matchError
+    const ranked = (matches || []).filter(match => match.distance <= 20)
+    if (!ranked.length) return []
+    const { data: cards, error: cardsError } = await supabase.from('cards')
+      .select(CARD_FIELDS).in('id', ranked.map(match => match.card_id))
+    if (cardsError) throw cardsError
+    const byId = new Map((cards || []).map(card => [card.id, card]))
+    return ranked.map(match => {
+      const card = byId.get(match.card_id)
+      return card ? { ...card, visualDistance: match.distance } : null
+    }).filter(Boolean).slice(0, 8)
+  }
+
   async function scanPhoto(file) {
     setError('')
     setStatus('')
@@ -320,15 +374,35 @@ export default function CardScannerPage() {
       const text = recognizedParts.join('\n')
       setOcrText(text)
       setStatus('Recherche dans le catalogue avec le numéro, l’année et le code de série…')
+      let visualCards = []
+      let visualUnavailable = false
+      try {
+        setStatus('Comparaison de l’image avec le catalogue…')
+        visualCards = await searchVisualCatalog(file)
+      } catch (visualError) {
+        visualUnavailable = true
+      }
       const matchResult = await searchCatalog(text)
-      if (!matchResult.cards.length) {
-        setStatus('Aucune correspondance certaine. Essaie une photo plus nette ou poursuis avec la recherche manuelle.')
+      const merged = []
+      const seen = new Set()
+      for (const card of [...visualCards, ...matchResult.cards]) {
+        if (!seen.has(card.id) && merged.length < 8) {
+          seen.add(card.id)
+          merged.push(card)
+        }
+      }
+      if (!merged.length) {
+        setStatus('Aucune correspondance fiable. Essaie une photo cadrée sur la carte ou poursuis avec la recherche manuelle.')
       } else {
-        setCandidates(matchResult.cards)
-        setSelectedCardId(matchResult.cards[0].id)
-        const firstVariant = preferredVariant(matchResult.cards[0], text)
+        setCandidates(merged)
+        setSelectedCardId(merged[0].id)
+        const firstVariant = preferredVariant(merged[0], text)
         setSelectedVariantId(firstVariant?.id || '')
-        setStatus(matchResult.cards.length === 1 ? 'Une carte correspond au texte lu.' : 'Vérifie la bonne carte parmi les correspondances.')
+        setStatus(visualCards.length
+          ? 'Comparaison visuelle terminée. Vérifie la carte proposée avant de l’ajouter.'
+          : visualUnavailable
+            ? 'L’index visuel n’est pas encore disponible. Les propositions viennent du texte lu.'
+            : 'Vérifie la bonne carte parmi les correspondances.')
       }
     } catch (scanError) {
       setError(scanError.message || 'La lecture de la photo a échoué. Réessaie ou utilise la recherche manuelle.')
@@ -426,7 +500,7 @@ export default function CardScannerPage() {
         <div>
           <span className={styles.eyebrow}>POKÉVALEUR · CATALOGUE CARTES</span>
           <h1>Scanner une carte</h1>
-          <p>Photographie le recto : Pokévaleur lit le nom, le numéro, l’année et les codes imprimés, puis cherche les cartes correspondantes dans son catalogue.</p>
+          <p>Photographie le recto : Pokévaleur compare l’image au catalogue et utilise le nom, le numéro, l’année et les codes imprimés comme indices complémentaires.</p>
         </div>
         <div className={styles.cameraBadge} aria-hidden="true">▣</div>
       </header>
@@ -505,7 +579,7 @@ export default function CardScannerPage() {
                       <span className={styles.candidateText}>
                         <strong>{card.card_name}</strong>
                         <small>{set.set_name || 'Série inconnue'} · {card.collector_number || 'Numéro inconnu'}</small>
-                        <small>{set.language || 'FR'} · {card.card_type || 'Carte Pokémon'}</small>
+                        <small>{set.language || 'FR'} · {card.card_type || 'Carte Pokémon'}{Number.isFinite(card.visualDistance) ? ' · proximité visuelle ' + (64 - card.visualDistance) + '/64' : ''}</small>
                       </span>
                       {active && <span className={styles.selectedMark} aria-label="Sélectionnée">✓</span>}
                     </button>
