@@ -8,10 +8,8 @@ rerun it after importing or changing card images.
 import json
 import math
 import os
-import time
-import urllib.error
-import urllib.parse
 import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from io import BytesIO
 
 from PIL import Image, ImageOps
@@ -72,17 +70,20 @@ def main():
 
     records = []
     errors = 0
-    for index, card in enumerate(rows, 1):
-        try:
-            records.append({"card_id": card["id"], "fingerprint": fingerprint(card["image_url"])})
-        except Exception as exc:
-            errors += 1
-            print(f"Image ignorée ({card['id']}): {exc}", flush=True)
-        if len(records) >= BATCH_SIZE:
-            upload(records)
-            records.clear()
-        if index % 100 == 0:
-            print(f"Empreintes calculées : {index}/{len(rows)}", flush=True)
+    with ThreadPoolExecutor(max_workers=12) as pool:
+        futures = {pool.submit(fingerprint, card["image_url"]): card for card in rows}
+        for index, future in enumerate(as_completed(futures), 1):
+            card = futures[future]
+            try:
+                records.append({"card_id": card["id"], "fingerprint": future.result()})
+            except Exception as exc:
+                errors += 1
+                print(f"Image ignorée ({card['id']}): {exc}", flush=True)
+            if len(records) >= BATCH_SIZE:
+                upload(records)
+                records.clear()
+            if index % 100 == 0:
+                print(f"Empreintes calculées : {index}/{len(rows)}", flush=True)
     if records:
         upload(records)
     print(f"Terminé : {len(rows) - errors} empreintes, {errors} images ignorées.")
