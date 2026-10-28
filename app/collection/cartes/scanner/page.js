@@ -129,6 +129,33 @@ function visualFingerprint(file) {
   })
 }
 
+function loadVisualIndex() {
+  if (window.pokevaleurVisualIndexPromise) return window.pokevaleurVisualIndexPromise
+  window.pokevaleurVisualIndexPromise = fetch('/card-visual-index.json', { cache: 'force-cache' })
+    .then(response => {
+      if (!response.ok) throw new Error('L’index visuel du catalogue n’est pas encore disponible.')
+      return response.json()
+    })
+    .then(payload => Array.isArray(payload.cards) ? payload.cards : [])
+    .then(cards => {
+      if (!cards.length) throw new Error('L’index visuel du catalogue est vide.')
+      return cards
+    })
+    .catch(error => {
+      window.pokevaleurVisualIndexPromise = null
+      throw error
+    })
+  return window.pokevaleurVisualIndexPromise
+}
+
+function fingerprintDistance(left, right) {
+  let distance = 0
+  for (let index = 0; index < 64; index += 1) {
+    if (left[index] !== right[index]) distance += 1
+  }
+  return distance
+}
+
 function preferredVariant(card, text) {
   const years = findCopyrightYears(text)
   const variants = card?.card_print_variants || []
@@ -304,23 +331,22 @@ export default function CardScannerPage() {
   }
 
   async function searchVisualCatalog(file) {
-    const { data: indexedRows, error: indexError } = await supabase.from('card_image_fingerprints')
-      .select('card_id').limit(1)
-    if (indexError) throw indexError
-    if (!indexedRows?.length) throw new Error('L’index visuel du catalogue n’a pas encore été initialisé.')
+    const index = await loadVisualIndex()
     const fingerprint = await visualFingerprint(file)
-    const { data: matches, error: matchError } = await supabase.rpc('search_card_image_fingerprints', {
-      query_fingerprint: fingerprint,
-      result_limit: 24
-    })
-    if (matchError) throw matchError
-    const ranked = (matches || []).filter(match => match.distance <= 20)
-    if (!ranked.length) return []
+    const ranked = []
+    for (const entry of index) {
+      if (!Array.isArray(entry) || entry.length !== 2 || typeof entry[1] !== 'string') continue
+      const distance = fingerprintDistance(fingerprint, entry[1])
+      if (distance <= 20) ranked.push({ card_id: entry[0], distance })
+    }
+    ranked.sort((a, b) => a.distance - b.distance)
+    const matches = ranked.slice(0, 24)
+    if (!matches.length) return []
     const { data: cards, error: cardsError } = await supabase.from('cards')
-      .select(CARD_FIELDS).in('id', ranked.map(match => match.card_id))
+      .select(CARD_FIELDS).in('id', matches.map(match => match.card_id))
     if (cardsError) throw cardsError
     const byId = new Map((cards || []).map(card => [card.id, card]))
-    return ranked.map(match => {
+    return matches.map(match => {
       const card = byId.get(match.card_id)
       return card ? { ...card, visualDistance: match.distance } : null
     }).filter(Boolean).slice(0, 8)
@@ -534,8 +560,8 @@ export default function CardScannerPage() {
               ) : (
                 <div className={styles.emptyPreview}>
                   <span aria-hidden="true">📷</span>
-                  <strong>Place une carte à plat, bien éclairée</strong>
-                  <small>Garde le nom en haut et le numéro, l’année © et le symbole de série en bas bien visibles. La photo est lue dans ton navigateur et n’est pas enregistrée.</small>
+                  <strong>Place une carte à plat, bien éclairée et bien cadrée</strong>
+                  <small>La carte doit remplir le cadre; évite les reflets et garde son nom, son numéro, l’année © et le symbole de série visibles. La photo est lue dans ton navigateur et n’est pas enregistrée.</small>
                 </div>
               )}
             </div>
