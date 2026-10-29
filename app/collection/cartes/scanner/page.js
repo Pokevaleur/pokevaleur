@@ -603,6 +603,10 @@ export default function CardScannerPage() {
           <span className={styles.eyebrow}>POKÉVALEUR · CATALOGUE CARTES</span>
           <h1>Scanner une carte</h1>
           <p>Photographie le recto : Pokévaleur compare l’image au catalogue et utilise le nom, le numéro, l’année et les codes imprimés comme indices complémentaires.</p>
+          <div className={styles.testNotice} role="note">
+            <span className={styles.testBadge}>EN TEST</span>
+            <span>Scanner en développement : la reconnaissance de la version gratuite peut être imprécise. Vérifie toujours la carte proposée avant de l’ajouter.</span>
+          </div>
         </div>
         <div className={styles.cameraBadge} aria-hidden="true">▣</div>
       </header>
