@@ -302,6 +302,17 @@ export default function CardCataloguePage() {
   const [seriesPickerOpen, setSeriesPickerOpen] = useState(false)
   const [seriesPickerQuery, setSeriesPickerQuery] = useState('')
   const seriesPickerRef = useRef(null)
+  const [showScrollTop, setShowScrollTop] = useState(false)
+
+  useEffect(() => {
+    const updateScrollTopVisibility = () => {
+      const shouldShow = window.scrollY > 480
+      setShowScrollTop(current => current === shouldShow ? current : shouldShow)
+    }
+    updateScrollTopVisibility()
+    window.addEventListener('scroll', updateScrollTopVisibility, { passive: true })
+    return () => window.removeEventListener('scroll', updateScrollTopVisibility)
+  }, [])
 
   useEffect(() => {
     const returnHomeOnBack = event => {
@@ -1243,6 +1254,14 @@ export default function CardCataloguePage() {
           <span aria-hidden="true">↑</span> Remonter en haut de la liste
         </button>
       </div>}
+
+      {showScrollTop && <button
+        type="button"
+        className={styles.scrollTopButton}
+        onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
+        aria-label="Remonter en haut de la liste"
+        title="Remonter en haut"
+      >↑</button>}
 
       {cards.length > 0 && !loadingCards && !seriesPickerOpen && <aside className={styles.addBar} aria-label="Valider l’ajout à la collection">
         <p aria-live="polite">{selectedRows.length} impression{selectedRows.length > 1 ? 's' : ''} sélectionnée{selectedRows.length > 1 ? 's' : ''} · {selectedCopies} exemplaire{selectedCopies > 1 ? 's' : ''}</p>
