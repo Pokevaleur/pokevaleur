@@ -422,35 +422,6 @@ export default function CardScannerPage() {
     }).filter(Boolean).slice(0, 8)
   }
 
-  async function readCardWithVision(file) {
-    const { data: { session } } = await supabase.auth.getSession()
-    if (!session?.access_token) return null
-
-    let imageFile = file
-    if (file.size > 3 * 1024 * 1024 && typeof createImageBitmap === 'function') {
-      const bitmap = await createImageBitmap(file)
-      const scale = Math.min(1, 1800 / Math.max(bitmap.width, bitmap.height))
-      const canvas = document.createElement('canvas')
-      canvas.width = Math.max(1, Math.round(bitmap.width * scale))
-      canvas.height = Math.max(1, Math.round(bitmap.height * scale))
-      canvas.getContext('2d').drawImage(bitmap, 0, 0, canvas.width, canvas.height)
-      bitmap.close()
-      const compressed = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.86))
-      if (compressed) imageFile = new File([compressed], 'carte.jpg', { type: 'image/jpeg' })
-    }
-
-    const form = new FormData()
-    form.append('image', imageFile, imageFile.name || 'carte.jpg')
-    const response = await fetch('/api/identify-card', {
-      method: 'POST',
-      headers: { Authorization: 'Bearer ' + session.access_token },
-      body: form
-    })
-    const result = await response.json().catch(() => ({}))
-    if (!response.ok) throw new Error(result.error || 'La lecture visuelle a échoué.')
-    return result
-  }
-
   async function scanPhoto(file) {
     setError('')
     setStatus('')
@@ -512,17 +483,7 @@ export default function CardScannerPage() {
       } catch (visualError) {
         visualUnavailable = true
       }
-      let visionResult = null
-      try {
-        setStatus('Lecture visuelle du nom et du numéro…')
-        visionResult = await readCardWithVision(file)
-      } catch {
-        // Keep the OCR and catalogue matches available if visual reading is unavailable.
-      }
-      const visionText = visionResult
-        ? [visionResult.card_name, visionResult.collector_number, visionResult.set_name].filter(Boolean).join('\n')
-        : ''
-      const matchResult = await searchCatalog([text, visionText].filter(Boolean).join('\n'), visionResult?.card_name || primaryName)
+      const matchResult = await searchCatalog(text, primaryName)
       const merged = []
       const seen = new Set()
       for (const card of [...matchResult.cards, ...visualCards]) {
@@ -539,10 +500,8 @@ export default function CardScannerPage() {
         setSelectedCardId(singleMatch?.id || '')
         const firstVariant = singleMatch ? preferredVariant(singleMatch, text) : null
         setSelectedVariantId(firstVariant?.id || '')
-        setStatus(visionResult?.card_name
-          ? 'Lecture visuelle terminée. Vérifie la carte proposée avant de l’ajouter.'
-          : visualCards.length
-            ? 'Comparaison visuelle terminée. Vérifie la carte proposée avant de l’ajouter.'
+        setStatus(visualCards.length
+          ? 'Comparaison visuelle terminée. Vérifie la carte proposée avant de l’ajouter.'
           : visualUnavailable
             ? 'L’index visuel n’est pas encore disponible. Les propositions viennent du texte lu.'
             : 'Vérifie la bonne carte parmi les correspondances.')
@@ -709,7 +668,7 @@ export default function CardScannerPage() {
                 />
               </label>
             </div>
-            <p className={styles.helper}>Tu peux prendre une photo ou choisir une image déjà enregistrée. Quand tu es connecté, la photo est transmise à OpenAI pour lire le nom et le numéro ; vérifie toujours la proposition.</p>
+            <p className={styles.helper}>La photo est analysée dans ton navigateur avec un lecteur de texte et comparée aux images du catalogue. Elle reste dans ton navigateur ; vérifie toujours la carte proposée.</p>
             {busy && <p className={styles.progress} role="status">{status || 'Lecture en cours…'}</p>}
             {!busy && status && <p className={styles.notice} role="status">{status}</p>}
             {!busy && ocrText && candidates.length === 0 && (
