@@ -187,8 +187,21 @@ function preferredVariant(card, text) {
 
 function rankCards(rows, text, collectorNumbers, copyrightYears) {
   const normalizedOcr = normalizeText(text)
-  const words = new Set(normalizedOcr.split(/\s+/).filter(word => word.length >= 3))
+  const words = new Set(normalizedOcr.split(/\s+/).filter(word => word.length >= 2))
   const byId = new Map()
+  const titleRows = (rows || []).map(card => ({
+    id: card.id,
+    tokens: normalizeText(card.card_name).split(/\s+/)
+      .filter(word => word.length >= 3 || ['ex', 'gx', 'v', 'vmax', 'vstar'].includes(word))
+      .filter(word => !['pokemon', 'dresseur', 'energie'].includes(word))
+  }))
+  const sharedTitleTokens = titleRows.length > 1
+    ? titleRows[0].tokens.filter(word => titleRows.every(row => row.tokens.includes(word)))
+    : []
+  const distinctiveTitleTokens = new Set(titleRows.flatMap(row =>
+    row.tokens.filter(word => !sharedTitleTokens.includes(word))
+  ))
+  const recognizedDistinctiveTokens = [...words].filter(word => distinctiveTitleTokens.has(word))
 
   for (const card of rows || []) {
     const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
@@ -200,8 +213,15 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
       return /[a-z]/i.test(firstPart) && number === firstPart
     })
     const name = normalizeText(card.card_name)
-    const nameWords = name.split(/\s+/).filter(word => word.length >= 3)
+    const nameWords = name.split(/\s+/)
+      .filter(word => word.length >= 3 || ['ex', 'gx', 'v', 'vmax', 'vstar'].includes(word))
     const matchedWords = nameWords.filter(word => words.has(word)).length
+    const matchedDistinctiveWords = nameWords.filter(word =>
+      distinctiveTitleTokens.has(word) && words.has(word)
+    ).length
+    const missingRecognizedDistinctiveWords = recognizedDistinctiveTokens.filter(word =>
+      !nameWords.includes(word)
+    ).length
     const fullNameMatch = name.length > 3 && normalizedOcr.includes(name)
     const fuzzyNameScore = Math.max(0, ...nameWords.flatMap(nameWord =>
       [...words].filter(word => word.length >= 6).map(word => fuzzySimilarity(word, nameWord))
@@ -224,8 +244,10 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const hasReliableEvidence = strongNumberMatch || strongNameMatch
     const score = (exactNumber ? 120 : codeNumberMatch ? 95 : numericPart ? 55 : 0)
       + (fullNameMatch ? 80 : 0) + Math.min(matchedWords, 2) * 10
+      + matchedDistinctiveWords * 65
       + Math.round(fuzzyNameScore * 70)
       + (yearMatch ? 25 : 0) + (setCodeMatch ? 35 : 0)
+      - missingRecognizedDistinctiveWords * 100
       - (yearMismatch ? 90 : 0)
     if (!hasReliableEvidence || score < 60) continue
     const previous = byId.get(card.id)
@@ -463,8 +485,9 @@ export default function CardScannerPage() {
         setStatus('Aucune correspondance fiable. Essaie une photo cadrée sur la carte ou poursuis avec la recherche manuelle.')
       } else {
         setCandidates(merged)
-        setSelectedCardId(merged[0].id)
-        const firstVariant = preferredVariant(merged[0], text)
+        const singleMatch = merged.length === 1 ? merged[0] : null
+        setSelectedCardId(singleMatch?.id || '')
+        const firstVariant = singleMatch ? preferredVariant(singleMatch, text) : null
         setSelectedVariantId(firstVariant?.id || '')
         setStatus(visualCards.length
           ? 'Comparaison visuelle terminée. Vérifie la carte proposée avant de l’ajouter.'
@@ -648,6 +671,7 @@ export default function CardScannerPage() {
                 <div><span className={styles.eyebrow}>RÉSULTATS</span><h2>Confirme la carte</h2></div>
                 <span>{candidates.length} proposition{candidates.length > 1 ? 's' : ''}</span>
               </div>
+              {candidates.length > 1 && <p className={styles.helper}>Choisis la carte qui correspond à ta photo avant de l’ajouter.</p>}
               <div className={styles.candidateList}>
                 {candidates.map(card => {
                   const set = card.card_sets || {}
