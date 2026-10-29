@@ -603,22 +603,38 @@ export default function CardScannerPage() {
                 </div>
               )}
             </div>
-            <label className={styles.captureButton}>
-              <span aria-hidden="true">📷</span>
-              <span>{photoUrl ? 'Prendre une autre photo' : 'Ouvrir l’appareil photo'}</span>
-              <input
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={event => {
-                  const file = event.target.files?.[0]
-                  event.target.value = ''
-                  scanPhoto(file)
-                }}
-                disabled={busy || loading}
-              />
-            </label>
-            <p className={styles.helper}>Si ton téléphone le propose, tu peux aussi choisir une photo déjà prise.</p>
+            <div className={styles.captureActions}>
+              <label className={styles.captureButton}>
+                <span aria-hidden="true">📷</span>
+                <span>{photoUrl ? 'Prendre une autre photo' : 'Prendre une photo'}</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  capture="environment"
+                  onChange={event => {
+                    const file = event.target.files?.[0]
+                    event.target.value = ''
+                    scanPhoto(file)
+                  }}
+                  disabled={busy || loading}
+                />
+              </label>
+              <label className={styles.captureButton}>
+                <span aria-hidden="true">🖼️</span>
+                <span>Choisir dans l’album</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={event => {
+                    const file = event.target.files?.[0]
+                    event.target.value = ''
+                    scanPhoto(file)
+                  }}
+                  disabled={busy || loading}
+                />
+              </label>
+            </div>
+            <p className={styles.helper}>Tu peux prendre une photo ou choisir une image déjà enregistrée sur ton téléphone.</p>
             {busy && <p className={styles.progress} role="status">{status || 'Lecture en cours…'}</p>}
             {!busy && status && <p className={styles.notice} role="status">{status}</p>}
             {!busy && ocrText && candidates.length === 0 && (
