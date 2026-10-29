@@ -1,6 +1,6 @@
 # Comparaison visuelle du scanner
 
-Le scanner lit d’abord le texte dans le navigateur et compare une empreinte de la photo aux visuels publics du catalogue. Il envoie aussi la photo au serveur PokéValeur, qui la transmet à OpenAI pour lire le nom imprimé en haut de la carte, le numéro et, si possible, la série. La réponse sert à chercher les correspondances dans le catalogue ; l’utilisateur doit confirmer la carte avant l’ajout.
+Le scanner lit le texte avec Tesseract dans le navigateur et compare une empreinte de la photo aux visuels publics du catalogue. La photo reste dans le navigateur et n’est transmise à aucun service externe. L’utilisateur doit confirmer la carte proposée avant l’ajout.
 
 ## Génération de l’index
 
