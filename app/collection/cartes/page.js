@@ -1469,6 +1469,7 @@ export default function CardChecklistPage() {
         {selectedSet && !cardsLoading && !isCatalogOnlySet && <p className={styles.ownedSummary}>{ownedCopyCount} exemplaire{ownedCopyCount === 1 ? '' : 's'} possédé{ownedCopyCount === 1 ? '' : 's'} dans cette série</p>}
         <p>Choisis une série pour afficher tes cartes possédées, en double ou non possédées. Pour en ajouter, sélectionne-les dans le Catalogue.</p>
         <a className={styles.collectionCatalogueLink} href={'/catalogue/cartes' + (setId && setId !== ALL_SERIES_FILTER && setId !== ENERGY_SERIES_FILTER ? '?set=' + encodeURIComponent(setId) : '')}>Choisir des cartes dans le Catalogue →</a>
+        <a className={styles.scannerLink} href="/collection/cartes/scanner"><span aria-hidden="true">📷</span> Scanner une carte</a>
       </header>
 
       {error && <p className={styles.error} role="alert">{error}</p>}

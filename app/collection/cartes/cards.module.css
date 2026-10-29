@@ -381,3 +381,10 @@
 .zoomOwnedVersions li b {
   white-space: nowrap;
 }
+
+
+.scannerLink{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;margin-top:12px;padding:12px 18px;border:1px solid #e2b21a;border-radius:13px;background:#ffbf1a;color:#10243c;font-size:16px;font-weight:900;box-shadow:0 5px 15px rgba(255,191,26,.2);transition:transform .15s ease,box-shadow .15s ease}
+.scannerLink:hover{transform:translateY(-1px);box-shadow:0 8px 20px rgba(255,191,26,.3)}
+.scannerLink span{font-size:21px;line-height:1}
+@media(max-width:600px){.scannerLink{width:100%;min-height:52px}}
+@media(prefers-reduced-motion:reduce){.scannerLink{transition:none}}

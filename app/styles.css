@@ -1582,3 +1582,9 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
   .formGrid,.formGrid>*{min-width:0}
   .formGrid input,.formGrid button{max-width:100%;min-width:0}
 }
+
+
+/* Primary, always-visible route to the card scanner. */
+.scannerNavLink{display:inline-flex!important;align-items:center;justify-content:center;gap:7px;padding:9px 14px!important;border:1px solid #ffd45b!important;border-radius:12px!important;background:#ffbf1a!important;color:#111!important;font-weight:900!important;box-shadow:0 4px 12px rgba(255,191,26,.2)}
+.scannerNavLink:hover{background:#ffd45b!important;transform:translateY(-1px)}
+@media(max-width:850px){.mobileMenuPanel>.scannerNavLink{min-height:48px!important;justify-content:flex-start!important}}

@@ -18,8 +18,9 @@ const securityHeaders = [
       "media-src 'self' blob:",
       "font-src 'self' data:",
       "style-src 'self' 'unsafe-inline'",
-      "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com",
+      "script-src 'self' 'unsafe-inline' 'unsafe-eval' 'wasm-unsafe-eval' https://cdn.jsdelivr.net",
+      "worker-src 'self' blob: https://cdn.jsdelivr.net",
+      "connect-src 'self' https://*.supabase.co wss://*.supabase.co https://api.openai.com https://cdn.jsdelivr.net https://tessdata.projectnaptha.com",
       "upgrade-insecure-requests"
     ].join('; ')
   }

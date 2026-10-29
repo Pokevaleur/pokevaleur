@@ -24,9 +24,10 @@ export async function middleware(request) {
   const pathname = request.nextUrl.pathname
 
   const protectedPrefixes = ['/messagerie', '/collection', '/communaute', '/opportunites', '/trades', '/admin', '/admin-partenaires']
-  const needsAuth = protectedPrefixes.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
+  const publicCardScanner = pathname === '/collection/cartes/scanner'
+  const needsAuth = !publicCardScanner && protectedPrefixes.some(prefix => pathname === prefix || pathname.startsWith(prefix + '/'))
 
-  if (needsAuth) response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
+  if (needsAuth || publicCardScanner) response.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive')
 
   if (needsAuth && !user) {
     const loginUrl = new URL('/login', request.url)
