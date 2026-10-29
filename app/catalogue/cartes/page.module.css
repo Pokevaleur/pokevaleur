@@ -130,3 +130,9 @@
 
 
 .sectionNav{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}.sectionNav a{display:inline-flex;align-items:center;min-height:38px;padding:7px 13px;border:1px solid #cbd7e4;border-radius:999px;background:#fff;color:#264663;font-size:.82rem;font-weight:750;text-decoration:none}.sectionNav a:hover,.sectionNav a:focus-visible{background:#edf3f8;outline:2px solid #829bb5;outline-offset:2px}.sectionNav a[aria-current="page"]{border-color:#143b60;background:#143b60;color:#fff}
+
+.scrollTopButton{position:fixed;z-index:11;right:max(18px,calc((100vw - 1120px)/2 + 12px));bottom:96px;display:grid;place-items:center;width:48px;height:48px;padding:0;border:1px solid #d3dfeb;border-radius:50%;background:#143b60;color:#fff;font:inherit;font-size:1.55rem;font-weight:800;line-height:1;box-shadow:0 5px 18px #12263c35;cursor:pointer;transition:transform .16s ease,background .16s ease}
+.scrollTopButton:hover{background:#0d2d4d;transform:translateY(-2px)}
+.scrollTopButton:focus-visible{outline:3px solid #8ba8c4;outline-offset:3px}
+@media(max-width:720px){.scrollTopButton{right:14px;bottom:98px;width:46px;height:46px}}
+@media(prefers-reduced-motion:reduce){.scrollTopButton{transition:none}}
