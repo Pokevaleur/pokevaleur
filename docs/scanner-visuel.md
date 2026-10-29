@@ -1,6 +1,6 @@
 # Comparaison visuelle du scanner
 
-Le scanner calcule une empreinte perceptuelle dans le navigateur, puis la compare à un fichier compact pré-calculé à partir des images publiques du catalogue. La photo n’est pas envoyée au serveur et aucun service d’IA n’est utilisé.
+Le scanner lit d’abord le texte dans le navigateur et compare une empreinte de la photo aux visuels publics du catalogue. Il envoie aussi la photo au serveur PokéValeur, qui la transmet à OpenAI pour lire le nom imprimé en haut de la carte, le numéro et, si possible, la série. La réponse sert à chercher les correspondances dans le catalogue ; l’utilisateur doit confirmer la carte avant l’ajout.
 
 ## Génération de l’index
 
