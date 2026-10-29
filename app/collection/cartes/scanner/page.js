@@ -84,7 +84,9 @@ function prepareOcrImages(file) {
     const regions = [
       { x: 0, y: 0, width: 1, height: 1 },
       { x: 0.06, y: 0.02, width: 0.88, height: 0.30 },
-      { x: 0.16, y: 0.06, width: 0.58, height: 0.10 },
+      // The card title is printed at the very top. Starting this crop at 6%
+      // misses it on many cards and captures the evolution line instead.
+      { x: 0.12, y: 0.015, width: 0.72, height: 0.065 },
       { x: 0.10, y: 0.91, width: 0.52, height: 0.08 },
       { x: 0, y: 0.68, width: 1, height: 0.32 }
     ]
@@ -185,8 +187,9 @@ function preferredVariant(card, text) {
   )) || variants.find(variant => variant.is_master_set_target) || variants[0]
 }
 
-function rankCards(rows, text, collectorNumbers, copyrightYears) {
+function rankCards(rows, text, collectorNumbers, copyrightYears, primaryName = '') {
   const normalizedOcr = normalizeText(text)
+  const normalizedPrimaryName = normalizeText(primaryName)
   const words = new Set(normalizedOcr.split(/\s+/).filter(word => word.length >= 2))
   const byId = new Map()
   const titleRows = (rows || []).map(card => ({
@@ -223,6 +226,12 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
       !nameWords.includes(word)
     ).length
     const fullNameMatch = name.length > 3 && normalizedOcr.includes(name)
+    const primaryNameMatch = normalizedPrimaryName.length >= 4
+      && (normalizedPrimaryName === name || normalizedPrimaryName.includes(name) || name.includes(normalizedPrimaryName))
+    const primaryNameScore = primaryNameMatch ? 1 : Math.max(0, ...nameWords.flatMap(nameWord =>
+      normalizedPrimaryName.split(/\s+/).filter(word => word.length >= 4)
+        .map(word => fuzzySimilarity(word, nameWord))
+    ))
     const fuzzyNameScore = Math.max(0, ...nameWords.flatMap(nameWord =>
       [...words].filter(word => word.length >= 6).map(word => fuzzySimilarity(word, nameWord))
     ))
@@ -240,9 +249,10 @@ function rankCards(rows, text, collectorNumbers, copyrightYears) {
     const strongNumberMatch = exactNumber || codeNumberMatch || (numericPart && yearMatch)
     const fuzzyNameMatch = fuzzyNameScore >= 0.68
       || (fuzzyNameScore >= 0.62 && (yearMatch || setCodeMatch || strongNumberMatch))
-    const strongNameMatch = fullNameMatch || matchedWords >= 2 || fuzzyNameMatch
+    const strongNameMatch = primaryNameMatch || primaryNameScore >= 0.72 || fullNameMatch || matchedWords >= 2 || fuzzyNameMatch
     const hasReliableEvidence = strongNumberMatch || strongNameMatch
     const score = (exactNumber ? 120 : codeNumberMatch ? 95 : numericPart ? 55 : 0)
+      + (primaryNameMatch ? 190 : Math.round(primaryNameScore * 90))
       + (fullNameMatch ? 80 : 0) + Math.min(matchedWords, 2) * 10
       + matchedDistinctiveWords * 65
       + Math.round(fuzzyNameScore * 70)
@@ -343,11 +353,11 @@ export default function CardScannerPage() {
     }
   }, [photoUrl])
 
-  async function searchCatalog(text) {
+  async function searchCatalog(text, primaryName = '') {
     if (!publicSetIds.length) throw new Error('Le catalogue public est indisponible.')
     const numberCandidates = findCollectorNumbers(text)
     const copyrightYears = findCopyrightYears(text)
-    const terms = meaningfulOcrWords(text)
+    const terms = [...new Set([...meaningfulOcrWords(primaryName), ...meaningfulOcrWords(text)])].slice(0, 8)
     const rowsById = new Map()
     const cardQuery = () => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', publicSetIds)
 
@@ -386,7 +396,7 @@ export default function CardScannerPage() {
 
     return {
       numbers: numberCandidates,
-      cards: rankCards([...rowsById.values()], text, numberCandidates, copyrightYears)
+      cards: rankCards([...rowsById.values()], text, numberCandidates, copyrightYears, primaryName)
     }
   }
 
@@ -459,9 +469,10 @@ export default function CardScannerPage() {
         })
         const result = await worker.recognize(ocrImages[index])
         const recognizedText = result?.data?.text || ''
-        if (recognizedText) recognizedParts.push(recognizedText)
+        recognizedParts[index] = recognizedText
       }
-      const text = recognizedParts.join('\n')
+      const text = recognizedParts.filter(Boolean).join('\n')
+      const primaryName = recognizedParts[2] || ''
       setOcrText(text)
       setStatus('Recherche dans le catalogue avec le numéro, l’année et le code de série…')
       let visualCards = []
@@ -472,7 +483,7 @@ export default function CardScannerPage() {
       } catch (visualError) {
         visualUnavailable = true
       }
-      const matchResult = await searchCatalog(text)
+      const matchResult = await searchCatalog(text, primaryName)
       const merged = []
       const seen = new Set()
       for (const card of [...visualCards, ...matchResult.cards]) {
