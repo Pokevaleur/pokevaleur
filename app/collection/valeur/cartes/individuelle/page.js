@@ -82,7 +82,7 @@ export default function IndividualCardValuePage() {
               .select('id,card_print_variant_id,ownership_type,grade,grade_label,grading_company_id,current_value_override,card_grading_companies(company_name,abbreviation)')
               .eq('collection_profile_id', profileId).in('card_print_variant_id', batch)),
             fetchAllRows(() => supabase.from('card_price_observations')
-              .select('card_print_variant_id,price_kind,grading_company_id,grade,observation_type,amount,currency,source,observed_at')
+              .select('id,card_print_variant_id,price_kind,grading_company_id,grade,observation_type,amount,currency,source,observed_at,card_grading_companies!card_price_observations_grading_company_id_fkey(company_name,abbreviation)')
               .in('card_print_variant_id', batch).in('observation_type', ['confirmed_sale', 'estimate']).order('observed_at', { ascending: false }))
           ])
           if (copyResult.error) throw copyResult.error
@@ -108,8 +108,11 @@ export default function IndividualCardValuePage() {
         const result = cardRows.map(card => {
           const variants = card.card_print_variants || []
           const copies = variants.flatMap(variant => copiesByVariant.get(variant.id) || [])
-          const rawObservation = latest(variants.flatMap(variant => pricesByVariant.get(variant.id) || [])
-            .filter(row => row.price_kind === 'raw' && row.observation_type !== 'observed_listing'))
+          const cardObservations = variants.flatMap(variant => pricesByVariant.get(variant.id) || [])
+          const rawObservation = latest(cardObservations.filter(row => row.price_kind === 'raw' && row.observation_type !== 'observed_listing'))
+          const gradedSales = cardObservations
+            .filter(row => row.price_kind === 'graded' && row.observation_type === 'confirmed_sale')
+            .sort((a, b) => new Date(b.observed_at) - new Date(a.observed_at))
           const external = marketPrices.get(card.id)
           const rawPrice = external?.amount != null ? external : rawObservation
           const graded = copies.filter(copy => copy.ownership_type === 'graded').map(copy => {
@@ -118,7 +121,7 @@ export default function IndividualCardValuePage() {
             const amount = copy.current_value_override ?? match?.amount ?? null
             return { ...copy, amount: amount == null ? null : Number(amount), currency: copy.current_value_override != null ? 'EUR' : match?.currency || 'EUR', source: copy.current_value_override != null ? 'Valeur personnelle' : match?.source }
           })
-          return { ...card, copies, rawPrice, marketPrice: external, graded }
+          return { ...card, copies, rawPrice, marketPrice: external, graded, gradedSales }
         })
         if (!cancelled) setCards(result)
       } catch (err) {
@@ -134,7 +137,7 @@ export default function IndividualCardValuePage() {
       <header className={pageStyles.pageHeader}>
         <span className={pageStyles.eyebrow}>MA COLLECTION · VALEUR D’UNE CARTE</span>
         <h1>Prix d’une carte</h1>
-        <p>Recherche par nom de Pokémon ou numéro. Les cartes gradées affichent leur valeur propre quand elle est disponible.</p>
+        <p>Recherche par nom ou numéro. Consulte séparément les prix en loose, tes valeurs personnelles et les ventes confirmées de cartes gradées.</p>
       </header>
       <label className={pageStyles.searchLabel}>Rechercher une carte
         <input className={pageStyles.searchInput} type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu ou 025/198" />
@@ -158,13 +161,23 @@ export default function IndividualCardValuePage() {
               <h3>{card.card_name}</h3>
               <p>{card.rarity_label || 'Rareté non renseignée'}</p>
               {amount == null && <small className={styles.noPrice}>Prix non gradé indisponible</small>}
-              {card.graded.map(copy => <small className={styles.gradeInfo} key={copy.id}>{copy.card_grading_companies?.abbreviation || copy.card_grading_companies?.company_name} · note {copy.grade_label || copy.grade} · {copy.amount == null ? 'Prix gradé indisponible' : euro(copy.amount, copy.currency)}</small>)}
+              {card.graded.map(copy => <small className={styles.gradeInfo} key={copy.id}>{copy.card_grading_companies?.abbreviation || copy.card_grading_companies?.company_name} · note {copy.grade_label || copy.grade} · {copy.amount == null ? 'Prix personnel indisponible' : euro(copy.amount, copy.currency)}</small>)}
+              {card.gradedSales.length > 0 && <div className={styles.gradedSales}>
+                <strong>Ventes gradées confirmées</strong>
+                {card.gradedSales.map(sale => {
+                  const company = sale.card_grading_companies?.abbreviation || sale.card_grading_companies?.company_name || 'Société non précisée'
+                  return <small className={styles.gradedSale} key={sale.id}>
+                    <span>{company} · note {sale.grade ?? '—'} · {euro(sale.amount, sale.currency || 'EUR')}</span>
+                    <span>{sale.source || 'Vente confirmée'}{sale.observed_at ? ` · ${new Date(sale.observed_at).toLocaleDateString('fr-FR')}` : ''}</span>
+                  </small>
+                })}
+              </div>}
               {card.copies.length === 0 && <small className={styles.variantCount}>Pas encore dans ta collection</small>}
             </div>
           </article>
         })}
       </div>}
-      <details className={styles.note}><summary>Sources et méthode</summary><p>Cardmarket est prioritaire (moyenne sur 30 jours si disponible). Si aucune valeur n’est fournie, le prix de marché TCGplayer sert de secours après conversion datée en euros. Les prix gradés sont séparés des prix bruts et ne sont affichés qu’à partir d’une valeur enregistrée pour l’exemplaire ou d’une observation correspondant à sa note.</p></details>
+      <details className={styles.note}><summary>Sources et méthode</summary><p>Cardmarket est prioritaire (moyenne sur 30 jours si disponible). Si aucune valeur n’est fournie, le prix de marché TCGplayer sert de secours après conversion datée en euros. Les valeurs des cartes gradées restent séparées des prix en loose : les valeurs personnelles concernent tes exemplaires, tandis que les ventes confirmées affichent la société de gradation, la note, le prix, la source et la date de la vente.</p></details>
       {selectedPrice && <div className={styles.dialogBackdrop} role="presentation" onMouseDown={event => { if (event.target === event.currentTarget) setSelectedPrice(null) }}>
         <section className={styles.priceDialog} role="dialog" aria-modal="true" aria-labelledby="individual-price-title">
           <button type="button" className={styles.dialogClose} aria-label="Fermer" onClick={() => setSelectedPrice(null)}>×</button>

@@ -288,6 +288,7 @@ export default function CardValuesBySeriesPage() {
         <span className={styles.eyebrow}>MA COLLECTION · VALEUR DES CARTES</span>
         <h1>Une série, toutes ses cartes</h1>
         <p>Retrouve les cartes et leurs prix de référence. Les pastilles indiquent si chaque carte est dans ta collection.</p>
+        <a className={styles.quickSearchLink} href="/collection/valeur/cartes/individuelle">Rechercher une carte par nom ou numéro et voir ses ventes gradées →</a>
       </header>
 
       <section className={styles.controls} aria-label="Choix de la série et filtres">
