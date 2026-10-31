@@ -150,7 +150,7 @@ function priceDetailsText(price) {
 
 function observedSalesDetailsText(sales) {
   if (!sales) return ''
-  const saleLabel = sales.count === 1 ? 'Médiane · 1 vente confirmée' : 'Médiane de ' + sales.count + ' ventes confirmées'
+  const saleLabel = sales.count === 1 ? 'Médiane · 1 vente confirmée sur 30 jours' : 'Médiane · ' + sales.count + ' ventes confirmées sur 30 jours'
   const formatDate = value => value && !Number.isNaN(Date.parse(value))
     ? new Date(value).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })
     : ''
@@ -759,6 +759,7 @@ export default function CardCataloguePage() {
               source_url: card.source_url,
               image_source_url: card.image_source_url,
               set_code: relatedSet(card)?.set_code,
+              edition_market_code: relatedSet(card)?.market_code || languageCode,
               card_name: card.card_name,
               collector_number: card.collector_number,
               variants: (card.card_print_variants || []).map(variant => ({
