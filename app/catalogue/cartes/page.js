@@ -773,6 +773,65 @@ export default function CardCataloguePage() {
           const payload = await response.json()
           for (const price of payload.prices || []) nextPrices[price.cardId] = price
         }
+
+        // Reuse the same saved raw estimate shown in Ma collection > Valeur.
+        // Live market data from the API remains preferred when it is available.
+        const variantIds = [...new Set(cards.flatMap(card =>
+          (card.card_print_variants || []).map(variant => variant.id).filter(Boolean)
+        ))]
+        const latestEstimates = new Map()
+        for (let offset = 0; offset < variantIds.length; offset += 100) {
+          const { data, error } = await supabase.from('card_price_observations')
+            .select('card_print_variant_id,price_kind,observation_type,amount,currency,source,observed_at')
+            .in('card_print_variant_id', variantIds.slice(offset, offset + 100))
+            .eq('price_kind', 'raw')
+            .eq('observation_type', 'estimate')
+            .eq('currency', 'EUR')
+            .order('observed_at', { ascending: false })
+          if (!error) {
+            for (const estimate of data || []) {
+              if (!latestEstimates.has(estimate.card_print_variant_id)) {
+                latestEstimates.set(estimate.card_print_variant_id, estimate)
+              }
+            }
+          }
+        }
+
+        for (const card of cards) {
+          const price = nextPrices[card.id] || { cardId: card.id, amount: null, currency: null, variantPrices: [] }
+          const knownVariants = new Map((price.variantPrices || []).map(variant => [variant.variantId, variant]))
+          const variantPrices = (card.card_print_variants || []).map(variant => {
+            const live = knownVariants.get(variant.id) || {
+              variantId: variant.id,
+              finish: String(variant.finish_code || '').toLowerCase(),
+              amount: null
+            }
+            if (Number(live.amount) > 0) return live
+            const saved = latestEstimates.get(variant.id)
+            return saved ? {
+              ...live,
+              amount: Number(saved.amount),
+              currency: saved.currency,
+              source: `Dernière cote connue · ${saved.source || 'Historique PokéValeur'}`,
+              basis: 'dernière valeur enregistrée',
+              observedAt: saved.observed_at,
+              lastKnown: true
+            } : live
+          })
+          const fallback = variantPrices.find(variant => Number(variant.amount) > 0)
+          nextPrices[card.id] = Number(price.amount) > 0 || !fallback
+            ? { ...price, variantPrices }
+            : {
+                ...price,
+                variantPrices,
+                amount: Number(fallback.amount),
+                currency: fallback.currency || 'EUR',
+                source: fallback.source,
+                basis: fallback.basis,
+                observedAt: fallback.observedAt,
+                lastKnown: true
+              }
+        }
         if (!cancelled) setMarketPrices(nextPrices)
       } catch (priceError) {
         if (!cancelled && priceError.name !== 'AbortError') {
