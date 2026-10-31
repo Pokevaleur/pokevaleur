@@ -35,10 +35,13 @@ function median(values = []) {
   return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
 }
 
-function confirmedSalesByVariant(rows = []) {
+function confirmedSalesByVariant(rows = [], now = Date.now()) {
+  const recentCutoff = now - 30 * 24 * 60 * 60 * 1000
   const grouped = new Map()
   for (const row of rows) {
     if (row?.price_kind !== 'raw' || row?.observation_type !== 'confirmed_sale' || row?.currency !== 'EUR') continue
+    const observedAt = Date.parse(row.observed_at)
+    if (!Number.isFinite(observedAt) || observedAt < recentCutoff) continue
     const amount = Number(row.amount)
     if (!isPrice(amount) || !row.card_print_variant_id) continue
     const group = grouped.get(row.card_print_variant_id) || []
@@ -704,6 +707,7 @@ export async function POST(request) {
         .eq('price_kind', 'raw')
         .eq('observation_type', 'confirmed_sale')
         .eq('currency', 'EUR')
+        .gte('observed_at', new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString())
         .order('observed_at', { ascending: false })
       if (!result.error) confirmedSales.push(...(result.data || []))
     }
