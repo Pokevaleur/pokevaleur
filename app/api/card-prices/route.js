@@ -392,6 +392,7 @@ export async function POST(request) {
     const submittedVariants = (card?.variants || []).filter(variant => allowedIds.has(variant?.id))
     return {
       ...card,
+      edition_market_code: card?.edition_market_code || card?.market_code || savedCard?.card_sets?.language || 'FR',
       ...(savedCard ? {
         card_name: savedCard.card_name,
         collector_number: savedCard.collector_number,
@@ -679,6 +680,7 @@ export async function POST(request) {
           if (previous && Number(previous.amount) === Number(variant.amount) && previous.source === source) continue
           inserts.push({
             card_print_variant_id: variant.variantId,
+            edition_market_code: String(price.edition_market_code || 'FR').trim().toUpperCase(),
             price_kind: 'raw',
             observation_type: 'estimate',
             amount: Number(variant.amount),
