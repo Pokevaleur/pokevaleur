@@ -150,7 +150,7 @@ function priceDetailsText(price) {
 
 function observedSalesDetailsText(sales) {
   if (!sales) return ''
-  const saleLabel = sales.count === 1 ? 'Médiane · 1 vente confirmée' : 'Médiane de ' + sales.count + ' ventes confirmées'
+  const saleLabel = sales.count === 1 ? 'Médiane · 1 vente confirmée sur 30 jours' : 'Médiane · ' + sales.count + ' ventes confirmées sur 30 jours'
   const formatDate = value => value && !Number.isNaN(Date.parse(value))
     ? new Date(value).toLocaleDateString('fr-FR', { timeZone: 'Europe/Paris' })
     : ''
