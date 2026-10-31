@@ -381,7 +381,7 @@ export async function POST(request) {
   if (readClient && requestedCardIds.length) {
     for (let offset = 0; offset < requestedCardIds.length; offset += 100) {
       const result = await readClient.from('card_print_variants')
-        .select('id,card_id,finish_code,cards!inner(card_name,collector_number,source_url,image_source_url,card_sets!cards_card_set_id_fkey(set_code))')
+        .select('id,card_id,finish_code')
         .in('card_id', requestedCardIds.slice(offset, offset + 100))
       if (!result.error) {
         for (const variant of result.data || []) {
