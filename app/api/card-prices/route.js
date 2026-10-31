@@ -112,6 +112,15 @@ function detailedFinish(variant) {
   return normalizedPriceFinish(variant?.type)
 }
 
+function unpricedVariants(card) {
+  return (card?.variants || []).map(variant => ({
+    variantId: variant?.id || null,
+    finish: normalizedPriceFinish(variant?.finish_code),
+    market: null,
+    fallback: null
+  }))
+}
+
 function pricingForFinish(data, finish) {
   const details = Array.isArray(data?.variants_detailed) ? data.variants_detailed : []
   const exact = details.find(variant => detailedFinish(variant) === finish)
@@ -420,7 +429,7 @@ export async function POST(request) {
       return {
         cardId: card.id, card, tcgdexUrl: null, tcgdexData: null,
         cardmarket: null, tcgplayer: null, chosenMarket: null, chosenFallback: null,
-        variantPrices: [], tcgDexUpdatedAt: null
+        variantPrices: unpricedVariants(card), tcgDexUpdatedAt: null
       }
     }
     try {
@@ -465,7 +474,7 @@ export async function POST(request) {
         tcgDexUpdatedAt
       }
     } catch {
-      return { cardId: card.id, card, tcgdexUrl: card.tcgdexUrl, tcgdexData: null, cardmarket: null, tcgplayer: null, chosenMarket: null, chosenFallback: null, variantPrices: [], tcgDexUpdatedAt: null }
+      return { cardId: card.id, card, tcgdexUrl: card.tcgdexUrl, tcgdexData: null, cardmarket: null, tcgplayer: null, chosenMarket: null, chosenFallback: null, variantPrices: unpricedVariants(card), tcgDexUpdatedAt: null }
     }
   })
 
