@@ -10,6 +10,7 @@ import styles from './page.module.css'
 const ALL_SERIES = '__all_series__'
 const MCDONALDS_SERIES = '__mcdonalds_series__'
 const PACK_REWARD_PREFIX = '__pack_reward__:'
+const ALL_PACK_REWARDS = PACK_REWARD_PREFIX + 'all'
 const ZENITH_MAIN_SET_CODE = 'swsh12.5'
 const ZENITH_GALLERY_SET_CODE = 'swsh12.5gg'
 const DEDICATED_ENERGY_SET_CODES = new Set(['sve', 'uen17', 'uen19', 'uen20', 'uen22', 'sme17', 'sme19', 'mee', 'mee30', 'sv10.5e'])
@@ -116,6 +117,10 @@ function relatedSet(card) {
 
 function isPackRewardSelection(id) {
   return String(id || '').startsWith(PACK_REWARD_PREFIX)
+}
+
+function isAllPackRewardsSelection(id) {
+  return id === ALL_PACK_REWARDS
 }
 
 function isPlayStampVariant(variant) {
@@ -494,15 +499,17 @@ export default function CardCataloguePage() {
       setOwned({})
       setSelection({})
       try {
-        const packRewardProductId = isPackRewardSelection(setId) ? setId.slice(PACK_REWARD_PREFIX.length) : ''
+        const packRewardProductIds = isAllPackRewardsSelection(setId)
+          ? rewardProducts.map(product => product.id)
+          : isPackRewardSelection(setId) ? [setId.slice(PACK_REWARD_PREFIX.length)] : []
         const mcDonaldSetIds = sets.filter(isMcDonaldsSet).map(set => set.id)
         const zenithMainSet = sets.find(set => String(set.set_code || '').toLowerCase() === ZENITH_MAIN_SET_CODE)
         const zenithGallerySet = sets.find(isZenithGallerySet)
         const isZenithSelection = Boolean(zenithMainSet && setId === zenithMainSet.id)
         let packRewardCardIds = []
-        if (packRewardProductId && languageCode === 'FR') {
+        if (packRewardProductIds.length && languageCode === 'FR') {
           const { data: rewardContents, error: rewardError } = await fetchAllRows(() => supabase.from('product_contents')
-            .select('card_id').eq('product_id', packRewardProductId).eq('content_role', 'possible').not('card_id', 'is', null))
+            .select('card_id').in('product_id', packRewardProductIds).eq('content_role', 'possible').not('card_id', 'is', null))
           if (rewardError) throw rewardError
           packRewardCardIds = [...new Set((rewardContents || []).map(row => row.card_id).filter(Boolean))]
         }
@@ -510,11 +517,11 @@ export default function CardCataloguePage() {
           ? [zenithMainSet.id, zenithGallerySet?.id].filter(Boolean)
           : setId === ALL_SERIES
           ? sets.map(set => set.id)
-          : setId === MCDONALDS_SERIES ? mcDonaldSetIds : packRewardProductId ? [] : [setId]
+          : setId === MCDONALDS_SERIES ? mcDonaldSetIds : packRewardProductIds.length ? [] : [setId]
         if (!setIds.length && !packRewardCardIds.length) return
         const term = query.trim().replace(/[%_]/g, '\\$&')
         let cardRows = []
-        if (packRewardProductId && languageCode === 'FR') {
+        if (packRewardProductIds.length && languageCode === 'FR') {
           const { data: rewardCards, error: rewardCardsError } = await fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS)
             .in('id', packRewardCardIds).order('guide_order', { ascending: true }).order('collector_number', { ascending: true }))
           if (rewardCardsError) throw rewardCardsError
@@ -662,11 +669,14 @@ export default function CardCataloguePage() {
         if (cancelled) return
         const mcDonaldCards = cardRows.filter(card => isMcDonaldsSet(relatedSet(card)))
         const imageCandidates = {}
-        const rewardSeriesNumber = String(rewardProducts.find(product => product.id === packRewardProductId)?.name || '').match(/série\s*(\d+)/i)?.[1]
+        const selectedPackRewardProduct = isPackRewardSelection(setId) && !isAllPackRewardsSelection(setId)
+          ? rewardProducts.find(product => product.id === setId.slice(PACK_REWARD_PREFIX.length))
+          : null
+        const rewardSeriesNumber = String(selectedPackRewardProduct?.name || '').match(/série\s*(\d+)/i)?.[1]
         for (const card of cardRows) {
           const pokepediaImage = mewRgbPokepediaImage(card, relatedSet(card))
           if (pokepediaImage) imageCandidates[card.id] = [pokepediaImage, card.image_url].filter(Boolean)
-          if (packRewardProductId) {
+          if (packRewardProductIds.length) {
             const stampVariants = (card.card_print_variants || [])
               .filter(variant => isPlayStampVariant(variant) && variant.image_url)
               .sort((left, right) => {
@@ -676,6 +686,11 @@ export default function CardCataloguePage() {
                 const leftExact = seriesPattern?.test(leftText) ? 1 : 0
                 const rightExact = seriesPattern?.test(rightText) ? 1 : 0
                 if (leftExact !== rightExact) return rightExact - leftExact
+                if (isAllPackRewardsSelection(setId)) {
+                  const seriesNumber = text => Number(text.match(/(?:series|série|s)[ _-]*(\d+)/i)?.[1] || 0)
+                  const seriesOrder = seriesNumber(rightText) - seriesNumber(leftText)
+                  if (seriesOrder) return seriesOrder
+                }
                 const leftHolo = /holo|cosmos/i.test(leftText) ? 1 : 0
                 const rightHolo = /holo|cosmos/i.test(rightText) ? 1 : 0
                 return rightHolo - leftHolo
@@ -731,7 +746,7 @@ export default function CardCataloguePage() {
       }
     }, setId === ALL_SERIES ? 250 : 0)
     return () => { cancelled = true; window.clearTimeout(timer) }
-  }, [supabase, setId, query, profileId, sets, languageCode, foreignSetId, foreignSets])
+  }, [supabase, setId, query, profileId, sets, languageCode, foreignSetId, foreignSets, rewardProducts])
 
   useEffect(() => {
     if (!showPrices || languageCode !== 'FR' || !cards.length) {
@@ -850,6 +865,7 @@ export default function CardCataloguePage() {
   }, [showPrices, languageCode, cards])
 
   const filteredRewardProducts = rewardProducts.filter(product => normalizedSearchText([product.name, product.product_type, product.series, product.release_date].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
+  const showAllRewardSeriesOption = filteredRewardProducts.length > 0
   const filteredSets = sets.filter(set => !isDedicatedEnergySet(set) && !isZenithGallerySet(set)
     && normalizedSearchText([seriesLabel(set), set.series_name, set.set_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
   const filteredForeignSets = foreignSets.filter(set => normalizedSearchText([set.set_name, set.series_name_fr, set.series_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
@@ -862,6 +878,8 @@ export default function CardCataloguePage() {
     ? selectedNativeSet
     : setId === MCDONALDS_SERIES
     ? { id: MCDONALDS_SERIES, set_code: 'MCD', set_name: 'McDonald’s · toutes les années', series_name: 'Collection McDonald’s' }
+    : isAllPackRewardsSelection(setId)
+    ? { id: setId, set_name: 'Pack Récompense Play! Pokémon · toutes les séries', series_name: 'Play! Pokémon' }
     : isPackRewardSelection(setId)
     ? (() => { const product = rewardProducts.find(row => row.id === setId.slice(PACK_REWARD_PREFIX.length)); return product ? { id: setId, set_name: product.name, series_name: product.series } : null })()
     : setId === zenithMainSet?.id
@@ -1088,6 +1106,7 @@ export default function CardCataloguePage() {
                 <button type="button" aria-pressed={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
                 <button type="button" aria-pressed={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies · toutes les séries</button>
                 <button type="button" aria-pressed={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
+                {showAllRewardSeriesOption && <button type="button" aria-pressed={isAllPackRewardsSelection(setId)} className={isAllPackRewardsSelection(setId) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_PACK_REWARDS); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Pack Récompense Play! Pokémon · toutes les séries</button>}
                 {filteredRewardProducts.map(product => {
                   const productSetId = PACK_REWARD_PREFIX + product.id
                   const selected = setId === productSetId
@@ -1103,7 +1122,7 @@ export default function CardCataloguePage() {
           <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu, 257, Gold" />
         </label>}
         {selectedSet && <label className={styles.searchField}>
-          <span>{selectedMcDonaldsSet ? 'Filtrer les éditions McDonald’s' : isPackRewardSelection(setId) ? 'Filtrer les cartes de ce Pack Récompense' : 'Filtrer cette série'}</span>
+          <span>{selectedMcDonaldsSet ? 'Filtrer les éditions McDonald’s' : isAllPackRewardsSelection(setId) ? 'Filtrer les cartes des Packs Récompense' : isPackRewardSelection(setId) ? 'Filtrer les cartes de ce Pack Récompense' : 'Filtrer cette série'}</span>
           <input type="search" value={filterQuery} onChange={event => { setFilterQuery(event.target.value); setSelection({}) }} placeholder="Numéro ou nom…" />
         </label>}
         {user && profiles.length > 0 && <label className={styles.profileField}>
