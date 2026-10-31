@@ -378,6 +378,11 @@ export async function POST(request) {
   const canonicalVariants = new Map()
   const canonicalCards = new Map()
   const knownVariantIds = new Set()
+  // Keep catalog prices aligned with the same public variant IDs used by saved valuations.
+  // These submitted IDs are only used for public reads; writes still require canonical IDs below.
+  const submittedVariantIds = new Set(cards.flatMap(card => (Array.isArray(card?.variants) ? card.variants : [])
+    .map(variant => variant?.id)
+    .filter(id => typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(id))))
   if (readClient && requestedCardIds.length) {
     for (let offset = 0; offset < requestedCardIds.length; offset += 100) {
       const result = await readClient.from('card_print_variants')
@@ -661,7 +666,8 @@ export async function POST(request) {
   // Store successful market snapshots as append-only estimates, then use the latest
   // saved estimate whenever every live source is currently unavailable.
   const variantIds = [...new Set(prices.flatMap(price =>
-    (price.variantPrices || []).map(variant => variant.variantId).filter(id => knownVariantIds.has(id))
+    (price.variantPrices || []).map(variant => variant.variantId)
+      .filter(id => knownVariantIds.has(id) || submittedVariantIds.has(id))
   ))]
   let latestEstimates = new Map()
   if (readClient && variantIds.length) {
@@ -708,7 +714,7 @@ export async function POST(request) {
   // Confirmed sales are keyed to every catalog variant in the request, independently
   // of whether an external market source returned a price for that variant.
   let observedSalesByVariant = new Map()
-  const observationVariantIds = [...knownVariantIds]
+  const observationVariantIds = [...new Set([...knownVariantIds, ...submittedVariantIds])]
   if (readClient && observationVariantIds.length) {
     const confirmedSales = []
     for (let offset = 0; offset < observationVariantIds.length; offset += 100) {
