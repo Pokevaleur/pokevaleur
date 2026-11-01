@@ -155,7 +155,7 @@ export default function CataloguePage() {
     ] = await Promise.all([
       fetchAllRows(() => supabase
         .from('products')
-        .select('id,name,series,category,product_type,release_date,release_period,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status,case_reference')
+        .select('id,name,series,category,product_type,release_date,release_year,release_period,current_value,price_source,price_source_url,price_updated_at,zero_defect_value,zero_defect_source,zero_defect_updated_at,image_url,image_source_url,image_credit,image_usage_status,case_reference')
         .eq('is_public', true)
         .order('name').order('id')),
       supabase
