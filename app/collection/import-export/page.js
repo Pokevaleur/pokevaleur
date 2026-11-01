@@ -45,6 +45,7 @@ export default function ImportExportPage() {
   const [rows, setRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
+  const [exportingExcel, setExportingExcel] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -274,6 +275,43 @@ export default function ImportExportPage() {
     }
   }
 
+  async function exportSealedExcel() {
+    if (!rows.length || exportingExcel) return
+    setExportingExcel(true)
+    setError('')
+    try {
+      const XLSX = await import('xlsx')
+      const alphabeticalRows = [...rows].sort((a, b) =>
+        a.title.localeCompare(b.title, 'fr', { sensitivity: 'base', numeric: true })
+          || String(a.id).localeCompare(String(b.id))
+      )
+      const worksheet = XLSX.utils.aoa_to_sheet([
+        ['Nom du produit', 'Prix d’achat (€)', 'Valeur actuelle (€)'],
+        ...alphabeticalRows.map(row => [
+          row.title + (row.quantity > 1 ? ' ×' + row.quantity : ''),
+          Number.isFinite(row.purchaseUnit) ? row.purchaseUnit : '',
+          Number.isFinite(row.currentUnit) ? row.currentUnit * row.quantity : ''
+        ])
+      ])
+      worksheet['!cols'] = [{ wch: 44 }, { wch: 18 }, { wch: 19 }]
+      worksheet['!autofilter'] = { ref: 'A1:C' + (alphabeticalRows.length + 1) }
+      for (let rowIndex = 2; rowIndex <= alphabeticalRows.length + 1; rowIndex += 1) {
+        for (const column of ['B', 'C']) {
+          const cell = worksheet[column + rowIndex]
+          if (cell && typeof cell.v === 'number') cell.z = '#,##0.00 "€"'
+        }
+      }
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Scellés')
+      workbook.Props = { Title: 'Inventaire des produits scellés PokéValeur', Author: 'PokéValeur' }
+      XLSX.writeFile(workbook, 'pokevaleur-scelles-' + new Date().toISOString().slice(0, 10) + '.xlsx', { compression: true })
+    } catch (excelError) {
+      setError('La création du fichier Excel a échoué : ' + (excelError.message || 'réessaie dans un instant.'))
+    } finally {
+      setExportingExcel(false)
+    }
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.container}>
@@ -319,6 +357,28 @@ export default function ImportExportPage() {
             <section className={styles.panel}>
               <div className={styles.panelHeading}>
                 <div>
+                  <h2>Exporter mes scellés en Excel</h2>
+                  <p>Une liste compacte, classée par ordre alphabétique.</p>
+                </div>
+                <span className={styles.formatBadge}>Excel</span>
+              </div>
+              {rows.length ? (
+                <>
+                  <p className={styles.note}>
+                    Une ligne par entrée de collection. Le prix d’achat reprend le montant enregistré; la quantité apparaît dans le nom et la valeur actuelle tient compte des exemplaires.
+                  </p>
+                  <button className={styles.primaryButton} type="button" onClick={exportSealedExcel} disabled={exportingExcel}>
+                    {exportingExcel ? 'Création du fichier Excel…' : 'Télécharger l’Excel de mes scellés'}
+                  </button>
+                </>
+              ) : (
+                <p className={styles.empty}>Aucun produit scellé à exporter dans le profil « {profileName} ».</p>
+              )}
+            </section>
+
+            <section className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div>
                   <h2>Importer une collection</h2>
                   <p>Accède à l’import de fichier Excel déjà disponible dans PokéValeur.</p>
                 </div>
@@ -327,10 +387,6 @@ export default function ImportExportPage() {
               <a className={styles.secondaryButton} href="/collection/import">Ouvrir l’import Excel →</a>
             </section>
 
-            <section className={styles.futurePanel}>
-              <strong>Prochaine étape</strong>
-              <p>Ajouter un export Excel ou CSV pour faciliter les transferts et réimporter les données. Le PDF est destiné à la lecture et au partage.</p>
-            </section>
           </>
         )}
       </div>
