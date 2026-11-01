@@ -181,6 +181,19 @@ export default function CataloguePage() {
   const filtered = useMemo(() => hasSearch
     ? sortProductsByRelease(products.filter(createProductMatcher(query)), seriesReleaseDates)
     : [], [products, query, hasSearch, seriesReleaseDates])
+  const hasSealedSearch = hasSearch && filtered.some(product => product.category === 'sealed')
+  const [showScrollTop, setShowScrollTop] = useState(false)
+
+  useEffect(() => {
+    if (!hasSealedSearch) {
+      setShowScrollTop(false)
+      return
+    }
+    const updateVisibility = () => setShowScrollTop(window.scrollY > 320)
+    updateVisibility()
+    window.addEventListener('scroll', updateVisibility, { passive: true })
+    return () => window.removeEventListener('scroll', updateVisibility)
+  }, [hasSealedSearch])
 
   function getStats(productId, tier = 'standard') {
     const sales = history.filter(item =>
@@ -507,6 +520,12 @@ export default function CataloguePage() {
           {suggestionMessage && <p className="message">{suggestionMessage}</p>}
         </div>
       </details>
+
+      {hasSealedSearch && showScrollTop && (
+        <button type="button" className="sealedScrollTopButton" aria-label="Remonter en haut des résultats" title="Remonter en haut" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          ↑
+        </button>
+      )}
 
       <details className="panel pricePolicy catalogDisclosure">
         <summary>Comment lire les valeurs ?</summary>

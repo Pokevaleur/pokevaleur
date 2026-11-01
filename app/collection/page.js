@@ -746,6 +746,19 @@ export default function CollectionPage() {
 
   useEffect(() => { if (hasCollectionSearch) setShowCollectionItems(true) }, [hasCollectionSearch])
 
+  const hasScrollableCollectionList = showCollectionItems && filteredItems.length > 0
+  const [showCollectionScrollTop, setShowCollectionScrollTop] = useState(false)
+  useEffect(() => {
+    if (!hasScrollableCollectionList) {
+      setShowCollectionScrollTop(false)
+      return
+    }
+    const updateVisibility = () => setShowCollectionScrollTop(window.scrollY > 320)
+    updateVisibility()
+    window.addEventListener('scroll', updateVisibility, { passive: true })
+    return () => window.removeEventListener('scroll', updateVisibility)
+  }, [hasScrollableCollectionList])
+
   if (!user) {
     return (
       <main className="narrow">
@@ -1311,6 +1324,11 @@ export default function CollectionPage() {
         </div>}
 
       </section>
+      {hasScrollableCollectionList && showCollectionScrollTop && (
+        <button type="button" className="sealedScrollTopButton" aria-label="Remonter en haut des résultats" title="Remonter en haut" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+          ↑
+        </button>
+      )}
     </main>
   )
 }
