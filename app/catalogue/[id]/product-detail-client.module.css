@@ -148,6 +148,19 @@
   background: #f5f7fb;
 }
 
+.boosterVariantPlaceholder {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 220px;
+  padding: 14px;
+  border-radius: 9px;
+  background: #f5f7fb;
+  color: var(--muted);
+  font-size: .85rem;
+  text-align: center;
+}
+
 .boosterArtworkCard strong {
   font-size: .92rem;
   line-height: 1.35;
@@ -170,6 +183,10 @@
   }
 
   .boosterArtworkCard img {
+    height: 190px;
+  }
+
+  .boosterVariantPlaceholder {
     height: 190px;
   }
 }
