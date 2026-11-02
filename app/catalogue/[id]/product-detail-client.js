@@ -121,22 +121,27 @@ export default function ProductDetailClient({ product }) {
         setBoosterArtworks([])
       }
 
-      const { data: artsetData } = await supabase
-        .from('booster_artsets')
-        .select('id,series_name,expected_artwork_count,source_label,source_url')
-        .eq('product_id', product.id)
-        .maybeSingle()
-      if (!active) return
-
-      if (artsetData) {
-        const { data: variantData } = await supabase
-          .from('booster_artset_members')
-          .select('id,artwork_name,sort_order,image_url,source_url,verified')
-          .eq('artset_id', artsetData.id)
-          .order('sort_order', { ascending: true })
+      if (product.product_type === 'Booster promotionnel') {
+        const { data: artsetData } = await supabase
+          .from('booster_artsets')
+          .select('id,series_name,expected_artwork_count,source_label,source_url')
+          .eq('product_id', product.id)
+          .maybeSingle()
         if (!active) return
-        setBoosterVariantSet(artsetData)
-        setBoosterVariants(variantData || [])
+
+        if (artsetData) {
+          const { data: variantData } = await supabase
+            .from('booster_artset_members')
+            .select('id,artwork_name,sort_order,image_url,source_url,verified')
+            .eq('artset_id', artsetData.id)
+            .order('sort_order', { ascending: true })
+          if (!active) return
+          setBoosterVariantSet(artsetData)
+          setBoosterVariants(variantData || [])
+        } else {
+          setBoosterVariantSet(null)
+          setBoosterVariants([])
+        }
       } else {
         setBoosterVariantSet(null)
         setBoosterVariants([])
