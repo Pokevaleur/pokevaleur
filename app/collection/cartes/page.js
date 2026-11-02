@@ -1451,6 +1451,7 @@ export default function CardChecklistPage() {
             <span>{label}</span>
             <strong className={quantity ? styles.ownedQuantity : styles.missingQuantity}>{quantity ? quantity + ' ex.' : 'Non possédée'}</strong>
             {quantity > 0 && <button type="button" className={styles.removeCopyButton} onClick={() => removeOneCopy(variant)} disabled={busyVariant === variant.id || savingBulk} aria-label={'Retirer un exemplaire de ' + card.card_name + ' (' + label + ')'} title="Retirer un exemplaire">−</button>}
+            {!quantity && <button type="button" className={styles.addCopyButton} onClick={() => changeRawCopies(variant, 'add')} disabled={busyVariant === variant.id || savingBulk} aria-label={'Ajouter un exemplaire de ' + card.card_name + ' (' + label + ')'} title="Ajouter un exemplaire">+</button>}
           </div>
         })}
       </div> : <p className={styles.masterChecklistStatus}>Aucune variante de Master Set répertoriée.</p>}
@@ -1724,7 +1725,7 @@ export default function CardChecklistPage() {
               <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Nom, numéro ou artiste…" />
             </label>
             <p className={styles.scope}>
-              {visibleCards.length} carte{visibleCards.length > 1 ? 's différentes' : ' différente'} affichée{visibleCards.length > 1 ? 's' : ''} selon le filtre · {visibleOwnedCopyCount} exemplaire{visibleOwnedCopyCount > 1 ? 's possédés' : ' possédé'} sur ces cartes. Les ajouts se font depuis le Catalogue.
+              {visibleCards.length} carte{visibleCards.length > 1 ? 's différentes' : ' différente'} affichée{visibleCards.length > 1 ? 's' : ''} selon le filtre · {visibleOwnedCopyCount} exemplaire{visibleOwnedCopyCount > 1 ? 's possédés' : ' possédé'} sur ces cartes. Utilise + pour ajouter une variante manquante, ou le Catalogue pour choisir plusieurs cartes.
             </p>
           </section>
 
