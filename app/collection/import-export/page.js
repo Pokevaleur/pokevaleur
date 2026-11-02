@@ -43,9 +43,11 @@ export default function ImportExportPage() {
   const supabase = useMemo(() => createClient(), [])
   const [profileName, setProfileName] = useState('')
   const [rows, setRows] = useState([])
+  const [unlinkedRows, setUnlinkedRows] = useState([])
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [exportingExcel, setExportingExcel] = useState(false)
+  const [exportingUnlinkedExcel, setExportingUnlinkedExcel] = useState(false)
   const [error, setError] = useState('')
 
   useEffect(() => {
@@ -93,6 +95,14 @@ export default function ImportExportPage() {
           products.push(...(data || []))
         }
         const productById = new Map(products.map(product => [product.id, product]))
+        const unlinkedRows = (items || []).filter(item => !item.product_id || !productById.has(item.product_id))
+          .map(item => ({
+            id: item.id,
+            title: item.custom_name?.trim() || 'Article sans nom',
+            purchase_date: item.purchase_date
+          }))
+          .sort((a, b) => a.title.localeCompare(b.title, 'fr', { sensitivity: 'base', numeric: true })
+            || String(a.id).localeCompare(String(b.id)))
         const sealedRows = (items || []).filter(item => {
           const product = item.product_id ? productById.get(item.product_id) : null
           return normalizeSearch(product?.category) === 'sealed'
@@ -124,6 +134,7 @@ export default function ImportExportPage() {
         if (!active) return
         setProfileName(profile.display_name || 'Ma collection')
         setRows(sortCollectionRows(sealedRows))
+        setUnlinkedRows(unlinkedRows)
       } catch (loadError) {
         if (active) setError(loadError.message || 'Impossible de charger la collection.')
       } finally {
@@ -312,6 +323,33 @@ export default function ImportExportPage() {
     }
   }
 
+  async function exportUnlinkedExcel() {
+    if (!unlinkedRows.length || exportingUnlinkedExcel) return
+    setExportingUnlinkedExcel(true)
+    setError('')
+    try {
+      const XLSX = await import('xlsx')
+      const alphabeticalRows = [...unlinkedRows].sort((a, b) =>
+        a.title.localeCompare(b.title, 'fr', { sensitivity: 'base', numeric: true })
+          || String(a.id).localeCompare(String(b.id))
+      )
+      const worksheet = XLSX.utils.aoa_to_sheet([
+        ['Nom de l’article', 'Date d’achat'],
+        ...alphabeticalRows.map(row => [row.title, formatDate(row.purchase_date)])
+      ])
+      worksheet['!cols'] = [{ wch: 56 }, { wch: 20 }]
+      worksheet['!autofilter'] = { ref: 'A1:B' + (alphabeticalRows.length + 1) }
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Sans lien catalogue')
+      workbook.Props = { Title: 'Articles sans lien au catalogue PokéValeur', Author: 'PokéValeur' }
+      XLSX.writeFile(workbook, 'pokevaleur-sans-lien-catalogue-' + new Date().toISOString().slice(0, 10) + '.xlsx', { compression: true })
+    } catch (excelError) {
+      setError('La création du fichier Excel a échoué : ' + (excelError.message || 'réessaie dans un instant.'))
+    } finally {
+      setExportingUnlinkedExcel(false)
+    }
+  }
+
   return (
     <main className={styles.page}>
       <div className={styles.container}>
@@ -373,6 +411,28 @@ export default function ImportExportPage() {
                 </>
               ) : (
                 <p className={styles.empty}>Aucun produit scellé à exporter dans le profil « {profileName} ».</p>
+              )}
+            </section>
+
+            <section className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div>
+                  <h2>Exporter les scellés sans lien au catalogue</h2>
+                  <p>Un fichier Excel avec le nom et la date d’achat, trié par ordre alphabétique.</p>
+                </div>
+                <span className={styles.formatBadge}>Excel</span>
+              </div>
+              {unlinkedRows.length ? (
+                <>
+                  <p className={styles.note}>
+                    Une ligne par entrée sans fiche catalogue liée. La quantité n’est pas incluse dans cet export.
+                  </p>
+                  <button className={styles.primaryButton} type="button" onClick={exportUnlinkedExcel} disabled={exportingUnlinkedExcel}>
+                    {exportingUnlinkedExcel ? 'Création du fichier Excel…' : 'Télécharger l’Excel des scellés sans lien'}
+                  </button>
+                </>
+              ) : (
+                <p className={styles.empty}>Aucun article sans lien catalogue dans le profil « {profileName} ».</p>
               )}
             </section>
 
