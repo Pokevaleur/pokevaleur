@@ -40,6 +40,8 @@ export default function ProductDetailClient({ product }) {
   const [contents, setContents] = useState([])
   const [cardsById, setCardsById] = useState({})
   const [boosterArtworks, setBoosterArtworks] = useState([])
+  const [boosterVariants, setBoosterVariants] = useState([])
+  const [boosterVariantSet, setBoosterVariantSet] = useState(null)
   const packSeriesNumber = Number(String(product.name || '').match(/Série\s+(\d+)/i)?.[1]) || 0
 
   function handleCatalogBack(event) {
@@ -117,6 +119,27 @@ export default function ProductDetailClient({ product }) {
         setBoosterArtworks(artworkData || [])
       } else {
         setBoosterArtworks([])
+      }
+
+      const { data: artsetData } = await supabase
+        .from('booster_artsets')
+        .select('id,series_name,expected_artwork_count,source_label,source_url')
+        .eq('product_id', product.id)
+        .maybeSingle()
+      if (!active) return
+
+      if (artsetData) {
+        const { data: variantData } = await supabase
+          .from('booster_artset_members')
+          .select('id,artwork_name,sort_order,image_url,source_url,verified')
+          .eq('artset_id', artsetData.id)
+          .order('sort_order', { ascending: true })
+        if (!active) return
+        setBoosterVariantSet(artsetData)
+        setBoosterVariants(variantData || [])
+      } else {
+        setBoosterVariantSet(null)
+        setBoosterVariants([])
       }
     }
     loadMarketData()
@@ -275,6 +298,38 @@ export default function ProductDetailClient({ product }) {
               </a>
             ))}
           </div>
+        </section>
+      )}
+
+      {boosterVariantSet && boosterVariants.length > 0 && (
+        <section className={`panel ${styles.boosterArtworkPanel}`}>
+          <h2>Variantes des pochettes ({boosterVariants.length})</h2>
+          <p className="muted">
+            {boosterVariantSet.expected_artwork_count === boosterVariants.length
+              ? `Les ${boosterVariants.length} variantes recensées pour ${boosterVariantSet.series_name}.`
+              : `${boosterVariants.length} variante(s) recensée(s) sur ${boosterVariantSet.expected_artwork_count} attendue(s) pour ${boosterVariantSet.series_name}.`}
+          </p>
+          <div className={styles.boosterArtworkGrid}>
+            {boosterVariants.map(variant => (
+              <article className={styles.boosterArtworkCard} key={variant.id}>
+                {variant.image_url ? (
+                  <img src={variant.image_url} alt={variant.artwork_name} loading="lazy" decoding="async" />
+                ) : (
+                  <div className={styles.boosterVariantPlaceholder}>Visuel non disponible</div>
+                )}
+                <strong>{variant.artwork_name}</strong>
+                {variant.verified && <small>Variante confirmée</small>}
+                {variant.source_url && (
+                  <a href={variant.source_url} target="_blank" rel="noreferrer">Source</a>
+                )}
+              </article>
+            ))}
+          </div>
+          {boosterVariantSet.source_url && (
+            <p className="muted">
+              Source générale : <a href={boosterVariantSet.source_url} target="_blank" rel="noreferrer">{boosterVariantSet.source_label || 'consulter la source'}</a>
+            </p>
+          )}
         </section>
       )}
 
