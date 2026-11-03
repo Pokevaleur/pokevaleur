@@ -9,6 +9,79 @@ import styles from './page.module.css'
 const currency = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' })
 const shortDate = new Intl.DateTimeFormat('fr-FR')
 
+const bundleSeriesLabels = new Map([
+  ['EV 8.5', 'Évolutions Prismatiques'],
+  ['ME 1', 'Méga-Évolution'],
+  ['ME 2.5', 'Héros Transcendants']
+])
+
+function normalizeSeriesCodes(value) {
+  return String(value || '').replace(/\b(EV|ME|EB|XY|SL|SV)\s*0*(\d+(?:[.,]\d+)?)/giu, (_, prefix, rawNumber) => {
+    const number = String(Number(rawNumber.replace(',', '.')))
+    return prefix.toUpperCase() + ' ' + number
+  })
+}
+
+function titleCaseFrench(value) {
+  let title = String(value || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('fr-FR')
+  title = title.replace(/(^|[\s–—-])(\p{L})/gu, (_, separator, letter) => separator + letter.toLocaleUpperCase('fr-FR'))
+  title = title.replace(/\b(?:de|du|des|d['’]|et|à|au|aux|en|la|le|les|sur|sous|pour|par|dans|avec)\b/giu,
+    (word, offset) => offset === 0 ? word : word.toLocaleLowerCase('fr-FR'))
+  title = normalizeSeriesCodes(title)
+  return title
+    .replace(/\bEtb\b/gu, 'ETB')
+    .replace(/\bUpc\b/gu, 'UPC')
+    .replace(/\bSpc\b/gu, 'SPC')
+    .replace(/\bAp\b/gu, 'AP')
+    .replace(/\bVmax\b/gu, 'VMAX')
+    .replace(/\bVstar\b/gu, 'VSTAR')
+    .replace(/\bGx\b/gu, 'GX')
+    .replace(/\bEx\b/gu, 'ex')
+    .replace(/\bPok[eé]box\b/giu, 'Pokébox')
+    .replace(/\bBoite\b/giu, 'Boîte')
+}
+
+function bundleSeriesCode(row) {
+  const source = [row.title, row.catalogName, row.series].filter(Boolean).join(' ')
+  const match = source.match(/\b(EV|ME|EB|XY|SL|SV)\s*0*(\d+(?:[.,]\d+)?)/iu)
+  if (match) return normalizeSeriesCodes(match[0])
+  const normalizedSource = normalizeSearch(source)
+  if (normalizedSource.includes('heros transcendants')) return 'ME 2.5'
+  if (normalizedSource.includes('evolutions prismatiques')) return 'EV 8.5'
+  if (normalizedSource.includes('mega evolution')) return 'ME 1'
+  return ''
+}
+
+function bundleSeriesName(row, code) {
+  if (bundleSeriesLabels.has(code)) return bundleSeriesLabels.get(code)
+  const source = [row.series, row.catalogName, row.title].filter(Boolean)
+  for (const candidate of source) {
+    const cleaned = normalizeSeriesCodes(candidate)
+      .replace(/^\s*(?:lot\s+de\s+(?:6|six)\s+boosters?|booster\s+bundle|bundle)\s*/iu, '')
+      .replace(/\b(?:EV|ME|EB|XY|SL|SV)\s*0*\d+(?:[.,]\d+)?\b/iu, '')
+      .replace(/^\s*[-–—:|]+\s*/, '')
+      .trim()
+    if (cleaned && !/^\d+$/u.test(cleaned)) return titleCaseFrench(cleaned)
+  }
+  return ''
+}
+
+function formatExcelProductTitle(row) {
+  const rawTitle = String(row.title || 'Produit sans nom').trim()
+  const normalizedTitle = normalizeSearch(rawTitle)
+  const productType = normalizeSearch(row.productType)
+  const isBundle = productType === 'bundle' || productType === 'booster bundle'
+    || /^(?:bundle|booster bundle|lot de (?:6|six) boosters?)\b/u.test(normalizedTitle)
+  if (isBundle) {
+    const code = bundleSeriesCode(row)
+    const seriesName = bundleSeriesName(row, code)
+    if (code || seriesName) return ['Bundle', code, seriesName].filter(Boolean).join(' ')
+    return 'Bundle ' + titleCaseFrench(rawTitle
+      .replace(/^\s*(?:lot\s+de\s+(?:6|six)\s+boosters?|booster\s+bundle|bundle)\s*/iu, ''))
+  }
+  return titleCaseFrench(rawTitle)
+}
+
 function formatDate(value) {
   if (!value) return 'Non renseignée'
   const date = new Date(String(value).slice(0, 10) + 'T12:00:00')
@@ -120,6 +193,9 @@ export default function ImportExportPage() {
             id: item.id,
             purchase_date: item.purchase_date,
             title: item.custom_name?.trim() || product?.name || 'Produit sans nom',
+            catalogName: product?.name || '',
+            series: product?.series || '',
+            productType: item.product_type_override?.trim() || product?.product_type || '',
             details: [...new Set(details)].join(' · '),
             quantity,
             purchaseUnit: item.purchase_price === null || item.purchase_price === undefined || item.purchase_price === ''
@@ -292,14 +368,14 @@ export default function ImportExportPage() {
     setError('')
     try {
       const XLSX = await import('xlsx')
-      const alphabeticalRows = [...rows].sort((a, b) =>
-        a.title.localeCompare(b.title, 'fr', { sensitivity: 'base', numeric: true })
+      const alphabeticalRows = rows.map(row => ({ ...row, exportTitle: formatExcelProductTitle(row) })).sort((a, b) =>
+        a.exportTitle.localeCompare(b.exportTitle, 'fr', { sensitivity: 'base', numeric: true })
           || String(a.id).localeCompare(String(b.id))
       )
       const worksheet = XLSX.utils.aoa_to_sheet([
         ['Nom du produit', 'Prix d’achat (€)', 'Valeur actuelle (€)'],
         ...alphabeticalRows.map(row => [
-          row.title + (row.quantity > 1 ? ' ×' + row.quantity : ''),
+          row.exportTitle + (row.quantity > 1 ? ' ×' + row.quantity : ''),
           Number.isFinite(row.purchaseUnit) ? row.purchaseUnit : '',
           Number.isFinite(row.currentUnit) ? row.currentUnit * row.quantity : ''
         ])
