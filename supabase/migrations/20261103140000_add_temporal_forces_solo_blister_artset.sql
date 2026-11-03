@@ -43,7 +43,7 @@ set release_date = coalesce(existing.release_date, date '2024-03-22'),
     image_source_url = coalesce(existing.image_source_url, variant.image_source_url),
     image_credit = coalesce(existing.image_credit, 'Poképédia — visuel représentatif Chef-de-Fer'),
     language = coalesce(existing.language, 'FR'),
-    booster_packaging = 'solo_blister_artset',
+    booster_packaging = 'other',
     booster_artwork = coalesce(existing.booster_artwork, '4 visuels')
 from public.products variant
 where existing.name = 'Artset de 4 blisters – Écarlate et Violet – Forces Temporelles'
@@ -65,7 +65,7 @@ select
   'Artset de 4 solo blisters – Écarlate et Violet – Forces Temporelles',
   'sealed', 'Écarlate et Violet – Forces Temporelles', date '2024-03-22', 2024,
   p.image_url, p.image_source_url, 'Poképédia — visuel représentatif Chef-de-Fer',
-  'placeholder', 'FR', 'Artset', true, 'solo_blister_artset', '4 visuels'
+  'placeholder', 'FR', 'Artset', true, 'other', '4 visuels'
 from public.products p
 where p.series = 'Écarlate et Violet – Forces Temporelles'
   and p.product_type = 'Solo blister'
@@ -75,7 +75,7 @@ where p.series = 'Écarlate et Violet – Forces Temporelles'
     select 1 from public.products existing
     where existing.series = 'Écarlate et Violet – Forces Temporelles'
       and existing.product_type = 'Artset'
-      and existing.booster_packaging = 'solo_blister_artset'
+      and existing.booster_artwork = '4 visuels'
       and existing.language = 'FR'
   );
 
@@ -105,7 +105,7 @@ select p.id, 'booster', 'Solo blister Forces Temporelles — un exemplaire de ch
 from public.products p
 where p.series = 'Écarlate et Violet – Forces Temporelles'
   and p.product_type = 'Artset'
-  and p.booster_packaging = 'solo_blister_artset'
+  and p.booster_artwork = '4 visuels'
   and not exists (
     select 1 from public.product_contents pc
     where pc.product_id = p.id

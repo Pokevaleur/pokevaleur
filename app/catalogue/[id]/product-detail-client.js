@@ -43,7 +43,7 @@ export default function ProductDetailClient({ product }) {
   const [boosterVariants, setBoosterVariants] = useState([])
   const [boosterVariantSet, setBoosterVariantSet] = useState(null)
   const packSeriesNumber = Number(String(product.name || '').match(/Série\s+(\d+)/i)?.[1]) || 0
-  const isSoloBlisterArtset = product.booster_packaging === 'solo_blister_artset'
+  const isSoloBlisterArtset = product.product_type === 'Artset' && product.booster_artwork === '4 visuels'
 
   function handleCatalogBack(event) {
     event.preventDefault()

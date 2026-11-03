@@ -47,7 +47,7 @@ select
   'Artset de 4 solo blisters – Écarlate et Violet – Faille Paradoxe',
   'sealed', 'Écarlate et Violet – Faille Paradoxe', date '2023-11-03', 2023,
   p.image_url, p.image_source_url, 'Poképédia — visuel représentatif Carchacrok Téracristal',
-  'placeholder', 'FR', 'Artset', true, 'solo_blister_artset', '4 visuels'
+  'placeholder', 'FR', 'Artset', true, 'other', '4 visuels'
 from public.products p
 where p.series = 'Écarlate et Violet – Faille Paradoxe'
   and p.product_type = 'Solo blister'
@@ -57,7 +57,7 @@ where p.series = 'Écarlate et Violet – Faille Paradoxe'
     select 1 from public.products existing
     where existing.series = 'Écarlate et Violet – Faille Paradoxe'
       and existing.product_type = 'Artset'
-      and existing.booster_packaging = 'solo_blister_artset'
+      and existing.booster_artwork = '4 visuels'
       and existing.language = 'FR'
   );
 
