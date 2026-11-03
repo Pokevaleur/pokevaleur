@@ -998,9 +998,6 @@ export default function CardCataloguePage() {
     if (!removed || removed.profileId !== profileId || saving || removingCopyId) return
     setSaving(true)
     setOwnershipNotice('')
-Warning: truncated output (original token count: 5363)
-Total output lines: 250
-
     try {
       const { data: restoredCopy, error: restoreError } = await supabase.from('collection_cards')
         .insert(removed.row)
@@ -1145,7 +1142,13 @@ Total output lines: 250
               </> : <>
                 <button type="button" aria-pressed={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); rememberSelectedSet(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
                 <button type="button" aria-pressed={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); rememberSelectedSet(ALL_SERIES); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
-                <button type="button" aria-pressed={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); rememberSelectedSet(ALL_SERIES); u…363 tokens truncated…d); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{product.name}</button>
+                <button type="button" aria-pressed={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); rememberSelectedSet(ALL_SERIES); updateGlobalSearch('Énergie'); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies · toutes les séries</button>
+                <button type="button" aria-pressed={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); rememberSelectedSet(MCDONALDS_SERIES); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
+                {showAllRewardSeriesOption && <button type="button" aria-pressed={isAllPackRewardsSelection(setId)} className={isAllPackRewardsSelection(setId) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_PACK_REWARDS); setFilterQuery(''); rememberSelectedSet(ALL_PACK_REWARDS); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Pack Récompense Play! Pokémon · toutes les séries</button>}
+                {filteredRewardProducts.map(product => {
+                  const productSetId = PACK_REWARD_PREFIX + product.id
+                  const selected = setId === productSetId
+                  return <button type="button" aria-pressed={selected} className={selected ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={product.id} onClick={() => { setSetId(productSetId); setFilterQuery(''); rememberSelectedSet(productSetId); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{product.name}</button>
                 })}
                 {filteredSets.map(set => <button type="button" aria-pressed={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); rememberSelectedSet(set.id); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
               </>}
