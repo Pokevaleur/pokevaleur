@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
+import { fetchAllRows } from '../../lib/supabase-pagination'
 
 function median(values) {
   if (!values.length) return null
@@ -102,7 +103,6 @@ export default function AdminPage() {
         const matches = products
           .filter(product => product.category === 'sealed' && matchesSealedMarketSearch(product, term))
           .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
-          .slice(0, 30)
         if (cancelled) return
         setMarketResults(matches)
         setMarketSearchLoading(false)
@@ -174,11 +174,12 @@ export default function AdminPage() {
     if (admin) {
       const [{ data: suggestionData }, { data: productData }, { data: historyData }, { data: reportData }, { data: statusData }] = await Promise.all([
         supabase.from('product_suggestions').select('*').order('created_at', { ascending: false }),
-        supabase
+        fetchAllRows(() => supabase
           .from('products')
           .select('id,name,series,category,product_type,current_value,zero_defect_value,price_updated_at,zero_defect_updated_at')
           .eq('is_public', true)
-          .order('name'),
+          .order('name')
+          .order('id')),
         supabase
           .from('product_price_history')
           .select('id,product_id,source,price,observed_at,condition_tier,observation_type')
