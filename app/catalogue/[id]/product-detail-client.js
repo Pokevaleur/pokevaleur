@@ -43,7 +43,12 @@ export default function ProductDetailClient({ product }) {
   const [boosterVariants, setBoosterVariants] = useState([])
   const [boosterVariantSet, setBoosterVariantSet] = useState(null)
   const packSeriesNumber = Number(String(product.name || '').match(/Série\s+(\d+)/i)?.[1]) || 0
-  const isSoloBlisterArtset = product.product_type === 'Artset' && product.booster_artwork === '4 visuels'
+  const isSoloBlisterArtset = product.product_type === 'Artset'
+    && product.booster_artwork === '4 visuels'
+    && /solo blister/i.test(product.name || '')
+  const isBoosterArtset = product.product_type === 'Artset'
+    && product.booster_artwork === '4 visuels'
+    && !isSoloBlisterArtset
 
   function handleCatalogBack(event) {
     event.preventDefault()
@@ -117,6 +122,7 @@ export default function ProductDetailClient({ product }) {
           .not('booster_artwork', 'is', null)
           .not('image_url', 'is', null)
         if (isSoloBlisterArtset) artworkQuery = artworkQuery.eq('booster_packaging', 'solo_blister')
+        else if (isBoosterArtset) artworkQuery = artworkQuery.neq('booster_artwork', 'Osselait Minidraco Keunotor')
         const { data: artworkData } = await artworkQuery.order('booster_artwork', { ascending: true })
         if (!active) return
         setBoosterArtworks(artworkData || [])
