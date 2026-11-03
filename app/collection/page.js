@@ -278,18 +278,33 @@ export default function CollectionPage() {
     setCatalogMatches([])
     const timeout = setTimeout(async () => {
       if (!catalogIndexRef.current) {
-        catalogIndexRef.current = fetchAllRows(() => supabase.from('products')
-          .select('id,name,series,category,product_type,case_unit_product_id,current_value,zero_defect_value')
-          .eq('is_public', true).order('name').order('id'))
+        catalogIndexRef.current = Promise.all([
+          fetchAllRows(() => supabase.from('products')
+            .select('id,name,series,category,product_type,case_unit_product_id,current_value,zero_defect_value')
+            .eq('is_public', true).order('name').order('id')),
+          fetchAllRows(() => supabase.from('product_contents')
+            .select('product_id,content_type,quantity')
+            .eq('content_type', 'booster').eq('quantity', 3)),
+        ]).then(([productsResult, contentsResult]) => ({ productsResult, contentsResult }))
       }
-      const { data, error } = await catalogIndexRef.current
+      const { productsResult, contentsResult } = await catalogIndexRef.current
+      const error = productsResult.error
+      const data = productsResult.data
       if (error) catalogIndexRef.current = null
       if (!active) return
       if (error) {
         setCatalogError('La recherche est indisponible. Réessaie en modifiant ta recherche.')
         setCatalogMatches([])
       } else {
-        const searchableProducts = await addCaseUnitTypes(data || [])
+        const threeBoosterIds = new Set((contentsResult.data || []).map(content => content.product_id))
+        const searchableProducts = await addCaseUnitTypes((data || []).map(product => ({
+          ...product,
+          // These sticker collections are catalogued as “Coffret” but are sold as tripacks.
+          search_terms: threeBoosterIds.has(product.id)
+            && normalizeSearch(product.name).includes('autocollant reajustable')
+            ? 'Tripack'
+            : '',
+        })))
         if (!active) return
         const matches = searchableProducts.filter(createProductMatcher(searchTerm, { strictFormats: true }))
         setCatalogMatches(matches)
@@ -1112,6 +1127,11 @@ export default function CollectionPage() {
               </label>
               {catalogLoading && <small role="status" className="muted">Recherche dans le catalogue…</small>}
               {catalogError && <small role="alert" className="muted">{catalogError}</small>}
+              {!catalogLoading && !catalogError && !form.product_id && catalogQuery.trim().length >= 2 && (
+                <small role="status" aria-live="polite" className="muted">
+                  {catalogMatches.length} produit{catalogMatches.length === 1 ? '' : 's'} trouvé{catalogMatches.length === 1 ? '' : 's'}.
+                </small>
+              )}
               {catalogMatches.length > 0 && (
                 <div className="catalogSuggestions" role="region" aria-label="Résultats du catalogue" tabIndex={0}>
                   {catalogMatches.map(product => (
