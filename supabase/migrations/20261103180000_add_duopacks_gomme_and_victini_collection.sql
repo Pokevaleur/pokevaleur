@@ -205,10 +205,10 @@ begin
     cross join (values
       ('booster', 'Booster Écarlate et Violet – Foudre Noire', 2, 'https://www.asmodee.fr/product/coffret-collection-illustration-unys-victini/', 'Asmodee — Collection Illustration Unys Victini'),
       ('booster', 'Booster Écarlate et Violet – Flamme Blanche', 2, 'https://www.asmodee.fr/product/coffret-collection-illustration-unys-victini/', 'Asmodee — Collection Illustration Unys Victini'),
-      ('guaranteed_card', 'Victini promo SVP 208 — format standard', 1, 'https://www.pokepedia.fr/Collection_Illustration_Unys_Victini', 'Poképédia — cartes incluses'),
-      ('guaranteed_card', 'Victini 012/086 — traitement reverse Poké Ball', 1, 'https://www.pokepedia.fr/Collection_Illustration_Unys_Victini', 'Poképédia — cartes incluses'),
-      ('guaranteed_card', 'Victini promo SVP 208 — format jumbo', 1, 'https://www.pokepedia.fr/Collection_Illustration_Unys_Victini', 'Poképédia — cartes incluses'),
-      ('digital_code', 'Carte à code pour le JCC Pokémon Live', 1, 'https://www.asmodee.fr/product/coffret-collection-illustration-unys-victini/', 'Asmodee — Collection Illustration Unys Victini')
+      ('promo', 'Victini promo SVP 208 — format standard', 1, 'https://www.pokepedia.fr/Collection_Illustration_Unys_Victini', 'Poképédia — cartes incluses'),
+      ('promo', 'Victini 012/086 — traitement reverse Poké Ball', 1, 'https://www.pokepedia.fr/Collection_Illustration_Unys_Victini', 'Poképédia — cartes incluses'),
+      ('jumbo', 'Victini promo SVP 208 — format jumbo', 1, 'https://www.pokepedia.fr/Collection_Illustration_Unys_Victini', 'Poképédia — cartes incluses'),
+      ('other', 'Carte à code pour le JCC Pokémon Live', 1, 'https://www.asmodee.fr/product/coffret-collection-illustration-unys-victini/', 'Asmodee — Collection Illustration Unys Victini')
     ) as c(content_type, item_name, quantity, source_url, source_label)
     where p.name = 'Coffret Illustration Unys – Victini – Foudre Noire et Flamme Blanche'
       and p.product_type = 'Coffret'
