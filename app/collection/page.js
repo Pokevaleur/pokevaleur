@@ -479,7 +479,12 @@ export default function CollectionPage() {
         }
       }
 
-      setMessage(uploadedPhotoPaths.length ? `✓ Produit ajouté et ${uploadedPhotoPaths.length} photo${uploadedPhotoPaths.length > 1 ? 's' : ''} enregistrée${uploadedPhotoPaths.length > 1 ? 's' : ''}.` : '✓ Produit ajouté à ta collection.')
+      const linkConfirmation = payload.product_id
+        ? 'Lien au catalogue enregistré.'
+        : 'Aucun lien au catalogue enregistré (saisie libre).'
+      setMessage(uploadedPhotoPaths.length
+        ? `✓ Produit ajouté et ${uploadedPhotoPaths.length} photo${uploadedPhotoPaths.length > 1 ? 's' : ''} enregistrée${uploadedPhotoPaths.length > 1 ? 's' : ''}. ${linkConfirmation}`
+        : `✓ Produit ajouté à ta collection. ${linkConfirmation}`)
       await load()
     } catch {
       setMessage('L’enregistrement a été interrompu. Vérifie ta collection avant de réessayer.')
@@ -1098,12 +1103,22 @@ export default function CollectionPage() {
                 <input
                   value={catalogQuery}
                   onChange={e => {
-                    setCatalogQuery(e.target.value)
-                    setForm({ ...form, product_id: '' })
+                    const nextQuery = e.target.value
+                    setCatalogQuery(nextQuery)
+                    setForm(previous => ({ ...previous, product_id: '' }))
                   }}
                   placeholder="Ex. 151, Arceus, Célébrations..."
                 />
               </label>
+              {form.product_id ? (
+                <small className="catalogLinkStatus" role="status">
+                  ✓ Produit relié au catalogue : {catalog.find(product => product.id === form.product_id)?.name || form.custom_name}
+                </small>
+              ) : (
+                <small className="catalogLinkStatus catalogLinkStatusUnlinked" role="status">
+                  Aucun produit sélectionné dans le catalogue. La fiche sera enregistrée sans lien tant que tu ne choisis pas un résultat.
+                </small>
+              )}
               {catalogLoading && <small role="status" className="muted">Recherche dans le catalogue…</small>}
               {catalogError && <small role="alert" className="muted">{catalogError}</small>}
               {catalogMatches.length > 0 && (
