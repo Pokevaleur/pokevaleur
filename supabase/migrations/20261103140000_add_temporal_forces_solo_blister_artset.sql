@@ -1,5 +1,5 @@
--- Add the four French Forces Temporelles solo blister artworks and their
--- one-quantity artset without changing any existing product records.
+-- Add the four French Forces Temporelles solo blister artworks and artset
+-- without overwriting existing product or collection data.
 with artworks(artwork, image_url, source_url) as (
   values
     ('Chef-de-Fer',
@@ -33,6 +33,28 @@ where not exists (
     and p.booster_artwork = a.artwork
     and p.language = 'FR'
 );
+
+-- Reuse the existing unillustrated artset entry when present. Fill only its
+-- missing catalog metadata and keep its ID, name, values, and collection links.
+update public.products existing
+set release_date = coalesce(existing.release_date, date '2024-03-22'),
+    release_year = coalesce(existing.release_year, 2024),
+    image_url = coalesce(existing.image_url, variant.image_url),
+    image_source_url = coalesce(existing.image_source_url, variant.image_source_url),
+    image_credit = coalesce(existing.image_credit, 'Poképédia — visuel représentatif Chef-de-Fer'),
+    language = coalesce(existing.language, 'FR'),
+    booster_packaging = 'solo_blister_artset',
+    booster_artwork = coalesce(existing.booster_artwork, '4 visuels')
+from public.products variant
+where existing.name = 'Artset de 4 blisters – Écarlate et Violet – Forces Temporelles'
+  and existing.series = 'Écarlate et Violet – Forces Temporelles'
+  and existing.product_type = 'Artset'
+  and existing.booster_packaging is null
+  and variant.series = existing.series
+  and variant.product_type = 'Solo blister'
+  and variant.booster_packaging = 'solo_blister'
+  and variant.booster_artwork = 'Chef-de-Fer'
+  and variant.language = 'FR';
 
 insert into public.products (
   name, category, series, release_date, release_year, image_url,
