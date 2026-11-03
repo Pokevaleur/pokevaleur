@@ -38,7 +38,6 @@ export default function CollectionPage() {
   const [editingId, setEditingId] = useState(null)
   const [editForm, setEditForm] = useState(emptyForm)
   const [query, setQuery] = useState('')
-  const [showCollectionItems, setShowCollectionItems] = useState(false)
   const [showAddForm, setShowAddForm] = useState(false)
   const [conditionFilter, setConditionFilter] = useState('all')
   const [catalog, setCatalog] = useState([])
@@ -240,7 +239,6 @@ export default function CollectionPage() {
     const initialSearch = params.get('search')
     if (initialSearch) {
       setQuery(initialSearch)
-      setShowCollectionItems(true)
     }
     setLoginNext(`/collection${window.location.search}`)
     load()
@@ -328,7 +326,6 @@ export default function CollectionPage() {
       setForm(previous => ({ ...previous, product_id: enrichedProduct.id, custom_name: enrichedProduct.name, current_value_override: '' }))
       setCatalogQuery(enrichedProduct.name)
       setCatalog(previous => [...previous.filter(item => item.id !== enrichedProduct.id), enrichedProduct])
-      setShowAddForm(true)
     }
     preselect()
     return () => { active = false }
@@ -755,9 +752,7 @@ export default function CollectionPage() {
     ? 'Tous les produits scellés'
     : sealedCounts.formats.find(format => format.key === selectedSealedFormat)?.label || ''
 
-  useEffect(() => { if (hasCollectionSearch) setShowCollectionItems(true) }, [hasCollectionSearch])
-
-  const hasScrollableCollectionList = showCollectionItems && filteredItems.length > 0
+  const hasScrollableCollectionList = hasCollectionSearch && filteredItems.length > 0
   const [showCollectionScrollTop, setShowCollectionScrollTop] = useState(false)
   useEffect(() => {
     if (!hasScrollableCollectionList) {
@@ -887,7 +882,6 @@ export default function CollectionPage() {
               onClick={() => {
                 updateCollectionSearch(format)
                 setQuickFormatFilter(format)
-                setShowCollectionItems(true)
               }}
             >
               {format}
@@ -907,13 +901,12 @@ export default function CollectionPage() {
         </div>
         <p className="muted collectionSearchStatus" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Saisis un nom ou choisis un filtre.'}</p>
       </section>
-      <section className="contentGrid">
-        <div className="panel collectionObjectsPanel" id="objets">
-          <div className="listHeader"><h2>Mes objets</h2></div>
-          <button type="button" className="collectionShowObjects" aria-expanded={showCollectionItems} onClick={() => setShowCollectionItems(value => !value)}>{showCollectionItems ? 'Masquer mes objets' : `Voir mes objets (${items.length})`}</button>
-          {showCollectionItems && <div className="productList">
+      {hasCollectionSearch && <section className="contentGrid" aria-label="Résultats de recherche dans ma collection">
+        <div className="panel collectionObjectsPanel">
+          <div className="listHeader"><h2>Résultats de la recherche</h2></div>
+          <div className="productList">
             {filteredItems.length === 0 ? (
-              <p>{isSwitchingProfile ? 'Chargement de la collection…' : items.length === 0 ? 'Ta collection est vide pour le moment.' : !hasCollectionSearch ? 'Tes objets apparaîtront après une recherche ou un filtre.' : 'Aucun produit trouvé.'}</p>
+              <p>{isSwitchingProfile ? 'Chargement de la collection…' : items.length === 0 ? 'Ta collection est vide pour le moment.' : 'Aucun produit trouvé.'}</p>
             ) : (
               filteredItems.map(item => {
                 const linkedProduct = catalog.find(product => product.id === item.product_id)
@@ -1093,9 +1086,10 @@ export default function CollectionPage() {
                 )
               })
             )}
-          </div>}
+          </div>
         </div>
-        {showAddForm && <div className="panel collectionAddPanel">
+      </section>}
+      {showAddForm && <section className="panel collectionAddPanel">
           <h2 id="ajouter-produit" style={{ scrollMarginTop: 100 }}>Ajouter un produit</h2>
           <form onSubmit={addItem} className="formGrid">
             <div className="catalogPicker">
@@ -1332,9 +1326,7 @@ export default function CollectionPage() {
           </form>
 
           {message && <p className="message">{message}</p>}
-        </div>}
-
-      </section>
+        </section>}
       {hasScrollableCollectionList && showCollectionScrollTop && (
         <button type="button" className="sealedScrollTopButton" aria-label="Remonter en haut des résultats" title="Remonter en haut" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
           ↑
