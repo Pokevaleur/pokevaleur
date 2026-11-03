@@ -309,6 +309,33 @@ export default function CardCataloguePage() {
   const seriesPickerRef = useRef(null)
   const [showScrollTop, setShowScrollTop] = useState(false)
 
+  function updateSearchParams(changes) {
+    const url = new URL(window.location.href)
+    for (const [key, value] of Object.entries(changes)) {
+      if (value == null || value === '') url.searchParams.delete(key)
+      else url.searchParams.set(key, value)
+    }
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+  }
+
+  function updateGlobalSearch(nextQuery) {
+    setQuery(nextQuery)
+    updateSearchParams({ search: nextQuery.trim() ? nextQuery : null, filter: null })
+  }
+
+  function updateSeriesSearch(nextQuery) {
+    setFilterQuery(nextQuery)
+    updateSearchParams({ filter: nextQuery.trim() ? nextQuery : null })
+  }
+
+  function rememberSelectedSet(nextSetId) {
+    updateSearchParams({
+      set: nextSetId && nextSetId !== ALL_SERIES ? nextSetId : null,
+      search: null,
+      filter: null
+    })
+  }
+
   useEffect(() => {
     const updateScrollTopVisibility = () => {
       const shouldShow = window.scrollY > 480
@@ -348,16 +375,25 @@ export default function CardCataloguePage() {
         const searchParams = new URLSearchParams(window.location.search)
         const requestedSetId = searchParams.get('set')
         const requestedSearch = searchParams.get('search')
+        const requestedFilter = searchParams.get('filter')
         const zenithMainSet = (setRows || []).find(set => String(set.set_code || '').toLowerCase() === ZENITH_MAIN_SET_CODE)
         const zenithGallerySet = (setRows || []).find(isZenithGallerySet)
         if (requestedSearch) {
           setSetId(ALL_SERIES)
           setQuery(requestedSearch)
+        } else if (requestedSetId === ALL_PACK_REWARDS && rewardRows?.length) {
+          setSetId(ALL_PACK_REWARDS)
+          if (requestedFilter) setFilterQuery(requestedFilter)
+        } else if (requestedSetId?.startsWith(PACK_REWARD_PREFIX) && (rewardRows || []).some(product => PACK_REWARD_PREFIX + product.id === requestedSetId)) {
+          setSetId(requestedSetId)
+          if (requestedFilter) setFilterQuery(requestedFilter)
         } else if (requestedSetId && requestedSetId === zenithGallerySet?.id && zenithMainSet) {
           // Keep older direct links working, but open the combined Zénith Suprême view.
           setSetId(zenithMainSet.id)
+          if (requestedFilter) setFilterQuery(requestedFilter)
         } else if (requestedSetId === MCDONALDS_SERIES || (setRows || []).some(set => set.id === requestedSetId)) {
           setSetId(requestedSetId)
+          if (requestedFilter) setFilterQuery(requestedFilter)
         } else {
           setSetId(ALL_SERIES)
         }
@@ -1066,6 +1102,7 @@ export default function CardCataloguePage() {
             setForeignSetId('')
             setQuery('')
             setSetId(ALL_SERIES)
+            rememberSelectedSet(ALL_SERIES)
             setFilterQuery('')
             setSelection({})
             setSeriesPickerOpen(false)
@@ -1090,40 +1127,41 @@ export default function CardCataloguePage() {
             {seriesPickerOpen && <div className={styles.seriesPickerOptions} role="dialog" aria-label="Séries du catalogue">
               <label className={styles.seriesPickerSearch}><span>Rechercher une série</span><input type="search" value={seriesPickerQuery} onChange={event => setSeriesPickerQuery(event.target.value)} placeholder="Nom, code ou année…" autoFocus /></label>
               {languageCode !== 'FR' ? <>
-                <button type="button" aria-pressed={!foreignSetId && setId !== ALL_SERIES} className={styles.seriesPickerOption} onClick={() => { setForeignSetId(''); setSetId(''); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
-                <button type="button" aria-pressed={!foreignSetId && setId === ALL_SERIES} className={!foreignSetId && setId === ALL_SERIES ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setForeignSetId(''); setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
+                <button type="button" aria-pressed={!foreignSetId && setId !== ALL_SERIES} className={styles.seriesPickerOption} onClick={() => { setForeignSetId(''); setSetId(''); setQuery(''); setFilterQuery(''); rememberSelectedSet(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
+                <button type="button" aria-pressed={!foreignSetId && setId === ALL_SERIES} className={!foreignSetId && setId === ALL_SERIES ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setForeignSetId(''); setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); rememberSelectedSet(ALL_SERIES); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
                 {filteredForeignSets.map(set => {
                   const isSelected = set.is_native_set ? setId === set.nativeCardSetId && !foreignSetId : foreignSetId === set.id
                   return <button type="button" aria-pressed={isSelected} className={isSelected ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={(set.is_native_set ? 'native-' : 'foreign-') + set.id} onClick={() => {
                     setForeignSetId(set.is_native_set ? '' : set.id)
                     setSetId(set.is_native_set ? set.nativeCardSetId : ALL_SERIES)
+                    rememberSelectedSet(set.is_native_set ? set.nativeCardSetId : ALL_SERIES)
                     setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false)
                   }}>{(set.set_code ? set.set_code.toUpperCase() + ' — ' : '') + (set.set_name || set.series_name_fr || set.series_name || 'Série')}</button>
                 })}
                 {!loadingForeignSets && !filteredForeignSets.length && <p className={styles.seriesPickerEmpty}>{seriesPickerQuery ? 'Aucune série ne correspond.' : 'Aucune série disponible pour cette langue.'}</p>}
               </> : <>
-                <button type="button" aria-pressed={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
-                <button type="button" aria-pressed={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
-                <button type="button" aria-pressed={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies · toutes les séries</button>
-                <button type="button" aria-pressed={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
-                {showAllRewardSeriesOption && <button type="button" aria-pressed={isAllPackRewardsSelection(setId)} className={isAllPackRewardsSelection(setId) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_PACK_REWARDS); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Pack Récompense Play! Pokémon · toutes les séries</button>}
+                <button type="button" aria-pressed={!setId} className={styles.seriesPickerOption} onClick={() => { setSetId(''); setFilterQuery(''); rememberSelectedSet(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Choisir une série…</button>
+                <button type="button" aria-pressed={setId === ALL_SERIES && !isEnergySearch(query)} className={setId === ALL_SERIES && !isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery(''); setFilterQuery(''); rememberSelectedSet(ALL_SERIES); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Toutes les séries · rechercher</button>
+                <button type="button" aria-pressed={setId === ALL_SERIES && isEnergySearch(query)} className={setId === ALL_SERIES && isEnergySearch(query) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_SERIES); setQuery('Énergie'); setFilterQuery(''); rememberSelectedSet(ALL_SERIES); updateGlobalSearch('Énergie'); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Énergies · toutes les séries</button>
+                <button type="button" aria-pressed={selectedMcDonaldsSet} className={selectedMcDonaldsSet ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(MCDONALDS_SERIES); setFilterQuery(''); rememberSelectedSet(MCDONALDS_SERIES); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>McDonald’s · toutes les années</button>
+                {showAllRewardSeriesOption && <button type="button" aria-pressed={isAllPackRewardsSelection(setId)} className={isAllPackRewardsSelection(setId) ? styles.seriesPickerOptionActive : styles.seriesPickerOption} onClick={() => { setSetId(ALL_PACK_REWARDS); setFilterQuery(''); rememberSelectedSet(ALL_PACK_REWARDS); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>Pack Récompense Play! Pokémon · toutes les séries</button>}
                 {filteredRewardProducts.map(product => {
                   const productSetId = PACK_REWARD_PREFIX + product.id
                   const selected = setId === productSetId
-                  return <button type="button" aria-pressed={selected} className={selected ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={product.id} onClick={() => { setSetId(productSetId); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{product.name}</button>
+                  return <button type="button" aria-pressed={selected} className={selected ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={product.id} onClick={() => { setSetId(productSetId); setFilterQuery(''); rememberSelectedSet(productSetId); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{product.name}</button>
                 })}
-                {filteredSets.map(set => <button type="button" aria-pressed={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
+                {filteredSets.map(set => <button type="button" aria-pressed={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); rememberSelectedSet(set.id); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
               </>}
             </div>}
           </div>
         </div>
         {setId === ALL_SERIES && !foreignSetId && <label className={styles.searchField}>
           <span>{languageCode === 'FR' ? 'Nom, numéro ou finition' : 'Nom, numéro ou série dans cette langue (ou nom français)'}</span>
-          <input type="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu, 257, Gold" />
+          <input type="search" value={query} onChange={event => updateGlobalSearch(event.target.value)} placeholder="Ex. Pikachu, 257, Gold" />
         </label>}
         {selectedSet && <label className={styles.searchField}>
           <span>{selectedMcDonaldsSet ? 'Filtrer les éditions McDonald’s' : isAllPackRewardsSelection(setId) ? 'Filtrer les cartes des Packs Récompense' : isPackRewardSelection(setId) ? 'Filtrer les cartes de ce Pack Récompense' : 'Filtrer cette série'}</span>
-          <input type="search" value={filterQuery} onChange={event => { setFilterQuery(event.target.value); setSelection({}) }} placeholder="Numéro ou nom…" />
+          <input type="search" value={filterQuery} onChange={event => { updateSeriesSearch(event.target.value); setSelection({}) }} placeholder="Numéro ou nom…" />
         </label>}
         {user && profiles.length > 0 && <label className={styles.profileField}>
           <span>Profil de collection</span>

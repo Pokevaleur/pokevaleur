@@ -63,6 +63,14 @@ export default function CollectionPage() {
   const [selectedSealedFormat, setSelectedSealedFormat] = useState(null)
   const activeCollectionProfile = collectionProfiles.find(profile => profile.id === activeProfileId)
 
+  function updateCollectionSearch(nextQuery) {
+    setQuery(nextQuery)
+    const url = new URL(window.location.href)
+    if (nextQuery.trim()) url.searchParams.set('search', nextQuery)
+    else url.searchParams.delete('search')
+    window.history.replaceState(window.history.state, '', url.pathname + url.search + url.hash)
+  }
+
   async function addCaseUnitTypes(productRows) {
     const typeById = new Map((productRows || []).map(product => [product.id, product.product_type]))
     const missingIds = [...new Set((productRows || []).map(product => product.case_unit_product_id).filter(id => id && !typeById.has(id)))]
@@ -230,7 +238,10 @@ export default function CollectionPage() {
       return
     }
     const initialSearch = params.get('search')
-    if (initialSearch) setQuery(initialSearch)
+    if (initialSearch) {
+      setQuery(initialSearch)
+      setShowCollectionItems(true)
+    }
     setLoginNext(`/collection${window.location.search}`)
     load()
   }, [])
@@ -854,14 +865,14 @@ export default function CollectionPage() {
                 aria-label="Rechercher dans ma collection"
                 placeholder="Nom, série, vendeur…"
                 value={query}
-                onChange={e => { setQuery(e.target.value); setQuickFormatFilter('') }}
+                onChange={e => { updateCollectionSearch(e.target.value); setQuickFormatFilter('') }}
               />
               <button
                 type="button"
                 className={collectionVoiceListening ? 'voiceSearchButton listening' : 'voiceSearchButton'}
                 aria-label="Rechercher à la voix"
                 title="Recherche vocale"
-                onClick={() => startVoiceSearch(value => { setQuery(value); setQuickFormatFilter('') }, setCollectionVoiceListening)}
+                onClick={() => startVoiceSearch(value => { updateCollectionSearch(value); setQuickFormatFilter('') }, setCollectionVoiceListening)}
               >
                 {collectionVoiceListening ? '🎙️' : '🎤'}
               </button>
@@ -874,7 +885,7 @@ export default function CollectionPage() {
               key={format}
               className="catalogExample"
               onClick={() => {
-                setQuery(format)
+                updateCollectionSearch(format)
                 setQuickFormatFilter(format)
                 setShowCollectionItems(true)
               }}
@@ -892,7 +903,7 @@ export default function CollectionPage() {
             <option value="standard">État standard</option>
           </select>
         </label>
-        {hasCollectionSearch && <button type="button" className="miniBtn" onClick={() => { setQuery(''); setQuickFormatFilter(''); setConditionFilter('all') }}>Effacer</button>}
+        {hasCollectionSearch && <button type="button" className="miniBtn" onClick={() => { updateCollectionSearch(''); setQuickFormatFilter(''); setConditionFilter('all') }}>Effacer</button>}
         </div>
         <p className="muted collectionSearchStatus" role="status">{isSwitchingProfile ? 'Chargement de la collection…' : hasCollectionSearch ? `${filteredItems.length} résultat${filteredItems.length > 1 ? 's' : ''}` : 'Saisis un nom ou choisis un filtre.'}</p>
       </section>
