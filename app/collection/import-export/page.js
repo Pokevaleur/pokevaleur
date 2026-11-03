@@ -25,7 +25,7 @@ function normalizeSeriesCodes(value) {
 function titleCaseFrench(value) {
   let title = String(value || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('fr-FR')
   title = title.replace(/(^|[\s–—-])(\p{L})/gu, (_, separator, letter) => separator + letter.toLocaleUpperCase('fr-FR'))
-  title = title.replace(/\b(de|du|des|d['’]|et|à|au|aux|en|la|le|les|sur|sous|pour|par|dans|avec)\b/giu,
+  title = title.replace(/\b(?:de|du|des|d['’]|et|à|au|aux|en|la|le|les|sur|sous|pour|par|dans|avec)\b/giu,
     (word, offset) => offset === 0 ? word : word.toLocaleLowerCase('fr-FR'))
   title = normalizeSeriesCodes(title)
   return title
