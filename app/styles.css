@@ -1619,3 +1619,18 @@ body:has(.collectionWorkspace) { background:#fcfbf8 !important; }
   .topbar>.brand{white-space:nowrap;flex:0 0 auto;line-height:1}
   .topbar>.desktopNav{flex:1;min-width:0}
 }
+
+
+/* Desktop collection overview: bring more sealed-product counters above the fold. */
+@media(min-width:701px){
+  .collectionWorkspace{padding-top:16px;gap:10px}
+  .collectionHeroArtwork{height:clamp(120px,10vw,160px)}
+  .collectionTotals{margin:10px 0;padding:16px 18px}
+  .collectionTotalsHead{margin-bottom:12px}
+  .collectionTotalsHead h2{font-size:clamp(1.2rem,1.6vw,1.55rem)}
+  .collectionTotalsHead p{font-size:.9rem}
+  .sealedCollectionTotalGrid{gap:8px}
+  .sealedCollectionTotalGrid>.collectionTotalAction{min-height:72px;padding:8px}
+  .sealedCollectionTotalGrid .collectionTotalAction strong{font-size:1.7rem}
+  .sealedCollectionTotalGrid .collectionTotalAction span{font-size:.82rem;line-height:1.2}
+}
