@@ -33,6 +33,10 @@ function titleCaseFrench(value) {
     .replace(/\bUpc\b/gu, 'UPC')
     .replace(/\bSpc\b/gu, 'SPC')
     .replace(/\bAp\b/gu, 'AP')
+    .replace(/\bVmax\b/gu, 'VMAX')
+    .replace(/\bVstar\b/gu, 'VSTAR')
+    .replace(/\bGx\b/gu, 'GX')
+    .replace(/\bEx\b/gu, 'ex')
     .replace(/\bPok[eé]box\b/giu, 'Pokébox')
     .replace(/\bBoite\b/giu, 'Boîte')
 }
