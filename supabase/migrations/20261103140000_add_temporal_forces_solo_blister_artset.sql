@@ -90,7 +90,7 @@ where p.series = 'Écarlate et Violet – Forces Temporelles'
       and pc.item_name = 'Solo blister Forces Temporelles — un exemplaire de chaque visuel'
   );
 
--- Remove only the image-less generic entry, after its four replacements are
+-- Remove only the old generic entry, after its four replacements are
 -- present and only if no collection, trade, or market-history data depends on it.
 delete from public.product_contents pc
 using public.products p
@@ -99,7 +99,6 @@ where pc.product_id = p.id
   and p.series = 'Écarlate et Violet – Forces Temporelles'
   and p.product_type = 'Solo blister'
   and p.booster_artwork is null
-  and p.image_url is null
   and (
     select count(*) from public.products variant
     where variant.series = p.series
@@ -115,7 +114,6 @@ where p.name = 'Solo blister – Écarlate et Violet – Forces Temporelles'
   and p.series = 'Écarlate et Violet – Forces Temporelles'
   and p.product_type = 'Solo blister'
   and p.booster_artwork is null
-  and p.image_url is null
   and (
     select count(*) from public.products variant
     where variant.series = p.series
