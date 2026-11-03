@@ -678,80 +678,6 @@ export default function CollectionPage() {
     await load()
   }
 
-  function exportCollection(includePrices) {
-    const escapeCsv = value => {
-      const text = String(value ?? '').replace(/"/g, '""')
-      return `"${text}"`
-    }
-
-    const headers = [
-      'Produit',
-      'Quantité',
-      'Série',
-      'Type',
-      'Date d’achat',
-      'Lieu d’achat',
-      'Vendeur',
-      'État',
-      'Composition boosters',
-      'Particularité',
-      'Notes'
-    ]
-
-    if (includePrices) {
-      headers.splice(4, 0, 'Prix d’achat unitaire', 'Valeur actuelle unitaire', 'Valeur totale', 'Plus-value')
-    }
-
-    const rows = items.map(item => {
-      const product = catalog.find(p => p.id === item.product_id) || {}
-      const quantity = item.quantity || 1
-      const currentValue = getCurrentValue(item)
-      const purchasePrice = Number(item.purchase_price) || 0
-      const row = [
-        item.custom_name || product.name || '',
-        quantity,
-        product.series || '',
-        product.category || '',
-        item.purchase_date || '',
-        item.purchase_place || '',
-        item.seller_name || '',
-        item.sealed_condition === 'zero_defect' ? 'Zéro défaut' : 'Standard',
-        item.booster_configuration || '',
-        item.variant_note || '',
-        item.notes || ''
-      ]
-
-      if (includePrices) {
-        row.splice(
-          4,
-          0,
-          hasPurchasePrice(item) ? purchasePrice.toFixed(2) : '',
-          Number(currentValue || 0).toFixed(2),
-          Number((currentValue || 0) * quantity).toFixed(2),
-          hasPurchasePrice(item) ? Number(((currentValue || 0) - purchasePrice) * quantity).toFixed(2) : ''
-        )
-      }
-
-      return row
-    })
-
-    const csv = [
-      headers.map(escapeCsv).join(';'),
-      ...rows.map(row => row.map(escapeCsv).join(';'))
-    ].join('\n')
-
-    const blob = new Blob(['\uFEFF' + csv], { type: 'text/csv;charset=utf-8;' })
-    const url = URL.createObjectURL(blob)
-    const link = document.createElement('a')
-    const date = new Date().toISOString().slice(0, 10)
-    link.href = url
-    link.download = `pokevaleur-collection-${includePrices ? 'avec-prix' : 'sans-prix'}-${date}.csv`
-    document.body.appendChild(link)
-    link.click()
-    document.body.removeChild(link)
-    URL.revokeObjectURL(url)
-  }
-
   const hasCollectionSearch = Boolean(normalizeSearch(query)) || conditionFilter !== 'all'
   const filteredItems = filterCollectionItems(items, catalog, query, conditionFilter, quickFormatFilter)
   const sealedCounts = calculateSealedFormatCounts(items, catalog)
@@ -858,19 +784,6 @@ export default function CollectionPage() {
       </section>
       <button type="button" className="collectionAddCta" onClick={() => { setShowAddForm(true); setTimeout(() => document.getElementById('ajouter-produit')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0) }}>Ajouter un trésor</button>
 
-      <section className="panel collectionToolsPanel collectionFilesVisible" aria-label="Importer ou exporter la collection">
-        <h2>Mes fichiers</h2>
-        <div className="collectionFileActions">
-          <a className="miniBtn" href="/collection/import">Importer Excel / CSV</a>
-          <details open className="collectionExportMenu">
-            <summary>Exporter avec ou sans prix</summary>
-            <div>
-              <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(true)}>Avec les prix</button>
-              <button className="miniBtn" type="button" disabled={isSwitchingProfile} onClick={() => exportCollection(false)}>Sans les prix</button>
-            </div>
-          </details>
-        </div>
-      </section>
       <section className="panel collectionSearchPanel" aria-label="Recherche dans ma collection">
         <div className="collectionSearchHeading"><h2>Retrouver un objet</h2><button type="button" className="miniBtn primaryMini" onClick={() => setShowAddForm(true)}>＋ Ajouter</button></div>
             <div className="voiceSearchWrap collectionVoiceSearch">
