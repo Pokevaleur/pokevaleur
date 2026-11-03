@@ -40,8 +40,12 @@ function titleCaseFrench(value) {
 function bundleSeriesCode(row) {
   const source = [row.title, row.catalogName, row.series].filter(Boolean).join(' ')
   const match = source.match(/\b(EV|ME|EB|XY|SL|SV)\s*0*(\d+(?:[.,]\d+)?)/iu)
-  if (!match) return ''
-  return normalizeSeriesCodes(match[0])
+  if (match) return normalizeSeriesCodes(match[0])
+  const normalizedSource = normalizeSearch(source)
+  if (normalizedSource.includes('heros transcendants')) return 'ME 2.5'
+  if (normalizedSource.includes('evolutions prismatiques')) return 'EV 8.5'
+  if (normalizedSource.includes('mega evolution')) return 'ME 1'
+  return ''
 }
 
 function bundleSeriesName(row, code) {
