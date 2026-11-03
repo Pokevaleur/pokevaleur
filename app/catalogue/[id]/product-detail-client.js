@@ -43,6 +43,7 @@ export default function ProductDetailClient({ product }) {
   const [boosterVariants, setBoosterVariants] = useState([])
   const [boosterVariantSet, setBoosterVariantSet] = useState(null)
   const packSeriesNumber = Number(String(product.name || '').match(/Série\s+(\d+)/i)?.[1]) || 0
+  const isSoloBlisterArtset = product.booster_packaging === 'solo_blister_artset'
 
   function handleCatalogBack(event) {
     event.preventDefault()
@@ -106,15 +107,17 @@ export default function ProductDetailClient({ product }) {
       setCardsById(Object.fromEntries(cardData.map(card => [card.id, card])))
 
       if (product.product_type === 'Artset' && product.series) {
-        const { data: artworkData } = await supabase
+        const artworkProductType = isSoloBlisterArtset ? 'Solo blister' : 'Booster loose'
+        let artworkQuery = supabase
           .from('products')
           .select('id,name,booster_artwork,image_url,image_credit')
           .eq('is_public', true)
           .eq('series', product.series)
-          .eq('product_type', 'Booster loose')
+          .eq('product_type', artworkProductType)
           .not('booster_artwork', 'is', null)
           .not('image_url', 'is', null)
-          .order('booster_artwork', { ascending: true })
+        if (isSoloBlisterArtset) artworkQuery = artworkQuery.eq('booster_packaging', 'solo_blister')
+        const { data: artworkData } = await artworkQuery.order('booster_artwork', { ascending: true })
         if (!active) return
         setBoosterArtworks(artworkData || [])
       } else {
@@ -292,8 +295,12 @@ export default function ProductDetailClient({ product }) {
 
       {product.product_type === 'Artset' && boosterArtworks.length > 0 && (
         <section className={`panel ${styles.boosterArtworkPanel}`}>
-          <h2>Illustrations des boosters loose de cette série</h2>
-          <p className="muted">Chaque visuel ouvre la fiche individuelle du booster correspondant.</p>
+          <h2>{isSoloBlisterArtset ? 'Visuels des solo blisters de cette série' : 'Illustrations des boosters loose de cette série'}</h2>
+          <p className="muted">
+            {isSoloBlisterArtset
+              ? 'Chaque visuel ouvre la fiche du solo blister correspondant.'
+              : 'Chaque visuel ouvre la fiche individuelle du booster correspondant.'}
+          </p>
           <div className={styles.boosterArtworkGrid}>
             {boosterArtworks.map(artwork => (
               <a className={styles.boosterArtworkCard} href={`/catalogue/${encodeURIComponent(artwork.id)}`} key={artwork.id}>
