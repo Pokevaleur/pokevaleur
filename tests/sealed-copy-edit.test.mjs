@@ -65,6 +65,7 @@ test('existing personal type labels are preserved and all proposed types classif
     'Pokébox': 'pokebox',
     'Case': 'case',
     'Booster': 'booster',
+    'Tripack': 'tripack',
     'Coffret': 'coffret',
     'Ultra-Premium Collection': 'premiumCollection',
     'Super-Premium Collection': 'premiumCollection',
@@ -73,7 +74,7 @@ test('existing personal type labels are preserved and all proposed types classif
   sealedTypeOptions.forEach(type => {
     assert.equal(getSealedFormat({ product_type_override: type, custom_name: 'Case ETB' }, catalog), expectedFormatByType[type], type)
   })
-  assert.equal(sealedFormats.length, 12)
+  assert.equal(sealedFormats.length, 13)
   const db = client()
   await saveSealedCopyDetails(db, 'copy', { custom_name: 'Repère', product_type_override: ' Mon type existant ' })
   assert.equal(db.calls[1][1].product_type_override, 'Mon type existant')
