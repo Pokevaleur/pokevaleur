@@ -103,7 +103,6 @@ export default function AdminPage() {
         const matches = products
           .filter(product => product.category === 'sealed' && matchesSealedMarketSearch(product, term))
           .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
-          .slice(0, 30)
         if (cancelled) return
         setMarketResults(matches)
         setMarketSearchLoading(false)
