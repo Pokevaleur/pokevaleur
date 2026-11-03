@@ -16,30 +16,30 @@ const bundleSeriesLabels = new Map([
 ])
 
 function normalizeSeriesCodes(value) {
-  return String(value || '').replace(/\\b(EV|ME|EB|XY|SL|SV)\\s*0*(\\d+(?:[.,]\\d+)?)/giu, (_, prefix, rawNumber) => {
+  return String(value || '').replace(/\b(EV|ME|EB|XY|SL|SV)\s*0*(\d+(?:[.,]\d+)?)/giu, (_, prefix, rawNumber) => {
     const number = String(Number(rawNumber.replace(',', '.')))
     return prefix.toUpperCase() + ' ' + number
   })
 }
 
 function titleCaseFrench(value) {
-  let title = String(value || '').replace(/\\s+/g, ' ').trim().toLocaleLowerCase('fr-FR')
-  title = title.replace(/(^|[\\s–—-])(\\p{L})/gu, (_, separator, letter) => separator + letter.toLocaleUpperCase('fr-FR'))
-  title = title.replace(/\\b(de|du|des|d['’]|et|à|au|aux|en|la|le|les|sur|sous|pour|par|dans|avec)\\b/giu,
+  let title = String(value || '').replace(/\s+/g, ' ').trim().toLocaleLowerCase('fr-FR')
+  title = title.replace(/(^|[\s–—-])(\p{L})/gu, (_, separator, letter) => separator + letter.toLocaleUpperCase('fr-FR'))
+  title = title.replace(/\b(de|du|des|d['’]|et|à|au|aux|en|la|le|les|sur|sous|pour|par|dans|avec)\b/giu,
     (word, offset) => offset === 0 ? word : word.toLocaleLowerCase('fr-FR'))
   title = normalizeSeriesCodes(title)
   return title
-    .replace(/\\bEtb\\b/gu, 'ETB')
-    .replace(/\\bUpc\\b/gu, 'UPC')
-    .replace(/\\bSpc\\b/gu, 'SPC')
-    .replace(/\\bAp\\b/gu, 'AP')
-    .replace(/\\bPok[eé]box\\b/giu, 'Pokébox')
-    .replace(/\\bBoite\\b/giu, 'Boîte')
+    .replace(/\bEtb\b/gu, 'ETB')
+    .replace(/\bUpc\b/gu, 'UPC')
+    .replace(/\bSpc\b/gu, 'SPC')
+    .replace(/\bAp\b/gu, 'AP')
+    .replace(/\bPok[eé]box\b/giu, 'Pokébox')
+    .replace(/\bBoite\b/giu, 'Boîte')
 }
 
 function bundleSeriesCode(row) {
   const source = [row.title, row.catalogName, row.series].filter(Boolean).join(' ')
-  const match = source.match(/\\b(EV|ME|EB|XY|SL|SV)\\s*0*(\\d+(?:[.,]\\d+)?)/iu)
+  const match = source.match(/\b(EV|ME|EB|XY|SL|SV)\s*0*(\d+(?:[.,]\d+)?)/iu)
   if (!match) return ''
   return normalizeSeriesCodes(match[0])
 }
@@ -49,12 +49,11 @@ function bundleSeriesName(row, code) {
   const source = [row.series, row.catalogName, row.title].filter(Boolean)
   for (const candidate of source) {
     const cleaned = normalizeSeriesCodes(candidate)
-      .replace(/^\\s*(?:lot\\s+de\\s+(?:6|six)\\s+boosters?|booster\\s+bundle|bundle)\\s*/iu, '')
-      .replace(code ? new RegExp('\\\\b' + code.replace(/[.*+?^${}()|[\\]\\\\]/g, '\\\\const shortDate = new Intl.DateTimeFormat('fr-FR')
-') + '\\\\b', 'iu') : /$^/, '')
-      .replace(/^\\s*[-–—:|]+\\s*/, '')
+      .replace(/^\s*(?:lot\s+de\s+(?:6|six)\s+boosters?|booster\s+bundle|bundle)\s*/iu, '')
+      .replace(/\b(?:EV|ME|EB|XY|SL|SV)\s*0*\d+(?:[.,]\d+)?\b/iu, '')
+      .replace(/^\s*[-–—:|]+\s*/, '')
       .trim()
-    if (cleaned && !/^\\d+$/u.test(cleaned)) return titleCaseFrench(cleaned)
+    if (cleaned && !/^\d+$/u.test(cleaned)) return titleCaseFrench(cleaned)
   }
   return ''
 }
@@ -64,13 +63,13 @@ function formatExcelProductTitle(row) {
   const normalizedTitle = normalizeSearch(rawTitle)
   const productType = normalizeSearch(row.productType)
   const isBundle = productType === 'bundle' || productType === 'booster bundle'
-    || /^(?:bundle|booster bundle|lot de (?:6|six) boosters?)\\b/u.test(normalizedTitle)
+    || /^(?:bundle|booster bundle|lot de (?:6|six) boosters?)\b/u.test(normalizedTitle)
   if (isBundle) {
     const code = bundleSeriesCode(row)
     const seriesName = bundleSeriesName(row, code)
     if (code || seriesName) return ['Bundle', code, seriesName].filter(Boolean).join(' ')
     return 'Bundle ' + titleCaseFrench(rawTitle
-      .replace(/^\\s*(?:lot\\s+de\\s+(?:6|six)\\s+boosters?|booster\\s+bundle|bundle)\\s*/iu, ''))
+      .replace(/^\s*(?:lot\s+de\s+(?:6|six)\s+boosters?|booster\s+bundle|bundle)\s*/iu, ''))
   }
   return titleCaseFrench(rawTitle)
 }
