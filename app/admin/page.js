@@ -3,7 +3,6 @@
 import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
-import { fetchAllRows } from '../../lib/supabase-pagination'
 
 function median(values) {
   if (!values.length) return null
