@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../../../lib/supabase-browser'
 import { fetchAllRows } from '../../../../lib/supabase-pagination'
 import { getSealedItemValue, loadActiveCollectionProfile } from '../../../../lib/collection-value-data'
+import { getProductThumbnailUrl } from '../../../../lib/optimized-image-url.js'
 import styles from '../value.module.css'
 
 function euro(value) {
@@ -86,7 +87,7 @@ export default function SealedValuesPage() {
         </label>
         {filtered.length ? <div className={styles.productList}>
           {filtered.map(row => <article className={styles.productRow} key={row.id}>
-            {row.product?.image_url ? <img src={row.product.image_url} alt="" loading="lazy" /> : <div className={styles.productPlaceholder} aria-hidden="true">📦</div>}
+            {row.product?.image_url ? <img src={getProductThumbnailUrl(row.product.image_url)} alt="" loading="lazy" decoding="async" /> : <div className={styles.productPlaceholder} aria-hidden="true">📦</div>}
             <div className={styles.productText}>
               <span className={styles.productSeries}>{row.product?.series || 'Produit scellé'}</span>
               <h2>{row.custom_name || row.product?.name || 'Produit sans nom'}</h2>
