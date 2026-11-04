@@ -873,8 +873,8 @@ export default function CollectionPage() {
                           <input type="number" min="0" step="0.01" value={editForm.purchase_price} onChange={e => setEditForm({ ...editForm, purchase_price: e.target.value })} />
                         </label>
                         <label>
-                          Valeur manuelle (€)
-                          <input type="number" min="0" step="0.01" value={editForm.current_value_override} onChange={e => setEditForm({ ...editForm, current_value_override: e.target.value })} placeholder="Vide = cote PokéValeur" />
+                          Cote personnelle (€)
+                          <input type="number" min="0" step="0.01" value={editForm.current_value_override} onChange={e => setEditForm({ ...editForm, current_value_override: e.target.value })} placeholder="Vide = cote catalogue du produit" />
                         </label>
                         <label>
                           Date
@@ -1000,9 +1000,9 @@ export default function CollectionPage() {
                       <div className="productValues">
                         <b>{hasPurchasePrice(item) ? `${buy.toFixed(2)} €` : 'Achat non renseigné'} → {value.toFixed(2)} €</b>
                         {item.current_value_override === null && getCatalogValue(item) !== null
-                          ? <small className="muted">{item.sealed_condition === 'zero_defect' ? 'Cote PokéValeur zéro défaut' : 'Cote PokéValeur standard'}</small>
+                          ? <small className="muted">{item.sealed_condition === 'zero_defect' ? 'Cote catalogue zéro défaut' : 'Cote catalogue standard'}</small>
                           : item.current_value_override !== null
-                            ? <small className="muted">Valeur manuelle</small>
+                            ? <small className="muted">Cote personnelle</small>
                             : null}
                         <span className={diff >= 0 ? 'gain' : 'loss'}>
                           {diff == null ? 'Plus-value non calculable' : `${diff >= 0 ? '+' : ''}${diff.toFixed(2)} €`}
@@ -1121,14 +1121,14 @@ export default function CollectionPage() {
             </label>
 
             <label>
-              Valeur actuelle manuelle (€) — facultatif
+              Cote personnelle (€) — facultatif
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.current_value_override}
                 onChange={e => setForm({ ...form, current_value_override: e.target.value })}
-                placeholder="Laisser vide pour utiliser la cote PokéValeur"
+                placeholder="Vide = cote catalogue si le produit est lié"
               />
             </label>
 
