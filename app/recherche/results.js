@@ -4,9 +4,11 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
+import { compareProductsByRelease, createSeriesReleaseDateMap } from '../../lib/catalogue-sort.mjs'
 import styles from './page.module.css'
 
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date),card_print_variants(id,finish_code)'
+const GENERIC_ETB_CASE_IMAGE = 'https://www.pokevaleur.fr/etb-case-generic.jpg'
 
 function normalizeText(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -38,6 +40,11 @@ function formatPrice(value, currency = 'EUR') {
 function productMatcher(query) {
   try { return createProductMatcher(query) }
   catch { return () => false }
+}
+
+function isEtbCase(product) {
+  const name = normalizeText(product?.name).replace(/[’']/g, ' ')
+  return /^case\s+de\s+\d+\s+(?:etb\b|coffret\s+dresseur\s+d\s+elite\b)/.test(name)
 }
 
 export default function SearchResults({ initialQuery }) {
@@ -73,7 +80,7 @@ export default function SearchResults({ initialQuery }) {
       const [setsResult, productsResult] = await Promise.all([
         fetchAllRows(() => supabase.from('card_sets').select('id,series_name,set_name,set_code,language,release_date')
           .eq('is_public', true).order('release_date', { ascending: false })),
-        fetchAllRows(() => supabase.from('products').select('id,name,series,category,product_type,image_url,release_date,case_reference,current_value,price_source')
+        fetchAllRows(() => supabase.from('products').select('id,name,series,category,product_type,image_url,release_date,release_year,release_period,case_reference,current_value,price_source')
           .eq('is_public', true).eq('category', 'sealed').order('name').order('id'))
       ])
       if (setsResult.error || productsResult.error) throw setsResult.error || productsResult.error
@@ -128,6 +135,7 @@ export default function SearchResults({ initialQuery }) {
       })
       const matcher = productMatcher(term)
       const matchingProducts = (productsResult.data || []).filter(matcher)
+      const seriesReleaseDates = createSeriesReleaseDateMap(setRows)
       const etbSearch = /\\betb\\b|coffret dresseur|elite trainer box/.test(normalizeSearch(term))
       matchingProducts.sort((left, right) => {
         if (etbSearch) {
@@ -140,7 +148,7 @@ export default function SearchResults({ initialQuery }) {
           const groupOrder = group(left) - group(right)
           if (groupOrder) return groupOrder
         }
-        return String(right.release_date || '').localeCompare(String(left.release_date || ''))
+        return compareProductsByRelease(right, left, seriesReleaseDates)
           || normalizeText(left.name).localeCompare(normalizeText(right.name), 'fr')
           || String(left.id).localeCompare(String(right.id))
       })
@@ -249,8 +257,9 @@ export default function SearchResults({ initialQuery }) {
               {products.length ? <div className={styles.grid}>
                 {products.map(product => {
                   const quote = formatPrice(product.current_value)
+                  const productImage = isEtbCase(product) ? GENERIC_ETB_CASE_IMAGE : product.image_url
                   return <a className={styles.product} href={'/catalogue/' + encodeURIComponent(product.id)} key={product.id}>
-                  <span className={styles.imageFrame}>{product.image_url ? <img src={product.image_url} alt="" loading="lazy"/> : <span className={styles.noImage}>Image à venir</span>}</span>
+                  <span className={styles.imageFrame}>{productImage ? <img src={productImage} alt="" loading="lazy"/> : <span className={styles.noImage}>Image à venir</span>}</span>
                   <span className={styles.cardText}><strong>{product.name}</strong><span>{product.product_type || 'Produit scellé'}</span><small>{product.series || product.case_reference || 'Série non précisée'}</small>
                     <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={product.price_source || 'Cote actuelle du catalogue'} aria-label={quote ? `Cote actuelle : ${quote}` : 'Cote indisponible'}>{quote || 'Cote indisponible'}</span>
                   </span>
