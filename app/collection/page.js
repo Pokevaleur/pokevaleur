@@ -9,6 +9,7 @@ import { hasPurchasePrice } from '../../lib/collection-statistics.mjs'
 import { calculateSealedFormatCounts } from '../../lib/sealed-collection-counts.mjs'
 import { buildSealedProductDetails } from '../../lib/sealed-collection-details.mjs'
 import { saveUploadedPhotoBatch, uploadUnlinkedPhotoBatch } from '../../lib/collection-photo-save.mjs'
+import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 
 const emptyForm = {
   custom_name: '',
@@ -975,7 +976,7 @@ export default function CollectionPage() {
                   <article className="productCard" key={item.id}>
                     {displayPhoto && (
                       <div className="collectionItemPhoto">
-                        <img src={displayPhoto} alt={item.custom_name} loading="lazy" />
+                        <img src={photoUrls[item.id] ? displayPhoto : getProductThumbnailUrl(displayPhoto)} alt={item.custom_name} loading="lazy" decoding="async" />
                         {!photoUrls[item.id] && <small className="muted">Visuel du catalogue</small>}
                       </div>
                     )}
