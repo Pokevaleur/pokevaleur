@@ -146,7 +146,7 @@ export default function SearchResults({ initialQuery }) {
       })
       if (!cancelled) {
         setCards(matchingCards.slice(0, 60))
-        setProducts(matchingProducts.slice(0, 60))
+        setProducts(matchingProducts.slice(0, etbSearch ? 100 : 60))
         setLoading(false)
       }
     }
