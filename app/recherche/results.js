@@ -136,18 +136,20 @@ export default function SearchResults({ initialQuery }) {
       const matcher = productMatcher(term)
       const matchingProducts = (productsResult.data || []).filter(matcher)
       const seriesReleaseDates = createSeriesReleaseDateMap(setRows)
-      const etbSearch = /\\betb\\b|coffret dresseur|elite trainer box/.test(normalizeSearch(term))
+      const normalizedTerm = normalizeSearch(term)
+      const etbSearch = normalizedTerm.split(' ').includes('etb')
+        || normalizedTerm.includes('coffret dresseur')
+        || normalizedTerm.includes('elite trainer box')
+      const productGroup = product => {
+        const type = normalizeSearch(product?.product_type)
+        const name = normalizeText(product?.name)
+        if (type === 'etb') return 0
+        if (type === 'case' || type.startsWith('case ') || name.startsWith('case de ')) return 2
+        return 1
+      }
       matchingProducts.sort((left, right) => {
-        if (etbSearch) {
-          const group = product => {
-            const type = normalizeSearch(product.product_type)
-            if (type === 'etb') return 0
-            if (type === 'case') return 1
-            return 2
-          }
-          const groupOrder = group(left) - group(right)
-          if (groupOrder) return groupOrder
-        }
+        const groupOrder = productGroup(left) - productGroup(right)
+        if (groupOrder) return groupOrder
         return compareProductsByRelease(right, left, seriesReleaseDates)
           || normalizeText(left.name).localeCompare(normalizeText(right.name), 'fr')
           || String(left.id).localeCompare(String(right.id))
