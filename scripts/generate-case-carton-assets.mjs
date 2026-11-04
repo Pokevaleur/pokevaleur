@@ -45,7 +45,8 @@ function quantityLines(row, type) {
   if (type === 'DISPLAY 36 BOOSTERS') {
     return [count ? `${count} DISPLAY${count > 1 ? 'S' : ''}` : 'DISPLAY', '36 BOOSTERS PAR DISPLAY']
   }
-  const pluralType = type === 'ETB' ? type : `${type}${count > 1 ? 'S' : ''}`
+  const pluralLabels = { ETB: 'ETB', 'COLLECTION PIN’S': 'COLLECTIONS PIN’S', POKÉBOX: 'POKÉBOX' }
+  const pluralType = pluralLabels[type] || `${type}${count > 1 ? 'S' : ''}`
   return [count ? `${count} ${pluralType}` : type, 'CARTON DE TRANSPORT']
 }
 
