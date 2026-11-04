@@ -128,6 +128,22 @@ export default function SearchResults({ initialQuery }) {
       })
       const matcher = productMatcher(term)
       const matchingProducts = (productsResult.data || []).filter(matcher)
+      const etbSearch = /\\betb\\b|coffret dresseur|elite trainer box/.test(normalizeSearch(term))
+      matchingProducts.sort((left, right) => {
+        if (etbSearch) {
+          const group = product => {
+            const type = normalizeSearch(product.product_type)
+            if (type === 'etb') return 0
+            if (type === 'case') return 1
+            return 2
+          }
+          const groupOrder = group(left) - group(right)
+          if (groupOrder) return groupOrder
+        }
+        return String(right.release_date || '').localeCompare(String(left.release_date || ''))
+          || normalizeText(left.name).localeCompare(normalizeText(right.name), 'fr')
+          || String(left.id).localeCompare(String(right.id))
+      })
       if (!cancelled) {
         setCards(matchingCards.slice(0, 60))
         setProducts(matchingProducts.slice(0, 60))
