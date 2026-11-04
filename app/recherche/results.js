@@ -5,6 +5,7 @@ import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { compareProductsByRelease, createSeriesReleaseDateMap } from '../../lib/catalogue-sort.mjs'
+import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 import styles from './page.module.css'
 
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date),card_print_variants(id,finish_code)'
@@ -261,7 +262,7 @@ export default function SearchResults({ initialQuery }) {
                   const quote = formatPrice(product.current_value)
                   const productImage = isEtbCase(product) ? GENERIC_ETB_CASE_IMAGE : product.image_url
                   return <a className={styles.product} href={'/catalogue/' + encodeURIComponent(product.id)} key={product.id}>
-                  <span className={styles.imageFrame}>{productImage ? <img src={productImage} alt="" loading="lazy"/> : <span className={styles.noImage}>Image à venir</span>}</span>
+                  <span className={styles.imageFrame}>{productImage ? <img src={getProductThumbnailUrl(productImage)} alt="" loading="lazy" decoding="async"/> : <span className={styles.noImage}>Image à venir</span>}</span>
                   <span className={styles.cardText}><strong>{product.name}</strong><span>{product.product_type || 'Produit scellé'}</span><small>{product.series || product.case_reference || 'Série non précisée'}</small>
                     <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={product.price_source || 'Cote actuelle du catalogue'} aria-label={quote ? `Cote actuelle : ${quote}` : 'Cote indisponible'}>{quote || 'Cote indisponible'}</span>
                   </span>
