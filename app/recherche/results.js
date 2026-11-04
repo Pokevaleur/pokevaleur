@@ -6,7 +6,7 @@ import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import styles from './page.module.css'
 
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,market_code,release_date),card_print_variants(id,finish_code)'
 
 function normalizeText(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -27,6 +27,14 @@ function languageLabel(value) {
   return ({ FR: 'Français', JP: 'Japonais', EN: 'Anglais', CN: 'Chinois', KR: 'Coréen' })[language] || language || 'Langue non précisée'
 }
 
+function formatPrice(value, currency = 'EUR') {
+  const amount = Number(value)
+  const code = /^[A-Z]{3}$/.test(String(currency || '').toUpperCase()) ? String(currency).toUpperCase() : 'EUR'
+  return Number.isFinite(amount) && amount > 0
+    ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: code, maximumFractionDigits: 2 }).format(amount)
+    : null
+}
+
 function productMatcher(query) {
   try { return createProductMatcher(query) }
   catch { return () => false }
@@ -37,6 +45,8 @@ export default function SearchResults({ initialQuery }) {
   const [query, setQuery] = useState(initialQuery)
   const [cards, setCards] = useState([])
   const [products, setProducts] = useState([])
+  const [cardPrices, setCardPrices] = useState({})
+  const [pricesLoading, setPricesLoading] = useState(false)
   const [loading, setLoading] = useState(Boolean(initialQuery.trim()))
   const [error, setError] = useState('')
 
@@ -46,6 +56,7 @@ export default function SearchResults({ initialQuery }) {
     if (term.length < 2) {
       setCards([])
       setProducts([])
+      setCardPrices({})
       setLoading(false)
       setError('')
       return
@@ -55,10 +66,14 @@ export default function SearchResults({ initialQuery }) {
     async function searchCatalogues() {
       setLoading(true)
       setError('')
+      setCards([])
+      setProducts([])
+      setCardPrices({})
+      setPricesLoading(false)
       const [setsResult, productsResult] = await Promise.all([
         fetchAllRows(() => supabase.from('card_sets').select('id,series_name,set_name,set_code,language,release_date')
           .eq('is_public', true).order('release_date', { ascending: false })),
-        fetchAllRows(() => supabase.from('products').select('id,name,series,category,product_type,image_url,release_date,case_reference')
+        fetchAllRows(() => supabase.from('products').select('id,name,series,category,product_type,image_url,release_date,case_reference,current_value,price_source')
           .eq('is_public', true).eq('category', 'sealed').order('name').order('id'))
       ])
       if (setsResult.error || productsResult.error) throw setsResult.error || productsResult.error
@@ -131,6 +146,52 @@ export default function SearchResults({ initialQuery }) {
     return () => { cancelled = true }
   }, [initialQuery, supabase])
 
+  useEffect(() => {
+    if (!cards.length) {
+      setCardPrices({})
+      setPricesLoading(false)
+      return
+    }
+
+    let cancelled = false
+    const controller = new AbortController()
+    async function loadCardPrices() {
+      setPricesLoading(true)
+      const requestCards = cards.map(card => {
+        const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+        return {
+          id: card.id,
+          source_url: card.source_url,
+          image_source_url: card.image_source_url,
+          set_code: set?.set_code,
+          edition_market_code: set?.market_code || set?.language || 'FR',
+          card_name: card.card_name,
+          collector_number: card.collector_number,
+          variants: (card.card_print_variants || []).map(variant => ({ id: variant.id, finish_code: variant.finish_code }))
+        }
+      })
+      try {
+        const response = await fetch('/api/card-prices', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ cards: requestCards }),
+          signal: controller.signal
+        })
+        if (!response.ok) throw new Error('Cotes indisponibles')
+        const payload = await response.json()
+        if (!cancelled) {
+          setCardPrices(Object.fromEntries((payload.prices || []).map(price => [price.cardId, price])))
+        }
+      } catch {
+        if (!cancelled && !controller.signal.aborted) setCardPrices({})
+      } finally {
+        if (!cancelled) setPricesLoading(false)
+      }
+    }
+    loadCardPrices()
+    return () => { cancelled = true; controller.abort() }
+  }, [cards])
+
   const hasQuery = query.trim().length >= 2
   return <main className={styles.page}>
     <header className={styles.hero}>
@@ -154,10 +215,13 @@ export default function SearchResults({ initialQuery }) {
               {cards.length ? <div className={styles.grid}>
                 {cards.map(card => {
                   const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+                  const quote = formatPrice(cardPrices[card.id]?.amount, cardPrices[card.id]?.currency)
                   const target = '/catalogue/cartes?set=' + encodeURIComponent(card.card_set_id) + '&filter=' + encodeURIComponent(card.collector_number || card.card_name)
                   return <a className={styles.card} href={target} key={card.id}>
                     <span className={styles.imageFrame}>{card.image_url ? <img src={card.image_url} alt="" loading="lazy"/> : <span className={styles.noImage}>Image à venir</span>}</span>
-                    <span className={styles.cardText}><strong>{card.card_name}</strong><span>{card.collector_number || 'Numéro non indiqué'}</span><small>{set?.set_name || set?.series_name || 'Série non précisée'} · {languageLabel(set?.language)}</small></span>
+                    <span className={styles.cardText}><strong>{card.card_name}</strong><span>{card.collector_number || 'Numéro non indiqué'}</span><small>{set?.set_name || set?.series_name || 'Série non précisée'} · {languageLabel(set?.language)}</small>
+                      <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={cardPrices[card.id]?.source || 'Cote actuelle du catalogue'} aria-label={quote ? `Cote actuelle : ${quote}` : pricesLoading ? 'Chargement de la cote actuelle' : 'Cote indisponible'}>{pricesLoading && !cardPrices[card.id] ? '…' : quote || 'Cote indisponible'}</span>
+                    </span>
                   </a>
                 })}
               </div> : <p className={styles.empty}>Aucune carte ne correspond à cette recherche.</p>}
@@ -167,10 +231,14 @@ export default function SearchResults({ initialQuery }) {
             <section className={styles.resultsSection} aria-labelledby="products-heading">
               <div className={styles.sectionHeading}><div><h2 id="products-heading">Produits scellés</h2><p>ETB, displays, coffrets et autres produits.</p></div><span>{products.length}</span></div>
               {products.length ? <div className={styles.grid}>
-                {products.map(product => <a className={styles.product} href={'/catalogue/' + encodeURIComponent(product.id)} key={product.id}>
+                {products.map(product => {
+                  const quote = formatPrice(product.current_value)
+                  return <a className={styles.product} href={'/catalogue/' + encodeURIComponent(product.id)} key={product.id}>
                   <span className={styles.imageFrame}>{product.image_url ? <img src={product.image_url} alt="" loading="lazy"/> : <span className={styles.noImage}>Image à venir</span>}</span>
-                  <span className={styles.cardText}><strong>{product.name}</strong><span>{product.product_type || 'Produit scellé'}</span><small>{product.series || product.case_reference || 'Série non précisée'}</small></span>
-                </a>)}
+                  <span className={styles.cardText}><strong>{product.name}</strong><span>{product.product_type || 'Produit scellé'}</span><small>{product.series || product.case_reference || 'Série non précisée'}</small>
+                    <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={product.price_source || 'Cote actuelle du catalogue'} aria-label={quote ? `Cote actuelle : ${quote}` : 'Cote indisponible'}>{quote || 'Cote indisponible'}</span>
+                  </span>
+                </a>})}
               </div> : <p className={styles.empty}>Aucun produit scellé ne correspond à cette recherche.</p>}
               {products.length > 0 && <a className={styles.moreLink} href={'/catalogue?search=' + encodeURIComponent(query.trim())}>Continuer dans le catalogue des produits →</a>}
             </section>

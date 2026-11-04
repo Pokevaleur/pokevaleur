@@ -24,6 +24,8 @@
 .imageFrame img{display:block;width:100%;height:190px;object-fit:contain}
 .noImage{color:#71849a;font-size:13px}
 .cardText{display:grid;gap:5px;padding:12px}.cardText strong{font-size:15px;line-height:1.3}.cardText>span{color:#315d85;font-size:13px}.cardText small{color:#667b91;font-size:12px;line-height:1.35}
+.cardText .pricePill{display:inline-flex;width:fit-content;max-width:100%;align-items:center;margin-top:3px;padding:5px 9px;border:1px solid #d6e8dd;border-radius:999px;background:#f0f8f3;color:#25613b;font-size:12px;font-weight:850;line-height:1.2;white-space:nowrap}
+.cardText .priceUnavailable{border-color:#e5eaf0;background:#f5f7f9;color:#718094;font-size:11px;font-weight:700}
 .empty{margin:0;padding:15px;border-radius:12px;background:#f7f9fc;color:#5b7187;line-height:1.45}
 .moreLink{display:inline-flex;min-height:42px;align-items:center;margin-top:15px;color:#174e80;font-size:14px;font-weight:850;text-decoration:underline;text-underline-offset:3px}
 .moreLink:focus-visible{outline:3px solid #1476cb;outline-offset:3px;border-radius:3px}
