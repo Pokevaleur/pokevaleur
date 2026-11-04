@@ -42,7 +42,7 @@ function titleCaseFrench(value) {
 }
 
 function bundleSeriesCode(row) {
-  const source = [row.title, row.catalogName, row.series].filter(Boolean).join(' ')
+  const source = [row.catalogName, row.series, row.title].filter(Boolean).join(' ')
   const match = source.match(/\b(EV|ME|EB|XY|SL|SV)\s*0*(\d+(?:[.,]\d+)?)/iu)
   if (match) return normalizeSeriesCodes(match[0])
   const normalizedSource = normalizeSearch(source)
@@ -67,7 +67,7 @@ function bundleSeriesName(row, code) {
 }
 
 function formatExcelProductTitle(row) {
-  const rawTitle = String(row.title || 'Produit sans nom').trim()
+  const rawTitle = String(row.catalogName?.trim() || row.title || 'Produit sans nom').trim()
   const normalizedTitle = normalizeSearch(rawTitle)
   const productType = normalizeSearch(row.productType)
   const isBundle = productType === 'bundle' || productType === 'booster bundle'
