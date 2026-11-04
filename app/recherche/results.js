@@ -6,7 +6,7 @@ import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import styles from './page.module.css'
 
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,market_code,release_date),card_print_variants(id,finish_code)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date),card_print_variants(id,finish_code)'
 
 function normalizeText(value) {
   return String(value || '').toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
@@ -164,7 +164,7 @@ export default function SearchResults({ initialQuery }) {
           source_url: card.source_url,
           image_source_url: card.image_source_url,
           set_code: set?.set_code,
-          edition_market_code: set?.market_code || set?.language || 'FR',
+          edition_market_code: set?.language || 'FR',
           card_name: card.card_name,
           collector_number: card.collector_number,
           variants: (card.card_print_variants || []).map(variant => ({ id: variant.id, finish_code: variant.finish_code }))
