@@ -471,11 +471,16 @@ export default function CollectionItemDetailPage() {
               <strong>{formatEuro(item.purchase_price)}</strong>
             </div>
             <div>
-              <span>Valeur actuelle</span>
-              <strong>{formatEuro(getMarketValue())}</strong>
+              <span>Cote personnelle</span>
+              <strong>{item.current_value_override != null ? formatEuro(item.current_value_override) : 'Non définie'}</strong>
+              <small className="muted">{item.current_value_override != null ? 'Valeur propre à cet exemplaire' : 'Suit la cote catalogue'}</small>
             </div>
             <div>
-              <span>Zéro défaut</span>
+              <span>Cote catalogue</span>
+              <strong>{formatEuro(productInfo?.current_value)}</strong>
+            </div>
+            <div>
+              <span>Cote zéro défaut</span>
               <strong>{formatEuro(productInfo?.zero_defect_value)}</strong>
             </div>
             <div className={getMarketValue() != null && item.purchase_price != null && getMarketValue() >= Number(item.purchase_price) ? 'positive' : 'negative'}>
@@ -491,6 +496,13 @@ export default function CollectionItemDetailPage() {
                   {((getMarketValue() - Number(item.purchase_price)) / Number(item.purchase_price) * 100).toFixed(1)} %
                 </small>
               )}
+              <small className="muted">
+                {item.current_value_override != null
+                  ? 'Calculée avec la cote personnelle'
+                  : item.sealed_condition === 'zero_defect' && productInfo?.zero_defect_value != null
+                    ? 'Calculée avec la cote zéro défaut'
+                    : 'Calculée avec la cote catalogue'}
+              </small>
             </div>
           </div>
 
