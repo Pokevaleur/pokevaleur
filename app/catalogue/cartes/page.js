@@ -14,7 +14,7 @@ const ALL_PACK_REWARDS = PACK_REWARD_PREFIX + 'all'
 const ZENITH_MAIN_SET_CODE = 'swsh12.5'
 const ZENITH_GALLERY_SET_CODE = 'swsh12.5gg'
 const DEDICATED_ENERGY_SET_CODES = new Set(['sve', 'uen17', 'uen19', 'uen20', 'uen22', 'sme17', 'sme19', 'mee', 'mee30', 'sv10.5e'])
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,source_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,card_type,element_types,rarity_label,image_url,source_url,image_source_url,guide_order,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date,advertised_card_count),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group,is_master_set_target,copyright_year,image_url,image_source_url)'
 const MCDONALDS_PTCG_IMAGE_YEARS = new Set(['2011', '2012', '2014', '2015', '2016', '2017', '2021', '2022'])
 
 function normalizedCardName(name) {
@@ -113,6 +113,20 @@ function isZenithGallerySet(set) {
 
 function relatedSet(card) {
   return Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
+}
+
+function parseCollectorNumberFraction(value) {
+  const match = String(value || '').trim().match(/^0*(\d+)\s*\/\s*0*(\d+)$/)
+  return match ? { number: Number(match[1]), total: Number(match[2]) } : null
+}
+
+function matchesCollectorNumberFraction(card, fraction) {
+  if (!fraction) return true
+  const match = String(card?.collector_number || '').trim().match(/^0*(\d+)(?:\s*\/\s*0*(\d+))?$/)
+  if (!match || Number(match[1]) !== fraction.number) return false
+  const printedTotal = Number(match[2])
+  const advertisedTotal = Number(relatedSet(card)?.advertised_card_count)
+  return printedTotal === fraction.total || advertisedTotal === fraction.total
 }
 
 function isPackRewardSelection(id) {
@@ -555,7 +569,8 @@ export default function CardCataloguePage() {
           ? sets.map(set => set.id)
           : setId === MCDONALDS_SERIES ? mcDonaldSetIds : packRewardProductIds.length ? [] : [setId]
         if (!setIds.length && !packRewardCardIds.length) return
-        const term = query.trim().replace(/[%_]/g, '\\$&')
+        const fractionQuery = parseCollectorNumberFraction(query)
+        const term = (fractionQuery ? String(fractionQuery.number) : query.trim()).replace(/[%_]/g, '\\$&')
         let cardRows = []
         if (packRewardProductIds.length && languageCode === 'FR') {
           const { data: rewardCards, error: rewardCardsError } = await fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS)
@@ -692,6 +707,9 @@ export default function CardCataloguePage() {
             .order('guide_order', { ascending: true }).order('collector_number', { ascending: true }))
           if (loadError) throw loadError
           cardRows = rows || []
+        }
+        if (fractionQuery) {
+          cardRows = cardRows.filter(card => matchesCollectorNumberFraction(card, fractionQuery))
         }
         if (isZenithSelection && languageCode === 'FR') {
           // Present the 159-card main checklist first, followed by GG01–GG70.
@@ -923,7 +941,10 @@ export default function CardCataloguePage() {
       : sets.find(set => set.id === setId)
   const selectedMcDonaldsSet = setId === MCDONALDS_SERIES
   const visibleCards = cards.filter(card => {
-    const term = normalizedSearchText(filterQuery.trim() || (setId === ALL_SERIES ? query.trim() : ''))
+    const activeSearch = filterQuery.trim() || (setId === ALL_SERIES ? query.trim() : '')
+    const fractionQuery = parseCollectorNumberFraction(activeSearch)
+    if (fractionQuery) return matchesCollectorNumberFraction(card, fractionQuery)
+    const term = normalizedSearchText(activeSearch)
     const set = relatedSet(card)
     const variantText = (card.card_print_variants || []).map(variant => variant.variant_label || variant.variant_key).join(' ')
     const searchText = normalizedSearchText([
