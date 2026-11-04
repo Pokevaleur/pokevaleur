@@ -4,65 +4,12 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 
-function median(values) {
-  if (!values.length) return null
-  const sorted = [...values].sort((a, b) => a - b)
-  const middle = Math.floor(sorted.length / 2)
-  return sorted.length % 2 ? sorted[middle] : (sorted[middle - 1] + sorted[middle]) / 2
-}
-
-const emptyObservation = {
-  product_id: '',
-  source: 'GCC',
-  price: '',
-  observed_at: '',
-  condition_tier: 'standard',
-  observation_type: 'confirmed_sale'
-}
-
-function normalizeMarketText(value) {
-  return String(value || '')
-    .normalize('NFD')
-    .replace(/[\u0300-\u036f]/g, '')
-    .toLowerCase()
-    .replace(/[-–—]/g, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
-
-function matchesSealedMarketSearch(product, query) {
-  const normalizedQuery = normalizeMarketText(query).replace(/\bme\s*0?6\b/g, 'me06')
-  const tokens = normalizedQuery.split(/\s+/).filter(Boolean)
-  const name = normalizeMarketText(product.name)
-  const series = normalizeMarketText(product.series)
-  const type = normalizeMarketText(product.product_type)
-  const allText = name + ' ' + series + ' ' + type
-
-  return tokens.every(token => {
-    if (token === 'etb') return type === 'etb'
-    if (token === 'me') return series.includes('mega evolution')
-    if (token === 'me06') return series.includes('mega evolution') && series.includes('regne delta')
-    return allText.includes(token)
-  })
-}
-
 export default function AdminPage() {
   const supabase = useMemo(() => createClient(), [])
   const [user, setUser] = useState(null)
   const [isAdmin, setIsAdmin] = useState(false)
   const [suggestions, setSuggestions] = useState([])
   const [products, setProducts] = useState([])
-  const [productKind, setProductKind] = useState('sealed')
-  const [marketSearch, setMarketSearch] = useState('')
-  const [marketResults, setMarketResults] = useState([])
-  const [marketSearchLoading, setMarketSearchLoading] = useState(false)
-  const [selectedCard, setSelectedCard] = useState(null)
-  const [cardVariants, setCardVariants] = useState([])
-  const [cardVariantsLoading, setCardVariantsLoading] = useState(false)
-  const [selectedVariant, setSelectedVariant] = useState(null)
-  const [cardCondition, setCardCondition] = useState('near_mint')
-  const [history, setHistory] = useState([])
-  const [observation, setObservation] = useState(emptyObservation)
   const [message, setMessage] = useState('')
   const [loading, setLoading] = useState(true)
   const [reports, setReports] = useState([])
@@ -72,84 +19,6 @@ export default function AdminPage() {
   useEffect(() => {
     load()
   }, [])
-
-  useEffect(() => {
-    if (!products.length) return
-    const params = new URLSearchParams(window.location.search)
-    const productId = params.get('product')
-    if (!productId || !products.some(product => product.id === productId)) return
-
-    const selectedProduct = products.find(product => product.id === productId)
-    setProductKind(selectedProduct?.category === 'sealed' ? 'sealed' : 'card')
-    setObservation(current => ({ ...current, product_id: productId }))
-    window.history.replaceState({}, '', '/admin#donnee-marche')
-    window.requestAnimationFrame(() => {
-      document.getElementById('donnee-marche')?.scrollIntoView({ behavior: 'smooth', block: 'start' })
-    })
-  }, [products])
-
-  useEffect(() => {
-    const term = marketSearch.trim()
-    if (term.length < 2) {
-      setMarketResults([])
-      setMarketSearchLoading(false)
-      return
-    }
-
-    let cancelled = false
-    const timer = window.setTimeout(async () => {
-      setMarketSearchLoading(true)
-      if (productKind === 'sealed') {
-        const matches = products
-          .filter(product => product.category === 'sealed' && matchesSealedMarketSearch(product, term))
-          .sort((a, b) => a.name.localeCompare(b.name, 'fr'))
-        if (cancelled) return
-        setMarketResults(matches)
-        setMarketSearchLoading(false)
-        return
-      }
-
-      const pattern = `%${term.replace(/[%,_]/g, ' ')}%`
-      const { data, error } = await supabase.from('cards')
-        .select('id,card_set_id,collector_number,card_name,card_sets!cards_card_set_id_fkey!inner(set_name,set_code,is_public)')
-        .eq('card_sets.is_public', true)
-        .ilike('card_name', pattern)
-        .order('card_name')
-        .limit(30)
-      if (cancelled) return
-      setMarketResults(error ? [] : data || [])
-      setMarketSearchLoading(false)
-      if (error) setMessage(`Recherche impossible : ${error.message}`)
-    }, 250)
-
-    return () => {
-      cancelled = true
-      window.clearTimeout(timer)
-    }
-  }, [marketSearch, productKind, products, supabase])
-
-  useEffect(() => {
-    if (!selectedCard) {
-      setCardVariants([])
-      setSelectedVariant(null)
-      return
-    }
-    let cancelled = false
-    async function loadVariants() {
-      setCardVariantsLoading(true)
-      const { data, error } = await supabase.from('card_print_variants')
-        .select('id,variant_label,variant_key,finish_code')
-        .eq('card_id', selectedCard.id)
-        .order('variant_label')
-      if (cancelled) return
-      setCardVariants(error ? [] : data || [])
-      setSelectedVariant(null)
-      setCardVariantsLoading(false)
-      if (error) setMessage(`Variantes de carte indisponibles : ${error.message}`)
-    }
-    loadVariants()
-    return () => { cancelled = true }
-  }, [selectedCard, supabase])
 
   async function load() {
     setLoading(true)
@@ -172,7 +41,7 @@ export default function AdminPage() {
     setIsAdmin(admin)
 
     if (admin) {
-      const [{ data: suggestionData }, { data: productData }, { data: historyData }, { data: reportData }, { data: statusData }] = await Promise.all([
+      const [{ data: suggestionData }, { data: productData }, { data: reportData }, { data: statusData }] = await Promise.all([
         supabase.from('product_suggestions').select('*').order('created_at', { ascending: false }),
         fetchAllRows(() => supabase
           .from('products')
@@ -180,10 +49,6 @@ export default function AdminPage() {
           .eq('is_public', true)
           .order('name')
           .order('id')),
-        supabase
-          .from('product_price_history')
-          .select('id,product_id,source,price,observed_at,condition_tier,observation_type')
-          .order('observed_at', { ascending: false }),
         supabase
           .from('community_reports')
           .select('id,reporter_id,message_id,reason,status,created_at')
@@ -196,7 +61,6 @@ export default function AdminPage() {
 
       setSuggestions(suggestionData || [])
       setProducts(productData || [])
-      setHistory(historyData || [])
       const reportRows = reportData || []
       setReports(reportRows)
       setCommunityStatuses(statusData || [])
@@ -261,59 +125,6 @@ export default function AdminPage() {
     await load()
   }
 
-  async function addObservation(e) {
-    e.preventDefault()
-
-    const hasSelection = productKind === 'sealed' ? observation.product_id : selectedVariant?.id
-    if (!hasSelection || !observation.price || !observation.source.trim()) {
-      setMessage(productKind === 'sealed'
-        ? 'Choisis un produit scellé, une source et un prix.'
-        : 'Choisis une carte, sa variante, une source et un prix.')
-      return
-    }
-
-    const observedAt = observation.observed_at
-      ? new Date(observation.observed_at + 'T12:00:00').toISOString()
-      : new Date().toISOString()
-
-    const { error } = productKind === 'sealed'
-      ? await supabase.from('product_price_history').insert({
-        product_id: observation.product_id,
-        source: observation.source.trim(),
-        price: Number(observation.price),
-        observed_at: observedAt,
-        condition_tier: observation.condition_tier,
-        observation_type: observation.observation_type
-      })
-      : await supabase.from('card_price_observations').insert({
-        card_print_variant_id: selectedVariant.id,
-        price_kind: 'raw',
-        raw_condition: cardCondition,
-        observation_type: observation.observation_type,
-        amount: Number(observation.price),
-        currency: 'EUR',
-        source: observation.source.trim(),
-        observed_at: observedAt
-      })
-
-    if (error) return setMessage(error.message)
-
-    setObservation(emptyObservation)
-    setMarketSearch('')
-    setMarketResults([])
-    setSelectedCard(null)
-    setCardVariants([])
-    setSelectedVariant(null)
-    setMessage(
-      productKind === 'card'
-        ? 'Prix de carte enregistré.'
-        : observation.observation_type === 'confirmed_sale'
-        ? 'Vente enregistrée. La cote a été recalculée automatiquement.'
-        : 'Prix d’annonce enregistré sans modifier la cote.'
-    )
-    await load()
-  }
-
   if (loading) {
     return <main><section className="panel"><p>Chargement...</p></section></main>
   }
@@ -351,26 +162,13 @@ export default function AdminPage() {
     product.current_value !== null &&
     (!product.price_updated_at || new Date(product.price_updated_at).getTime() < staleLimit)
   )
-  const selectedSealedProduct = products.find(product => product.id === observation.product_id)
-
-  function changeProductKind(kind) {
-    if (kind === productKind) return
-    setProductKind(kind)
-    setObservation(current => ({ ...current, product_id: '' }))
-    setMarketSearch('')
-    setMarketResults([])
-    setSelectedCard(null)
-    setCardVariants([])
-    setSelectedVariant(null)
-  }
-
   return (
     <main>
       <section className="catalogHero">
         <span className="eyebrow dark">Administration</span>
         <h1>Tableau de bord PokéValeur</h1>
         <p className="muted">
-          Modère le catalogue et alimente les cotes à partir de ventes confirmées ou de prix observés.
+          Modère le catalogue et gère les fiches de produits.
         </p>
       </section>
 
@@ -394,183 +192,16 @@ export default function AdminPage() {
         <div><span>Signalements</span><strong>{pendingReports.length}</strong></div>
       </section>
 
-      <section className="panel adminPricePanel" id="donnee-marche">
-        <h2>Ajouter une donnée de marché</h2>
-        <p className="muted adminHint">Ce formulaire sert à ajouter un prix à un produit déjà présent dans le catalogue. Produit absent ? <a href="/catalogue#proposer-produit">Propose sa fiche au catalogue</a> ; elle sera vérifiée avant publication.</p>
-        <form className="adminPriceForm" onSubmit={addObservation}>
-          <fieldset className="adminProductKindPicker">
-            <legend>Type de catalogue</legend>
-            <button
-              type="button"
-              className={productKind === 'sealed' ? 'selected' : ''}
-              aria-pressed={productKind === 'sealed'}
-              onClick={() => changeProductKind('sealed')}
-            >
-              Produits scellés
-            </button>
-            <button
-              type="button"
-              className={productKind === 'card' ? 'selected' : ''}
-              aria-pressed={productKind === 'card'}
-              onClick={() => changeProductKind('card')}
-            >
-              Cartes
-            </button>
-          </fieldset>
-
-          <div className="adminMarketPicker">
-            <label htmlFor="admin-market-search">
-              {productKind === 'sealed' ? 'Produit scellé' : 'Carte'}
-              <input
-                id="admin-market-search"
-                type="search"
-                autoComplete="off"
-                value={marketSearch}
-                onChange={e => setMarketSearch(e.target.value)}
-                placeholder={productKind === 'sealed' ? 'Rechercher un produit par nom…' : 'Rechercher une carte par nom…'}
-                aria-controls="admin-market-results"
-              />
-            </label>
-            <p className="muted adminMarketSearchHint">Saisis au moins 2 caractères pour lancer la recherche.</p>
-            {selectedSealedProduct && productKind === 'sealed' && (
-              <div className="adminMarketSelected">
-                <span>{selectedSealedProduct.name}{selectedSealedProduct.series ? ` — ${selectedSealedProduct.series}` : ''}</span>
-                <button type="button" onClick={() => setObservation(current => ({ ...current, product_id: '' }))}>Changer</button>
-              </div>
-            )}
-            {selectedCard && productKind === 'card' && (
-              <div className="adminMarketSelected">
-                <span>{selectedCard.card_name} · {selectedCard.collector_number} · {selectedCard.card_sets?.set_name}</span>
-                <button type="button" onClick={() => { setSelectedCard(null); setSelectedVariant(null) }}>Changer</button>
-              </div>
-            )}
-            {marketSearch.trim().length >= 2 && !selectedSealedProduct && !selectedCard && (
-              <div className="adminMarketResults" id="admin-market-results" aria-live="polite">
-                {marketSearchLoading ? <p className="muted">Recherche…</p> : marketResults.length === 0 ? <p className="muted">Aucun résultat pour cette recherche.</p> : marketResults.map(item => {
-                  const cardSet = Array.isArray(item.card_sets) ? item.card_sets[0] : item.card_sets
-                  const title = productKind === 'sealed' ? item.name : item.card_name
-                  const detail = productKind === 'sealed'
-                    ? item.series
-                    : `${item.collector_number} · ${cardSet?.set_name || 'Série inconnue'}${cardSet?.set_code ? ` (${cardSet.set_code})` : ''}`
-                  return (
-                    <button
-                      type="button"
-                      key={item.id}
-                      onClick={() => productKind === 'sealed'
-                        ? setObservation(current => ({ ...current, product_id: item.id }))
-                        : setSelectedCard({ ...item, card_sets: cardSet })}
-                    >
-                      <strong>{title}</strong>
-                      {detail && <small>{detail}</small>}
-                    </button>
-                  )
-                })}
-              </div>
-            )}
-            {selectedCard && productKind === 'card' && (
-              <div className="adminCardVariants" aria-live="polite">
-                <span>Variante à coter</span>
-                {cardVariantsLoading ? <p className="muted">Chargement des variantes…</p> : cardVariants.length === 0 ? <p className="muted">Aucune variante disponible pour cette carte.</p> : cardVariants.map(variant => (
-                  <button
-                    type="button"
-                    key={variant.id}
-                    className={selectedVariant?.id === variant.id ? 'selected' : ''}
-                    aria-pressed={selectedVariant?.id === variant.id}
-                    onClick={() => setSelectedVariant(variant)}
-                  >
-                    {variant.variant_label}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <label>
-            Source
-            <input
-              required
-              value={observation.source}
-              onChange={e => setObservation({ ...observation, source:e.target.value })}
-              placeholder="GCC, Voggt, Whatnot, Vinted..."
-            />
-          </label>
-
-          <label>
-            Prix (€)
-            <input
-              required
-              min="0"
-              step="0.01"
-              type="number"
-              value={observation.price}
-              onChange={e => setObservation({ ...observation, price:e.target.value })}
-            />
-          </label>
-
-          <label>
-            Date
-            <input
-              type="date"
-              value={observation.observed_at}
-              onChange={e => setObservation({ ...observation, observed_at:e.target.value })}
-            />
-          </label>
-
-          {productKind === 'sealed' ? (
-            <label>
-              État
-              <select
-                value={observation.condition_tier}
-                onChange={e => setObservation({ ...observation, condition_tier:e.target.value })}
-              >
-                <option value="standard">Marché standard</option>
-                <option value="zero_defect">Zéro défaut</option>
-                <option value="light_defect">Défaut léger</option>
-              </select>
-            </label>
-          ) : (
-            <label>
-              État de la carte
-              <select value={cardCondition} onChange={e => setCardCondition(e.target.value)}>
-                <option value="near_mint">Quasi neuve</option>
-                <option value="excellent">Très bon état</option>
-                <option value="good">Bon état</option>
-                <option value="played">Jouée</option>
-                <option value="damaged">Abîmée</option>
-                <option value="unassessed">À évaluer</option>
-              </select>
-            </label>
-          )}
-
-          <label>
-            Type de donnée
-            <select
-              value={observation.observation_type}
-              onChange={e => setObservation({ ...observation, observation_type:e.target.value })}
-            >
-              <option value="confirmed_sale">Vente confirmée</option>
-              <option value="observed_listing">Prix d’annonce observé</option>
-            </select>
-          </label>
-
-          <button className="btn" type="submit">Enregistrer la donnée</button>
-        </form>
-        <p className="muted adminHint">
-          Une vente confirmée recalcule automatiquement la médiane de la cote correspondante.
-          Une annonce observée est conservée à titre indicatif sans modifier la cote.
-        </p>
-      </section>
-
       <section className="adminTwoColumns">
         <div className="panel">
           <details className="adminNoPriceDisclosure">
             <summary><span>Produits sans cote</span><b>{noPrice.length}</b></summary>
-            <p className="muted">Cette liste regroupe les produits sans vente confirmée qui permette de calculer une cote. Ouvre une fiche, puis ajoute ici une vente vérifiée avec sa source, son prix et sa date. Un prix d’annonce reste indicatif et ne change pas la cote.</p>
+            <p className="muted">Cette liste regroupe les produits sans cote PokéValeur. Ouvre les fiches du catalogue pour renseigner leur cote, sa source et sa date de mise à jour.</p>
             <div className="adminSimpleList">
               {noPrice.length === 0 ? <p>Aucun.</p> : noPrice.map(product => (
-                <a href={`/admin?product=${encodeURIComponent(product.id)}#donnee-marche`} key={product.id}>
+                <a href="/admin/catalogue-produits" key={product.id}>
                   <span>{product.name}{product.series ? ` — ${product.series}` : ''}</span>
-                  <b>Saisir une cote →</b>
+                  <b>Modifier les fiches →</b>
                 </a>
               ))}
             </div>
@@ -581,7 +212,7 @@ export default function AdminPage() {
           <h2>Cotes à rafraîchir</h2>
           <div className="adminSimpleList">
             {stale.length === 0 ? <p>Aucune.</p> : stale.map(product => (
-              <a href={`/catalogue/${product.id}`} key={product.id}>
+              <a href="/admin/catalogue-produits" key={product.id}>
                 <span>{product.name}</span>
                 <b>
                   {product.price_updated_at
