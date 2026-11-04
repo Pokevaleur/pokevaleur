@@ -161,7 +161,7 @@ export default function ImportExportPage() {
         const products = []
         for (let offset = 0; offset < productIds.length; offset += 100) {
           const { data, error: productsError } = await supabase.from('products')
-            .select('id,name,series,category,product_type,current_value,zero_defect_value')
+            .select('id,name,series,category,product_type,release_year,current_value,zero_defect_value')
             .eq('is_public', true)
             .in('id', productIds.slice(offset, offset + 100))
           if (productsError) throw productsError
@@ -196,6 +196,7 @@ export default function ImportExportPage() {
             catalogName: product?.name || '',
             series: product?.series || '',
             productType: item.product_type_override?.trim() || product?.product_type || '',
+            releaseYear: product?.release_year ?? null,
             details: [...new Set(details)].join(' · '),
             quantity,
             purchaseUnit: item.purchase_price === null || item.purchase_price === undefined || item.purchase_price === ''
@@ -368,10 +369,24 @@ export default function ImportExportPage() {
     setError('')
     try {
       const XLSX = await import('xlsx')
-      const alphabeticalRows = rows.map(row => ({ ...row, exportTitle: formatExcelProductTitle(row) })).sort((a, b) =>
-        a.exportTitle.localeCompare(b.exportTitle, 'fr', { sensitivity: 'base', numeric: true })
+      const alphabeticalRows = rows.map(row => ({
+        ...row,
+        exportTitle: formatExcelProductTitle(row),
+        exportGroup: normalizeSearch(row.productType || row.exportTitle)
+      })).sort((a, b) => {
+        const groupOrder = a.exportGroup.localeCompare(b.exportGroup, 'fr', { sensitivity: 'base', numeric: true })
+        if (groupOrder) return groupOrder
+
+        const yearA = a.releaseYear === null || a.releaseYear === undefined || a.releaseYear === '' ? null : Number(a.releaseYear)
+        const yearB = b.releaseYear === null || b.releaseYear === undefined || b.releaseYear === '' ? null : Number(b.releaseYear)
+        const hasYearA = Number.isFinite(yearA)
+        const hasYearB = Number.isFinite(yearB)
+        if (hasYearA !== hasYearB) return hasYearA ? -1 : 1
+        if (hasYearA && yearA !== yearB) return yearA - yearB
+
+        return a.exportTitle.localeCompare(b.exportTitle, 'fr', { sensitivity: 'base', numeric: true })
           || String(a.id).localeCompare(String(b.id))
-      )
+      })
       const worksheet = XLSX.utils.aoa_to_sheet([
         ['Nom du produit', 'Prix d’achat (€)', 'Valeur actuelle (€)'],
         ...alphabeticalRows.map(row => [
