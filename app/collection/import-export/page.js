@@ -374,6 +374,7 @@ export default function ImportExportPage() {
         exportTitle: formatExcelProductTitle(row),
         exportGroup: normalizeSearch(row.productType || row.exportTitle)
       })).sort((a, b) => {
+        // Group by product family, then sort by release year within each family.
         const groupOrder = a.exportGroup.localeCompare(b.exportGroup, 'fr', { sensitivity: 'base', numeric: true })
         if (groupOrder) return groupOrder
 
