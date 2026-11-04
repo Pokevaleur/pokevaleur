@@ -86,6 +86,14 @@ export default function Home() {
       <div className={styles.heroCopy}>
         <h1>Chaque collection<br/>a ses <span>trésors.</span></h1>
         <p>Scellés, cartes gradées et master sets : organise ta collection et partage ta passion.</p>
+        <form className={styles.homeSearch} action="/recherche" method="get" role="search">
+          <label className={styles.homeSearchLabel} htmlFor="home-universal-search">Recherche dans le catalogue</label>
+          <div className={styles.homeSearchField}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+            <input id="home-universal-search" type="search" name="search" placeholder="Rechercher une carte ou un produit scellé…" autoComplete="off" />
+            <button type="submit">Rechercher</button>
+          </div>
+        </form>
         <p className={styles.ideaPrompt}><span aria-hidden="true">✦</span> Tes idées font évoluer <strong>PokéValeur</strong></p>
       </div>
     </section>

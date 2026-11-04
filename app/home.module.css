@@ -221,3 +221,23 @@
   .shortcutPhone .phoneScreen{border-radius:11px}
   .shortcutPhone .phoneSpeaker{width:3px;height:3px}
 }
+
+/* Universal catalogue search sits on the first screen, above the collection shortcuts. */
+.homeSearch{width:min(100%,760px);margin:22px auto 15px;text-align:left}
+.homeSearchLabel{display:block;margin:0 0 7px 4px;color:#244364;font-size:14px;font-weight:800}
+.homeSearchField{display:flex;align-items:center;gap:11px;min-height:60px;padding:6px 7px 6px 17px;border:1px solid #cbd9e8;border-radius:18px;background:#fff;box-shadow:0 8px 23px #0c223b12}
+.homeSearchField:focus-within{border-color:#1476cb;box-shadow:0 0 0 3px #1476cb26,0 8px 23px #0c223b12}
+.homeSearchField>svg{width:23px;height:23px;flex:0 0 23px;fill:none;stroke:#46617d;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.homeSearchField>input{width:100%;min-width:0;min-height:44px;padding:8px 0;border:0;outline:0;background:transparent;color:#061b38;font:inherit;font-size:17px}
+.homeSearchField>input::placeholder{color:#71849a;opacity:1}
+.homeSearchField>button{min-height:46px;flex:0 0 auto;padding:10px 19px;border:0;border-radius:13px;background:#082b50;color:#fff;font:inherit;font-weight:800;cursor:pointer}
+.homeSearchField>button:hover{background:#104778}
+.homeSearchField>button:focus-visible{outline:3px solid #1476cb;outline-offset:3px}
+@media(max-width:600px){
+  .homeSearch{margin:17px auto 13px}
+  .homeSearchLabel{margin-left:2px;font-size:13px}
+  .homeSearchField{min-height:54px;gap:8px;padding-left:12px;border-radius:15px}
+  .homeSearchField>svg{width:20px;height:20px;flex-basis:20px}
+  .homeSearchField>input{font-size:15px}
+  .homeSearchField>button{min-height:42px;padding:9px 12px;border-radius:11px;font-size:14px}
+}
