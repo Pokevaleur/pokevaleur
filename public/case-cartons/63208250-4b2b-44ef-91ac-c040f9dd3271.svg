@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" viewBox="0 0 1254 1254" role="img" aria-label="Carton de 6 DISPLAYS pour Épée et Bouclier">
+  <image href="./kraft-carton.webp" x="0" y="0" width="1254" height="1254" preserveAspectRatio="xMidYMid meet"/>
+  <g>
+    <rect x="177" y="477" width="720" height="375" rx="20" fill="#f7f3e9" stroke="#573f2b" stroke-width="12"/>
+    <path d="M197 497h680v74H197z" fill="#5b7b3d"/>
+    <text x="537" y="550" text-anchor="middle" fill="#fff" font-family="Arial, sans-serif" font-size="37" font-weight="800" letter-spacing="2">CASE SCELLÉE</text>
+    <text x="537" y="654" text-anchor="middle" fill="#24221f" font-family="Arial, sans-serif" font-size="53" font-weight="800">6 DISPLAYS</text>
+    <text x="537" y="710" text-anchor="middle" fill="#554839" font-family="Arial, sans-serif" font-size="29" font-weight="700">36 BOOSTERS PAR DISPLAY</text>
+    <path d="M245 735h584" stroke="#d5c7ae" stroke-width="5"/>
+    <text x="537" y="795" text-anchor="middle" fill="#5b7b3d" font-family="Arial, sans-serif" font-size="46" font-weight="800">Épée et Bouclier</text>
+    <text x="537" y="829" text-anchor="middle" fill="#776b5b" font-family="Arial, sans-serif" font-size="20" letter-spacing="1">VISUEL INDICATIF · POKÉVALEUR</text>
+  </g>
+</svg>
