@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { createClient } from '../lib/supabase-browser'
 import styles from './home.module.css'
 import BrandLogo from './brand-logo'
+import VoiceSearchButton from './voice-search-button'
 
 const collectionSections = [
   {
@@ -91,6 +92,7 @@ export default function Home() {
           <div className={styles.homeSearchField}>
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
             <input id="home-universal-search" type="search" name="search" placeholder="Rechercher une carte ou un produit scellé…" autoComplete="off" />
+            <VoiceSearchButton />
             <button type="submit">Rechercher</button>
           </div>
         </form>
