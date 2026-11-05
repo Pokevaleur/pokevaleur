@@ -230,8 +230,8 @@
 .homeSearchField>svg{width:23px;height:23px;flex:0 0 23px;fill:none;stroke:#46617d;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
 .homeSearchField>input{width:100%;min-width:0;min-height:44px;padding:8px 0;border:0;outline:0;background:transparent;color:#061b38;font:inherit;font-size:17px}
 .homeSearchField>input::placeholder{color:#71849a;opacity:1}
-.homeSearchField>button{min-height:46px;flex:0 0 auto;padding:10px 19px;border:0;border-radius:13px;background:#082b50;color:#fff;font:inherit;font-weight:800;cursor:pointer}
-.homeSearchField>button:hover{background:#104778}
+.homeSearchField>button[type="submit"]{min-height:46px;flex:0 0 auto;padding:10px 19px;border:0;border-radius:13px;background:#082b50;color:#fff;font:inherit;font-weight:800;cursor:pointer}
+.homeSearchField>button[type="submit"]:hover{background:#104778}
 .homeSearchField>button:focus-visible{outline:3px solid #1476cb;outline-offset:3px}
 @media(max-width:600px){
   .homeSearch{margin:17px auto 13px}
@@ -239,5 +239,5 @@
   .homeSearchField{min-height:54px;gap:8px;padding-left:12px;border-radius:15px}
   .homeSearchField>svg{width:20px;height:20px;flex-basis:20px}
   .homeSearchField>input{font-size:15px}
-  .homeSearchField>button{min-height:42px;padding:9px 12px;border-radius:11px;font-size:14px}
+  .homeSearchField>button[type="submit"]{min-height:42px;padding:9px 12px;border-radius:11px;font-size:14px}
 }
