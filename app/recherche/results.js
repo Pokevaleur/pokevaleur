@@ -27,13 +27,18 @@ function accentInsensitivePattern(value) {
 }
 
 function parseCollectorNumberQuery(value) {
-  const match = String(value || '').trim().match(/^(\d+)\s*\/\s*(\d+)$/)
+  const match = String(value || '').trim().match(/^(\d+)\s*(?:\/|sur)\s*(\d+)$/i)
   return match ? { number: String(Number(match[1])), total: Number(match[2]) } : null
 }
 
 function normalizeNumericCollectorNumber(value) {
-  const match = String(value || '').trim().match(/^0*(\d+)$/)
+  const match = String(value || '').trim().match(/^0*(\d+)(?:\s*\/\s*\d+)?$/)
   return match ? String(Number(match[1])) : ''
+}
+
+function collectorNumberTotal(value) {
+  const match = String(value || '').trim().match(/^\d+\s*\/\s*(\d+)$/)
+  return match ? Number(match[1]) : null
 }
 
 function languageLabel(value) {
@@ -136,7 +141,8 @@ export default function SearchResults({ initialQuery }) {
         const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets || setById.get(card.card_set_id)
         if (collectorNumberQuery) {
           return normalizeNumericCollectorNumber(card.collector_number) === collectorNumberQuery.number
-            && Number(set?.advertised_card_count) === collectorNumberQuery.total
+            && (Number(set?.advertised_card_count) === collectorNumberQuery.total
+              || collectorNumberTotal(card.collector_number) === collectorNumberQuery.total)
         }
         const searchable = normalizeText([card.card_name, card.collector_number, set?.series_name, set?.set_name, set?.set_code].join(' '))
         return tokens.every(token => searchable.includes(token))
