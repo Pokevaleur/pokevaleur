@@ -7,6 +7,7 @@ import { createProductMatcher, normalizeSearch } from '../../lib/product-search.
 import { compareProductsByRelease, createSeriesReleaseDateMap } from '../../lib/catalogue-sort.mjs'
 import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 import styles from './page.module.css'
+import VoiceSearchButton from '../voice-search-button'
 
 const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date,advertised_card_count),card_print_variants(id,finish_code)'
 const GENERIC_ETB_CASE_IMAGE = 'https://www.pokevaleur.fr/etb-case-generic.jpg'
@@ -245,6 +246,7 @@ export default function SearchResults({ initialQuery }) {
       <form className={styles.form} action="/recherche" method="get" role="search">
         <label className={styles.srOnly} htmlFor="catalog-universal-search">Carte ou produit scellé</label>
         <input id="catalog-universal-search" type="search" name="search" value={query} onChange={event => setQuery(event.target.value)} placeholder="Ex. Pikachu, EV9, ETB…" autoComplete="off" />
+        <VoiceSearchButton />
         <button type="submit">Rechercher</button>
       </form>
       {hasQuery && <p className={styles.queryLabel}>Résultats pour <strong>{query.trim()}</strong></p>}
