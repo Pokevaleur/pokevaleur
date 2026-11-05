@@ -74,13 +74,6 @@ const nextConfig = {
       { protocol: 'https', hostname: 'playshop.fr', pathname: '/**' },
       { protocol: 'https', hostname: 'www.ivoire-france.com', pathname: '/**' },
       { protocol: 'https', hostname: 'cdn1.pokemoncarte.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'myutsu.fr', pathname: '/**' },
-      { protocol: 'https', hostname: 'silphtcg.fr', pathname: '/**' },
-      { protocol: 'https', hostname: 'sneyzencorp.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'pokemonde.fr', pathname: '/**' },
-      { protocol: 'https', hostname: 'cartes-pokemon.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'nordikards.com', pathname: '/**' },
-      { protocol: 'https', hostname: 'gradeten.fr', pathname: '/**' },
       { protocol: 'https', hostname: 'hikarudistribution.com', pathname: '/**' }
     ]
   },
