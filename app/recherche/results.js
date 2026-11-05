@@ -105,11 +105,13 @@ export default function SearchResults({ initialQuery }) {
       const escapedName = escapedPattern(nameToken)
       const accentName = accentInsensitivePattern(nameToken)
       const escapedNumber = escapedPattern(numberToken)
-      const matchingSets = setRows.filter(set => {
-        const searchable = normalizeText([set.series_name, set.set_name, set.set_code].join(' '))
-        return tokens.every(token => searchable.includes(token))
-      })
-      const setIds = setRows.map(set => set.id)
+      const matchingSets = collectorNumberQuery
+        ? setRows.filter(set => Number(set.advertised_card_count) === collectorNumberQuery.total)
+        : setRows.filter(set => {
+          const searchable = normalizeText([set.series_name, set.set_name, set.set_code].join(' '))
+          return tokens.every(token => searchable.includes(token))
+        })
+      const setIds = collectorNumberQuery ? matchingSets.map(set => set.id) : setRows.map(set => set.id)
       const searches = []
       if (setIds.length) {
         searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
