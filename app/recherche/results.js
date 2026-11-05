@@ -8,7 +8,7 @@ import { compareProductsByRelease, createSeriesReleaseDateMap } from '../../lib/
 import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 import styles from './page.module.css'
 
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date),card_print_variants(id,finish_code)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date,advertised_card_count),card_print_variants(id,finish_code)'
 const GENERIC_ETB_CASE_IMAGE = 'https://www.pokevaleur.fr/etb-case-generic.jpg'
 
 function normalizeText(value) {
@@ -23,6 +23,16 @@ function accentInsensitivePattern(value) {
   const normalized = normalizeText(value)
   if (!normalized || !/[aeiouy]/.test(normalized)) return null
   return '%' + [...normalized].map(character => /[aeiouy]/.test(character) ? '_' : character).join('') + '%'
+}
+
+function parseCollectorNumberQuery(value) {
+  const match = String(value || '').trim().match(/^(\d+)\s*\/\s*(\d+)$/)
+  return match ? { number: String(Number(match[1])), total: Number(match[2]) } : null
+}
+
+function normalizeNumericCollectorNumber(value) {
+  const match = String(value || '').trim().match(/^0*(\d+)$/)
+  return match ? String(Number(match[1])) : ''
 }
 
 function languageLabel(value) {
@@ -79,7 +89,7 @@ export default function SearchResults({ initialQuery }) {
       setCardPrices({})
       setPricesLoading(false)
       const [setsResult, productsResult] = await Promise.all([
-        fetchAllRows(() => supabase.from('card_sets').select('id,series_name,set_name,set_code,language,release_date')
+        fetchAllRows(() => supabase.from('card_sets').select('id,series_name,set_name,set_code,language,release_date,advertised_card_count')
           .eq('is_public', true).order('release_date', { ascending: false })),
         fetchAllRows(() => supabase.from('products').select('id,name,series,category,product_type,image_url,release_date,release_year,release_period,case_reference,current_value,price_source')
           .eq('is_public', true).eq('category', 'sealed').order('name').order('id'))
@@ -89,16 +99,19 @@ export default function SearchResults({ initialQuery }) {
       const setRows = setsResult.data || []
       const setById = new Map(setRows.map(set => [set.id, set]))
       const tokens = normalizeSearch(term).split(/\s+/).filter(Boolean)
+      const collectorNumberQuery = parseCollectorNumberQuery(term)
       const nameToken = tokens.find(token => !/^\d+$/.test(token)) || tokens[0] || term
-      const numberToken = tokens.find(token => /^\d+[a-z]*$/i.test(token)) || term
+      const numberToken = collectorNumberQuery?.number || tokens.find(token => /^\d+[a-z]*$/i.test(token)) || term
       const escapedName = escapedPattern(nameToken)
       const accentName = accentInsensitivePattern(nameToken)
       const escapedNumber = escapedPattern(numberToken)
-      const matchingSets = setRows.filter(set => {
-        const searchable = normalizeText([set.series_name, set.set_name, set.set_code].join(' '))
-        return tokens.every(token => searchable.includes(token))
-      })
-      const setIds = setRows.map(set => set.id)
+      const matchingSets = collectorNumberQuery
+        ? setRows.filter(set => Number(set.advertised_card_count) === collectorNumberQuery.total)
+        : setRows.filter(set => {
+          const searchable = normalizeText([set.series_name, set.set_name, set.set_code].join(' '))
+          return tokens.every(token => searchable.includes(token))
+        })
+      const setIds = collectorNumberQuery ? matchingSets.map(set => set.id) : setRows.map(set => set.id)
       const searches = []
       if (setIds.length) {
         searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
@@ -120,6 +133,10 @@ export default function SearchResults({ initialQuery }) {
       const uniqueCards = [...new Map(cardResults.flatMap(result => result.data || []).map(card => [card.id, card])).values()]
       const matchingCards = uniqueCards.filter(card => {
         const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets || setById.get(card.card_set_id)
+        if (collectorNumberQuery) {
+          return normalizeNumericCollectorNumber(card.collector_number) === collectorNumberQuery.number
+            && Number(set?.advertised_card_count) === collectorNumberQuery.total
+        }
         const searchable = normalizeText([card.card_name, card.collector_number, set?.series_name, set?.set_name, set?.set_code].join(' '))
         return tokens.every(token => searchable.includes(token))
       })
