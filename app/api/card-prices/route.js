@@ -3,6 +3,10 @@ const CARDMARKET_GUIDE_URL = 'https://downloads.s3.cardmarket.com/productCatalog
 const CARDMARKET_SINGLES_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_6.json'
 const CARDMARKET_PRODUCTS_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_6.json'
 
+// Cardmarket's price-guide low for this exact IR is out of line with the
+// current offer shown on its product page (observed 06/11/2026).
+const CARDMARKET_MINIMUM_OVERRIDES = new Map([[826061, 19]])
+
 export const maxDuration = 60
 
 const PUBLIC_SUPABASE_URL = 'https://zrvjbvhumyizutnjzljy.supabase.co'
@@ -104,6 +108,11 @@ function cardmarketLowestPrice(guide, finish) {
     if (isPrice(guide?.[field])) return guide[field]
   }
   return null
+}
+
+function cardmarketMinimumPrice(productId, guide, finish) {
+  const observedOverride = CARDMARKET_MINIMUM_OVERRIDES.get(Number(productId))
+  return isPrice(observedOverride) ? observedOverride : cardmarketLowestPrice(guide, finish)
 }
 
 function normalizedPriceFinish(value) {
@@ -513,7 +522,7 @@ export async function POST(request) {
           const finish = normalizedPriceFinish(variant.finish)
           const source = pricingForFinish(item.tcgdexData, finish)
           const productId = source.cardmarketProductId || directCardmarketProductId(item.tcgdexData, item.card?.variants || [])
-          const cardmarketFrom = cardmarketLowestPrice(guideByProductId.get(productId), finish)
+          const cardmarketFrom = cardmarketMinimumPrice(productId, guideByProductId.get(productId), finish)
           return { ...variant, cardmarketFrom }
         })
         const preferredFinish = orderedFinishes(item.card?.variants || [])[0]
@@ -593,7 +602,7 @@ export async function POST(request) {
               variantId: variant?.id || null,
               finish,
               market: market ? { ...market, updated: guideDate } : null,
-            cardmarketFrom: cardmarketLowestPrice(guide, finish),
+            cardmarketFrom: cardmarketMinimumPrice(variantProductId, guide, finish),
               fallback: null
             }
           })
@@ -606,7 +615,7 @@ export async function POST(request) {
           return {
             ...item,
             cardmarket: rootGuide,
-            cardmarketFrom: preferredVariant?.cardmarketFrom || cardmarketLowestPrice(rootGuide, finishes[0]) || null,
+            cardmarketFrom: preferredVariant?.cardmarketFrom || cardmarketMinimumPrice(productId, rootGuide, finishes[0]) || null,
             chosenMarket: { ...market, source: 'Cardmarket' },
             chosenFallback: null,
             variantPrices: pricedVariants,
