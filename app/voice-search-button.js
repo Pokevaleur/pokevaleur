@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { correctKnownVoiceCardName } from '../lib/voice-search.mjs'
 import styles from './voice-search-button.module.css'
 
 export default function VoiceSearchButton() {
@@ -35,12 +36,14 @@ export default function VoiceSearchButton() {
         .filter(Boolean)
       const score = transcript => {
         const normalized = transcript.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
-        return Number(/\b(lovdisc|love\s+disk|love\s*disc)\b/.test(normalized)) * 2
+        return Number(Boolean(correctKnownVoiceCardName(transcript))) * 4
+          + Number(/\b(lovdisc|love\s+disk|love\s*disc)\b/.test(normalized)) * 2
           + Number(/\b(reverse|revers|rivers?)\b/.test(normalized)) * 2
       }
       const transcript = alternatives
         .sort((left, right) => score(right) - score(left))[0]
-      if (transcript) window.location.assign('/recherche?search=' + encodeURIComponent(transcript))
+      const correctedTranscript = correctKnownVoiceCardName(transcript) || transcript
+      if (correctedTranscript) window.location.assign('/recherche?search=' + encodeURIComponent(correctedTranscript))
       else setMessage('Je n’ai pas reconnu de recherche. Réessaie ou saisis-la.')
     }
 

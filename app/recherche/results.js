@@ -4,6 +4,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
+import { correctKnownVoiceCardName, normalizeVoiceSearchQuery } from '../../lib/voice-search.mjs'
 import { compareProductsByRelease, createSeriesReleaseDateMap } from '../../lib/catalogue-sort.mjs'
 import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 import styles from './page.module.css'
@@ -24,13 +25,6 @@ function accentInsensitivePattern(value) {
   const normalized = normalizeText(value)
   if (!normalized || !/[aeiouy]/.test(normalized)) return null
   return '%' + [...normalized].map(character => /[aeiouy]/.test(character) ? '_' : character).join('') + '%'
-}
-
-function normalizeVoiceSearch(value) {
-  return normalizeSearch(value)
-    .replace(/\blove\s+disk\b/g, 'lovdisc')
-    .replace(/\blove\s*disc\b/g, 'lovdisc')
-    .replace(/\b(rivers?|revers(?:e|es)?|rever|riverse)\b/g, 'reverse')
 }
 
 function parseCollectorNumberQuery(value) {
@@ -111,8 +105,8 @@ export default function SearchResults({ initialQuery }) {
   const [collectionNotice, setCollectionNotice] = useState('')
 
   useEffect(() => {
-    setQuery(initialQuery)
-    const term = initialQuery.trim()
+    setQuery(correctKnownVoiceCardName(initialQuery) || initialQuery)
+    const term = normalizeVoiceSearchQuery(initialQuery).trim()
     if (term.length < 2) {
       setCards([])
       setProducts([])
