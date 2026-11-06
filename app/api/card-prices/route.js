@@ -370,12 +370,14 @@ export async function POST(request) {
 
   const adminClient = await priceDatabaseClient(process.env.SUPABASE_SECRET_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY)
   // Unit tests load this route through a data: URL, which has no base for resolving Supabase's package.
-  const readClient = adminClient || (import.meta.url.startsWith('data:')
+  // Public price reads use the anon key so RLS follows the same policies as the catalogue.
+  // Keep the service client as a fallback for server deployments without a public key.
+  const readClient = import.meta.url.startsWith('data:')
     ? null
     : await priceDatabaseClient(
       process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || PUBLIC_SUPABASE_ANON_KEY,
       process.env.NEXT_PUBLIC_SUPABASE_URL || PUBLIC_SUPABASE_URL
-    ))
+    ) || adminClient
   const requestedCardIds = [...new Set(cards.map(card => card?.id).filter(id => typeof id === 'string'))]
   const canonicalVariants = new Map()
   const canonicalCards = new Map()
