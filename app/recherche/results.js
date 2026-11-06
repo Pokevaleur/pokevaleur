@@ -26,6 +26,13 @@ function accentInsensitivePattern(value) {
   return '%' + [...normalized].map(character => /[aeiouy]/.test(character) ? '_' : character).join('') + '%'
 }
 
+function normalizeVoiceSearch(value) {
+  return normalizeSearch(value)
+    .replace(/\blove\s+disk\b/g, 'lovdisc')
+    .replace(/\blove\s*disc\b/g, 'lovdisc')
+    .replace(/\b(rivers?|revers)\b/g, 'reverse')
+}
+
 function parseCollectorNumberQuery(value) {
   const match = String(value || '').trim().match(/^(\d+)\s*(?:\/|sur)\s*(\d+)$/i)
   return match ? { number: String(Number(match[1])), total: Number(match[2]) } : null
@@ -110,7 +117,7 @@ export default function SearchResults({ initialQuery }) {
 
       const setRows = setsResult.data || []
       const setById = new Map(setRows.map(set => [set.id, set]))
-      const tokens = normalizeSearch(term).split(/\s+/).filter(Boolean)
+      const tokens = normalizeVoiceSearch(term).split(/\s+/).filter(Boolean)
       const collectorNumberQuery = parseCollectorNumberQuery(term)
       const nameToken = tokens.find(token => !/^\d+$/.test(token)) || tokens[0] || term
       const numberToken = collectorNumberQuery?.number || tokens.find(token => /^\d+[a-z]*$/i.test(token)) || term
