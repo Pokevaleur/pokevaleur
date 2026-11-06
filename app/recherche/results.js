@@ -134,7 +134,7 @@ export default function SearchResults({ initialQuery }) {
 
       const setRows = setsResult.data || []
       const setById = new Map(setRows.map(set => [set.id, set]))
-      const tokens = normalizeVoiceSearch(term).split(/\s+/).filter(Boolean)
+      const tokens = normalizeVoiceSearchQuery(term).split(/\s+/).filter(Boolean)
       const collectorNumberQuery = parseCollectorNumberQuery(term)
       const nameToken = tokens.find(token => !/^\d+$/.test(token)) || tokens[0] || term
       const numberToken = collectorNumberQuery?.number || tokens.find(token => /^\d+[a-z]*$/i.test(token)) || term
