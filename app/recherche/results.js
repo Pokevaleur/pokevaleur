@@ -71,6 +71,17 @@ function isEtbCase(product) {
   return /^case\s+de\s+\d+\s+(?:etb\b|coffret\s+dresseur\s+d\s+elite\b)/.test(name)
 }
 
+function isDeckProduct(product) {
+  const searchable = normalizeText([product?.name, product?.product_type].join(' '))
+  return /\bdeck\b|デッキ/.test(searchable)
+}
+
+function isJapaneseDeck(product) {
+  if (!isDeckProduct(product)) return false
+  const searchable = normalizeText([product?.name, product?.series, product?.product_type].join(' '))
+  return /\b(?:japonais|japanese|jp)\b|日本語|日本版|デッキ/.test(searchable)
+}
+
 export default function SearchResults({ initialQuery }) {
   const supabase = useMemo(() => createClient(), [])
   const [query, setQuery] = useState(initialQuery)
@@ -187,6 +198,7 @@ export default function SearchResults({ initialQuery }) {
         ].join(' '))
         return tokens.every(token => searchable.includes(token))
       })
+      const deckSearch = normalizeSearch(term).split(/\s+/).includes('deck')
       matchingCards.sort((left, right) => {
         const leftName = normalizeText(left.card_name)
         const rightName = normalizeText(right.card_name)
@@ -195,6 +207,11 @@ export default function SearchResults({ initialQuery }) {
         if (exactOrder) return exactOrder
         const leftSet = Array.isArray(left.card_sets) ? left.card_sets[0] : left.card_sets || setById.get(left.card_set_id)
         const rightSet = Array.isArray(right.card_sets) ? right.card_sets[0] : right.card_sets || setById.get(right.card_set_id)
+        if (deckSearch) {
+          const languageOrder = Number(String(leftSet?.language || '').toUpperCase() === 'JP')
+            - Number(String(rightSet?.language || '').toUpperCase() === 'JP')
+          if (languageOrder) return languageOrder
+        }
         return String(rightSet?.release_date || '').localeCompare(String(leftSet?.release_date || ''))
           || leftName.localeCompare(rightName, 'fr')
       })
@@ -213,6 +230,8 @@ export default function SearchResults({ initialQuery }) {
         return 1
       }
       matchingProducts.sort((left, right) => {
+        const deckLanguageOrder = Number(isJapaneseDeck(left)) - Number(isJapaneseDeck(right))
+        if (deckLanguageOrder && isDeckProduct(left) && isDeckProduct(right)) return deckLanguageOrder
         const groupOrder = productGroup(left) - productGroup(right)
         if (groupOrder) return groupOrder
         return compareProductsByRelease(right, left, seriesReleaseDates)
