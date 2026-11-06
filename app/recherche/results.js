@@ -30,7 +30,7 @@ function normalizeVoiceSearch(value) {
   return normalizeSearch(value)
     .replace(/\blove\s+disk\b/g, 'lovdisc')
     .replace(/\blove\s*disc\b/g, 'lovdisc')
-    .replace(/\b(rivers?|revers)\b/g, 'reverse')
+    .replace(/\b(rivers?|revers(?:e|es)?|rever|riverse)\b/g, 'reverse')
 }
 
 function parseCollectorNumberQuery(value) {
@@ -121,9 +121,10 @@ export default function SearchResults({ initialQuery }) {
       const collectorNumberQuery = parseCollectorNumberQuery(term)
       const nameToken = tokens.find(token => !/^\d+$/.test(token)) || tokens[0] || term
       const numberToken = collectorNumberQuery?.number || tokens.find(token => /^\d+[a-z]*$/i.test(token)) || term
+      const variantSearchTokens = tokens.filter(token => token === 'reverse')
       const nameSearchTokens = collectorNumberQuery
         ? [nameToken]
-        : [...new Set(tokens.filter(token => !/^\d+$/.test(token)))].slice(0, 5)
+        : [...new Set(tokens.filter(token => !/^\d+$/.test(token) && !variantSearchTokens.includes(token)))].slice(0, 5)
       const escapedNumber = escapedPattern(numberToken)
       const matchingSets = collectorNumberQuery
         ? setRows.filter(set => Number(set.advertised_card_count) === collectorNumberQuery.total)
@@ -149,6 +150,19 @@ export default function SearchResults({ initialQuery }) {
         if (matchingSets.length > 0 && matchingSets.length <= 5) {
           searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', matchingSets.map(set => set.id))
             .order('guide_order').order('collector_number').limit(80)))
+        }
+      }
+      // A variant-only query such as “revers” has no card name to match.
+      // Search variant labels in the newest public sets so the variant itself
+      // can lead to its cards.
+      if (!nameSearchTokens.length && variantSearchTokens.length && !collectorNumberQuery) {
+        const recentSetIds = setRows.slice(0, 20).map(set => set.id)
+        const variantCardFields = CARD_FIELDS.replace('card_print_variants(', 'card_print_variants!inner(')
+        for (const token of variantSearchTokens) {
+          const pattern = escapedPattern(token)
+          searches.push(fetchAllRows(() => supabase.from('cards').select(variantCardFields)
+            .in('card_set_id', recentSetIds).ilike('card_print_variants.variant_label', pattern)
+            .order('card_name').order('collector_number').limit(120)))
         }
       }
       const cardResults = await Promise.all(searches)
