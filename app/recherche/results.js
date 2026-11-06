@@ -83,8 +83,11 @@ export default function SearchResults({ initialQuery }) {
   const [collectionAccess, setCollectionAccess] = useState('loading')
   const [collectionProfile, setCollectionProfile] = useState(null)
   const [collectionOwnership, setCollectionOwnership] = useState({})
+  const [collectionProductOwnership, setCollectionProductOwnership] = useState({})
   const [collectionCardId, setCollectionCardId] = useState('')
+  const [collectionProductId, setCollectionProductId] = useState('')
   const [collectionBusyVariant, setCollectionBusyVariant] = useState('')
+  const [collectionBusyProduct, setCollectionBusyProduct] = useState(false)
   const [collectionNotice, setCollectionNotice] = useState('')
 
   useEffect(() => {
@@ -347,13 +350,43 @@ export default function SearchResults({ initialQuery }) {
   }, [cards, collectionAccess, collectionProfile, supabase])
 
   useEffect(() => {
-    if (!collectionCardId) return
+    if (collectionAccess !== 'ready' || !collectionProfile || !products.length) {
+      setCollectionProductOwnership({})
+      return
+    }
+    let cancelled = false
+    async function loadCollectionProducts() {
+      const productIds = [...new Set(products.map(product => product.id))]
+      const ownership = {}
+      for (let offset = 0; offset < productIds.length; offset += 100) {
+        const batch = productIds.slice(offset, offset + 100)
+        const { data, error: ownershipError } = await supabase.from('collection_items')
+          .select('id,product_id,custom_name,quantity,purchase_price,purchase_date,sealed_condition,product_type_override,variant_note,created_at')
+          .eq('collection_profile_id', collectionProfile.id)
+          .in('product_id', batch)
+          .order('created_at', { ascending: false })
+        if (ownershipError) throw ownershipError
+        for (const item of data || []) {
+          if (!ownership[item.product_id]) ownership[item.product_id] = []
+          ownership[item.product_id].push(item)
+        }
+      }
+      if (!cancelled) setCollectionProductOwnership(ownership)
+    }
+    loadCollectionProducts().catch(() => {
+      if (!cancelled) { setCollectionAccess('error'); setCollectionNotice('Impossible de charger ta collection pour le moment.') }
+    })
+    return () => { cancelled = true }
+  }, [products, collectionAccess, collectionProfile, supabase])
+
+  useEffect(() => {
+    if (!collectionCardId && !collectionProductId) return
     const closeOnEscape = event => {
-      if (event.key === 'Escape') setCollectionCardId('')
+      if (event.key === 'Escape') { setCollectionCardId(''); setCollectionProductId('') }
     }
     window.addEventListener('keydown', closeOnEscape)
     return () => window.removeEventListener('keydown', closeOnEscape)
-  }, [collectionCardId])
+  }, [collectionCardId, collectionProductId])
 
   async function changeCollectionCopy(variant, action) {
     if (!collectionProfile || collectionBusyVariant) return
@@ -405,6 +438,62 @@ export default function SearchResults({ initialQuery }) {
     }
     setCollectionNotice(collectionAccess === 'error' ? 'Connexion à la collection indisponible.' : '')
     setCollectionCardId(card.id)
+  }
+
+  function openCollectionProduct(product) {
+    if (collectionAccess === 'signed_out') {
+      window.location.href = '/login?next=%2Frecherche%3Fsearch%3D' + encodeURIComponent(query.trim())
+      return
+    }
+    setCollectionNotice(collectionAccess === 'error' ? 'Connexion à la collection indisponible.' : '')
+    setCollectionProductId(product.id)
+  }
+
+  async function changeCollectionProduct(product, action, item = null) {
+    if (!collectionProfile || collectionBusyProduct) return
+    setCollectionBusyProduct(true)
+    setCollectionNotice('')
+    try {
+      if (action === 'add') {
+        const { data, error: insertError } = await supabase.from('collection_items').insert({
+          user_id: collectionProfile.userId,
+          collection_profile_id: collectionProfile.id,
+          product_id: product.id,
+          quantity: 1,
+          sealed_condition: 'standard'
+        }).select('id,product_id,custom_name,quantity,purchase_price,purchase_date,sealed_condition,product_type_override,variant_note,created_at').single()
+        if (insertError) throw insertError
+        setCollectionProductOwnership(current => ({
+          ...current,
+          [product.id]: [data, ...(current[product.id] || [])]
+        }))
+        setCollectionNotice('Un exemplaire a été ajouté à ta collection.')
+      } else if (item) {
+        if (item.quantity > 1) {
+          const { data, error: updateError } = await supabase.from('collection_items').update({ quantity: item.quantity - 1 })
+            .eq('id', item.id).eq('user_id', collectionProfile.userId).eq('collection_profile_id', collectionProfile.id)
+            .select('id,product_id,custom_name,quantity,purchase_price,purchase_date,sealed_condition,product_type_override,variant_note,created_at').single()
+          if (updateError) throw updateError
+          setCollectionProductOwnership(current => ({
+            ...current,
+            [product.id]: (current[product.id] || []).map(entry => entry.id === data.id ? data : entry)
+          }))
+        } else {
+          const { error: deleteError } = await supabase.from('collection_items').delete()
+            .eq('id', item.id).eq('user_id', collectionProfile.userId).eq('collection_profile_id', collectionProfile.id)
+          if (deleteError) throw deleteError
+          setCollectionProductOwnership(current => ({
+            ...current,
+            [product.id]: (current[product.id] || []).filter(entry => entry.id !== item.id)
+          }))
+        }
+        setCollectionNotice('Un exemplaire a été retiré de ta collection.')
+      }
+    } catch (saveError) {
+      setCollectionNotice('Modification impossible : ' + (saveError.message || 'réessaie.'))
+    } finally {
+      setCollectionBusyProduct(false)
+    }
   }
 
   const hasQuery = query.trim().length >= 2
@@ -460,12 +549,24 @@ export default function SearchResults({ initialQuery }) {
                 {products.map(product => {
                   const quote = formatPrice(product.current_value)
                   const productImage = isEtbCase(product) ? GENERIC_ETB_CASE_IMAGE : product.image_url
-                  return <a className={styles.product} href={'/catalogue/' + encodeURIComponent(product.id)} key={product.id}>
-                  <span className={styles.imageFrame}>{productImage ? <img src={getProductThumbnailUrl(productImage)} alt="" loading="lazy" decoding="async"/> : <span className={styles.noImage}>Image à venir</span>}</span>
-                  <span className={styles.cardText}><strong>{product.name}</strong><span>{product.product_type || 'Produit scellé'}</span><small>{product.series || product.case_reference || 'Série non précisée'}</small>
-                    <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={product.price_source || 'Cote actuelle du catalogue'} aria-label={quote ? `Cote actuelle : ${quote}` : 'Cote indisponible'}>{quote || 'Cote indisponible'}</span>
-                  </span>
-                </a>})}
+                  const copies = collectionProductOwnership[product.id] || []
+                  const quantity = copies.reduce((total, item) => total + Number(item.quantity || 1), 0)
+                  const collectionLabel = collectionAccess === 'loading' ? 'Collection…'
+                    : collectionAccess === 'signed_out' ? 'Se connecter'
+                      : collectionAccess === 'error' ? 'Collection indisponible'
+                        : quantity ? quantity + ' dans ma collection' : '0 dans ma collection'
+                  return <article className={styles.product} key={product.id}>
+                    <a className={styles.cardLink} href={'/catalogue/' + encodeURIComponent(product.id)}>
+                      <span className={styles.imageFrame}>{productImage ? <img src={getProductThumbnailUrl(productImage)} alt="" loading="lazy" decoding="async"/> : <span className={styles.noImage}>Image à venir</span>}</span>
+                      <span className={styles.cardText}><strong>{product.name}</strong><span>{product.product_type || 'Produit scellé'}</span><small>{product.series || product.case_reference || 'Série non précisée'}</small>
+                        <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={product.price_source || 'Cote actuelle du catalogue'} aria-label={quote ? `Cote actuelle : ${quote}` : 'Cote indisponible'}>{quote || 'Cote indisponible'}</span>
+                      </span>
+                    </a>
+                    <button type="button" className={styles.collectionPill} onClick={() => openCollectionProduct(product)} aria-label={'Voir et modifier la collection pour ' + product.name} disabled={collectionAccess === 'loading'}>
+                      <span aria-hidden="true">{quantity ? '✓' : '+'}</span>{collectionLabel}
+                    </button>
+                  </article>
+                })}
               </div> : <p className={styles.empty}>Aucun produit scellé ne correspond à cette recherche.</p>}
               {products.length > 0 && <a className={styles.moreLink} href={'/catalogue?search=' + encodeURIComponent(query.trim())}>Continuer dans le catalogue des produits →</a>}
             </section>
@@ -503,6 +604,44 @@ export default function SearchResults({ initialQuery }) {
                   </div>
                 })}
               </div> : <p className={styles.collectionFeedback}>Aucune variante n’est renseignée pour cette carte dans le catalogue.</p>}
+          {collectionNotice && <p className={styles.collectionFeedback} role="status">{collectionNotice}</p>}
+        </section>
+      </div>
+    })()}
+    {collectionProductId && (() => {
+      const product = products.find(entry => entry.id === collectionProductId)
+      if (!product) return null
+      const items = collectionProductOwnership[product.id] || []
+      const quantity = items.reduce((total, item) => total + Number(item.quantity || 1), 0)
+      return <div className={styles.collectionOverlay} onMouseDown={event => { if (event.target === event.currentTarget) setCollectionProductId('') }}>
+        <section className={styles.collectionDialog} role="dialog" aria-modal="true" aria-labelledby="collection-product-dialog-title">
+          <button type="button" className={styles.collectionClose} onClick={() => setCollectionProductId('')} aria-label="Fermer">×</button>
+          <p className={styles.collectionEyebrow}>{product.product_type || 'Produit scellé'} · {product.series || 'Série non précisée'}</p>
+          <h2 id="collection-product-dialog-title">{product.name}</h2>
+          <p className={styles.collectionSubtitle}>{quantity} exemplaire{quantity === 1 ? '' : 's'} dans {collectionProfile?.display_name || 'le profil actif'}</p>
+          {collectionAccess === 'signed_out'
+            ? <a className={styles.collectionLogin} href={'/login?next=%2Frecherche%3Fsearch%3D' + encodeURIComponent(query.trim())}>Se connecter pour gérer ma collection →</a>
+            : collectionAccess === 'error'
+              ? <p className={styles.collectionFeedback} role="alert">Impossible d’accéder à ta collection. Recharge la page et réessaie.</p>
+              : <div className={styles.collectionVariantList}>
+                {items.length ? items.map((item, index) => <div className={styles.collectionVariant} key={item.id}>
+                  <div className={styles.collectionVariantName}><strong>{item.custom_name || `Exemplaire ${index + 1}`}</strong>
+                    <small>{[item.sealed_condition === 'zero_defect' ? 'Zéro défaut' : 'État standard', item.purchase_date ? new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR') : ''].filter(Boolean).join(' · ')}</small>
+                  </div>
+                  <strong className={styles.collectionQuantity}>{item.quantity || 1} ex.</strong>
+                  <div className={styles.collectionActions}>
+                    <button type="button" onClick={() => changeCollectionProduct(product, 'remove', item)} disabled={collectionBusyProduct} aria-label="Retirer un exemplaire">−</button>
+                    <button type="button" onClick={() => changeCollectionProduct(product, 'add')} disabled={collectionBusyProduct} aria-label="Ajouter un exemplaire">+</button>
+                  </div>
+                </div>) : <>
+                  <p className={styles.collectionFeedback}>Aucun exemplaire de ce produit dans cette collection.</p>
+                  <div className={styles.collectionVariant}>
+                    <div className={styles.collectionVariantName}><strong>Ajouter un exemplaire</strong></div>
+                    <span />
+                    <div className={styles.collectionActions}><button type="button" onClick={() => changeCollectionProduct(product, 'add')} disabled={collectionBusyProduct} aria-label="Ajouter un exemplaire">+</button></div>
+                  </div>
+                </>}
+              </div>}
           {collectionNotice && <p className={styles.collectionFeedback} role="status">{collectionNotice}</p>}
         </section>
       </div>
