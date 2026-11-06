@@ -9,7 +9,7 @@ import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 import styles from './page.module.css'
 import VoiceSearchButton from '../voice-search-button'
 
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date,advertised_card_count),card_print_variants(id,variant_key,variant_label,finish_code)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date,advertised_card_count),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group)'
 const GENERIC_ETB_CASE_IMAGE = 'https://www.pokevaleur.fr/etb-case-generic.jpg'
 
 function normalizeText(value) {
@@ -114,8 +114,9 @@ export default function SearchResults({ initialQuery }) {
       const collectorNumberQuery = parseCollectorNumberQuery(term)
       const nameToken = tokens.find(token => !/^\d+$/.test(token)) || tokens[0] || term
       const numberToken = collectorNumberQuery?.number || tokens.find(token => /^\d+[a-z]*$/i.test(token)) || term
-      const escapedName = escapedPattern(nameToken)
-      const accentName = accentInsensitivePattern(nameToken)
+      const nameSearchTokens = collectorNumberQuery
+        ? [nameToken]
+        : [...new Set(tokens.filter(token => !/^\d+$/.test(token)))].slice(0, 5)
       const escapedNumber = escapedPattern(numberToken)
       const matchingSets = collectorNumberQuery
         ? setRows.filter(set => Number(set.advertised_card_count) === collectorNumberQuery.total)
@@ -126,11 +127,15 @@ export default function SearchResults({ initialQuery }) {
       const setIds = collectorNumberQuery ? matchingSets.map(set => set.id) : setRows.map(set => set.id)
       const searches = []
       if (setIds.length) {
-        searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
-          .ilike('card_name', escapedName).order('card_name').order('collector_number').limit(80)))
-        if (accentName && accentName !== escapedName) {
+        for (const token of nameSearchTokens) {
+          const escapedToken = escapedPattern(token)
+          const accentToken = accentInsensitivePattern(token)
           searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
-            .ilike('card_name', accentName).order('card_name').order('collector_number').limit(80)))
+            .ilike('card_name', escapedToken).order('card_name').order('collector_number').limit(80)))
+          if (accentToken && accentToken !== escapedToken) {
+            searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
+              .ilike('card_name', accentToken).order('card_name').order('collector_number').limit(80)))
+          }
         }
         searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
           .ilike('collector_number', escapedNumber).order('card_name').order('collector_number').limit(80)))
@@ -150,7 +155,12 @@ export default function SearchResults({ initialQuery }) {
             && (Number(set?.advertised_card_count) === collectorNumberQuery.total
               || collectorNumberTotal(card.collector_number) === collectorNumberQuery.total)
         }
-        const searchable = normalizeText([card.card_name, card.collector_number, set?.series_name, set?.set_name, set?.set_code].join(' '))
+        const variantText = (card.card_print_variants || []).flatMap(variant => [
+          variant.variant_label, variant.variant_key, variant.finish_code, variant.guide_marker, variant.checklist_group
+        ]).filter(Boolean).join(' ')
+        const searchable = normalizeSearch([
+          card.card_name, card.collector_number, set?.series_name, set?.set_name, set?.set_code, variantText
+        ].join(' '))
         return tokens.every(token => searchable.includes(token))
       })
       matchingCards.sort((left, right) => {
