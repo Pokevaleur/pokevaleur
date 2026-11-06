@@ -440,7 +440,7 @@ export default function SearchResults({ initialQuery }) {
                         : quantity ? quantity + ' dans ma collection' : '0 dans ma collection'
                   return <article className={styles.card} key={card.id}>
                     <a className={styles.cardLink} href={target}>
-                      <span className={styles.imageFrame}>{card.image_url ? <img src={card.image_url} alt="" loading="lazy" referrerPolicy={card.image_url.includes("pokemoncapture.fr") ? "no-referrer" : undefined}/> : <span className={styles.noImage}>Image à venir</span>}</span>
+                      <span className={styles.imageFrame}>{card.image_url ? <img src={card.image_url} alt="" loading="lazy"/> : <span className={styles.noImage}>Image à venir</span>}</span>
                       <span className={styles.cardText}><strong>{card.card_name}</strong><span>{card.collector_number || 'Numéro non indiqué'}</span><small>{set?.set_name || set?.series_name || 'Série non précisée'} · {languageLabel(set?.language)}</small>
                         <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={cardPrices[card.id]?.source || 'Cote actuelle du catalogue'} aria-label={quote ? `Cote actuelle : ${quote}` : pricesLoading ? 'Chargement de la cote actuelle' : 'Cote indisponible'}>{pricesLoading && !cardPrices[card.id] ? '…' : quote || 'Cote indisponible'}</span>
                       </span>
