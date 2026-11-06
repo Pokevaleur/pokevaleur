@@ -9,7 +9,7 @@ import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 import styles from './page.module.css'
 import VoiceSearchButton from '../voice-search-button'
 
-const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date,advertised_card_count),card_print_variants(id,variant_key,variant_label,finish_code)'
+const CARD_FIELDS = 'id,card_set_id,collector_number,card_name,image_url,source_url,image_source_url,card_sets!cards_card_set_id_fkey(id,series_name,set_name,set_code,language,release_date,advertised_card_count),card_print_variants(id,variant_key,variant_label,finish_code,guide_marker,checklist_group)'
 const GENERIC_ETB_CASE_IMAGE = 'https://www.pokevaleur.fr/etb-case-generic.jpg'
 
 function normalizeText(value) {
