@@ -30,7 +30,16 @@ export default function VoiceSearchButton() {
         : 'La reconnaissance vocale a échoué. Tu peux saisir ta recherche.')
     }
     recognition.onresult = event => {
-      const transcript = event.results?.[0]?.[0]?.transcript?.trim()
+      const alternatives = Array.from(event.results?.[0] || [])
+        .map(result => result?.transcript?.trim())
+        .filter(Boolean)
+      const score = transcript => {
+        const normalized = transcript.toLocaleLowerCase('fr').normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+        return Number(/\b(lovdisc|love\s+disk|love\s*disc)\b/.test(normalized)) * 2
+          + Number(/\b(reverse|revers|rivers?)\b/.test(normalized)) * 2
+      }
+      const transcript = alternatives
+        .sort((left, right) => score(right) - score(left))[0]
       if (transcript) window.location.assign('/recherche?search=' + encodeURIComponent(transcript))
       else setMessage('Je n’ai pas reconnu de recherche. Réessaie ou saisis-la.')
     }
