@@ -61,14 +61,6 @@ function formatPrice(value, currency = 'EUR') {
     : null
 }
 
-function formatCompactPrice(value, currency = 'EUR') {
-  const amount = Number(value)
-  const code = /^[A-Z]{3}$/.test(String(currency || '').toUpperCase()) ? String(currency).toUpperCase() : 'EUR'
-  return Number.isFinite(amount) && amount > 0
-    ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency: code, minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(amount)
-    : null
-}
-
 function CrownMark() {
   return <svg className={styles.priceCrown} viewBox="0 0 48 28" aria-hidden="true" focusable="false">
     <path d="M5 8 15 15 24 3 33 15 43 8 38 25H10Z" fill="currentColor" />
@@ -557,7 +549,6 @@ export default function SearchResults({ initialQuery }) {
                 {cards.map(card => {
                   const set = Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
                   const quote = formatPrice(cardPrices[card.id]?.amount, cardPrices[card.id]?.currency)
-                  const cardmarketFrom = formatCompactPrice(cardPrices[card.id]?.cardmarketFrom)
                   const target = '/catalogue/cartes?set=' + encodeURIComponent(card.card_set_id) + '&filter=' + encodeURIComponent(card.collector_number || card.card_name)
                   const quantity = (card.card_print_variants || []).reduce((total, variant) => total + (collectionOwnership[variant.id] || []).length, 0)
                   const collectionLabel = collectionAccess === 'loading' ? 'Collection…'
@@ -568,10 +559,8 @@ export default function SearchResults({ initialQuery }) {
                     <a className={styles.cardLink} href={target}>
                       <span className={styles.imageFrame}>{card.image_url ? <img src={card.image_url} alt="" loading="lazy"/> : <span className={styles.noImage}>Image à venir</span>}</span>
                       <span className={styles.cardText}><strong>{card.card_name}</strong><span>{card.collector_number || 'Numéro non indiqué'}</span><small>{set?.set_name || set?.series_name || 'Série non précisée'} · {languageLabel(set?.language)}</small>
-                        <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={cardPrices[card.id]?.source || 'Cote PokéValeur et prix de départ Cardmarket'} aria-label={[quote ? `Cote PokéValeur : ${quote}` : pricesLoading ? 'Chargement de la cote' : 'Cote indisponible', cardmarketFrom ? `Cardmarket dès ${cardmarketFrom}` : ''].filter(Boolean).join(' · ')}>
-                          {quote || cardmarketFrom
-                            ? <><span className={styles.priceEstimate}><CrownMark />{quote || '—'}</span>{cardmarketFrom && <span className={styles.priceFrom}>CM dès {cardmarketFrom}</span>}</>
-                            : pricesLoading ? '…' : 'Cote indisponible'}
+                        <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={cardPrices[card.id]?.source || 'Cote PokéValeur'} aria-label={quote ? `Cote PokéValeur : ${quote}` : pricesLoading ? 'Chargement de la cote' : 'Cote indisponible'}>
+                          {quote ? <span className={styles.priceEstimate}><CrownMark />{quote}</span> : pricesLoading ? '…' : 'Cote indisponible'}
                         </span>
                       </span>
                     </a>
