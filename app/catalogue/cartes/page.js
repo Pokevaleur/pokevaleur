@@ -953,6 +953,18 @@ export default function CardCataloguePage() {
       set?.set_name, set?.series_name, set?.set_code, isGoldEnergy(card) ? 'Gold dorée' : ''
     ].join(' '))
     return !term || term.split(/\s+/).every(token => searchText.includes(token))
+  }).sort((left, right) => {
+    // Keep the two Zénith checklists grouped, then order cards by collector number.
+    if (setId === zenithMainSet?.id) {
+      const leftIsGallery = isZenithGallerySet(relatedSet(left))
+      const rightIsGallery = isZenithGallerySet(relatedSet(right))
+      if (leftIsGallery !== rightIsGallery) return leftIsGallery ? 1 : -1
+    }
+    return String(left.collector_number || '').localeCompare(
+      String(right.collector_number || ''),
+      'fr',
+      { numeric: true }
+    )
   })
   const groupedEnergyView = setId === ALL_SERIES && isEnergySearch(query)
   const energyGroups = groupedEnergyView ? energyPrintYearGroups(visibleCards) : []
