@@ -2,6 +2,7 @@ const TCGDEX_CARD_URL = /^https:\/\/api\.tcgdex\.net\/v2\/fr\/(?:(?:sets|sv|tk)\
 const CARDMARKET_GUIDE_URL = 'https://downloads.s3.cardmarket.com/productCatalog/priceGuide/price_guide_6.json'
 const CARDMARKET_SINGLES_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_6.json'
 const CARDMARKET_PRODUCTS_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_6.json'
+const MANUAL_PRIORITY_SOURCE_PREFIX = 'PokéValeur priorité · Vente confirmée · '
 
 
 export const maxDuration = 60
@@ -715,6 +716,7 @@ export async function POST(request) {
   // Confirmed sales are keyed to every catalog variant in the request, independently
   // of whether an external market source returned a price for that variant.
   let observedSalesByVariant = new Map()
+  let manualOverridesByVariant = new Map()
   const observationVariantIds = [...new Set([...knownVariantIds, ...submittedVariantIds])]
   if (readClient && observationVariantIds.length) {
     const confirmedSales = []
@@ -730,6 +732,24 @@ export async function POST(request) {
       if (!result.error) confirmedSales.push(...(result.data || []))
     }
     observedSalesByVariant = confirmedSalesByVariant(confirmedSales)
+
+    const overrides = []
+    for (let offset = 0; offset < observationVariantIds.length; offset += 100) {
+      const result = await readClient.from('card_price_observations')
+        .select('id,card_print_variant_id,amount,currency,source,source_url,observed_at')
+        .in('card_print_variant_id', observationVariantIds.slice(offset, offset + 100))
+        .eq('price_kind', 'raw')
+        .eq('observation_type', 'confirmed_sale')
+        .eq('currency', 'EUR')
+        .like('source', `${MANUAL_PRIORITY_SOURCE_PREFIX}%`)
+        .order('observed_at', { ascending: false })
+      if (!result.error) overrides.push(...(result.data || []))
+    }
+    for (const override of overrides) {
+      if (manualOverridesByVariant.has(override.card_print_variant_id)) continue
+      if (!isPrice(Number(override.amount))) continue
+      manualOverridesByVariant.set(override.card_print_variant_id, override)
+    }
   }
 
   const pricesWithLastKnown = prices.map(price => {
@@ -767,11 +787,38 @@ export async function POST(request) {
 
   const pricesWithObservedSales = pricesWithLastKnown.map(price => ({
     ...price,
-    variantPrices: (price.variantPrices || []).map(variant => ({
-      ...variant,
-      observedSales: observedSalesByVariant.get(variant.variantId) || null
-    }))
+    variantPrices: (price.variantPrices || []).map(variant => {
+      const override = manualOverridesByVariant.get(variant.variantId)
+      const source = override?.source?.slice(MANUAL_PRIORITY_SOURCE_PREFIX.length)
+      return {
+        ...variant,
+        ...(override ? {
+          amount: Number(override.amount),
+          currency: override.currency || 'EUR',
+          source: `Vente confirmée saisie · ${source || 'source non précisée'}`,
+          basis: 'cote PokéValeur prioritaire',
+          observedAt: override.observed_at,
+          manualOverride: true,
+          sourceUrl: override.source_url || null
+        } : {}),
+        observedSales: observedSalesByVariant.get(variant.variantId) || null
+      }
+    })
   }))
+
+  for (const price of pricesWithObservedSales) {
+    const preferredFinishes = orderedFinishes(price.variants || [])
+    const overrideVariant = preferredFinishes
+      .map(finish => price.variantPrices?.find(variant => variant.finish === finish && variant.manualOverride))
+      .find(Boolean) || price.variantPrices?.find(variant => variant.manualOverride)
+    if (!overrideVariant) continue
+    price.amount = Number(overrideVariant.amount)
+    price.currency = overrideVariant.currency || 'EUR'
+    price.source = overrideVariant.source
+    price.basis = overrideVariant.basis
+    price.observedAt = overrideVariant.observedAt
+    price.manualOverride = true
+  }
 
   return Response.json({ prices: pricesWithObservedSales, exchangeDate: exchange?.date || null })
 }
