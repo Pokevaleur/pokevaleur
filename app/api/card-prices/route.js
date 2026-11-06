@@ -94,6 +94,18 @@ function firstMarketPrice(cardmarket, finishes) {
   return null
 }
 
+function cardmarketLowestPrice(guide, finish) {
+  const fields = finish === 'reverse'
+    ? ['reverseHoloLow', 'foilLow', 'low']
+    : finish === 'holo'
+      ? ['foilLow', 'low']
+      : ['low']
+  for (const field of fields) {
+    if (isPrice(guide?.[field])) return guide[field]
+  }
+  return null
+}
+
 function normalizedPriceFinish(value) {
   const finish = String(value || '').toLowerCase()
   if (finish.startsWith('reverse')) return 'reverse'
@@ -483,6 +495,38 @@ export async function POST(request) {
     }
   })
 
+  // Cardmarket's low field is the current minimum offer, distinct from the
+  // historical averages used for PokéValeur's estimate. Fetch it separately so
+  // the UI can show both without replacing the collection valuation.
+  const directCardmarketTargets = fetched.filter(item =>
+    item.tcgdexData && directCardmarketProductId(item.tcgdexData, item.card?.variants || [])
+  )
+  if (directCardmarketTargets.length) {
+    try {
+      const guideData = await fetchJson(CARDMARKET_GUIDE_URL)
+      const guideByProductId = new Map((guideData?.priceGuides || []).map(guide => [guide.idProduct, guide]))
+      const targetById = new Map(directCardmarketTargets.map(item => [item.cardId, item]))
+      for (let index = 0; index < fetched.length; index += 1) {
+        const item = fetched[index]
+        if (!targetById.has(item.cardId)) continue
+        const variantPrices = (item.variantPrices || []).map(variant => {
+          const finish = normalizedPriceFinish(variant.finish)
+          const source = pricingForFinish(item.tcgdexData, finish)
+          const productId = source.cardmarketProductId || directCardmarketProductId(item.tcgdexData, item.card?.variants || [])
+          const cardmarketFrom = cardmarketLowestPrice(guideByProductId.get(productId), finish)
+          return { ...variant, cardmarketFrom }
+        })
+        const preferredFinish = orderedFinishes(item.card?.variants || [])[0]
+        const cardmarketFrom = variantPrices.find(variant => variant.finish === preferredFinish && variant.cardmarketFrom)?.cardmarketFrom
+          || variantPrices.find(variant => variant.cardmarketFrom)?.cardmarketFrom
+          || null
+        fetched[index] = { ...item, variantPrices, cardmarketFrom }
+      }
+    } catch {
+      // Keep the displayed market estimate when Cardmarket's minimum-price file is unavailable.
+    }
+  }
+
   const cardsNeedingCardmarket = fetched.filter(item => !item.chosenMarket && (
     item.tcgdexUrl || isRgbMewCard(item.card) || isCatalogEnergyMarketCard(item.card)
   ))
@@ -549,6 +593,7 @@ export async function POST(request) {
               variantId: variant?.id || null,
               finish,
               market: market ? { ...market, updated: guideDate } : null,
+            cardmarketFrom: cardmarketLowestPrice(guide, finish),
               fallback: null
             }
           })
@@ -561,6 +606,7 @@ export async function POST(request) {
           return {
             ...item,
             cardmarket: rootGuide,
+            cardmarketFrom: preferredVariant?.cardmarketFrom || cardmarketLowestPrice(rootGuide, finishes[0]) || null,
             chosenMarket: { ...market, source: 'Cardmarket' },
             chosenFallback: null,
             variantPrices: pricedVariants,
@@ -597,6 +643,7 @@ export async function POST(request) {
         variantId: variant.variantId,
         finish: variant.finish,
         amount: variant.market.amount,
+          cardmarketFrom: variant.cardmarketFrom ?? null,
         currency: 'EUR',
         source: 'Cardmarket',
         basis: variant.market.field,
@@ -606,6 +653,7 @@ export async function POST(request) {
         variantId: variant.variantId,
         finish: variant.finish,
         amount: Math.round(variant.fallback.amount * exchange.rate * 100) / 100,
+        cardmarketFrom: variant.cardmarketFrom ?? null,
         currency: 'EUR',
         source: 'TCGplayer · conversion de référence',
         basis: variant.fallback.field,
@@ -616,6 +664,7 @@ export async function POST(request) {
         variantId: variant.variantId,
         finish: variant.finish,
         amount: null,
+        cardmarketFrom: variant.cardmarketFrom ?? null,
         currency: null,
         source: null,
         basis: null,

@@ -145,6 +145,31 @@ function formatCatalogPrice(value) {
   return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(value)
 }
 
+function formatCompactPrice(value) {
+  return new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', minimumFractionDigits: 0, maximumFractionDigits: 2 }).format(value)
+}
+
+function CrownMark() {
+  return <svg className={styles.priceCrown} viewBox="0 0 48 28" aria-hidden="true" focusable="false">
+    <path d="M5 8 15 15 24 3 33 15 43 8 38 25H10Z" fill="currentColor" />
+    <circle cx="5" cy="5" r="3" fill="currentColor" />
+    <circle cx="24" cy="3" r="3" fill="currentColor" />
+    <circle cx="43" cy="5" r="3" fill="currentColor" />
+  </svg>
+}
+
+function CompactPrice({ price, loading = false }) {
+  const hasEstimate = price?.amount != null
+  const hasCardmarketFrom = price?.cardmarketFrom != null
+  return <span className={styles.compactPrice}>
+    <span className={styles.compactEstimate}>
+      <CrownMark />
+      {loading ? '…' : hasEstimate ? formatCatalogPrice(price.amount) : '—'}
+    </span>
+    {hasCardmarketFrom && <span className={styles.compactCardmarket}>CM dès {formatCompactPrice(price.cardmarketFrom)}</span>}
+  </span>
+}
+
 function priceDetailsText(price) {
   const basisLabels = {
     avg30: 'moyenne Cardmarket sur 30 jours',
@@ -1343,10 +1368,10 @@ export default function CardCataloguePage() {
                   className={styles.catalogPrice}
                   onClick={() => setZoomedCard(card)}
                   aria-label={cardMarketPrice?.amount != null
-                    ? 'Voir les finitions et le détail du prix de ' + card.card_name
+                    ? 'Voir la cote PokéValeur et le prix minimum Cardmarket de ' + card.card_name
                     : 'Voir les cotes disponibles pour ' + card.card_name}
                 >
-                  {marketPricesLoading ? '…' : cardMarketPrice?.amount != null ? formatCatalogPrice(cardMarketPrice.amount) : 'Cote indisponible'}
+                  <CompactPrice price={cardMarketPrice} loading={marketPricesLoading} />
                 </button>}
               </div>
               <div className={styles.printings} role="group" aria-label={'Impressions de ' + card.card_name}>
@@ -1436,8 +1461,8 @@ export default function CardCataloguePage() {
                 const priceVariants = (zoomedCard.card_print_variants || []).filter(variant => variant.is_master_set_target)
                 if (!priceVariants.length) {
                   const overallPrice = marketPrices[zoomedCard.id]
-                  return overallPrice?.amount != null
-                    ? <ul><li><span>Carte</span><div><b>{formatCatalogPrice(overallPrice.amount)}</b><small>{priceDetailsText(overallPrice)}</small></div></li></ul>
+                  return overallPrice?.amount != null || overallPrice?.cardmarketFrom != null
+                    ? <ul><li><span>Carte</span><div><b><CompactPrice price={overallPrice} /></b>{overallPrice?.amount != null && <small>{priceDetailsText(overallPrice)}</small>}</div></li></ul>
                     : <p>Cote indisponible</p>
                 }
                 return <ul>{priceVariants.map(variant => {
@@ -1446,7 +1471,7 @@ export default function CardCataloguePage() {
                   return <li key={variant.id}>
                     <span>{label}</span>
                     <div>
-                      <b>{variantPrice?.amount != null ? formatCatalogPrice(variantPrice.amount) : 'Cote indisponible'}</b>
+                      <b>{variantPrice?.amount != null || variantPrice?.cardmarketFrom != null ? <CompactPrice price={variantPrice} /> : 'Cote indisponible'}</b>
                       {variantPrice?.amount != null && <small>{priceDetailsText(variantPrice)}</small>}
                     </div>
                   </li>
