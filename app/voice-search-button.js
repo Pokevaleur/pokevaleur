@@ -20,7 +20,7 @@ export default function VoiceSearchButton() {
     const recognition = new Recognition()
     recognition.lang = 'fr-FR'
     recognition.interimResults = false
-    recognition.maxAlternatives = 1
+    recognition.maxAlternatives = 5
     recognition.onstart = () => setListening(true)
     recognition.onend = () => setListening(false)
     recognition.onerror = event => {
