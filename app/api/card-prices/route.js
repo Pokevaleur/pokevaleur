@@ -3,9 +3,6 @@ const CARDMARKET_GUIDE_URL = 'https://downloads.s3.cardmarket.com/productCatalog
 const CARDMARKET_SINGLES_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_singles_6.json'
 const CARDMARKET_PRODUCTS_URL = 'https://downloads.s3.cardmarket.com/productCatalog/productList/products_nonsingles_6.json'
 
-// Cardmarket's price-guide low for this exact IR is out of line with the
-// current offer shown on its product page (observed 06/11/2026).
-const CARDMARKET_MINIMUM_OVERRIDES = new Map([[826061, 19]])
 
 export const maxDuration = 60
 
@@ -96,23 +93,6 @@ function firstMarketPrice(cardmarket, finishes) {
     }
   }
   return null
-}
-
-function cardmarketLowestPrice(guide, finish) {
-  const fields = finish === 'reverse'
-    ? ['reverseHoloLow', 'foilLow', 'low']
-    : finish === 'holo'
-      ? ['foilLow', 'low']
-      : ['low']
-  for (const field of fields) {
-    if (isPrice(guide?.[field])) return guide[field]
-  }
-  return null
-}
-
-function cardmarketMinimumPrice(productId, guide, finish) {
-  const observedOverride = CARDMARKET_MINIMUM_OVERRIDES.get(Number(productId))
-  return isPrice(observedOverride) ? observedOverride : cardmarketLowestPrice(guide, finish)
 }
 
 function normalizedPriceFinish(value) {
@@ -504,38 +484,6 @@ export async function POST(request) {
     }
   })
 
-  // Cardmarket's low field is the current minimum offer, distinct from the
-  // historical averages used for PokéValeur's estimate. Fetch it separately so
-  // the UI can show both without replacing the collection valuation.
-  const directCardmarketTargets = fetched.filter(item =>
-    item.tcgdexData && directCardmarketProductId(item.tcgdexData, item.card?.variants || [])
-  )
-  if (directCardmarketTargets.length) {
-    try {
-      const guideData = await fetchJson(CARDMARKET_GUIDE_URL)
-      const guideByProductId = new Map((guideData?.priceGuides || []).map(guide => [guide.idProduct, guide]))
-      const targetById = new Map(directCardmarketTargets.map(item => [item.cardId, item]))
-      for (let index = 0; index < fetched.length; index += 1) {
-        const item = fetched[index]
-        if (!targetById.has(item.cardId)) continue
-        const variantPrices = (item.variantPrices || []).map(variant => {
-          const finish = normalizedPriceFinish(variant.finish)
-          const source = pricingForFinish(item.tcgdexData, finish)
-          const productId = source.cardmarketProductId || directCardmarketProductId(item.tcgdexData, item.card?.variants || [])
-          const cardmarketFrom = cardmarketMinimumPrice(productId, guideByProductId.get(productId), finish)
-          return { ...variant, cardmarketFrom }
-        })
-        const preferredFinish = orderedFinishes(item.card?.variants || [])[0]
-        const cardmarketFrom = variantPrices.find(variant => variant.finish === preferredFinish && variant.cardmarketFrom)?.cardmarketFrom
-          || variantPrices.find(variant => variant.cardmarketFrom)?.cardmarketFrom
-          || null
-        fetched[index] = { ...item, variantPrices, cardmarketFrom }
-      }
-    } catch {
-      // Keep the displayed market estimate when Cardmarket's minimum-price file is unavailable.
-    }
-  }
-
   const cardsNeedingCardmarket = fetched.filter(item => !item.chosenMarket && (
     item.tcgdexUrl || isRgbMewCard(item.card) || isCatalogEnergyMarketCard(item.card)
   ))
@@ -602,7 +550,6 @@ export async function POST(request) {
               variantId: variant?.id || null,
               finish,
               market: market ? { ...market, updated: guideDate } : null,
-            cardmarketFrom: cardmarketMinimumPrice(variantProductId, guide, finish),
               fallback: null
             }
           })
@@ -615,7 +562,6 @@ export async function POST(request) {
           return {
             ...item,
             cardmarket: rootGuide,
-            cardmarketFrom: preferredVariant?.cardmarketFrom || cardmarketMinimumPrice(productId, rootGuide, finishes[0]) || null,
             chosenMarket: { ...market, source: 'Cardmarket' },
             chosenFallback: null,
             variantPrices: pricedVariants,
@@ -652,7 +598,6 @@ export async function POST(request) {
         variantId: variant.variantId,
         finish: variant.finish,
         amount: variant.market.amount,
-          cardmarketFrom: variant.cardmarketFrom ?? null,
         currency: 'EUR',
         source: 'Cardmarket',
         basis: variant.market.field,
@@ -662,7 +607,6 @@ export async function POST(request) {
         variantId: variant.variantId,
         finish: variant.finish,
         amount: Math.round(variant.fallback.amount * exchange.rate * 100) / 100,
-        cardmarketFrom: variant.cardmarketFrom ?? null,
         currency: 'EUR',
         source: 'TCGplayer · conversion de référence',
         basis: variant.fallback.field,
@@ -673,7 +617,6 @@ export async function POST(request) {
         variantId: variant.variantId,
         finish: variant.finish,
         amount: null,
-        cardmarketFrom: variant.cardmarketFrom ?? null,
         currency: null,
         source: null,
         basis: null,
