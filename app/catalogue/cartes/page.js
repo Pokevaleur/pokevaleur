@@ -115,6 +115,17 @@ function relatedSet(card) {
   return Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets
 }
 
+function formatCatalogCardNumber(card) {
+  const collectorNumber = String(card?.collector_number || '').trim()
+  if (!collectorNumber || /\//.test(collectorNumber)) return collectorNumber
+
+  const numberMatch = collectorNumber.match(/^\d+$/)
+  const total = Number(relatedSet(card)?.advertised_card_count)
+  return numberMatch && Number.isInteger(total) && total > 0
+    ? collectorNumber + '/' + total
+    : collectorNumber
+}
+
 function parseCollectorNumberFraction(value) {
   const match = String(value || '').trim().match(/^0*(\d+)\s*\/\s*0*(\d+)$/)
   return match ? { number: Number(match[1]), total: Number(match[2]) } : null
@@ -1282,7 +1293,7 @@ export default function CardCataloguePage() {
                 <span className={styles.zoomIcon} aria-hidden="true">⌕</span>
               </button>
               <div className={styles.cardIdentity}>
-                <span className={styles.cardNumber}>{isPackRewardSelection(setId) ? seriesLabel(selectedSet) + ' · ' : setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}{isUnnumberedEnergyCard(card) ? 'Sans numéro' : 'N° ' + card.collector_number}{card.card_type === 'Énergie' && (displayCopyrightYear || set?.release_date) ? displayCopyrightYear ? ' · ©' + displayCopyrightYear : ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
+                <span className={styles.cardNumber}>{isPackRewardSelection(setId) ? seriesLabel(selectedSet) + ' · ' : setId === ALL_SERIES ? isEnergySearch(query) ? '' : seriesLabel(set) + ' · ' : selectedMcDonaldsSet ? set?.set_name + ' · ' : ''}{isUnnumberedEnergyCard(card) ? 'Sans numéro' : 'N° ' + formatCatalogCardNumber(card)}{card.card_type === 'Énergie' && (displayCopyrightYear || set?.release_date) ? displayCopyrightYear ? ' · ©' + displayCopyrightYear : ' · ' + new Date(set.release_date + 'T00:00:00').getFullYear() : ''}</span>
                 <button type="button" className={styles.nameButton} onClick={() => setZoomedCard(card)}>{card.card_name}</button>
                 {card.frenchCardName && <small className={styles.foreignCounterpart}>Correspondance française : {card.frenchCardName}</small>}
                 {card.foreignPrinting && <small className={styles.foreignEditionBadge}>{languageCode} · impression vérifiée</small>}
