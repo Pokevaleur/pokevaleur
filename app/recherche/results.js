@@ -47,6 +47,16 @@ function languageLabel(value) {
   return ({ FR: 'Français', JP: 'Japonais', EN: 'Anglais', CN: 'Chinois', KR: 'Coréen' })[language] || language || 'Langue non précisée'
 }
 
+function formatCollectorNumber(card, set) {
+  const collectorNumber = String(card?.collector_number || '').trim()
+  if (!collectorNumber || collectorNumber.includes('/')) return collectorNumber || 'Numéro non indiqué'
+
+  const total = Number(set?.advertised_card_count)
+  return /^\\d+$/.test(collectorNumber) && Number.isInteger(total) && total > 0
+    ? collectorNumber + '/' + total
+    : collectorNumber
+}
+
 function formatPrice(value, currency = 'EUR') {
   const amount = Number(value)
   const code = /^[A-Z]{3}$/.test(String(currency || '').toUpperCase()) ? String(currency).toUpperCase() : 'EUR'
@@ -552,7 +562,7 @@ export default function SearchResults({ initialQuery }) {
                   return <article className={styles.card} key={card.id}>
                     <a className={styles.cardLink} href={target}>
                       <span className={styles.imageFrame}>{card.image_url ? <img src={card.image_url} alt="" loading="lazy"/> : <span className={styles.noImage}>Image à venir</span>}</span>
-                      <span className={styles.cardText}><strong>{card.card_name}</strong><span>{card.collector_number || 'Numéro non indiqué'}</span><small>{set?.set_name || set?.series_name || 'Série non précisée'} · {languageLabel(set?.language)}</small>
+                      <span className={styles.cardText}><strong>{card.card_name}</strong><span>{formatCollectorNumber(card, set)}</span><small>{set?.set_name || set?.series_name || 'Série non précisée'} · {languageLabel(set?.language)}</small>
                         <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={cardPrices[card.id]?.source || 'Cote PokéValeur'} aria-label={quote ? `Cote PokéValeur : ${quote}` : pricesLoading ? 'Chargement de la cote' : 'Cote indisponible'}>
                           {quote ? <span className={styles.priceEstimate}><CrownMark />{quote}</span> : pricesLoading ? '…' : 'Cote indisponible'}
                         </span>
