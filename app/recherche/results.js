@@ -52,7 +52,7 @@ function formatCollectorNumber(card, set) {
   if (!collectorNumber || collectorNumber.includes('/')) return collectorNumber || 'Numéro non indiqué'
 
   const total = Number(set?.advertised_card_count)
-  return /^\\d+$/.test(collectorNumber) && Number.isInteger(total) && total > 0
+  return /^\d+$/.test(collectorNumber) && Number.isInteger(total) && total > 0
     ? collectorNumber + '/' + total
     : collectorNumber
 }
