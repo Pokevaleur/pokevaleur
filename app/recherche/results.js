@@ -160,12 +160,14 @@ export default function SearchResults({ initialQuery }) {
       const setRows = setsResult.data || []
       const setById = new Map(setRows.map(set => [set.id, set]))
       const tokens = normalizeVoiceSearchQuery(term).split(/\s+/).filter(Boolean)
-      const collectorNumberQuery = parseCollectorNumberQuery(term)
+      // Keep the raw input for number/total queries: normalizeVoiceSearchQuery
+      // converts separators such as "/" into spaces ("160/159" -> "160 159").
+      const collectorNumberQuery = parseCollectorNumberQuery(initialQuery) || parseCollectorNumberQuery(term)
       const nameToken = tokens.find(token => !/^\d+$/.test(token)) || tokens[0] || term
       const numberToken = collectorNumberQuery?.number || tokens.find(token => /^\d+[a-z]*$/i.test(token)) || term
       const variantSearchTokens = tokens.filter(token => token === 'reverse')
       const nameSearchTokens = collectorNumberQuery
-        ? [nameToken]
+        ? []
         : [...new Set(tokens.filter(token => !/^\d+$/.test(token) && !variantSearchTokens.includes(token)))].slice(0, 5)
       const escapedNumber = escapedPattern(numberToken)
       const matchingSets = collectorNumberQuery
