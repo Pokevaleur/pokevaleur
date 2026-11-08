@@ -42,6 +42,21 @@ function collectorNumberTotal(value) {
   return match ? Number(match[1]) : null
 }
 
+function collectorNumberCandidates({ number, total }) {
+  const normalizedNumber = String(Number(number))
+  const paddedNumber = normalizedNumber.padStart(3, '0')
+  const normalizedTotal = String(Number(total))
+  const paddedTotal = normalizedTotal.padStart(3, '0')
+  return [...new Set([
+    normalizedNumber,
+    paddedNumber,
+    `${normalizedNumber}/${normalizedTotal}`,
+    `${paddedNumber}/${normalizedTotal}`,
+    `${normalizedNumber}/${paddedTotal}`,
+    `${paddedNumber}/${paddedTotal}`
+  ])]
+}
+
 function languageLabel(value) {
   const language = String(value || '').toUpperCase()
   return ({ FR: 'Français', JP: 'Japonais', EN: 'Anglais', CN: 'Chinois', KR: 'Coréen' })[language] || language || 'Langue non précisée'
@@ -172,8 +187,14 @@ export default function SearchResults({ initialQuery }) {
               .ilike('card_name', accentToken).order('card_name').order('collector_number').limit(80)))
           }
         }
-        searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
-          .ilike('collector_number', escapedNumber).order('card_name').order('collector_number').limit(80)))
+        if (collectorNumberQuery) {
+          const exactNumberCandidates = collectorNumberCandidates(collectorNumberQuery)
+          searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
+            .in('collector_number', exactNumberCandidates).order('card_name').order('collector_number')))
+        } else {
+          searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', setIds)
+            .ilike('collector_number', escapedNumber).order('card_name').order('collector_number').limit(80)))
+        }
         if (matchingSets.length > 0 && matchingSets.length <= 5) {
           searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', matchingSets.map(set => set.id))
             .order('guide_order').order('collector_number').limit(80)))
