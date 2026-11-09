@@ -392,3 +392,10 @@
 .scannerLink span{font-size:21px;line-height:1}
 @media(max-width:600px){.scannerLink{width:100%;min-height:52px}}
 @media(prefers-reduced-motion:reduce){.scannerLink{transition:none}}
+.seriesPickerGroup { margin-top:4px; border-top:1px solid #e4e9ef; }
+.seriesPickerGroupHeading { min-height:42px; display:flex; align-items:center; justify-content:space-between; gap:8px; padding:8px 10px; color:#182e48; font-size:.84rem; font-weight:800; cursor:pointer; list-style:none; }
+.seriesPickerGroupHeading::-webkit-details-marker { display:none; }
+.seriesPickerGroupHeading::after { content:'▾'; flex:none; color:#64748b; font-size:.72rem; transition:transform .15s ease; }
+.seriesPickerGroup:not([open]) .seriesPickerGroupHeading::after { transform:rotate(-90deg); }
+.seriesPickerGroupHeading small { margin-left:auto; color:#718096; font-size:.72rem; font-weight:650; }
+.seriesPickerGroupItems { padding:0 0 5px 8px; border-left:2px solid #e7edf5; margin-left:10px; }
