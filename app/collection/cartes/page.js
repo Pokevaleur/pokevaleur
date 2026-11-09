@@ -38,6 +38,68 @@ function seriesOptionLabel(set) {
   return (abbreviation ? abbreviation + ' — ' : '') + name + (set.is_public ? '' : ' · brouillon privé')
 }
 
+function cardSetBlock(set) {
+  const code = String(set?.set_code || '').trim().toLowerCase()
+  const series = normalizeCardSearch(set?.series_name || '')
+  const descriptor = [series, normalizeCardSearch(set?.set_name || ''), code].join(' ')
+  if (/mcdonald/.test(descriptor)) return null
+  if (/(mega evolution|mega-evolution|mega evolution|mega)/.test(descriptor) || /^(me|mee|mep)/.test(code)) return 'Méga-Évolution'
+  if (/(ecarlate et violet|scarlet.{0,8}violet)/.test(descriptor) || /^(sv|sve|svp)/.test(code)) return 'Écarlate et Violet'
+  if (/(epee et bouclier|sword.{0,8}shield)/.test(descriptor) || /^(swsh|eb)/.test(code)) return 'Épée et Bouclier'
+  if (/(soleil et lune|sun.{0,8}moon)/.test(descriptor) || /^(sm|sl)/.test(code)) return 'Soleil et Lune'
+  if (/\bxy\b/.test(series) || /^xy/.test(code)) return 'XY'
+  if (/(noir.{0,3}blanc|black.{0,3}white)/.test(descriptor) || /^(bw|nb)/.test(code)) return 'Noir et Blanc'
+  if (/(appel des legendes|call of legends)/.test(descriptor) || /^(col|cl)/.test(code)) return 'Appel des légendes'
+  if (/(heartgold|soul.?silver|coeur d.?or|ame d.?argent)/.test(descriptor) || /^hgss/.test(code)) return 'HeartGold SoulSilver'
+  if (/platine|platinum/.test(descriptor) || /^pl/.test(code)) return 'Platine'
+  if (/(diamant.{0,4}perle|diamond.{0,4}pearl)/.test(descriptor) || /^dp/.test(code)) return 'Diamant et Perle'
+  if (/^ex$/.test(series) || /\bex\b/.test(series) || /^ex/.test(code)) return 'EX'
+  if (/(e.?cards|e.?card)/.test(descriptor) || /^ecard/.test(code)) return 'e-Card'
+  if (/\bneo\b/.test(series) || /^neo/.test(code)) return 'Neo'
+  if (/(wizards|jungle|fossil|team rocket|gym heroes|gym challenge)/.test(descriptor) || /^(base|jungle|fossil|rocket|gym)/.test(code)) return 'Wizards'
+  return null
+}
+
+function seriesEntryKind(set) {
+  const name = normalizeCardSearch(set?.set_name || '')
+  const code = String(set?.set_code || '').trim().toLowerCase()
+  if (/energie|energy/.test(name)) return 1
+  if (/promo|black star/.test(name) || /p$/.test(code)) return 2
+  return 0
+}
+
+function buildSeriesGroups(sets) {
+  const groups = new Map()
+  for (const set of sets) {
+    const blockName = cardSetBlock(set)
+    const sourceSeries = String(set?.series_name || '').trim()
+    const specialName = /promo/i.test(sourceSeries) ? 'Promos'
+      : /mcdonald/i.test(sourceSeries) ? "McDonald's"
+        : sourceSeries || 'Divers'
+    const name = blockName || specialName
+    const key = (blockName ? 'block:' : 'special:') + normalizeCardSearch(name)
+    if (!groups.has(key)) groups.set(key, { key, name, isBlock: Boolean(blockName), sets: [], newestDate: '' })
+    const group = groups.get(key)
+    group.sets.push(set)
+    const date = String(set?.release_date || '')
+    if (date > group.newestDate) group.newestDate = date
+  }
+
+  const compareSets = (left, right) => seriesEntryKind(left) - seriesEntryKind(right)
+    || String(right.release_date || '').localeCompare(String(left.release_date || ''))
+    || String(left.set_name || '').localeCompare(String(right.set_name || ''), 'fr', { numeric: true })
+  for (const group of groups.values()) group.sets.sort(compareSets)
+
+  return [...groups.values()].sort((left, right) => {
+    if (left.isBlock !== right.isBlock) return left.isBlock ? -1 : 1
+    if (left.isBlock) return right.newestDate.localeCompare(left.newestDate)
+    const leftPriority = left.name === "McDonald's" ? 0 : left.name === 'Promos' ? 1 : 2
+    const rightPriority = right.name === "McDonald's" ? 0 : right.name === 'Promos' ? 1 : 2
+    return leftPriority - rightPriority || right.newestDate.localeCompare(left.newestDate)
+      || left.name.localeCompare(right.name, 'fr')
+  })
+}
+
 function energyCollectionYear(card, variant) {
   const copyrightYear = Number(variant?.copyright_year)
   if (copyrightYear) return copyrightYear
@@ -746,9 +808,9 @@ export default function CardChecklistPage() {
   const isEnergyYearView = setId === ENERGY_SERIES_FILTER
   const energySeriesOption = { id: ENERGY_SERIES_FILTER, set_name: 'Énergies · par année', set_code: '', language: 'FR', is_public: true }
   const selectedSet = isEnergyYearView ? energySeriesOption : sets.find(row => row.id === setId)
-  const seriesOptions = useMemo(() => languageFilter === ALL_LANGUAGES_FILTER
+  const seriesGroups = useMemo(() => buildSeriesGroups(languageFilter === ALL_LANGUAGES_FILTER
     ? sets
-    : sets.filter(set => normalizeCollectionLanguage(set.language) === normalizeCollectionLanguage(languageFilter)), [sets, languageFilter])
+    : sets.filter(set => normalizeCollectionLanguage(set.language) === normalizeCollectionLanguage(languageFilter))), [sets, languageFilter])
   const showEnergySeriesOption = languageFilter === ALL_LANGUAGES_FILTER || normalizeCollectionLanguage(languageFilter) === 'FR'
   const displayedOwned = useMemo(() => {
     if (languageFilter === ALL_LANGUAGES_FILTER) return owned
@@ -1514,34 +1576,45 @@ export default function CardChecklistPage() {
               <span className={styles.seriesPickerChevron} aria-hidden="true">▾</span>
             </button>
             {seriesPickerOpen && (
-              <div className={styles.seriesPickerOptions} role="listbox" aria-label="Séries de cartes">
+              <div className={styles.seriesPickerOptions} role="region" aria-label="Séries de cartes">
                 <button
                   type="button"
-                  role="option"
-                  aria-selected={isAllSeriesSelected}
+                  aria-pressed={isAllSeriesSelected}
                   className={isAllSeriesSelected ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
                   onClick={() => { selectSet(ALL_SERIES_FILTER); setSeriesPickerOpen(false) }}
                 >Toutes les séries</button>
                 {showEnergySeriesOption && <button
                   type="button"
-                  role="option"
-                  aria-selected={isEnergyYearView}
+                  aria-pressed={isEnergyYearView}
                   className={isEnergyYearView ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
                   onClick={() => { selectSet(ENERGY_SERIES_FILTER); setSeriesPickerOpen(false) }}
                 >Énergies · par année</button>}
-                {seriesOptions.map(set => {
-                  const selected = set.id === setId
-                  return (
-                    <button
-                      type="button"
-                      key={set.id}
-                      role="option"
-                      aria-selected={selected}
-                      className={selected ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
-                      onClick={() => { selectSet(set.id); setSeriesPickerOpen(false) }}
-                    >{seriesOptionLabel(set)}</button>
-                  )
-                })}
+                {seriesGroups.map((group, groupIndex) => (
+                  <details
+                    className={styles.seriesPickerGroup}
+                    key={group.key}
+                    open={groupIndex === 0 || group.sets.some(set => set.id === setId)}
+                  >
+                    <summary className={styles.seriesPickerGroupHeading}>
+                      <span>{group.name}</span>
+                      <small>{group.sets.length} série{group.sets.length === 1 ? '' : 's'}</small>
+                    </summary>
+                    <div className={styles.seriesPickerGroupItems}>
+                      {group.sets.map(set => {
+                        const selected = set.id === setId
+                        return (
+                          <button
+                            type="button"
+                            key={set.id}
+                            aria-pressed={selected}
+                            className={selected ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
+                            onClick={() => { selectSet(set.id); setSeriesPickerOpen(false) }}
+                          >{seriesOptionLabel(set)}</button>
+                        )
+                      })}
+                    </div>
+                  </details>
+                ))}
               </div>
             )}
           </div>
