@@ -447,7 +447,7 @@ export default function CardChecklistPage() {
   const [selectedElementTypes, setSelectedElementTypes] = useState([])
   const [selectedVersions, setSelectedVersions] = useState([])
   const [collectionFilter, setCollectionFilter] = useState('owned')
-  const [languageFilter, setLanguageFilter] = useState(ALL_LANGUAGES_FILTER)
+  const [languageFilter, setLanguageFilter] = useState('FR')
   const [checklistFilter, setChecklistFilter] = useState('all')
   const [loading, setLoading] = useState(true)
   const [cardsLoading, setCardsLoading] = useState(false)
@@ -520,9 +520,12 @@ export default function CardChecklistPage() {
       const requestedRarity = params.get('rarity') || ''
       const requestedChecklist = params.get('checklist')
       const requestedLanguage = params.get('language')
-      if (requestedLanguage) setLanguageFilter(requestedLanguage.toLowerCase() === ALL_LANGUAGES_FILTER ? ALL_LANGUAGES_FILTER : normalizeCollectionLanguage(requestedLanguage))
-      setRarity(requestedRarity ? requestedRarity.split(',').map(rarityKey).filter(Boolean) : [])
       const requestedCollectionFilter = params.get('collection') || 'owned'
+      const requestedLanguageCode = requestedLanguage
+        ? requestedLanguage.toLowerCase() === ALL_LANGUAGES_FILTER ? ALL_LANGUAGES_FILTER : normalizeCollectionLanguage(requestedLanguage)
+        : ['all', 'missing'].includes(requestedCollectionFilter) ? ALL_LANGUAGES_FILTER : 'FR'
+      setLanguageFilter(requestedLanguageCode)
+      setRarity(requestedRarity ? requestedRarity.split(',').map(rarityKey).filter(Boolean) : [])
       if (['all', 'owned', 'missing', 'duplicates'].includes(requestedCollectionFilter)) setCollectionFilter(requestedCollectionFilter)
       if (['main', 'promos', 'stamps', 'all'].includes(requestedChecklist)) setChecklistFilter(requestedChecklist)
       setLoading(true)
@@ -561,8 +564,13 @@ export default function CardChecklistPage() {
       if (cancelled) return
       const availableSets = setRows || []
       setSets(availableSets)
+      const requestedSet = availableSets.find(row => row.id === requestedSetId)
+      const effectiveLanguage = requestedLanguage
+        ? requestedLanguageCode
+        : requestedSet ? normalizeCollectionLanguage(requestedSet.language) : requestedLanguageCode
+      if (!requestedLanguage) setLanguageFilter(effectiveLanguage)
       if (requestedSetId === ALL_SERIES_FILTER || requestedSetId === ENERGY_SERIES_FILTER) setSetId(requestedSetId)
-      else if (availableSets.some(row => row.id === requestedSetId)) setSetId(requestedSetId)
+      else if (requestedSet && (effectiveLanguage === ALL_LANGUAGES_FILTER || normalizeCollectionLanguage(requestedSet.language) === effectiveLanguage)) setSetId(requestedSetId)
       else setSetId(ALL_SERIES_FILTER)
 
       const { data: companyRows, error: companyError } = await supabase.from('card_grading_companies')
@@ -738,6 +746,10 @@ export default function CardChecklistPage() {
   const isEnergyYearView = setId === ENERGY_SERIES_FILTER
   const energySeriesOption = { id: ENERGY_SERIES_FILTER, set_name: 'Énergies · par année', set_code: '', language: 'FR', is_public: true }
   const selectedSet = isEnergyYearView ? energySeriesOption : sets.find(row => row.id === setId)
+  const seriesOptions = useMemo(() => languageFilter === ALL_LANGUAGES_FILTER
+    ? sets
+    : sets.filter(set => normalizeCollectionLanguage(set.language) === normalizeCollectionLanguage(languageFilter)), [sets, languageFilter])
+  const showEnergySeriesOption = languageFilter === ALL_LANGUAGES_FILTER || normalizeCollectionLanguage(languageFilter) === 'FR'
   const displayedOwned = useMemo(() => {
     if (languageFilter === ALL_LANGUAGES_FILTER) return owned
     const fallbackByVariant = new Map()
@@ -963,12 +975,21 @@ export default function CardChecklistPage() {
   }
 
   function selectLanguage(nextLanguage) {
-    setLanguageFilter(nextLanguage)
+    const normalizedLanguage = nextLanguage === ALL_LANGUAGES_FILTER
+      ? ALL_LANGUAGES_FILTER
+      : normalizeCollectionLanguage(nextLanguage)
+    setLanguageFilter(normalizedLanguage)
     if (collectionFilter === 'all' || collectionFilter === 'missing') setCollectionFilter('owned')
     const url = new URL(window.location.href)
-    if (nextLanguage === ALL_LANGUAGES_FILTER) url.searchParams.delete('language')
-    else url.searchParams.set('language', nextLanguage)
+    if (normalizedLanguage === ALL_LANGUAGES_FILTER) url.searchParams.delete('language')
+    else url.searchParams.set('language', normalizedLanguage)
     if (collectionFilter === 'all' || collectionFilter === 'missing') url.searchParams.set('collection', 'owned')
+    const activeSet = sets.find(set => set.id === setId) || (setId === ENERGY_SERIES_FILTER ? energySeriesOption : null)
+    if (activeSet && normalizedLanguage !== ALL_LANGUAGES_FILTER
+      && normalizeCollectionLanguage(activeSet.language) !== normalizedLanguage) {
+      setSetId(ALL_SERIES_FILTER)
+      url.searchParams.set('set', ALL_SERIES_FILTER)
+    }
     window.history.replaceState({}, '', url)
   }
 
@@ -1501,14 +1522,14 @@ export default function CardChecklistPage() {
                   className={isAllSeriesSelected ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
                   onClick={() => { selectSet(ALL_SERIES_FILTER); setSeriesPickerOpen(false) }}
                 >Toutes les séries</button>
-                <button
+                {showEnergySeriesOption && <button
                   type="button"
                   role="option"
                   aria-selected={isEnergyYearView}
                   className={isEnergyYearView ? styles.seriesPickerOptionActive : styles.seriesPickerOption}
                   onClick={() => { selectSet(ENERGY_SERIES_FILTER); setSeriesPickerOpen(false) }}
-                >Énergies · par année</button>
-                {sets.map(set => {
+                >Énergies · par année</button>}
+                {seriesOptions.map(set => {
                   const selected = set.id === setId
                   return (
                     <button
