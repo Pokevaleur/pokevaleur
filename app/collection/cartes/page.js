@@ -22,6 +22,7 @@ function collectMissingTargetVariantIds(variants, ownedByVariant = {}) {
 function seriesAbbreviation(set) {
   const code = (set?.set_code || '').trim()
   const normalized = code.toLowerCase()
+  if (normalized === '30c') return 'ME5.5'
   const prefixes = { swsh: 'EB', hgss: 'HGSS', sv: 'EV', ev: 'EV', me: 'ME', eb: 'EB', sm: 'SL', sl: 'SL', xy: 'XY', bw: 'NB', dp: 'DP', pl: 'PL' }
 
   for (const [prefix, abbreviation] of Object.entries(prefixes)) {
