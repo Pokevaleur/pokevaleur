@@ -199,7 +199,7 @@ export default function SearchResults({ initialQuery }) {
         }
         if (matchingSets.length > 0 && matchingSets.length <= 5) {
           searches.push(fetchAllRows(() => supabase.from('cards').select(CARD_FIELDS).in('card_set_id', matchingSets.map(set => set.id))
-            .order('guide_order').order('collector_number').limit(80)))
+            .order('guide_order').order('collector_number').limit(500)))
         }
       }
       // A variant-only query such as “revers” has no card name to match.
@@ -248,7 +248,13 @@ export default function SearchResults({ initialQuery }) {
             - Number(String(rightSet?.language || '').toUpperCase() === 'JP')
           if (languageOrder) return languageOrder
         }
-        return String(rightSet?.release_date || '').localeCompare(String(leftSet?.release_date || ''))
+        const sameSetOrder = String(left.card_set_id) === String(right.card_set_id)
+          ? Number(left.collector_number) - Number(right.collector_number)
+          : 0
+        return sameSetOrder
+          || String(rightSet?.release_date || '').localeCompare(String(leftSet?.release_date || ''))
+          || String(leftSet?.set_name || '').localeCompare(String(rightSet?.set_name || ''), 'fr')
+          || Number(left.collector_number) - Number(right.collector_number)
           || leftName.localeCompare(rightName, 'fr')
       })
       const matcher = productMatcher(term)
@@ -275,7 +281,7 @@ export default function SearchResults({ initialQuery }) {
           || String(left.id).localeCompare(String(right.id))
       })
       if (!cancelled) {
-        setCards(matchingCards.slice(0, 60))
+        setCards(matchingCards.slice(0, matchingSets.length > 0 && matchingSets.length <= 5 ? 500 : 60))
         setProducts(matchingProducts.slice(0, etbSearch ? 100 : 60))
         setLoading(false)
       }
