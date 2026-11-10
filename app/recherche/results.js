@@ -113,6 +113,7 @@ function isJapaneseDeck(product) {
 export default function SearchResults({ initialQuery }) {
   const supabase = useMemo(() => createClient(), [])
   const [query, setQuery] = useState(initialQuery)
+  const [showScrollTop, setShowScrollTop] = useState(false)
   const [cards, setCards] = useState([])
   const [products, setProducts] = useState([])
   const [cardPrices, setCardPrices] = useState({})
@@ -128,6 +129,13 @@ export default function SearchResults({ initialQuery }) {
   const [collectionBusyVariant, setCollectionBusyVariant] = useState('')
   const [collectionBusyProduct, setCollectionBusyProduct] = useState(false)
   const [collectionNotice, setCollectionNotice] = useState('')
+
+  useEffect(() => {
+    const updateScrollTopVisibility = () => setShowScrollTop(window.scrollY > 420)
+    updateScrollTopVisibility()
+    window.addEventListener('scroll', updateScrollTopVisibility, { passive: true })
+    return () => window.removeEventListener('scroll', updateScrollTopVisibility)
+  }, [])
 
   useEffect(() => {
     setQuery(correctKnownVoiceCardName(initialQuery) || initialQuery)
@@ -709,5 +717,17 @@ export default function SearchResults({ initialQuery }) {
         </section>
       </div>
     })()}
-  </main>
+      {showScrollTop && <button
+      type="button"
+      className={styles.scrollTopButton}
+      onClick={() => window.scrollTo({
+        top: 0,
+        behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth'
+      })}
+      aria-label="Remonter en haut de la liste"
+      title="Remonter en haut"
+    >
+      <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m5 15 7-7 7 7" /></svg>
+    </button>}
+</main>
 }
