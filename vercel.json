@@ -1,4 +1,11 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "git": { "deploymentEnabled": { "codex/browser-tests": false, "codex/login-default-valeurs": false } }
+  "git": { "deploymentEnabled": { "codex/browser-tests": false, "codex/login-default-valeurs": false } },
+  "redirects": [
+    {
+      "source": "/catalogue/14f14fbb-ffc6-4269-a6b4-d749b8ee09f4",
+      "destination": "/catalogue/4f1890fb-b0da-4c1a-ad08-22459e95de81",
+      "permanent": true
+    }
+  ]
 }
