@@ -91,6 +91,7 @@ const FRENCH_SET_CODES = {
   'swsh12.5': 'EB12.5',
   'swsh12.5gg': 'EB12.5 GG',
   mee30: 'MEE 30 ans',
+  '30c': 'ME5.5',
   '30th': '30C',
   '30th-c': '30CC'
 }
@@ -311,6 +312,69 @@ function isMcDonaldsSet(set) {
 
 function isDedicatedEnergySet(set) {
   return DEDICATED_ENERGY_SET_CODES.has(String(set?.set_code || '').toLowerCase())
+}
+
+function catalogSetBlock(set) {
+  const code = String(set?.set_code || '').trim().toLowerCase()
+  const series = normalizedSearchText(set?.series_name || '')
+  const descriptor = [series, normalizedSearchText(set?.set_name || ''), code].join(' ')
+  if (isMcDonaldsSet(set)) return null
+  if (/(mega evolution|mega-evolution|mega)/.test(descriptor) || /^(me|mee|mep)/.test(code) || code === '30c') return 'Méga-Évolution'
+  if (/(ecarlate et violet|scarlet.{0,8}violet)/.test(descriptor) || /^(sv|sve|svp)/.test(code)) return 'Écarlate et Violet'
+  if (/(epee et bouclier|sword.{0,8}shield)/.test(descriptor) || /^(swsh|eb)/.test(code)) return 'Épée et Bouclier'
+  if (/(soleil et lune|sun.{0,8}moon)/.test(descriptor) || /^(sm|sl)/.test(code)) return 'Soleil et Lune'
+  if (/\bxy\b/.test(series) || /^xy/.test(code)) return 'XY'
+  if (/(noir.{0,3}blanc|black.{0,3}white)/.test(descriptor) || /^(bw|nb)/.test(code)) return 'Noir et Blanc'
+  if (/(appel des legendes|call of legends)/.test(descriptor) || /^(col|cl)/.test(code)) return 'Appel des légendes'
+  if (/(heartgold|soul.?silver|coeur d.?or|ame d.?argent)/.test(descriptor) || /^hgss/.test(code)) return 'HeartGold SoulSilver'
+  if (/platine|platinum/.test(descriptor) || /^pl/.test(code)) return 'Platine'
+  if (/(diamant.{0,4}perle|diamond.{0,4}pearl)/.test(descriptor) || /^dp/.test(code)) return 'Diamant et Perle'
+  if (/^ex$/.test(series) || /\bex\b/.test(series) || /^ex/.test(code)) return 'EX'
+  if (/(e.?cards|e.?card)/.test(descriptor) || /^ecard/.test(code)) return 'e-Card'
+  if (/\bneo\b/.test(series) || /^neo/.test(code)) return 'Neo'
+  if (/(wizards|jungle|fossil|team rocket|gym heroes|gym challenge)/.test(descriptor) || /^(base|jungle|fossil|rocket|gym)/.test(code)) return 'Wizards'
+  return null
+}
+
+function catalogSeriesEntryKind(set) {
+  const name = normalizedSearchText(set?.set_name || '')
+  const code = String(set?.set_code || '').trim().toLowerCase()
+  if (/energie|energy/.test(name)) return 1
+  if (/promo|black star/.test(name) || /p$/.test(code)) return 2
+  return 0
+}
+
+function buildCatalogSeriesGroups(sets) {
+  const groups = new Map()
+  for (const set of sets) {
+    const blockName = catalogSetBlock(set)
+    const sourceSeries = String(set?.series_name || '').trim()
+    const specialName = /promo/i.test(sourceSeries) ? 'Promos'
+      : /mcdonald/i.test(sourceSeries) || isMcDonaldsSet(set) ? "McDonald's"
+        : sourceSeries || 'Divers'
+    const name = blockName || specialName
+    const key = (blockName ? 'block:' : 'special:') + normalizedSearchText(name)
+    if (!groups.has(key)) groups.set(key, { key, name, isBlock: Boolean(blockName), sets: [], newestDate: '' })
+    const group = groups.get(key)
+    group.sets.push(set)
+    const date = String(set?.release_date || '')
+    if (date > group.newestDate) group.newestDate = date
+  }
+
+  for (const group of groups.values()) {
+    group.sets.sort((left, right) => catalogSeriesEntryKind(left) - catalogSeriesEntryKind(right)
+      || String(right.release_date || '').localeCompare(String(left.release_date || ''))
+      || String(left.set_name || '').localeCompare(String(right.set_name || ''), 'fr', { numeric: true }))
+  }
+
+  return [...groups.values()].sort((left, right) => {
+    if (left.isBlock !== right.isBlock) return left.isBlock ? -1 : 1
+    if (left.isBlock) return right.newestDate.localeCompare(left.newestDate)
+    const priority = name => name === "McDonald's" ? 0 : name === 'Promos' ? 1 : 2
+    return priority(left.name) - priority(right.name)
+      || right.newestDate.localeCompare(left.newestDate)
+      || left.name.localeCompare(right.name, 'fr')
+  })
 }
 
 export default function CardCataloguePage() {
@@ -952,6 +1016,7 @@ export default function CardCataloguePage() {
   const showAllRewardSeriesOption = filteredRewardProducts.length > 0
   const filteredSets = sets.filter(set => !isDedicatedEnergySet(set) && !isZenithGallerySet(set)
     && normalizedSearchText([seriesLabel(set), set.series_name, set.set_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
+  const filteredSeriesGroups = buildCatalogSeriesGroups(filteredSets)
   const filteredForeignSets = foreignSets.filter(set => normalizedSearchText([set.set_name, set.series_name_fr, set.series_name, set.set_code, set.release_date?.slice(0, 4)].join(' ')).includes(normalizedSearchText(seriesPickerQuery.trim())))
   const zenithMainSet = sets.find(set => String(set.set_code || '').toLowerCase() === ZENITH_MAIN_SET_CODE)
   const selectedForeignSet = foreignSets.find(set => set.id === foreignSetId)
@@ -1213,7 +1278,12 @@ export default function CardCataloguePage() {
                   const selected = setId === productSetId
                   return <button type="button" aria-pressed={selected} className={selected ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={product.id} onClick={() => { setSetId(productSetId); setFilterQuery(''); rememberSelectedSet(productSetId); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{product.name}</button>
                 })}
-                {filteredSets.map(set => <button type="button" aria-pressed={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); rememberSelectedSet(set.id); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
+                {filteredSeriesGroups.map((group, groupIndex) => <details className={styles.seriesPickerGroup} key={group.key} open={groupIndex === 0 || Boolean(seriesPickerQuery.trim()) || group.sets.some(set => set.id === setId)}>
+                  <summary className={styles.seriesPickerGroupHeading}><span>{group.name}</span><small>{group.sets.length} série{group.sets.length === 1 ? '' : 's'}</small></summary>
+                  <div className={styles.seriesPickerGroupItems}>
+                    {group.sets.map(set => <button type="button" aria-pressed={setId === set.id} className={setId === set.id ? styles.seriesPickerOptionActive : styles.seriesPickerOption} key={set.id} onClick={() => { setSetId(set.id); setFilterQuery(''); rememberSelectedSet(set.id); setSelection({}); setSeriesPickerQuery(''); setSeriesPickerOpen(false) }}>{isMcDonaldsSet(set) ? 'McDonald’s · ' + (set.release_date ? new Date(set.release_date + 'T00:00:00').getFullYear() : set.set_name.match(/20\d{2}/)?.[0] || set.set_name) + ' — ' + set.set_name : seriesLabel(set)}</button>)}
+                  </div>
+                </details>)}
               </>}
             </div>}
           </div>
