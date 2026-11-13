@@ -44,7 +44,7 @@ function cardSetBlock(set) {
   const series = normalizeCardSearch(set?.series_name || '')
   const descriptor = [series, normalizeCardSearch(set?.set_name || ''), code].join(' ')
   if (/mcdonald/.test(descriptor)) return null
-  if (/(mega evolution|mega-evolution|mega evolution|mega)/.test(descriptor) || /^(me|mee|mep)/.test(code)) return 'Méga-Évolution'
+  if (/(mega evolution|mega-evolution|mega evolution|mega)/.test(descriptor) || /^(me|mee|mep)/.test(code) || code === '30c') return 'Méga-Évolution'
   if (/(ecarlate et violet|scarlet.{0,8}violet)/.test(descriptor) || /^(sv|sve|svp)/.test(code)) return 'Écarlate et Violet'
   if (/(epee et bouclier|sword.{0,8}shield)/.test(descriptor) || /^(swsh|eb)/.test(code)) return 'Épée et Bouclier'
   if (/(soleil et lune|sun.{0,8}moon)/.test(descriptor) || /^(sm|sl)/.test(code)) return 'Soleil et Lune'
