@@ -510,6 +510,7 @@ export default function CardChecklistPage() {
   const [selectedElementTypes, setSelectedElementTypes] = useState([])
   const [selectedVersions, setSelectedVersions] = useState([])
   const [collectionFilter, setCollectionFilter] = useState('owned')
+  const [searchSortOrder, setSearchSortOrder] = useState('newest')
   const [languageFilter, setLanguageFilter] = useState('FR')
   const [checklistFilter, setChecklistFilter] = useState('all')
   const [loading, setLoading] = useState(true)
@@ -887,7 +888,27 @@ export default function CardChecklistPage() {
     return targets.some(variant => matchesVariantCollectionFilter(variant, filter))
   }
 
-  const visibleCards = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
+  const visibleCards = useMemo(() => {
+    const matches = baseFilteredCards.filter(card => matchesCollectionFilter(card, collectionFilter))
+    if (!isGlobalSearchView || !query.trim()) return matches
+
+    const releaseDateFor = card => sets.find(set => set.id === card.card_set_id)?.release_date
+      || (Array.isArray(card.card_sets) ? card.card_sets[0] : card.card_sets)?.release_date
+      || ''
+    return [...matches].sort((left, right) => {
+      const leftDate = String(releaseDateFor(left))
+      const rightDate = String(releaseDateFor(right))
+      if (leftDate !== rightDate) {
+        if (!leftDate) return 1
+        if (!rightDate) return -1
+        return searchSortOrder === 'newest'
+          ? rightDate.localeCompare(leftDate)
+          : leftDate.localeCompare(rightDate)
+      }
+      return String(left.collector_number || '').localeCompare(String(right.collector_number || ''), 'fr', { numeric: true })
+        || String(left.card_name || '').localeCompare(String(right.card_name || ''), 'fr')
+    })
+  }, [baseFilteredCards, collectionFilter, displayedOwned, selectedVersions, isProgressTarget, matchesCollectionFilter, isGlobalSearchView, query, searchSortOrder, sets])
   const energyYearGroups = useMemo(() => {
     if (!isEnergyYearView) return []
     const groups = new Map()
@@ -1712,6 +1733,13 @@ export default function CardChecklistPage() {
                 onClick={() => selectCollectionFilter(filter)}
               >{label}</button>
             ))}
+            <button
+              type="button"
+              className={styles.cardSortButton}
+              aria-label={searchSortOrder === 'newest' ? 'Tri par date de sortie décroissante. Afficher les plus anciennes en premier.' : 'Tri par date de sortie croissante. Afficher les plus récentes en premier.'}
+              title={searchSortOrder === 'newest' ? 'Afficher les plus anciennes en premier' : 'Afficher les plus récentes en premier'}
+              onClick={() => setSearchSortOrder(order => order === 'newest' ? 'oldest' : 'newest')}
+            >{searchSortOrder === 'newest' ? 'Récentes ↓' : 'Anciennes ↑'}</button>
           </div>}
           {!query.trim() && <p className={styles.scope}>Saisis un nom, un numéro ou un artiste pour retrouver tes cartes possédées, quelle que soit leur langue.</p>}
           {!!query.trim() && <p className={styles.resultCount} aria-live="polite">{collectionFilter === 'duplicates' && isGlobalSearchView

@@ -286,6 +286,9 @@
 .collectionCardFilter { background:#fff; color:#263549; }
 .collectionCardFilter:hover { border-color:#8b6c2c; }
 .collectionCardFilterActive { background:#173654; border-color:#173654; color:#fff; }
+.cardSortButton { align-self:center; margin-left:auto; border:0; border-radius:999px; padding:7px 9px; background:transparent; color:#687587; font:inherit; font-size:.78rem; cursor:pointer; }
+.cardSortButton:hover { background:#f2f6fb; color:#173654; }
+.cardSortButton:focus-visible { outline:2px solid #173c84; outline-offset:2px; }
 .copyMissingPanel { display:grid; gap:12px; margin:0 0 18px; padding:14px 16px; border:1px solid #dce2e9; border-radius:14px; background:#f8faff; }
 .copyMissingPanel strong { color:#173654; }
 .copyMissingPanel p { margin:4px 0 0; color:#687587; font-size:.84rem; line-height:1.4; }
