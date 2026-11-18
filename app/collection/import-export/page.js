@@ -120,6 +120,7 @@ export default function ImportExportPage() {
   const [loading, setLoading] = useState(true)
   const [exporting, setExporting] = useState(false)
   const [exportingExcel, setExportingExcel] = useState(false)
+  const [exportingDetailedExcel, setExportingDetailedExcel] = useState(false)
   const [exportingUnlinkedExcel, setExportingUnlinkedExcel] = useState(false)
   const [error, setError] = useState('')
 
@@ -161,7 +162,7 @@ export default function ImportExportPage() {
         const products = []
         for (let offset = 0; offset < productIds.length; offset += 100) {
           const { data, error: productsError } = await supabase.from('products')
-            .select('id,name,series,category,product_type,release_year,current_value,zero_defect_value')
+            .select('id,name,series,category,product_type,release_year,release_date,current_value,zero_defect_value')
             .eq('is_public', true)
             .in('id', productIds.slice(offset, offset + 100))
           if (productsError) throw productsError
@@ -197,6 +198,7 @@ export default function ImportExportPage() {
             series: product?.series || '',
             productType: item.product_type_override?.trim() || product?.product_type || '',
             releaseYear: product?.release_year ?? null,
+            releaseDate: product?.release_date || null,
             details: [...new Set(details)].join(' · '),
             quantity,
             purchaseUnit: item.purchase_price === null || item.purchase_price === undefined || item.purchase_price === ''
@@ -414,6 +416,56 @@ export default function ImportExportPage() {
     }
   }
 
+
+  async function exportSealedDetailedExcel() {
+    if (!rows.length || exportingDetailedExcel) return
+    setExportingDetailedExcel(true)
+    setError('')
+    try {
+      const XLSX = await import('xlsx')
+      const alphabeticalRows = rows.map(row => ({
+        ...row,
+        exportTitle: formatExcelProductTitle(row),
+        exportGroup: normalizeSearch(row.productType || row.title)
+      })).sort((a, b) => {
+        const groupOrder = a.exportGroup.localeCompare(b.exportGroup, 'fr', { sensitivity: 'base', numeric: true })
+        if (groupOrder) return groupOrder
+        const titleOrder = a.exportTitle.localeCompare(b.exportTitle, 'fr', { sensitivity: 'base', numeric: true })
+        return titleOrder || String(a.id).localeCompare(String(b.id))
+      })
+      const editedAt = new Date()
+      const worksheet = XLSX.utils.aoa_to_sheet([
+        ['Inventaire des produits scellés PokéValeur'],
+        ['Document édité le', formatDate(editedAt.toISOString())],
+        [],
+        ['Nom du produit', 'Date de sortie', 'Date d’achat', 'Prix d’achat (€)', 'Valeur actuelle (€)'],
+        ...alphabeticalRows.map(row => [
+          row.exportTitle + (row.quantity > 1 ? ' ×' + row.quantity : ''),
+          formatDate(row.releaseDate),
+          formatDate(row.purchase_date),
+          Number.isFinite(row.purchaseUnit) ? row.purchaseUnit : '',
+          Number.isFinite(row.currentUnit) ? row.currentUnit * row.quantity : ''
+        ])
+      ])
+      worksheet['!cols'] = [{ wch: 44 }, { wch: 18 }, { wch: 18 }, { wch: 18 }, { wch: 19 }]
+      worksheet['!autofilter'] = { ref: 'A4:E' + (alphabeticalRows.length + 4) }
+      for (let rowIndex = 5; rowIndex <= alphabeticalRows.length + 4; rowIndex += 1) {
+        for (const column of ['D', 'E']) {
+          const cell = worksheet[column + rowIndex]
+          if (cell && typeof cell.v === 'number') cell.z = '#,##0.00 "€"'
+        }
+      }
+      const workbook = XLSX.utils.book_new()
+      XLSX.utils.book_append_sheet(workbook, worksheet, 'Scellés détaillés')
+      workbook.Props = { Title: 'Inventaire détaillé des produits scellés PokéValeur', Author: 'PokéValeur' }
+      XLSX.writeFile(workbook, 'pokevaleur-scelles-detail-' + editedAt.toISOString().slice(0, 10) + '.xlsx', { compression: true })
+    } catch (excelError) {
+      setError('La création du fichier Excel détaillé a échoué : ' + (excelError.message || 'réessaie dans un instant.'))
+    } finally {
+      setExportingDetailedExcel(false)
+    }
+  }
+
   async function exportUnlinkedExcel() {
     if (!unlinkedRows.length || exportingUnlinkedExcel) return
     setExportingUnlinkedExcel(true)
@@ -498,6 +550,28 @@ export default function ImportExportPage() {
                   </p>
                   <button className={styles.primaryButton} type="button" onClick={exportSealedExcel} disabled={exportingExcel}>
                     {exportingExcel ? 'Création du fichier Excel…' : 'Télécharger l’Excel de mes scellés'}
+                  </button>
+                </>
+              ) : (
+                <p className={styles.empty}>Aucun produit scellé à exporter dans le profil « {profileName} ».</p>
+              )}
+            </section>
+
+            <section className={styles.panel}>
+              <div className={styles.panelHeading}>
+                <div>
+                  <h2>Exporter mes scellés en Excel détaillé</h2>
+                  <p>Une liste alphabétique avec les dates de sortie et d’achat de chaque produit.</p>
+                </div>
+                <span className={styles.formatBadge}>Excel</span>
+              </div>
+              {rows.length ? (
+                <>
+                  <p className={styles.note}>
+                    Le document indique sa date d’édition. Les dates absentes du catalogue ou de la collection apparaissent comme « Non renseignée ».
+                  </p>
+                  <button className={styles.primaryButton} type="button" onClick={exportSealedDetailedExcel} disabled={exportingDetailedExcel}>
+                    {exportingDetailedExcel ? 'Création du fichier Excel…' : 'Télécharger l’Excel détaillé des scellés'}
                   </button>
                 </>
               ) : (
