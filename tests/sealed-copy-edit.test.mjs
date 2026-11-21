@@ -15,10 +15,10 @@ function client({ user = { id: 'owner' }, error = null, data = { id: 'copy' } } 
   return { calls, auth: { getUser: async () => ({ data: { user } }) }, from(table) { calls.push(['from', table]); return query } }
 }
 
-test('updates only personal fields on the authenticated owner’s copy', async () => {
+test('updates editable personal fields on the authenticated owner’s copy', async () => {
   const db = client()
-  await saveSealedCopyDetails(db, 'copy', { custom_name: ' Mon repère ', product_type_override: 'ETB', name: 'unsafe', product_type: 'unsafe' })
-  assert.deepEqual(db.calls, [['from', 'collection_items'], ['update', { custom_name: 'Mon repère', product_type_override: 'ETB' }], ['eq', 'id', 'copy'], ['eq', 'user_id', 'owner']])
+  await saveSealedCopyDetails(db, 'copy', { custom_name: ' Mon repère ', product_type_override: 'ETB', purchase_price: '24.90', purchase_date: '2021-08-01', name: 'unsafe', product_type: 'unsafe' })
+  assert.deepEqual(db.calls, [['from', 'collection_items'], ['update', { custom_name: 'Mon repère', product_type_override: 'ETB', purchase_price: 24.9, purchase_date: '2021-08-01' }], ['eq', 'id', 'copy'], ['eq', 'user_id', 'owner']])
 })
 
 test('reset saves NULL; invalid drafts and expired sessions cannot write', async () => {
