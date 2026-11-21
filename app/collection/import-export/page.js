@@ -425,14 +425,11 @@ export default function ImportExportPage() {
       const XLSX = await import('xlsx')
       const alphabeticalRows = rows.map(row => ({
         ...row,
-        exportTitle: formatExcelProductTitle(row),
-        exportGroup: normalizeSearch(row.productType || row.title)
-      })).sort((a, b) => {
-        const groupOrder = a.exportGroup.localeCompare(b.exportGroup, 'fr', { sensitivity: 'base', numeric: true })
-        if (groupOrder) return groupOrder
-        const titleOrder = a.exportTitle.localeCompare(b.exportTitle, 'fr', { sensitivity: 'base', numeric: true })
-        return titleOrder || String(a.id).localeCompare(String(b.id))
-      })
+        exportTitle: formatExcelProductTitle(row)
+      })).sort((a, b) =>
+        a.exportTitle.localeCompare(b.exportTitle, 'fr', { sensitivity: 'base', numeric: true })
+          || String(a.id).localeCompare(String(b.id))
+      )
       const editedAt = new Date()
       const worksheet = XLSX.utils.aoa_to_sheet([
         ['Inventaire des produits scellés PokéValeur'],
