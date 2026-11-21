@@ -432,6 +432,12 @@ export default function CollectionItemDetailPage() {
               <label>Repère personnel
                 <input required maxLength={200} value={copyDraft.custom_name} onChange={event => setCopyDraft({ ...copyDraft, custom_name: event.target.value })} />
               </label>
+              <label>Prix d’achat (€)
+                <input type="number" min="0" step="0.01" inputMode="decimal" placeholder="Non renseigné" value={copyDraft.purchase_price} onChange={event => setCopyDraft({ ...copyDraft, purchase_price: event.target.value })} />
+              </label>
+              <label>Date d’achat
+                <input type="date" value={copyDraft.purchase_date} onChange={event => setCopyDraft({ ...copyDraft, purchase_date: event.target.value })} />
+              </label>
               <label>Affectation de type dans ma collection
                 <select value={copyDraft.product_type_override} onChange={event => setCopyDraft({ ...copyDraft, product_type_override: event.target.value })}>
                   <option value="">Classement automatique</option>
@@ -439,13 +445,13 @@ export default function CollectionItemDetailPage() {
                   {sealedTypeOptions.map(type => <option key={type} value={type}>{type}</option>)}
                 </select>
               </label>
-              <p className="muted">Ces informations concernent uniquement ton exemplaire. Le nom et le type du produit de référence restent ceux du catalogue.</p>
+              <p className="muted">Tu peux modifier le prix et la date d’achat de cet exemplaire. Les laisser vides efface ces informations. Le nom et le type du produit de référence restent ceux du catalogue.</p>
               <button className="btn" type="submit">{copySaving ? 'Enregistrement…' : 'Enregistrer'}</button>
               <button className="btn ghost" type="button" onClick={() => { setCopyDraft(null); setCopyMessage('') }}>Annuler</button>
             </fieldset>
           </form> : <>
             <p>Type dans ma collection : <strong>{item.product_type_override?.trim() || 'Classement automatique'}</strong></p>
-            <button className="btn ghost" type="button" onClick={() => { setCopyDraft({ custom_name: item.custom_name || '', product_type_override: item.product_type_override || '' }); setCopyMessage('') }}>Modifier mon exemplaire</button>
+            <button className="btn ghost" type="button" onClick={() => { setCopyDraft({ custom_name: item.custom_name || '', product_type_override: item.product_type_override || '', purchase_price: item.purchase_price ?? '', purchase_date: item.purchase_date || '' }); setCopyMessage('') }}>Modifier mon exemplaire</button>
           </>}
           {copyMessage && <p role="status">{copyMessage}</p>}
         </section>}
