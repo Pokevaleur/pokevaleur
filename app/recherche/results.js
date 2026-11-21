@@ -688,7 +688,9 @@ export default function SearchResults({ initialQuery }) {
         <section className={styles.collectionDialog} role="dialog" aria-modal="true" aria-labelledby="collection-product-dialog-title">
           <button type="button" className={styles.collectionClose} onClick={() => setCollectionProductId('')} aria-label="Fermer">×</button>
           <p className={styles.collectionEyebrow}>{product.product_type || 'Produit scellé'} · {product.series || 'Série non précisée'}</p>
-          <h2 id="collection-product-dialog-title">{product.name}</h2>
+          <h2 id="collection-product-dialog-title">{items.length
+            ? <a className={styles.collectionProductDetailLink} href={'/collection/' + encodeURIComponent(items[0].id)}>{product.name}</a>
+            : product.name}</h2>
           <p className={styles.collectionSubtitle}>{quantity} exemplaire{quantity === 1 ? '' : 's'} dans {collectionProfile?.display_name || 'le profil actif'}</p>
           {collectionAccess === 'signed_out'
             ? <a className={styles.collectionLogin} href={'/login?next=%2Frecherche%3Fsearch%3D' + encodeURIComponent(query.trim())}>Se connecter pour gérer ma collection →</a>
@@ -696,7 +698,7 @@ export default function SearchResults({ initialQuery }) {
               ? <p className={styles.collectionFeedback} role="alert">Impossible d’accéder à ta collection. Recharge la page et réessaie.</p>
               : <div className={styles.collectionVariantList}>
                 {items.length ? items.map((item, index) => <div className={styles.collectionVariant} key={item.id}>
-                  <div className={styles.collectionVariantName}><strong>{item.custom_name || `Exemplaire ${index + 1}`}</strong>
+                  <div className={styles.collectionVariantName}><a className={styles.collectionItemDetailLink} href={'/collection/' + encodeURIComponent(item.id)}><strong>{item.custom_name || `Exemplaire ${index + 1}`}</strong></a>
                     <small>{[item.sealed_condition === 'zero_defect' ? 'Zéro défaut' : 'État standard', item.purchase_date ? new Date(item.purchase_date + 'T00:00:00').toLocaleDateString('fr-FR') : ''].filter(Boolean).join(' · ')}</small>
                   </div>
                   <strong className={styles.collectionQuantity}>{item.quantity || 1} ex.</strong>
