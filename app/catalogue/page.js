@@ -5,7 +5,6 @@ import { createClient } from '../../lib/supabase-browser'
 import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { createSeriesReleaseDateMap, sortProductsByRelease } from '../../lib/catalogue-sort.mjs'
-import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 import styles from './catalogue-image-preview.module.css'
 
 function median(values) {
@@ -17,10 +16,14 @@ function median(values) {
     : (sorted[middle - 1] + sorted[middle]) / 2
 }
 
-function CatalogueImagePreview({ src, alt }) {
+function CatalogueImagePreview({ product, src, alt }) {
   const [isOpen, setIsOpen] = useState(false)
-  const [thumbnailFailed, setThumbnailFailed] = useState(false)
+  const [thumbnailSource, setThumbnailSource] = useState('')
   const dialogRef = useRef(null)
+
+  useEffect(() => {
+    setThumbnailSource(`/api/product-image/${encodeURIComponent(product.id)}`)
+  }, [product.id, src])
 
   useEffect(() => {
     const dialog = dialogRef.current
@@ -41,11 +44,11 @@ function CatalogueImagePreview({ src, alt }) {
       aria-haspopup="dialog"
     >
       <img
-        src={thumbnailFailed ? src : getProductThumbnailUrl(src)}
+        src={thumbnailSource}
         alt={alt}
         loading="lazy"
         decoding="async"
-        onError={() => setThumbnailFailed(true)}
+        onError={event => { event.currentTarget.style.visibility = 'hidden' }}
       />
     </button>
     {isOpen && <dialog
@@ -332,7 +335,7 @@ export default function CataloguePage() {
               <article className="catalogCard catalogResultCard" key={product.id}>
                 <div className="productVisual">
                   {product.image_url ? (
-                    <CatalogueImagePreview src={product.image_url} alt={product.name} />
+                    <CatalogueImagePreview product={product} src={product.image_url} alt={product.name} />
                   ) : (
                     <div className="productVisualPlaceholder">
                       <span>PokéValeur</span>

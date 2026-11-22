@@ -242,7 +242,7 @@ export default function ProductDetailClient({ product }) {
       <section className="productDetailHero">
         <div className="detailProductVisual">
           {product.image_url ? (
-            <img src={product.image_url} alt={product.name} />
+            <img src={`/api/product-image/${encodeURIComponent(product.id)}`} alt={product.name} onError={event => { event.currentTarget.style.display = 'none' }} />
           ) : (
             <div className="productVisualPlaceholder large">
               <span>PokéValeur</span>

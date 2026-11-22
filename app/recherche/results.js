@@ -6,7 +6,6 @@ import { fetchAllRows } from '../../lib/supabase-pagination'
 import { createProductMatcher, normalizeSearch } from '../../lib/product-search.mjs'
 import { correctKnownVoiceCardName, normalizeVoiceSearchQuery } from '../../lib/voice-search.mjs'
 import { compareProductsByRelease, createSeriesReleaseDateMap } from '../../lib/catalogue-sort.mjs'
-import { getProductThumbnailUrl } from '../../lib/optimized-image-url.js'
 import styles from './page.module.css'
 import VoiceSearchButton from '../voice-search-button'
 
@@ -628,7 +627,7 @@ export default function SearchResults({ initialQuery }) {
                         : quantity ? quantity + ' dans ma collection' : '0 dans ma collection'
                   return <article className={styles.product} key={product.id}>
                     <a className={styles.cardLink} href={'/catalogue/' + encodeURIComponent(product.id)}>
-                      <span className={styles.imageFrame}>{productImage ? <img src={getProductThumbnailUrl(productImage)} alt="" loading="lazy" decoding="async"/> : <span className={styles.noImage}>Image à venir</span>}</span>
+                      <span className={styles.imageFrame}>{productImage ? <img src={`/api/product-image/${encodeURIComponent(product.id)}`} alt="" loading="lazy" decoding="async" onError={event => { event.currentTarget.style.display = 'none'; event.currentTarget.parentElement.dataset.imageMissing = 'true' }} /> : <span className={styles.noImage}>Image à venir</span>}</span>
                       <span className={styles.cardText}><strong>{product.name}</strong><span>{product.product_type || 'Produit scellé'}</span><small>{product.series || product.case_reference || 'Série non précisée'}</small>
                         <span className={quote ? styles.pricePill : `${styles.pricePill} ${styles.priceUnavailable}`} title={product.price_source || 'Cote actuelle du catalogue'} aria-label={quote ? `Cote actuelle : ${quote}` : 'Cote indisponible'}>{quote || 'Cote indisponible'}</span>
                       </span>
