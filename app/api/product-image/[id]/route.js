@@ -36,7 +36,11 @@ export async function GET(_request, { params }) {
   const { data: product, error } = await admin.from('products')
     .select('id,is_public,image_url,image_thumbnail_data')
     .eq('id', params.id).eq('is_public', true).maybeSingle()
-  if (error || !product) return NextResponse.json({ error: 'Fiche introuvable.' }, { status: 404 })
+  if (error) {
+    console.error('[product-image] database lookup failed', error.code || '', error.message || '')
+    return NextResponse.json({ error: 'Cache temporairement indisponible.' }, { status: 503 })
+  }
+  if (!product) return NextResponse.json({ error: 'Fiche introuvable.' }, { status: 404 })
 
   const saved = String(product.image_thumbnail_data || '').match(/^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/)
   if (saved) {

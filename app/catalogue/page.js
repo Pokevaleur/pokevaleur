@@ -48,7 +48,14 @@ function CatalogueImagePreview({ product, src, alt }) {
         alt={alt}
         loading="lazy"
         decoding="async"
-        onError={event => { event.currentTarget.style.visibility = 'hidden' }}
+        onError={event => {
+          if (!event.currentTarget.dataset.sourceFallback) {
+            event.currentTarget.dataset.sourceFallback = 'true'
+            setThumbnailSource(src)
+          } else {
+            event.currentTarget.style.visibility = 'hidden'
+          }
+        }}
       />
     </button>
     {isOpen && <dialog
