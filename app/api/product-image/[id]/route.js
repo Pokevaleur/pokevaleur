@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { supabaseUrl } from '../../../../lib/supabase-config'
+import { supabaseAnonKey, supabaseUrl } from '../../../../lib/supabase-config'
 
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
@@ -29,16 +29,22 @@ function imageResponse(bytes, contentType, cached = false) {
 
 export async function GET(_request, { params }) {
   if (!/^[0-9a-f-]{36}$/i.test(params.id || '')) return NextResponse.json({ error: 'Fiche introuvable.' }, { status: 404 })
-  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
-  if (!serviceKey) return NextResponse.json({ error: 'Cache indisponible.' }, { status: 503 })
-
-  const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
-  const { data: product, error } = await admin.from('products')
+  const publicDb = createClient(supabaseUrl, supabaseAnonKey, { auth: { persistSession: false, autoRefreshToken: false } })
+  let { data: product, error } = await publicDb.from('products')
     .select('id,is_public,image_url,image_thumbnail_data')
     .eq('id', params.id).eq('is_public', true).maybeSingle()
   if (error) {
-    console.error('[product-image] database lookup failed', error.code || '', error.message || '')
-    return NextResponse.json({ error: 'Cache temporairement indisponible.' }, { status: 503 })
+    // An image-cache column may not yet be visible to PostgREST after a schema
+    // change. The public image can still be served from its original URL.
+    console.error('[product-image] cached lookup failed', error.code || '', error.message || '')
+    const fallback = await publicDb.from('products').select('id,is_public,image_url')
+      .eq('id', params.id).eq('is_public', true).maybeSingle()
+    product = fallback.data ? { ...fallback.data, image_thumbnail_data: null } : null
+    error = fallback.error
+    if (error) {
+      console.error('[product-image] public product lookup failed', error.code || '', error.message || '')
+      return NextResponse.json({ error: 'Fiche temporairement indisponible.' }, { status: 503 })
+    }
   }
   if (!product) return NextResponse.json({ error: 'Fiche introuvable.' }, { status: 404 })
 
@@ -65,7 +71,13 @@ export async function GET(_request, { params }) {
   const bytes = Buffer.from(await upstream.arrayBuffer())
   if (!bytes.length || bytes.length > MAX_IMAGE_BYTES) return NextResponse.json({ error: 'Image trop volumineuse.' }, { status: 413 })
 
-  const dataUri = `data:${contentType};base64,${bytes.toString('base64')}`
-  await admin.from('products').update({ image_thumbnail_data: dataUri }).eq('id', product.id).is('image_thumbnail_data', null)
+  const serviceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SECRET_KEY
+  if (serviceKey) {
+    const admin = createClient(supabaseUrl, serviceKey, { auth: { persistSession: false, autoRefreshToken: false } })
+    const dataUri = `data:${contentType};base64,${bytes.toString('base64')}`
+    const { error: saveError } = await admin.from('products').update({ image_thumbnail_data: dataUri })
+      .eq('id', product.id).is('image_thumbnail_data', null)
+    if (saveError) console.error('[product-image] thumbnail save failed', saveError.code || '', saveError.message || '')
+  }
   return imageResponse(bytes, contentType)
 }
