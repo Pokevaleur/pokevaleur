@@ -89,17 +89,22 @@ const asInput = (key, value) => {
   if (key.endsWith('_at') && value) return String(value).slice(0, 16)
   return String(value)
 }
+const normalizedPersonalValue = value => value === '' || value == null ? null : Number(value)
 
 export default function AdminProductCatalogPage() {
   const supabase = useMemo(() => createClient(), [])
   const [loading, setLoading] = useState(true)
   const [isAdmin, setIsAdmin] = useState(false)
   const [products, setProducts] = useState([])
+  const [collectionItems, setCollectionItems] = useState([])
   const [selectedId, setSelectedId] = useState('')
   const [draft, setDraft] = useState(null)
+  const [selectedCollectionItemId, setSelectedCollectionItemId] = useState('')
+  const [personalValueDraft, setPersonalValueDraft] = useState('')
   const [query, setQuery] = useState('')
   const [visibleResultCount, setVisibleResultCount] = useState(30)
   const [saving, setSaving] = useState(false)
+  const [savingPersonalValue, setSavingPersonalValue] = useState(false)
   const [notice, setNotice] = useState('')
   const [error, setError] = useState('')
 
@@ -117,13 +122,18 @@ export default function AdminProductCatalogPage() {
       const result = await response.json()
       if (!active) return
       if (!response.ok) setError(result.error || 'Impossible de charger les fiches.')
-      else setProducts(result.products || [])
+      else {
+        setProducts(result.products || [])
+        setCollectionItems(result.collectionItems || [])
+      }
       setLoading(false)
     })().catch(() => { if (active) { setError('Une erreur a empêché le chargement du catalogue.'); setLoading(false) } })
     return () => { active = false }
   }, [supabase])
 
   const selected = products.find(product => product.id === selectedId)
+  const matchingCollectionItems = collectionItems.filter(item => item.product_id === selectedId)
+  const selectedCollectionItem = matchingCollectionItems.find(item => item.id === selectedCollectionItemId)
   const searchResults = useMemo(() => {
     const seriesSearch = parseSeriesSearch(query)
     const seriesTarget = seriesSearch && seriesSearchAliases[seriesSearch.code]
@@ -158,6 +168,8 @@ export default function AdminProductCatalogPage() {
   const options = key => [...new Set(products.map(product => product[key]).filter(Boolean))].sort((a, b) => String(a).localeCompare(String(b), 'fr'))
 
   function selectProduct(id) {
+    const hasUnsavedPersonalValue = selectedCollectionItem
+      && normalizedPersonalValue(personalValueDraft) !== normalizedPersonalValue(selectedCollectionItem.current_value_override)
     if (selected && draft) {
       const hasUnsavedChanges = Object.keys(draft).some(key => {
         if (['id', 'created_at'].includes(key)) return false
@@ -166,8 +178,12 @@ export default function AdminProductCatalogPage() {
         else if (typeof value === 'string') value = value.trim() || null
         return value !== selected[key]
       })
-      if (hasUnsavedChanges && !window.confirm('Cette fiche contient des modifications non enregistrées. Changer de fiche les abandonnera. Continuer ?')) return
-    }
+      if ((hasUnsavedChanges || hasUnsavedPersonalValue) && !window.confirm('Cette fiche contient des modifications non enregistrées. Changer de fiche les abandonnera. Continuer ?')) return
+    } else if (hasUnsavedPersonalValue && !window.confirm('La cote personnelle contient une modification non enregistrée. Changer de fiche l’abandonnera. Continuer ?')) return
+    const productItems = collectionItems.filter(item => item.product_id === id)
+    const initialItem = productItems[0]
+    setSelectedCollectionItemId(initialItem?.id || '')
+    setPersonalValueDraft(initialItem?.current_value_override == null ? '' : String(initialItem.current_value_override))
     setSelectedId(id)
     const product = products.find(item => item.id === id)
     setDraft(product ? { ...product } : null)
@@ -206,6 +222,51 @@ export default function AdminProductCatalogPage() {
       }
     } catch { setError('La fiche n’a pas été enregistrée. Vérifie ta connexion puis réessaie.') }
     setSaving(false)
+  }
+
+  async function savePersonalValue() {
+    if (!selected || !selectedCollectionItem || savingPersonalValue) return
+    const value = personalValueDraft.trim() === '' ? null : Number(personalValueDraft)
+    if (value !== null && (!Number.isFinite(value) || value < 0)) {
+      setError('La cote personnelle doit être un nombre positif ou vide.')
+      return
+    }
+    if (value === selectedCollectionItem.current_value_override) {
+      setNotice('Aucune modification de cote personnelle à enregistrer.')
+      setError('')
+      return
+    }
+    setSavingPersonalValue(true); setNotice(''); setError('')
+    try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const response = await fetch('/api/admin/catalogue-produits', {
+        method: 'POST', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${session?.access_token || ''}` },
+        body: JSON.stringify({ product_id: selected.id, collection_item_id: selectedCollectionItem.id, current_value_override: value })
+      })
+      const result = await response.json()
+      if (!response.ok) setError(result.error || 'La cote personnelle n’a pas été enregistrée.')
+      else {
+        setCollectionItems(current => current.map(item => item.id === result.collectionItem.id ? result.collectionItem : item))
+        setPersonalValueDraft(result.collectionItem.current_value_override == null ? '' : String(result.collectionItem.current_value_override))
+        setNotice('Cote personnelle enregistrée pour cet exemplaire. La cote PokéValeur du catalogue reste inchangée.')
+      }
+    } catch { setError('La cote personnelle n’a pas été enregistrée. Vérifie ta connexion puis réessaie.') }
+    setSavingPersonalValue(false)
+  }
+
+  function selectCollectionItem(id) {
+    const hasUnsavedChanges = selectedCollectionItem
+      && normalizedPersonalValue(personalValueDraft) !== normalizedPersonalValue(selectedCollectionItem.current_value_override)
+    if (hasUnsavedChanges && !window.confirm('La cote personnelle contient une modification non enregistrée. Changer d’exemplaire l’abandonnera. Continuer ?')) return
+    const item = matchingCollectionItems.find(candidate => candidate.id === id)
+    setSelectedCollectionItemId(id)
+    setPersonalValueDraft(item?.current_value_override == null ? '' : String(item.current_value_override))
+  }
+
+  function collectionItemLabel(item) {
+    const profile = Array.isArray(item.collection_profile) ? item.collection_profile[0] : item.collection_profile
+    const details = [profile?.display_name, `${Number(item.quantity || 1)} ex.`, item.purchase_date ? new Date(`${item.purchase_date}T00:00:00`).toLocaleDateString('fr-FR') : null, item.purchase_price != null ? `${item.purchase_price} € achat` : null].filter(Boolean)
+    return `${item.custom_name || selected?.name || 'Exemplaire'} · ${details.join(' · ')}`
   }
 
   if (loading) return <main className={styles.page}><p>Chargement…</p></main>
@@ -247,6 +308,16 @@ export default function AdminProductCatalogPage() {
     {selected && draft && <form className={styles.form} onSubmit={save}>
       <section className={styles.panel}><h2>Identifiants protégés</h2><div className={styles.readonly}><span>ID catalogue</span><code>{selected.id}</code><span>Créée le</span><code>{selected.created_at ? new Date(selected.created_at).toLocaleString('fr-FR') : '—'}</code></div><p className={styles.help}>L’identifiant ne change pas : les collections qui utilisent cette fiche restent liées au produit.</p></section>
       {groups.map(group => <section className={styles.panel} key={group.title}><h2>{group.title}</h2>{group.title === 'Valeurs et sources' && <p className={styles.help}>La cote PokéValeur affichée au catalogue se règle ici. Saisis le prix retenu, puis précise sa source et sa date de mise à jour.</p>}<div className={styles.grid}>{group.fields.map(([key, label, type]) => <label className={key.endsWith('_url') || key === 'official_source_url' ? styles.wide : ''} key={key}>{label}{fieldControl(key, label, type)}</label>)}</div></section>)}
+      <section className={styles.panel}>
+        <h2>Cote personnelle</h2>
+        <p className={styles.help}>Cette valeur est propre à un exemplaire de tes collections. Elle n’altère pas la cote PokéValeur de la fiche catalogue.</p>
+        {matchingCollectionItems.length === 0 ? <p className={styles.searchHelp}>Aucun exemplaire lié à cette fiche n’a été trouvé dans les collections que tu gères.</p> : <div className={styles.grid}>
+          {matchingCollectionItems.length > 1 && <label className={styles.wide}>Exemplaire concerné<select value={selectedCollectionItemId} onChange={event => selectCollectionItem(event.target.value)}>{matchingCollectionItems.map(item => <option key={item.id} value={item.id}>{collectionItemLabel(item)}</option>)}</select></label>}
+          {matchingCollectionItems.length === 1 && <p className={styles.help}>{collectionItemLabel(matchingCollectionItems[0])}</p>}
+          <label>Cote personnelle (€)<input type="number" min="0" step="0.01" value={personalValueDraft} onChange={event => setPersonalValueDraft(event.target.value)} placeholder="Vide = cote PokéValeur" /></label>
+          <div className={styles.footer}><button type="button" disabled={savingPersonalValue} onClick={savePersonalValue}>{savingPersonalValue ? 'Enregistrement…' : 'Enregistrer la cote personnelle'}</button></div>
+        </div>}
+      </section>
       <section className={styles.panel}><h2>Publication</h2><label className={styles.checkbox}><input type="checkbox" checked={Boolean(draft.is_public)} onChange={event => change('is_public', event.target.checked)} /> Visible dans le catalogue public et la recherche</label></section>
       <div className={styles.footer}><button type="submit" disabled={saving}>{saving ? 'Enregistrement…' : 'Enregistrer les modifications'}</button></div>
     </form>}

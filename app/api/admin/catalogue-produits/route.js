@@ -66,7 +66,16 @@ export async function GET(request) {
     products.push(...(data || []))
     if (!data || data.length < pageSize) break
   }
-  return NextResponse.json({ products }, { headers: { 'Cache-Control': 'no-store' } })
+  const collectionItems = []
+  for (let offset = 0; ; offset += pageSize) {
+    const { data, error: queryError } = await adminClient.from('collection_items')
+      .select('id,product_id,collection_profile_id,custom_name,quantity,purchase_price,purchase_date,current_value_override,collection_profile:collection_profiles(display_name)')
+      .not('product_id', 'is', null).order('custom_name').order('id').range(offset, offset + pageSize - 1)
+    if (queryError) return jsonError('Impossible de charger les exemplaires de tes collections.', 503)
+    collectionItems.push(...(data || []))
+    if (!data || data.length < pageSize) break
+  }
+  return NextResponse.json({ products, collectionItems }, { headers: { 'Cache-Control': 'no-store' } })
 }
 
 export async function POST(request) {
@@ -78,6 +87,23 @@ export async function POST(request) {
   let body
   try { body = await request.json() } catch { return jsonError('Demande invalide.', 400) }
   if (typeof body?.product_id !== 'string' || !body.product_id.trim()) return jsonError('Choisis une fiche produit à modifier.', 400)
+
+  // Personal values belong to one owned collection item, not to the shared
+  // catalogue product. Keep this write separate from catalogue field updates.
+  if (body.collection_item_id !== undefined) {
+    if (typeof body.collection_item_id !== 'string' || !body.collection_item_id.trim()) return jsonError('Choisis un exemplaire de collection.', 400)
+    const value = body.current_value_override
+    if (value !== null && (typeof value !== 'number' || !Number.isFinite(value) || value < 0)) return jsonError('La cote personnelle doit être un nombre positif ou vide.', 400)
+    const { data, error: updateError } = await adminClient.from('collection_items')
+      .update({ current_value_override: value })
+      .eq('id', body.collection_item_id).eq('product_id', body.product_id)
+      .select('id,product_id,collection_profile_id,custom_name,quantity,purchase_price,purchase_date,current_value_override,collection_profile:collection_profiles(display_name)')
+      .maybeSingle()
+    if (updateError) return jsonError('La cote personnelle n’a pas pu être enregistrée. Vérifie que cet exemplaire est toujours dans une collection que tu gères.', 400)
+    if (!data) return jsonError('Cet exemplaire est introuvable ou ne correspond pas à la fiche sélectionnée.', 404)
+    return NextResponse.json({ collectionItem: data }, { headers: { 'Cache-Control': 'no-store' } })
+  }
+
   if (!body.fields || typeof body.fields !== 'object' || Array.isArray(body.fields)) return jsonError('Aucun champ à enregistrer.', 400)
 
   const entries = Object.entries(body.fields)
