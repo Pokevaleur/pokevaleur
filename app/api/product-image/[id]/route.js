@@ -65,7 +65,8 @@ export async function GET(_request, { params }) {
   } catch { return NextResponse.json({ error: 'Image temporairement inaccessible.' }, { status: 502 }) }
   const contentType = (upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()
   const length = Number(upstream.headers.get('content-length') || 0)
-  if (!upstream.ok || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(contentType) || length > MAX_IMAGE_BYTES) {\n    console.error('[product-image] upstream rejected', source.hostname, upstream.status, contentType, length)
+  if (!upstream.ok || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(contentType) || length > MAX_IMAGE_BYTES) {
+    console.error('[product-image] upstream rejected', source.hostname, upstream.status, contentType, length)
     return NextResponse.json({ error: 'Image source indisponible.' }, { status: 502 })
   }
   const bytes = Buffer.from(await upstream.arrayBuffer())
