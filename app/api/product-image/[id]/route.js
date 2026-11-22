@@ -12,7 +12,7 @@ const allowedHosts = [
   'pokemon.com', 'pokemoncenter.com', 'tcgplayer.com', 'ebayimg.com',
   'gradedcardcenter.com', 'bcd-jeux.fr', 'pokemagic.fr', 'dracaugames.com',
   'tcgdirect.fr', 'plazatcg.com', 'ultrajeux.com', 'sneyzencorp.com',
-  'pokevalue.fr', 'dexocard.com', 'bulbagarden.net', 'totalcards.net'
+  'pokevalue.fr', 'dexocard.com', 'philibertnet.com', 'kuro-star.com', 'primary.jwwb.nl', 'bulbagarden.net', 'totalcards.net'
 ]
 
 function imageResponse(bytes, contentType, cached = false) {
@@ -21,7 +21,7 @@ function imageResponse(bytes, contentType, cached = false) {
     headers: {
       'Content-Type': contentType,
       'Content-Length': String(bytes.length),
-      'Cache-Control': 'public, max-age=86400, s-maxage=31536000, immutable',
+      'Cache-Control': 'public, max-age=86400, s-maxage=31536000, stale-while-revalidate=31536000, stale-if-error=31536000, immutable',
       'X-Content-Type-Options': 'nosniff'
     }
   })
