@@ -5,7 +5,7 @@ import { supabaseAnonKey, supabaseUrl } from '../../../../lib/supabase-config'
 export const dynamic = 'force-dynamic'
 export const runtime = 'nodejs'
 
-const MAX_IMAGE_BYTES = 500_000
+const MAX_IMAGE_BYTES = 3_000_000
 const allowedHosts = [
   'pokepedia.fr', 'hikarudistribution.com', 'king-jouet.com', 'oupi.eu',
   'imaginaire.com', 'cmay-collections.com', 'shopify.com', 'pokezenith.com',
@@ -61,11 +61,12 @@ export async function GET(_request, { params }) {
 
   let upstream
   try {
-    upstream = await fetch(source, { signal: AbortSignal.timeout(8000), headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif' } })
+    upstream = await fetch(source, { signal: AbortSignal.timeout(8000), headers: { Accept: 'image/avif,image/webp,image/png,image/jpeg,image/gif', 'User-Agent': 'Mozilla/5.0 (compatible; PokeValeur/1.0; +https://pokevaleur.fr)', Referer: source.origin + '/' } })
   } catch { return NextResponse.json({ error: 'Image temporairement inaccessible.' }, { status: 502 }) }
   const contentType = (upstream.headers.get('content-type') || '').split(';')[0].trim().toLowerCase()
   const length = Number(upstream.headers.get('content-length') || 0)
   if (!upstream.ok || !['image/jpeg', 'image/png', 'image/webp', 'image/gif'].includes(contentType) || length > MAX_IMAGE_BYTES) {
+    console.error('[product-image] upstream rejected', source.hostname, upstream.status, contentType, length)
     return NextResponse.json({ error: 'Image source indisponible.' }, { status: 502 })
   }
   const bytes = Buffer.from(await upstream.arrayBuffer())
