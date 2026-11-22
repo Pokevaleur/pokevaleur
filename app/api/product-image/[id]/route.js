@@ -21,7 +21,7 @@ function imageResponse(bytes, contentType, cached = false) {
     headers: {
       'Content-Type': contentType,
       'Content-Length': String(bytes.length),
-      'Cache-Control': cached ? 'public, max-age=86400, s-maxage=31536000, immutable' : 'public, max-age=300',
+      'Cache-Control': 'public, max-age=86400, s-maxage=31536000, immutable',
       'X-Content-Type-Options': 'nosniff'
     }
   })
@@ -48,7 +48,7 @@ export async function GET(_request, { params }) {
   }
   if (!product) return NextResponse.json({ error: 'Fiche introuvable.' }, { status: 404 })
 
-  const saved = String(product.image_thumbnail_data || '').match(/^data:(image\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/)
+  const saved = String(product.image_thumbnail_data || '').match(/^data:(image\\/(?:jpeg|png|webp|gif));base64,([A-Za-z0-9+/=]+)$/)
   if (saved) {
     const bytes = Buffer.from(saved[2], 'base64')
     if (bytes.length && bytes.length <= MAX_IMAGE_BYTES) return imageResponse(bytes, saved[1], true)
