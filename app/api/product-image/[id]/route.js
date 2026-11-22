@@ -12,7 +12,7 @@ const allowedHosts = [
   'pokemon.com', 'pokemoncenter.com', 'tcgplayer.com', 'ebayimg.com',
   'gradedcardcenter.com', 'bcd-jeux.fr', 'pokemagic.fr', 'dracaugames.com',
   'tcgdirect.fr', 'plazatcg.com', 'ultrajeux.com', 'sneyzencorp.com',
-  'pokevalue.fr', 'dexocard.com', 'bulbagarden.net', 'totalcards.net'
+  'pokevalue.fr', 'dexocard.com', 'philibertnet.com', 'kuro-star.com', 'primary.jwwb.nl', 'bulbagarden.net', 'totalcards.net'
 ]
 
 function imageResponse(bytes, contentType, cached = false) {
